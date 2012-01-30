@@ -35,7 +35,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             super.messageReceived(ctx, me);
         }
 
-        //TODO: Memorize token in open requests
+        //TODO: Memorize Message in open requests
+
+        ctx.sendUpstream(me);
     }
 
     @Override
@@ -45,5 +47,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         }
 
         //TODO: Delete token from open requests
+
+        ctx.sendDownstream(me);
+    }
+
+    private class SeperateResponseThread extends Thread{
+        @Override
+        public void run(){
+            //Wait for 2 seconds to send empty ACK
+        }
     }
 }
