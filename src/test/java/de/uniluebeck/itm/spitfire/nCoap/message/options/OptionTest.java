@@ -147,7 +147,7 @@ public class OptionTest extends TestCase{
                 assertTrue(msg, Arrays.equals(expected_result, result));
             }
             catch (Exception e){
-                fail("Creation of option number 2 caused an unexpected Exception: \n" + e.getMessage());
+                fail("Creation of option number 2 caused an unexpected Exception: \n" + e.getRequest());
             }
         }
     }

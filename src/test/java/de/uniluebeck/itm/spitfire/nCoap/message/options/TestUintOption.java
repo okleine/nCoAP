@@ -90,7 +90,7 @@
 //            }
 //            catch(InvalidOptionException e){
 //                if(valid == true){
-//                    fail(e.getMessage());
+//                    fail(e.getRequest());
 //                }
 //            }
 //        }
@@ -121,7 +121,7 @@
 //            }
 //            catch(InvalidOptionException e){
 //                if(valid == true){
-//                    String msg = "[TestUintOption] Unexpected InvalidOptionException thrown: \n" + e.getMessage();
+//                    String msg = "[TestUintOption] Unexpected InvalidOptionException thrown: \n" + e.getRequest();
 //                    fail(msg);
 //                }
 //            }
@@ -152,7 +152,7 @@
 //            }
 //            catch(InvalidOptionException e){
 //                if(valid == true){
-//                    String msg = "[TestUintOption] Unexpected InvalidOptionException thrown: \n" + e.getMessage();
+//                    String msg = "[TestUintOption] Unexpected InvalidOptionException thrown: \n" + e.getRequest();
 //                    fail(msg);
 //                }
 //            }

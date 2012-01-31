@@ -84,7 +84,7 @@ public class TestMessageCreation extends TestCase{
 
     @Test
     public void testOptionCombination() throws Exception{
-        Message message = Message.createRequest(msgType, code, targetURI);
+        Message message = new Request(msgType, code, targetURI);
 
         try{
             if(!(proxyURI == null)){
@@ -132,7 +132,9 @@ public class TestMessageCreation extends TestCase{
             if(valid){
                 throw e;
             }
-            log.debug("[TestMessageCreation] Expected InvalidOptionException!", e);
+            if(log.isDebugEnabled()){
+                log.debug("[TestMessageCreation] Expected InvalidOptionException!", e);
+            }
         }
     }
 

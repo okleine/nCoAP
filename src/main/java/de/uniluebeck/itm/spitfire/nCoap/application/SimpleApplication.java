@@ -72,9 +72,14 @@ public class SimpleApplication implements ResponseCallback {
         Channels.write(channel, request, rcptSocketAddress);
     }
 
+    /**
+     * The main method to start the SimpleApplication
+     * @param args args[0] must contain the target URI for the GET request
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception{
         SimpleApplication app = new SimpleApplication("App");
-        URI uri = new URI("coap://[2001:638:70a:b157:215:7ff:fe20:1002]:5683/.well-known/cor%65");
+        URI uri = new URI(args[0]);
         app.writeRequest(MsgType.CON, Code.GET, uri);
     }
 

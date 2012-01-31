@@ -71,7 +71,7 @@
 //        }
 //        catch(InvalidOptionException e){
 //            if(valid == true){
-//                fail(e.getMessage());
+//                fail(e.getRequest());
 //            }
 //        }
 //    }
@@ -99,7 +99,7 @@
 //        }
 //        catch(InvalidOptionException e){
 //            if(valid == true){
-//                fail(e.getMessage());
+//                fail(e.getRequest());
 //            }
 //        }
 //    }
@@ -128,7 +128,7 @@
 //        }
 //        catch(InvalidOptionException e){
 //            if(valid == true){
-//                fail(e.getMessage());
+//                fail(e.getRequest());
 //            }
 //        }
 //    }
