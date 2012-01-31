@@ -23,10 +23,10 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.core;
 
+import de.uniluebeck.itm.spitfire.nCoap.application.SimpleApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.CoapPipelineFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.OutgoingMessageReliabilityHandler;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.MessageIDFactory;
-import de.uniluebeck.itm.spitfire.nCoap.message.Message;
+import de.uniluebeck.itm.spitfire.nCoap.message.Request;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import org.apache.log4j.ConsoleAppender;
@@ -51,7 +51,7 @@ import java.util.concurrent.Executors;
  *
  * @author Oliver Kleine
  */
-public class Main {
+public class CoapChannel {
 
     private static Logger log = Logger.getLogger("nCoap");
     static{
@@ -77,17 +77,6 @@ public class Main {
         new MessagePrinter().start();
     }
 
-    private static void writeMessage() throws Exception{
-        //Create Message
-        URI uri = new URI("coap://[2001:638:70a:b157:215:7ff:fe20:1002]:5683/.well-known/core");
-        Message message = Message.createRequest(MsgType.CON, Code.GET, uri);
-
-        //Send Message
-        InetSocketAddress remoteAddress = new InetSocketAddress(message.getTargetUri().getHost(),
-                message.getTargetUri().getPort());
-        channel.write(message, remoteAddress);
-    }
-
     private static String getHexString(byte[] b){
       String result = "";
         for (byte curByte : b) {
@@ -98,13 +87,16 @@ public class Main {
     }
 
     private static class MessageSender extends Thread{
+
         @Override
         public void run(){
             try {
-                for(int i = 0; i < 100; i++){
-                    writeMessage();
-                    sleep(10);
-                }
+                SimpleApplication app = new SimpleApplication(String.valueOf(getId()));
+                //Create Message
+                URI uri = new URI("coap://[2001:638:70a:b157:215:7ff:fe20:1002]:5683/.well-known/core");
+                Request request = new Request(MsgType.CON, Code.GET, uri, app);
+                app.writeMessage(request);
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
