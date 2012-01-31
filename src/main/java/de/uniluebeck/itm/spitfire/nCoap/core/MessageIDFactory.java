@@ -62,7 +62,10 @@ public class MessageIDFactory {
                         int messageID = keys.nextElement();
                         if(System.currentTimeMillis() > allocatedIDs.get(messageID)){
                             allocatedIDs.remove(messageID);
-                            log.debug("[MessageIDFactory] Deallocated message ID " + messageID);
+
+                            if(log.isDebugEnabled()){
+                                log.debug("[MessageIDFactory] Deallocated message ID " + messageID);
+                            }
                         }
                     }
                     try{

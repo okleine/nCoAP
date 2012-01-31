@@ -47,7 +47,9 @@ public class Header {
         setCode(code);
         setMsgID(msgID);
 
-        log.debug("[Header] New Header created (type: " + msgType + ", code: " + code + ", msgID: " + msgID + ")");
+        if(log.isDebugEnabled()){
+            log.debug("[Header] New Header created (type: " + msgType + ", code: " + code + ", msgID: " + msgID + ")");
+        }
     }
 
     public static Header createHeader (ChannelBuffer buf) throws InvalidHeaderException{
@@ -68,8 +70,10 @@ public class Header {
         //result.setOptionCount(optionCount);
         result.setMsgID(msgID);
 
-        log.debug("[Header] New Header created from ChannelBuffer (type: " + result.msgType +
+        if(log.isDebugEnabled()){
+            log.debug("[Header] New Header created from ChannelBuffer (type: " + result.msgType +
                 ", code: " + result.code + ", msgID: " + result.msgID + ")");
+        }
 
         return result;
     }

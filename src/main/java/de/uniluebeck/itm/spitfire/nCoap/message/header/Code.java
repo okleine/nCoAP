@@ -32,7 +32,7 @@ import java.util.List;
  * This enumeration contains all defined message codes (i.e. methods for requests and status for responses)
  * in CoAPs draft v7
  *
- *@author Oliver Kleine
+ * @author Oliver Kleine
 */
 
 public enum Code {

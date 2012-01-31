@@ -57,7 +57,9 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         ChannelBuffer buffer = (ChannelBuffer) obj;
 
         //Decode incoming message
-        log.debug("[Message] Create new message object from ChannelBuffer");
+        if(log.isDebugEnabled()){
+            log.debug("[Message] Create new message object from ChannelBuffer");
+        }
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4){
@@ -75,8 +77,10 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         Header header =
                 new Header(MsgType.getMsgTypeFromNumber(msgTypeNumber), Code.getCodeFromNumber(codeNumber), msgID);
 
-        log.debug("[CoAPMessageDecoder] New Header created from ChannelBuffer (type: " + header.getMsgType() +
-                ", code: " + header.getCode() + ", msgID: " + header.getMsgID() + ")");
+        if(log.isDebugEnabled()){
+            log.debug("[CoAPMessageDecoder] New Header created from ChannelBuffer (type: " + header.getMsgType() +
+                    ", code: " + header.getCode() + ", msgID: " + header.getMsgID() + ")");
+        }
 
         //Create OptionList
         try{
@@ -143,7 +147,9 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                     log.error("[CoapMessageDecoder] Malformed " + e.getOptionName() + " option is critical. Send RST!");
                     throw e;
                 }
-                log.debug("[CoapMessageDecoder] Malformed " + e.getOptionName() + " option silently ignored.");
+                if(log.isDebugEnabled()){
+                    log.debug("[CoapMessageDecoder] Malformed " + e.getOptionName() + " option silently ignored.");
+                }
             }
         }
 
@@ -188,7 +194,9 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                     + " between " + minLength + " and " + maxLength + " (both including) but has " +  valueLength);
         }
 
-        log.debug("[Option] Creating " + optionName + " option with encoded value length of " + valueLength + " bytes");
+        if(log.isDebugEnabled()){
+            log.debug("[Option] Creating " + optionName + " option with encoded value length of " + valueLength + " bytes");
+        }
 
         //Read encoded value from buffer
         byte[] encodedValue = new byte[valueLength];

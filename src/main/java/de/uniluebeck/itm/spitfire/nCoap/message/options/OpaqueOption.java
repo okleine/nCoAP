@@ -24,8 +24,10 @@ public class OpaqueOption extends Option{
 
         setValue(optionName, value);
 
-        log.debug("[OpaqueOption] New Option (" + optionName + ")" +
+        if(log.isDebugEnabled()){
+            log.debug("[OpaqueOption] New Option (" + optionName + ")" +
                   " created (value: " + getHexString(value) + ", encoded length: " + value.length + ")");
+        }
     }
 
     private void setValue(OptionName optionName, byte[] value) throws InvalidOptionException{

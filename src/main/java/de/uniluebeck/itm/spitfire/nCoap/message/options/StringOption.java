@@ -20,8 +20,10 @@ public class StringOption extends Option{
         super(opt_name);
         setValue(opt_name, value);
 
-        log.debug("[StringOption] New Option (" + opt_name + ")" +
-                  " created (value: " + this.value + ", encoded length: " + this.value.length + ")");
+        if(log.isDebugEnabled()){
+            log.debug("[StringOption] New Option (" + opt_name + ")" +
+                      " created (value: " + this.value + ", encoded length: " + this.value.length + ")");
+        }
     }
 
     //Constructor with decoded value to be used for outgoing messages

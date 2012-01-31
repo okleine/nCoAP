@@ -17,8 +17,10 @@ public class UintOption extends Option{
         super(optionName);
         setValue(optionName, value);
 
-        log.debug("[UintOption] New Option (" + optionName + ")" +
-                  " created (Value: " + getHexString(value)+ ")");
+        if(log.isDebugEnabled()){
+            log.debug("[UintOption] New Option (" + optionName + ")" +
+                      " created (Value: " + getHexString(value)+ ")");
+        }
     }
 
     //constructor with decoded value should only be used for outgoing messages
@@ -26,17 +28,11 @@ public class UintOption extends Option{
         super(optionName);
         setValue(optionName, value);
 
-        log.debug("[UintOption] New Option (" + optionName + ")" +
-                  " created (Value: " + getHexString(this.value)+ ")");
+        if(log.isDebugEnabled()){
+            log.debug("[UintOption] New Option (" + optionName + ")" +
+                      " created (Value: " + getHexString(this.value)+ ")");
+        }
     }
-
-//    /**
-//     * Get the value of this option
-//     * @return the value of this option
-//     */
-//    public long getValue(){
-//        return Longs.fromByteArray(Bytes.concat(new byte[8-value.length], value));
-//    }
 
     private void setValue(OptionName optionName, byte[] bytes) throws InvalidOptionException {
         //Check value length constraints

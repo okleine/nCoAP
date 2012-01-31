@@ -23,26 +23,22 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
-import de.uniluebeck.itm.spitfire.nCoap.message.Message;
+import de.uniluebeck.itm.spitfire.nCoap.message.Request;
 
 import java.net.InetSocketAddress;
 import java.util.Random;
 
 /**
- * Created by IntelliJ IDEA.
- * User: olli
- * Date: 30.01.12
- * Time: 14:41
- * To change this template use File | Settings | File Templates.
+ * @author Oliver Kleine
  */
-public class OpenOutgoingRequest extends OpenRequest {
+class OpenOutgoingRequest extends OpenRequest {
     private static Random random = new Random(System.currentTimeMillis());
 
     private double randomFactor;
     private int retransmissionCount;
 
-    public OpenOutgoingRequest(InetSocketAddress rcptSocketAddress, Message message){
-        super(rcptSocketAddress, message);
+    public OpenOutgoingRequest(InetSocketAddress rcptSocketAddress, Request request){
+        super(rcptSocketAddress, request);
         this.randomFactor = 1 + 0.5 * random.nextDouble();
         this.retransmissionCount = 0;
         setNextTransmitTime();

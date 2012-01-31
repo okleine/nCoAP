@@ -56,62 +56,16 @@ public class Message {
 
     private InetAddress rcptAddress;
 
-    /**
-     * This method creates a new Message object and uses the given parameters to create an appropriate header
-     * and initial option list with target URI-related options set.
-     * @param msgType  The message type
-     * @param code The message code
-     * @param targetUri the recipients URI
-     * @throws InvalidOptionException if one of the target URI options to be created is not valid
-     * @throws URISyntaxException if the URI is not appropriate for a CoAP message
-     * @throws ToManyOptionsException if the target URI needs more than the maximum number of options per message
-     * @throws InvalidMessageException if the given code is not suitable for a request
-     * @return a new Message instance
-     */
-    public static Message createRequest(MsgType msgType, Code code, URI targetUri)
-            throws InvalidMessageException, ToManyOptionsException, InvalidOptionException, URISyntaxException {
-
-        if(!code.isRequest()){
-            throw new InvalidMessageException("[Message] Code " + code + " is not for a request.");
-        }
-
-        Message message = new Message(msgType, code);
-        message.setTargetURI(targetUri);
-        log.debug("[Message] Created new message instance " +
-                "(MsgType: " + msgType + ", Code: " + code + ", TargetURI: " + message.getTargetUri() + ")");
-
-        log.debug("[Message] Option count of new message: " + message.getOptionCount());
-        return message;
-    }
-
-    /**
-     * This method creates a new Message object and uses the given parameters to create an appropriate header
-     * and initial option list with target URI-related options set.
-     * @param msgType  The message type
-     * @param code The message code
-     * @throws InvalidOptionException if one of the target URI options to be created is not valid
-     * @throws ToManyOptionsException if the target URI needs more than the maximum number of options per message
-     * @throws InvalidMessageException if the given code is not suitable for a request
-     * @return a new Message instance
-     */
-    public static Message createResponse(MsgType msgType, Code code)
-            throws InvalidMessageException, ToManyOptionsException, InvalidOptionException {
-        if(code.isRequest()){
-             throw new InvalidMessageException("[Message] Code " + code + " is not for a response.");
-        }
-
-        Message message =  new Message(msgType, code);
-        log.debug("[Message] Created new message instance " + "(MsgType: " + msgType + ", Code: " + code + ")");
-        return message;
-    }
-
-    //Private constructor invoked by static method createRequest(MsgType msgType, Code code, URI targetUri)
     protected Message(MsgType msgType, Code code)
             throws InvalidOptionException, ToManyOptionsException {
 
         try {
             header = new Header(msgType, code);
-            log.debug("[Message] Created new message instance " + "(MsgType: " + msgType + ", Code: " + code + ")");
+
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Created new message instance " + "(MsgType: " + msgType + ", Code: " + code + ")");
+            }
+
         } catch (InvalidHeaderException e) {
             log.fatal("[Message] This should never happen!", e);
         }
@@ -144,7 +98,11 @@ public class Message {
         }
         catch(InvalidOptionException | ToManyOptionsException e){
             optionList.removeAllOptions(OptionName.CONTENT_TYPE);
-            log.debug("[Message] Critical option (" + OptionName.CONTENT_TYPE + ") could not be added.", e);
+
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option (" + OptionName.CONTENT_TYPE + ") could not be added.", e);
+            }
+
             throw e;
         }
     }
@@ -175,7 +133,9 @@ public class Message {
             return true;
         }
         catch(InvalidOptionException | ToManyOptionsException e){
-            log.debug("[Message] Elective option (" + OptionName.MAX_AGE + ") could not be added.", e);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Elective option (" + OptionName.MAX_AGE + ") could not be added.", e);
+            }
             optionList.removeAllOptions(OptionName.MAX_AGE);
             return false;
         }
@@ -201,7 +161,11 @@ public class Message {
         }
         catch(InvalidOptionException | ToManyOptionsException e){
             optionList.removeAllOptions(OptionName.PROXY_URI);
-            log.debug("[Message] Critical option (" + OptionName.PROXY_URI + ") could not be added.", e);
+
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option (" + OptionName.PROXY_URI + ") could not be added.", e);
+            }
+
             throw e;
         }
     }
@@ -247,7 +211,9 @@ public class Message {
             return true;
         }
         catch(InvalidOptionException | ToManyOptionsException e){
-            log.debug("[Message] Elective option (" + OptionName.MAX_AGE + ") could not be added.", e);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Elective option (" + OptionName.MAX_AGE + ") could not be added.", e);
+            }
             optionList.removeAllOptions(OptionName.ETAG);
             return false;
         }
@@ -278,7 +244,11 @@ public class Message {
 
             //Add options to the list
             for(Option option : targetUriOptions){
-                log.debug("[Message] Add " + OptionRegistry.getOptionName(option.getOptionNumber()) + " option with value: " + Option.getHexString(option.getValue()));
+                if(log.isDebugEnabled()){
+                    log.debug("[Message] Add " + OptionRegistry.getOptionName(option.getOptionNumber()) +
+                            " option with value: " + Option.getHexString(option.getValue()));
+                }
+
                 OptionName optionName = OptionRegistry.getOptionName(option.getOptionNumber());
                 optionList.addOption(header.getCode(), optionName, option);
             }
@@ -288,13 +258,17 @@ public class Message {
                 try{
                     rcptAddress = InetAddress.getByName(targetUri.getHost());
                 } catch (UnknownHostException e) {
-                    log.debug("[Message] The target hostname " + targetUri.getHost() + " could not be resolved.");
+                    if(log.isDebugEnabled()){
+                        log.debug("[Message] The target hostname " + targetUri.getHost() + " could not be resolved.");
+                    }
                 }
             }
         }
         catch(InvalidOptionException | ToManyOptionsException e){
             optionList.removeTargetURI();
-            log.debug("[Message] Critical option for target URI could not be added.", e);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option for target URI could not be added.", e);
+            }
             throw e;
         }
     }
@@ -320,7 +294,9 @@ public class Message {
         }
         catch (InvalidOptionException | ToManyOptionsException e) {
             optionList.removeLocationURI();
-            log.debug("[Message] Critical option for location URI could not be added.", e);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option for location URI could not be added.", e);
+            }
             throw e;
         }
     }
@@ -372,7 +348,9 @@ public class Message {
             optionList.addOption(header.getCode(), OptionName.TOKEN, option);
         } catch (InvalidOptionException | ToManyOptionsException e) {
             optionList.removeAllOptions(OptionName.TOKEN);
-            log.debug("[Message] Critical option " + OptionName.TOKEN + " could not be added.", e);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option " + OptionName.TOKEN + " could not be added.", e);
+            }
             throw e;
         }
     }
@@ -399,7 +377,9 @@ public class Message {
         }
         catch (InvalidOptionException | ToManyOptionsException e) {
             optionList.removeAllOptions(OptionName.ACCEPT);
-            log.debug("[Message] Elective option (" + OptionName.ACCEPT + ") could not be added.", e);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Elective option (" + OptionName.ACCEPT + ") could not be added.", e);
+            }
             return false;
         }
     }
@@ -423,7 +403,9 @@ public class Message {
         }
         catch (InvalidOptionException | ToManyOptionsException e) {
             optionList.removeAllOptions(OptionName.IF_MATCH);
-            log.debug("[Message] Critical option (" + OptionName.IF_MATCH + ") could not be added.", e);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option (" + OptionName.IF_MATCH + ") could not be added.", e);
+            }
             throw e;
         }
     }
@@ -445,7 +427,9 @@ public class Message {
             log.fatal("[Message] This should never happen!", e);
         } catch (ToManyOptionsException e) {
             optionList.removeAllOptions(OptionName.IF_NONE_MATCH);
-            log.debug("[Message] Critical option (" + OptionName.IF_NONE_MATCH + ") could not be added.", e);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option (" + OptionName.IF_NONE_MATCH + ") could not be added.", e);
+            }
             throw e;
         }
     }

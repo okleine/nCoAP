@@ -24,8 +24,9 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
 import com.google.common.collect.HashMultimap;
-import de.uniluebeck.itm.spitfire.nCoap.core.Main;
+import de.uniluebeck.itm.spitfire.nCoap.core.CoapChannel;
 import de.uniluebeck.itm.spitfire.nCoap.message.Message;
+import de.uniluebeck.itm.spitfire.nCoap.message.Request;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import org.apache.log4j.Logger;
@@ -77,10 +78,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
                         //Retransmit message if its time to do so
                         if(openRequest.getRetransmissionCount() ==  MAX_RETRANSMIT){
-                            openRequests.remove(openRequest.getMessage().getHeader().getMsgID());
+                            openRequests.remove(openRequest.getRequest().getHeader().getMsgID());
 
                             log.info("{OutgoingMessageReliabilityHandler] Message with ID " +
-                                openRequest.getMessage().getHeader().getMsgID() + " has reached maximum number of " +
+                                openRequest.getRequest().getHeader().getMsgID() + " has reached maximum number of " +
                                 "retransmits. Deleted from list of open requests.");
 
                             break;
@@ -88,14 +89,18 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
                         if(System.currentTimeMillis() >= openRequest.getNextTransmitTime()){
 
-                            Channels.write(Main.channel, openRequest.getMessage(), openRequest.getRcptSocketAddress());
+                            Channels.write(CoapChannel.getInstance().channel,
+                                    openRequest.getRequest(), openRequest.getRcptSocketAddress());
+
                             openRequest.increaseRetransmissionCount();
                             openRequest.setNextTransmitTime();
 
-                            log.debug("[ConfirmableMessageRetransmitter] Retransmission no. " +
-                                openRequest.getRetransmissionCount() + " for message with ID " +
-                                openRequest.getMessage().getHeader().getMsgID() + " to " +
-                                openRequest.getRcptSocketAddress());
+                            if(log.isDebugEnabled()){
+                                log.debug("[ConfirmableMessageRetransmitter] Retransmission no. " +
+                                    openRequest.getRetransmissionCount() + " for message with ID " +
+                                    openRequest.getRequest().getHeader().getMsgID() + " to " +
+                                    openRequest.getRcptSocketAddress());
+                            }
                         }
                     }
                     //Sleeping for a millisecond causes a CPU load of 1% instead of 25% without sleep
@@ -128,8 +133,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         if(message.getHeader().getMsgType() == MsgType.ACK || message.getHeader().getMsgType() == MsgType.RST){
             synchronized (openRequests){
                 if(openRequests.remove(message.getHeader().getMsgID()) != null) {
-                    log.debug("[OutgoingMessageReliabilityHandler] Received " + message.getHeader().getMsgType() +
-                            " message for open request with message ID " + message.getHeader().getMsgID());
+                    if(log.isDebugEnabled()){
+                        log.debug("[OutgoingMessageReliabilityHandler] Received " + message.getHeader().getMsgType() +
+                                " message for open request with message ID " + message.getHeader().getMsgID());
+                    }
                 }
             }
         }
@@ -149,31 +156,37 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
-        if(!(me.getMessage() instanceof Message)){
+        if(!(me.getMessage() instanceof Request)){
             super.messageReceived(ctx, me);
         }
 
-        Message message = (Message) me.getMessage();
+        Request request = (Request) me.getMessage();
 
-        synchronized (openRequests){
-            if(message.getHeader().getMsgID() == 0 || (!openRequests.containsKey(message.getHeader().getMsgID()))){
-                //Set the message ID
-                final int messageId = MessageIDFactory.getInstance().nextMessageID();
-                message.setMessageId(messageId);
+        if(request.getHeader().getMsgType() == MsgType.CON){
 
-                if(message.getHeader().getMsgType() == MsgType.CON){
+            synchronized (openRequests){
+                if(!openRequests.containsKey(request.getHeader().getMsgID())){
+
                     OpenOutgoingRequest newOpenRequest =
-                            new OpenOutgoingRequest((InetSocketAddress)me.getRemoteAddress(), message);
+                        new OpenOutgoingRequest((InetSocketAddress)me.getRemoteAddress(), request);
 
-                    openRequests.put(messageId, newOpenRequest);
+                    openRequests.put(request.getHeader().getMsgID(), newOpenRequest);
 
-                    log.debug("[OutgoingMessageReliabilityHandler] New open request with message ID " + messageId);
+                    if(log.isDebugEnabled()){
+                        log.debug("[OutgoingMessageReliabilityHandler] New open request with request ID " +
+                            request.getHeader().getMsgID());
+                    }
                 }
             }
         }
 
+
         ctx.sendDownstream(me);
-        log.debug("[OutgoingMessageReliabilityHandler] Message with ID " + message.getHeader().getMsgID() + " sent.");
-        messagesSent.put(message.getHeader().getMsgID(), new Date(System.currentTimeMillis()));
+        if(log.isDebugEnabled()){
+            log.debug("[OutgoingMessageReliabilityHandler] Message with ID " + request.getHeader().getMsgID() + " sent.");
+        }
+
+        //For Debugging only!
+        //messagesSent.put(request.getHeader().getMsgID(), new Date(System.currentTimeMillis()));
     }
 }

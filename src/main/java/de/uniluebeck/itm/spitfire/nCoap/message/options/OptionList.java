@@ -46,50 +46,43 @@ public class OptionList {
     public void addOption(Code code, OptionName optionName, Option option)
             throws InvalidOptionException, ToManyOptionsException {
 
-//        try{
-            //Check if and how often the option may occur in the message
-            OptionOccurence allowed_occurence = OptionRegistry.getAllowedOccurence(code, optionName);
+        OptionOccurence allowed_occurence = OptionRegistry.getAllowedOccurence(code, optionName);
 
-            if(allowed_occurence == OptionRegistry.OptionOccurence.NONE){
-                String msg = "[OptionList] " + optionName + " option has no meaning with"
-                                + " a message with code " + code + ".";
-                throw new InvalidOptionException(option.getOptionNumber(), msg);
-            }
-            else if(allowed_occurence == OptionRegistry.OptionOccurence.ONCE){
-                if(options.containsKey(optionName)){
-                    String msg = "[OptionList] " + optionName + " option may not occur multiple times"
-                                    + " in a message with code " + code + ".";
-                    if(optionName == OptionName.URI_HOST){
-                        StringOption host = (StringOption) (options.get(optionName).get(0));
-                        msg = msg + " Current value: " + host.getDecodedValue();
+        if(allowed_occurence == OptionRegistry.OptionOccurence.NONE){
+            String msg = "[OptionList] " + optionName + " option has no meaning with"
+                            + " a message with code " + code + ".";
+            throw new InvalidOptionException(option.getOptionNumber(), msg);
+        }
+        else if(allowed_occurence == OptionRegistry.OptionOccurence.ONCE){
+            if(options.containsKey(optionName)){
+                String msg = "[OptionList] " + optionName + " option may not occur multiple times"
+                                + " in a message with code " + code + ".";
+                if(optionName == OptionName.URI_HOST){
+                    StringOption host = (StringOption) (options.get(optionName).get(0));
+                    msg = msg + " Current value: " + host.getDecodedValue();
 
-                    }
-                    throw new InvalidOptionException(option.getOptionNumber(), msg);
                 }
-            }
-
-            //Check if adding the option would exceed the maximum list size
-            if(options.size() >= MAX_NUMBER_OF_OPTIONS){
-                String msg = "[OptionList] There are already " + MAX_NUMBER_OF_OPTIONS + " options contained.";
-                throw new ToManyOptionsException(msg);
-            }
-
-            //Option is meaningful and fulfills constraints, so add it to the list
-            if(!options.put(optionName, option)){
-                String msg = "[OptionList] " + optionName + " with equal value is already contained in the message.";
                 throw new InvalidOptionException(option.getOptionNumber(), msg);
             }
+        }
 
+        //Check if adding the option would exceed the maximum list size
+        if(options.size() >= MAX_NUMBER_OF_OPTIONS){
+            String msg = "[OptionList] There are already " + MAX_NUMBER_OF_OPTIONS + " options contained.";
+            throw new ToManyOptionsException(msg);
+        }
+
+        //Option is meaningful and fulfills constraints, so add it to the list
+        if(!options.put(optionName, option)){
+            String msg = "[OptionList] " + optionName + " with equal value is already contained in the message.";
+            throw new InvalidOptionException(option.getOptionNumber(), msg);
+        }
+
+        if(log.isDebugEnabled()){
             log.debug("[OptionList] " + optionName + " option with value " + Option.getHexString(option.getValue()) +
-                    " succesfully added to option list.");
-//        }
-//        catch(InvalidOptionException e){
-//            if(!(e.isCritical())){
-//                log.info("[OptionList] Elective option silently ignored (Message: " + e.getMessage() + ")");
-//                throw e;
-//            }
-//            throw e;
-//        }
+                " succesfully added to option list.");
+        }
+
     }
 
     /**
@@ -123,7 +116,9 @@ public class OptionList {
         deleted += options.removeAll(OptionName.URI_PORT).size();
         deleted += options.removeAll(OptionName.URI_QUERY).size();
 
-        log.debug("[Message] Removed " + deleted + " target URI options from option list");
+        if(log.isDebugEnabled()){
+            log.debug("[Message] Removed " + deleted + " target URI options from option list");
+        }
         return deleted;
     }
 

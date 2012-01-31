@@ -47,9 +47,10 @@ public class CoapMessageEncoder extends OneToOneEncoder{
     @Override
     protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception {
 
-        log.debug("[CoapMessageEncoder] Encode!");
         if(!(object instanceof Message)){
-            log.debug("[CoapMessageEncoder] No Message object!");
+            if(log.isDebugEnabled()){
+                log.debug("[CoapMessageEncoder] No Message object!");
+            }
             return object;
         }
 
@@ -59,7 +60,9 @@ public class CoapMessageEncoder extends OneToOneEncoder{
         encodeOptions(buffer, msg.getOptionList());
 
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, msg.getPayload());
-        log.debug("[CoapMessageEncoder] Length of encoded message: " + buf.array().length);
+        if(log.isDebugEnabled()){
+            log.debug("[CoapMessageEncoder] Length of encoded message: " + buf.array().length);
+        }
         return buf;
     }
 
@@ -81,8 +84,10 @@ public class CoapMessageEncoder extends OneToOneEncoder{
                 encodeOption(buffer, optionName, option, prevNumber);
                 prevNumber = optionName.number;
 
-                log.debug("[CoapMessageEncoder] Encoded option(No: " + optionName.number +
-                        ", Value: " + Option.getHexString(option.getValue()) + ")");
+                if(log.isDebugEnabled()){
+                    log.debug("[CoapMessageEncoder] Encoded option(No: " + optionName.number +
+                            ", Value: " + Option.getHexString(option.getValue()) + ")");
+                }
             }
         }
     }
@@ -90,7 +95,9 @@ public class CoapMessageEncoder extends OneToOneEncoder{
     private void encodeOption(ChannelBuffer buffer, OptionName optionName, Option option, int prevNumber)
             throws Exception {
 
-        log.debug("[CoapMessageEncoder] Start encoding option number " + optionName.number);
+        if(log.isDebugEnabled()){
+            log.debug("[CoapMessageEncoder] Start encoding option number " + optionName.number);
+        }
 
         //The previous option number must be smaller or equal to the actual one
         if(prevNumber > optionName.number){
@@ -107,12 +114,18 @@ public class CoapMessageEncoder extends OneToOneEncoder{
 
             while(optionName.number - prevNumber > MAX_OPTION_DELTA){
 
-                log.debug("[CoapMessageEncoder] Option delta for encoding must not be greater than 14 " +
+                if(log.isDebugEnabled()){
+                    log.debug("[CoapMessageEncoder] Option delta for encoding must not be greater than 14 " +
                         "(but is " + (optionName.number - prevNumber) + ")");
+                }
 
                 //write an encoded fencepost option to OutputStream
                 buffer.writeByte((nextFencepost - prevNumber) << 4);
-                log.debug("[CoapMessageEncoder] Encoded fencepost option added (with option number " + nextFencepost + ")");
+
+                if(log.isDebugEnabled()){
+                    log.debug("[CoapMessageEncoder] Encoded fencepost option added (with option number " +
+                            nextFencepost + ")");
+                }
 
                 prevNumber = nextFencepost;
                 nextFencepost += MAX_OPTION_DELTA;
@@ -134,6 +147,8 @@ public class CoapMessageEncoder extends OneToOneEncoder{
         //Write value
         buffer.writeBytes(option.getValue());
 
-        log.debug("[CoapMessageEncoder] Successfuly encoded option number " + optionName.number);
+        if(log.isDebugEnabled()){
+            log.debug("[CoapMessageEncoder] Successfuly encoded option number " + optionName.number);
+        }
     }
 }

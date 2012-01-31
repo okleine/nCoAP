@@ -25,10 +25,6 @@ package de.uniluebeck.itm.spitfire.nCoap.core;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.SimpleApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.CoapPipelineFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.OutgoingMessageReliabilityHandler;
-import de.uniluebeck.itm.spitfire.nCoap.message.Request;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -39,16 +35,10 @@ import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.Set;
 import java.util.concurrent.Executors;
 
 
 /**
- *
  * @author Oliver Kleine
  */
 public class CoapChannel {
@@ -56,15 +46,24 @@ public class CoapChannel {
     private static Logger log = Logger.getLogger("nCoap");
     static{
         log.addAppender(new ConsoleAppender(new SimpleLayout()));
-        log.setLevel(Level.INFO);
+        log.setLevel(Level.DEBUG);
         Logger.getLogger(MessageIDFactory.class).addAppender(new ConsoleAppender(new SimpleLayout()));
         Logger.getLogger(MessageIDFactory.class).setLevel(Level.DEBUG);
+
+        //SimpleApplication
+        Logger.getLogger(SimpleApplication.class).addAppender(new ConsoleAppender(new SimpleLayout()));
+        Logger.getLogger(SimpleApplication.class).setLevel(Level.DEBUG);
     }
 
-    public static DatagramChannel channel;
+    public DatagramChannel channel;
 
-    public static void main(String[] args) throws Exception{
+    private static CoapChannel instance = new CoapChannel();
 
+    public static CoapChannel getInstance(){
+        return instance;
+    }
+
+    private CoapChannel(){
         //Create Datagram Channel
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(Executors.newCachedThreadPool());
@@ -72,9 +71,6 @@ public class CoapChannel {
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapPipelineFactory());
         channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(5683));
-
-        new MessageSender().start();
-        new MessagePrinter().start();
     }
 
     private static String getHexString(byte[] b){
@@ -84,42 +80,5 @@ public class CoapChannel {
                     Integer.toString((curByte & 0xff) + 0x100, 16).substring(1) + "-";
         }
       return (String)result.subSequence(0, Math.max(result.length() - 1, 0));
-    }
-
-    private static class MessageSender extends Thread{
-
-        @Override
-        public void run(){
-            try {
-                SimpleApplication app = new SimpleApplication(String.valueOf(getId()));
-                //Create Message
-                URI uri = new URI("coap://[2001:638:70a:b157:215:7ff:fe20:1002]:5683/.well-known/core");
-                Request request = new Request(MsgType.CON, Code.GET, uri, app);
-                app.writeMessage(request);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private static class MessagePrinter extends Thread{
-        @Override
-        public void run(){
-            try {
-                sleep(60000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Sent Messages (" + OutgoingMessageReliabilityHandler.messagesSent.keySet().size() +
-                " IDs):");
-            for(Integer messageID : OutgoingMessageReliabilityHandler.messagesSent.keySet()){
-                System.out.println("Message ID: " + messageID);
-                Set<Date> dates = OutgoingMessageReliabilityHandler.messagesSent.get(messageID);
-                LinkedList<Date> dateslist = new LinkedList<>(dates);
-                Collections.sort(dateslist);
-                System.out.println(dateslist);
-            }
-        }
     }
 }

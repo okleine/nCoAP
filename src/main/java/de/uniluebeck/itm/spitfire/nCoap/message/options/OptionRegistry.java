@@ -196,8 +196,10 @@ public class OptionRegistry {
     public static OptionOccurence getAllowedOccurence(Code code, OptionName opt_name){
         try{
             OptionOccurence result = allowedOptions.get(code).get(opt_name);
-            log.debug("[OptionRegistry] Occurence constraint for option " + opt_name + " with code " + code + " is: "
-                    + result.toString());
+            if(log.isDebugEnabled()){
+                log.debug("[OptionRegistry] Occurence constraint for option " + opt_name + " with code " + code + " is: "
+                        + result.toString());
+            }
             return result;
         }
         catch(NullPointerException e){

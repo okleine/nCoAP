@@ -24,34 +24,31 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.Message;
+import de.uniluebeck.itm.spitfire.nCoap.message.Request;
 
 import java.net.InetSocketAddress;
 
 /**
- * Created by IntelliJ IDEA.
- * User: olli
- * Date: 30.01.12
- * Time: 14:22
- * To change this template use File | Settings | File Templates.
+ * @author Oliver Kleine
  */
-public abstract class OpenRequest{
+abstract class OpenRequest{
 
     private InetSocketAddress rcptSocketAddress;
-    private Message message;
+    private Request request;
     protected long nextTransmitTime;
 
 
-    public OpenRequest(InetSocketAddress rcptSocketAddress, Message message){
-        this.message = message;
+    public OpenRequest(InetSocketAddress rcptSocketAddress, Request request){
+        this.request = request;
         this.rcptSocketAddress = rcptSocketAddress;
     }
 
-    public Message getMessage() {
-        return message;
+    public Message getRequest() {
+        return request;
     }
 
-    public void setMessage(Message message) {
-        this.message = message;
+    public void setRequest(Request request) {
+        this.request = request;
     }
 
     public long getNextTransmitTime(){

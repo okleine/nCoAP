@@ -67,30 +67,43 @@ public abstract class Option{
         String host = uri.getHost();
 
         //Do only add an URI host option if the host is no IP-Address
-        log.debug("[Option] Target URI host: " + host);
+        if(log.isDebugEnabled()){
+            log.debug("[Option] Target URI host: " + host);
+        }
+
         if(host.startsWith("[") && host.endsWith("]")){
             host = host.substring(1, host.length() - 1);
         }
         if(!IPAddressUtil.isIPv6LiteralAddress(host) && !IPAddressUtil.isIPv4LiteralAddress(host)){
             result.add(new StringOption(OptionName.URI_HOST, host.getBytes(Option.charset)));
-            log.debug("[Option] URI-Host option added to result list.");
+            if(log.isDebugEnabled()){
+                log.debug("[Option] URI-Host option added to result list.");
+            }
         }
         else{
-            log.debug("[Option] URI-Host is an IP literal and thus not added to the result list.");
+            if(log.isDebugEnabled()){
+                log.debug("[Option] URI-Host is an IP literal and thus not added to the result list.");
+            }
         }
 
         //Create URI-port option
         int port = uri.getPort();
 
         //Check whether the port value is non-standard
-        log.debug("[Option] Target URI-Port: " + port);
+        if(log.isDebugEnabled()){
+            log.debug("[Option] Target URI-Port: " + port);
+        }
         if(port > 0 && port != OptionRegistry.COAP_PORT_DEFAULT){
             result.add(new UintOption(OptionName.URI_PORT, port));
-            log.debug("[Option] Target URI-Port option added to result list.");
+            if(log.isDebugEnabled()){
+                log.debug("[Option] Target URI-Port option added to result list.");
+            }
         }
         else{
-            log.debug("[Option] URI-Port is either empty or default (= " + OptionRegistry.COAP_PORT_DEFAULT +
-                    ") and thus not added as option.");
+            if(log.isDebugEnabled()){
+                log.debug("[Option] URI-Port is either empty or default (= " + OptionRegistry.COAP_PORT_DEFAULT +
+                        ") and thus not added as option.");
+            }
         }
 
         //Add URI-Path option(s)
@@ -139,7 +152,9 @@ public abstract class Option{
         }
 
         byte[] encodedUri = uri.toString().getBytes(StringOption.charset);
-        log.debug("[Option] Length of encoded proxy URI: " + encodedUri.length + " bytes.");
+        if(log.isDebugEnabled()){
+            log.debug("[Option] Length of encoded proxy URI: " + encodedUri.length + " bytes.");
+        }
 
         int startPos = 0;
         while(startPos < encodedUri.length){
@@ -292,14 +307,18 @@ public abstract class Option{
     private static Collection<Option> createSeparatedOptions(OptionName opt_name, String seperator, String value)
            throws InvalidOptionException{
 
-        log.debug("[Option] Create " + opt_name + " options for value '" + value + "'.");
+        if(log.isDebugEnabled()){
+            log.debug("[Option] Create " + opt_name + " options for value '" + value + "'.");
+        }
 
         String[] parts = value.split(seperator);
         ArrayList<Option> options = new ArrayList<>(parts.length);
         for(String part : parts){
             options.add(new StringOption(opt_name, part));
-            log.debug("[Option] " + opt_name + " option instance for part '" + part + "' successfully created " +
+            if(log.isDebugEnabled()){
+                log.debug("[Option] " + opt_name + " option instance for part '" + part + "' successfully created " +
                     "(but not yet added to the option list!)");
+            }
         }
 
         return options;
