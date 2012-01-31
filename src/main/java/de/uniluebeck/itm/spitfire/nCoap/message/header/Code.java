@@ -1,3 +1,26 @@
+/**
+* Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+* following conditions are met:
+*
+* - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+* disclaimer.
+* - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+* following disclaimer in the documentation and/or other materials provided with the distribution.
+* - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+* products derived from this software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+* GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 package de.uniluebeck.itm.spitfire.nCoap.message.header;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
@@ -16,6 +39,11 @@ public enum Code {
     /**
      * corresponds to CoAPs numerical message code 0
      */
+    EMPTY(0, new OptionRegistry.OptionName[0]),
+
+    /**
+     * corresponds to CoAPs numerical message code 1
+     */
     GET(1, new OptionRegistry.OptionName[]{OptionRegistry.OptionName.URI_HOST,
                             OptionRegistry.OptionName.URI_PATH,
                             OptionRegistry.OptionName.URI_PORT,
@@ -26,7 +54,7 @@ public enum Code {
                             OptionRegistry.OptionName.TOKEN}),
 
     /**
-     * corresponds to CoAPs numerical message code 1
+     * corresponds to CoAPs numerical message code 2
      */
     POST(2, new OptionRegistry.OptionName[]{OptionRegistry.OptionName.URI_HOST,
                              OptionRegistry.OptionName.URI_PATH,
@@ -35,7 +63,7 @@ public enum Code {
                              OptionRegistry.OptionName.TOKEN}),
 
     /**
-     * corresponds to CoAPs numerical message code 2
+     * corresponds to CoAPs numerical message code 3
      */
     PUT(3, new OptionRegistry.OptionName[]{OptionRegistry.OptionName.URI_HOST,
                             OptionRegistry.OptionName.URI_PATH,
@@ -47,7 +75,7 @@ public enum Code {
                             OptionRegistry.OptionName.TOKEN}),
 
     /**
-     * corresponds to CoAPs numerical message code 3
+     * corresponds to CoAPs numerical message code 4
      */
     DELETE(4, new OptionRegistry.OptionName[]{OptionRegistry.OptionName.URI_HOST,
                                OptionRegistry.OptionName.URI_PATH,
@@ -198,10 +226,7 @@ public enum Code {
      * <code>false</false> otherwise
      */
     public boolean isMeaningful(OptionRegistry.OptionName opt_name){
-        if(allowedOptions.contains(opt_name)){
-            return true;
-        }
-        return false;
+        return allowedOptions.contains(opt_name);
     }
 
     /**
@@ -209,10 +234,7 @@ public enum Code {
      * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
      */
     public boolean isRequest(){
-        if(number < 5){
-            return true;
-        }
-        return false;
+        return number < 5;
     }
 
     /**
@@ -220,10 +242,7 @@ public enum Code {
      * @return <code>true</code> if payload is allowed, <code>false</code> otherwise
      */
     public boolean allowsPayload(){
-        if(number == Code.GET.number || number == Code.DELETE.number){
-            return false;
-        }
-        return true;
+        return !(number == Code.GET.number || number == Code.DELETE.number);
     }
 
     public static Code getCodeFromNumber(int number){
