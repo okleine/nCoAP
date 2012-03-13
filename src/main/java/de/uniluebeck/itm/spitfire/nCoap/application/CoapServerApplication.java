@@ -39,6 +39,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
+ * Abstract class to be extended by a CoAP server application. Even though the communication is based on the Netty
+ * framework, a developer of such a server doesn't have to go into details regarding the architecture. The whole
+ * architecture is hidden from the users perspective. Technically speaking, the extending class will be the
+ * topmost {@link ChannelUpstreamHandler} of the automatically generated netty handler stack.
+ *
  * @author Oliver Kleine
  */
 public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler{
@@ -48,6 +53,12 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     protected final DatagramChannel channel = CoapServerDatagramChannelFactory.getInstance().getChannel();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
+    /**
+     * This method is called by the Netty framework whenever a new message is received to be processed by the server.
+     * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
+     * {@link ChannelUpstreamHandler} interface) to the channel that received the message.
+     * @param me the {@link MessageEvent} containing the actual message
+     */
     @Override
     public final void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
         if(me.getMessage() instanceof CoapRequest){
@@ -59,8 +70,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         ctx.sendUpstream(me);
     }
 
+    /**
+     * Shuts the server down by closing the channel which includes to unbind the channel from a listening port and
+     * by this means free the port. All blocked or bound external resources are released.
+     */
     public void shutdown(){
-
         //Close the datagram channel (includes unbind)
         ChannelFuture future = channel.close();
 
@@ -76,7 +90,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         });
     }
 
-
+    /**
+     * Method to be overridden by extending classes to handle incoming coapRequests
+     * @param coapRequest The incoming {@link CoapRequest} object
+     * @return the {@link CoapResponse} object to be sent back
+     */
     public abstract CoapResponse receiveCoapRequest(CoapRequest coapRequest);
 
 
@@ -113,7 +131,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                         }
                     });
                 }
-            } catch (InvalidHeaderException | InvalidOptionException | ToManyOptionsException e) {
+            } catch (InvalidHeaderException | ToManyOptionsException | InvalidOptionException e) {
                 log.fatal("[ServerApplication | CoapRequestExecutor] Error while setting message ID or token for " +
                     " response.");
             }

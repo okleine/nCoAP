@@ -26,21 +26,27 @@ package de.uniluebeck.itm.spitfire.nCoap.application;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
-import org.apache.log4j.Logger;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.DatagramChannel;
 
 import java.net.InetSocketAddress;
 
 /**
+ * This is the abstract class to be extended by a CoAP client. By <code>writeCoapRequest</code> it provides an
+ * easy-to-use method to write CoAP requests to a server.
+ *
  * @author Oliver Kleine
  */
 public abstract class CoapClientApplication implements ResponseCallback{
 
-    private static Logger log = Logger.getLogger(CoapClientApplication.class.getName());
+    private final DatagramChannel channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
 
-    protected final DatagramChannel channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
-
+    /**
+     * This method should be used by extending client implementation to send a CoAP request to a remote recipient. All
+     * necessary information to send the message (like the recipient IP address or port) is automatically extracted
+     * from the given {@link CoapRequest} object.
+     * @param coapRequest The {@link CoapRequest} object to be sent
+     */
     public final void writeCoapRequest(CoapRequest coapRequest){
         InetSocketAddress rcptSocketAddress = new InetSocketAddress(coapRequest.getTargetUri().getHost(),
                 coapRequest.getTargetUri().getPort());
