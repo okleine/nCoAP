@@ -23,7 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
 
-import de.uniluebeck.itm.spitfire.nCoap.message.Message;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.Option;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionList;
@@ -42,19 +42,19 @@ import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 public class CoapMessageEncoder extends OneToOneEncoder{
 
     public static int MAX_OPTION_DELTA = 14;
-    private static Logger log = Logger.getLogger("nCoap");
+    private static Logger log = Logger.getLogger(CoapMessageEncoder.class.getName());
 
     @Override
     protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception {
 
-        if(!(object instanceof Message)){
+        if(!(object instanceof CoapMessage)){
             if(log.isDebugEnabled()){
                 log.debug("[CoapMessageEncoder] No Message object!");
             }
             return object;
         }
 
-        Message msg = (Message) object;
+        CoapMessage msg = (CoapMessage) object;
         ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
         encodeHeader(buffer, msg.getHeader(), msg.getOptionCount());
         encodeOptions(buffer, msg.getOptionList());

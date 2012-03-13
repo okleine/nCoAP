@@ -24,13 +24,15 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
 
 import com.google.common.primitives.UnsignedBytes;
-import de.uniluebeck.itm.spitfire.nCoap.message.Message;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.*;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -45,10 +47,10 @@ import java.net.InetSocketAddress;
  */
 public class CoapMessageDecoder extends OneToOneDecoder{
 
-    private static Logger log = Logger.getLogger("nCoap");
+    private static Logger log = Logger.getLogger(CoapMessageDecoder.class.getName());
 
     @Override
-    protected Object decode(ChannelHandlerContext ctx, Channel ch, Object obj) throws Exception {
+    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
         if(!(obj instanceof ChannelBuffer)){
             return obj;
@@ -90,8 +92,16 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             //at the same position (buf.readableBytes() == 0).
             buffer.discardReadBytes();
 
-            Message result = new Message(header, optionList, buffer);
-            result.setRcptAdress(((InetSocketAddress)ch.getLocalAddress()).getAddress());
+            CoapMessage result;
+
+            if(header.getCode().isRequest()){
+                result = new CoapRequest(header, optionList, buffer);
+            }
+            else{
+                result = new CoapResponse(header, optionList, buffer);
+            }
+
+            result.setRcptAdress(((InetSocketAddress)channel.getLocalAddress()).getAddress());
 
             return result;
         }

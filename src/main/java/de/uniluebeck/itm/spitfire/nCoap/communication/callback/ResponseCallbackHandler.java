@@ -24,25 +24,28 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
 import com.google.common.collect.HashBasedTable;
-import com.google.common.primitives.Ints;
-import de.uniluebeck.itm.spitfire.nCoap.application.ResponseCallback;
-import de.uniluebeck.itm.spitfire.nCoap.message.Message;
-import de.uniluebeck.itm.spitfire.nCoap.message.Request;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+import de.uniluebeck.itm.spitfire.nCoap.helper.Helper;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import org.apache.log4j.Logger;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+
+import java.net.InetSocketAddress;
+import java.util.Arrays;
 
 /**
  * @author Oliver Kleine
  */
 public class ResponseCallbackHandler extends SimpleChannelHandler {
 
-    private static Logger log = Logger.getLogger("nCoap");
+    private static Logger log = Logger.getLogger(ResponseCallbackHandler.class.getName());
     private static ResponseCallbackHandler instance = new ResponseCallbackHandler();
 
-    HashBasedTable<Integer, Integer, ResponseCallback> callbacks = HashBasedTable.create();
+    HashBasedTable<ByteArrayWrapper, InetSocketAddress, ResponseCallback> callbacks = HashBasedTable.create();
 
     private ResponseCallbackHandler(){}
 
@@ -50,50 +53,102 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
         return instance;
     }
 
+    /**
+     *
+     * @param ctx
+     * @param me
+     */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me){
-        if(me.getMessage() instanceof Request){
-            Request request = (Request) me.getMessage();
-            int messageID = request.getHeader().getMsgID();
-            byte[] token = request.getOption(OptionRegistry.OptionName.TOKEN).get(0).getValue();
 
-            ResponseCallback callback = request.getCallback();
+        if(me.getMessage() instanceof CoapRequest){
 
-            if(log.isDebugEnabled()){
-                log.debug("[ResponseCallbackHandler] Number of registered callbacks before: " + callbacks.size());
-            }
+            log.debug("[ResponseCallbackHandler] Handling downstream event!");
+            CoapRequest coapRequest = (CoapRequest) me.getMessage();
 
-            callbacks.put(messageID, Ints.fromByteArray(token), callback);
-            if(log.isDebugEnabled()){
-                log.debug("[ResponseCallbackHandler] Number of registered callbacks after: " + callbacks.size());
+            if(coapRequest.getCallback() != null){
+                try {
+                    coapRequest.setToken(TokenFactory.getInstance().getNextToken());
+                } catch (InvalidOptionException | ToManyOptionsException e) {
+                    log.debug("[ResponseCallbackHandler] Error while setting token.\n", e);
+
+                    //TODO tell the application an error occured.
+                    return;
+                }
+
+                log.debug("[ResponseCallbackHandler] New Confirmable Request added: \n" +
+                            "\tRemote Address: " + me.getRemoteAddress() + "\n" +
+                            "\tToken: " + Helper.toHexString(coapRequest.getToken()));
+
+                callbacks.put(new ByteArrayWrapper(coapRequest.getToken()),
+                        (InetSocketAddress) me.getRemoteAddress(),
+                        coapRequest.getCallback());
+
+                if(log.isDebugEnabled()){
+                    log.debug("[ResponseCallbackHandler] Number of registered callbacks: " + callbacks.size());
+                }
             }
         }
-
         ctx.sendDownstream(me);
     }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
-        if(me.getMessage() instanceof Message){
-            Message message = (Message) me.getMessage();
-            if(log.isDebugEnabled()){
-                log.debug("[ResponseCallbackHandler] Received message!");
-            }
-            if(!message.getHeader().getCode().isRequest()){
-                log.debug("[ResponseCallbackHandler] Received message is a response!");
-                int messageID = message.getHeader().getMsgID();
-                byte[] token = message.getOption(OptionRegistry.OptionName.TOKEN).get(0).getValue();
-                ResponseCallback callback = callbacks.remove(messageID, Ints.fromByteArray(token));
-                if(callback != null){
-                    if(log.isDebugEnabled()){
-                        log.debug("[ResponseCallbackHandler] Response callback found!");
-                    }
-                    callback.responseReceived(message);
-                }
-            }
-        }
-        else{
+
+        if(!(me.getMessage() instanceof CoapResponse)){
             ctx.sendUpstream(me);
+            return;
         }
+
+        CoapResponse coapResponse = (CoapResponse) me.getMessage();
+
+        if(log.isDebugEnabled()){
+           log.debug("[ResponseCallbackHandler] Received message is a response: \n" +
+                    "\tRemote Address: " + me.getRemoteAddress() + "\n" +
+                    "\tToken: " + Helper.toHexString(coapResponse.getToken()));
+
+            ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
+                                                         me.getRemoteAddress());
+
+            if(callback != null){
+                if(log.isDebugEnabled()){
+                    log.debug("[ResponseCallbackHandler] Response callback found. " +
+                            "Invoking method receiveCoapResponse");
+                }
+
+                callback.receiveCoapResponse(coapResponse);
+            }
+        }
+    }
+
+    //This wrapper is necessary since two raw byte arrays don't equal even if they have the same content!
+    private class ByteArrayWrapper{
+        private final byte[] data;
+
+            public ByteArrayWrapper(byte[] data)
+            {
+                if (data == null)
+                {
+                    throw new NullPointerException();
+                }
+                this.data = data;
+            }
+
+            @Override
+            public boolean equals(Object other)
+            {
+                if (!(other instanceof ByteArrayWrapper))
+                {
+                    return false;
+                }
+                return Arrays.equals(data, ((ByteArrayWrapper) other).data);
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return Arrays.hashCode(data);
+            }
+
     }
 }

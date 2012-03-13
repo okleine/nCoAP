@@ -14,8 +14,9 @@ import java.util.List;
  */
 public class OptionList {
 
+    private static Logger log = Logger.getLogger(OptionList.class.getName());
     public static int MAX_NUMBER_OF_OPTIONS = 15;
-    private static Logger log = Logger.getLogger("nCoap");
+
 
     //list of options to be included
     private LinkedListMultimap<OptionName, Option> options;
@@ -58,7 +59,7 @@ public class OptionList {
                 String msg = "[OptionList] " + optionName + " option may not occur multiple times"
                                 + " in a message with code " + code + ".";
                 if(optionName == OptionName.URI_HOST){
-                    StringOption host = (StringOption) (options.get(optionName).get(0));
+                    StringOption host = (StringOption) (options.get(OptionName.URI_HOST).get(0));
                     msg = msg + " Current value: " + host.getDecodedValue();
 
                 }

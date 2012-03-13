@@ -31,25 +31,26 @@ import org.jboss.netty.buffer.ChannelBuffer;
  */
 public class Header {
 
-    private static Logger log = Logger.getLogger("nCoap");
+    private static Logger log = Logger.getLogger(Header.class.getName());
+
+    public static int MESSAGE_ID_NOT_SET = -1;
 
     private MsgType msgType;
     private Code code;
-    private int msgID;
+    private int msgID = MESSAGE_ID_NOT_SET;
 
+    public Header(Code code){
+        setCode(code);
+    }
 
-    public Header(MsgType msgType, Code code) throws InvalidHeaderException{
-        this(msgType, code, 0);
+    public Header(MsgType msgType, Code code) {
+        this(code);
+        setMsgType(msgType);
     }
 
     public Header(MsgType msgType, Code code, int msgID) throws InvalidHeaderException {
-        setMsgType(msgType);
-        setCode(code);
+        this(msgType, code);
         setMsgID(msgID);
-
-        if(log.isDebugEnabled()){
-            log.debug("[Header] New Header created (type: " + msgType + ", code: " + code + ", msgID: " + msgID + ")");
-        }
     }
 
     public static Header createHeader (ChannelBuffer buf) throws InvalidHeaderException{
@@ -62,7 +63,7 @@ public class Header {
         //Decode the header values (version: 2 bits, msgType: 2 bits, optionCount: 4 bits, code: 4 bits, msgID: 8 bits)
         int header = buf.readInt();
         int msgTypeNumber = ((header << 2) >>> 30);
-        int optionCount = ((header << 4) >>> 28);
+        //int optionCount = ((header << 4) >>> 28);
         int codeNumber = ((header << 8) >>> 24);
         int msgID = ((header << 16) >>> 16);
 
@@ -100,11 +101,15 @@ public class Header {
 
     public void setMsgID(int msgID) throws InvalidHeaderException {
         //Check if msgID is syntactically correct
-        if(msgID < 0 || msgID > 65535){
+        if(msgID < -1 || msgID > 65535){
             throw new InvalidHeaderException("Message ID must not be negative or " +
                     "greater than 65535 (but is " + msgID + ")");
         }
         this.msgID = msgID;
+
+        if(log.isDebugEnabled()){
+            log.debug("[Header] Message ID " + this.msgID + " successfully set.");
+        }
     }
 
     public int getMsgID(){

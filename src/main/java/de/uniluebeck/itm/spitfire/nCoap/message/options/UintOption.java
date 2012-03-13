@@ -3,6 +3,7 @@ package de.uniluebeck.itm.spitfire.nCoap.message.options;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import org.apache.log4j.Logger;
 
 import java.util.Arrays;
 
@@ -11,6 +12,8 @@ import java.util.Arrays;
  * @author Oliver Kleine
  */
 public class UintOption extends Option{
+
+    private static Logger log = Logger.getLogger(UintOption.class.getName());
 
     //constructor with encoded value should only be used for incoming messages
     UintOption(OptionName optionName, byte[] value) throws InvalidOptionException{

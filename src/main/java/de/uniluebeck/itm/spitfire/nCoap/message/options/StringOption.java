@@ -13,7 +13,7 @@ import java.util.Locale;
  */
 public class StringOption extends Option{
 
-    private static Logger log = Logger.getLogger("nCoap");
+    private static Logger log = Logger.getLogger(StringOption.class.getName());
 
     //Constructor with encoded value should only be used for incoming messages
     StringOption(OptionName opt_name, byte[] value) throws InvalidOptionException{

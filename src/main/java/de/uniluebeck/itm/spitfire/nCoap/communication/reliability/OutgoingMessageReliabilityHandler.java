@@ -23,37 +23,40 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
-import com.google.common.collect.HashMultimap;
-import de.uniluebeck.itm.spitfire.nCoap.core.CoapChannel;
-import de.uniluebeck.itm.spitfire.nCoap.message.Message;
-import de.uniluebeck.itm.spitfire.nCoap.message.Request;
+import com.google.common.collect.HashBasedTable;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import org.apache.log4j.Logger;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.socket.DatagramChannel;
 
 import java.net.InetSocketAddress;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Oliver Kleine
  */
 public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
-    public static int MAX_RETRANSMIT = 4;
-    public static int RESPONSE_TIMEOUT = 2000;
+    private static Logger log = Logger.getLogger(OutgoingMessageReliabilityHandler.class.getName());
+
+    private static int TIMEOUT_MILLIS = 2000;
+    private static int MAX_RETRANSMITS = 4;
+    private static Random random = new Random(System.currentTimeMillis());
+
+
+    private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(10);
+
+    //Contains remote socket address and message ID of not yet confirmed messages
+    private final HashBasedTable<InetSocketAddress, Integer, byte[]> openOutgoingConMsg = HashBasedTable.create();
+    private MessageIDFactory messageIDFactory = MessageIDFactory.getInstance();
 
     private static OutgoingMessageReliabilityHandler instance = new OutgoingMessageReliabilityHandler();
-    private static Logger log = Logger.getLogger("nCoap");
-
-    private final ConcurrentHashMap<Integer, OpenOutgoingRequest> openRequests = new ConcurrentHashMap<>();
-
-    public static HashMultimap<Integer, Date> messagesSent = HashMultimap.create();
 
     /**
      * Returns the one and only instance of class OutgoingMessageReliabilityHandler (Singleton)
@@ -64,55 +67,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     }
 
     private OutgoingMessageReliabilityHandler(){
-        new Thread(){
-            @Override
-            public void run(){
-                while(true){
-                    Enumeration<OpenOutgoingRequest> requests;
-                    synchronized(openRequests){
-                       requests = openRequests.elements();
-                    }
-
-                    while(requests.hasMoreElements()){
-                        OpenOutgoingRequest openRequest = requests.nextElement();
-
-                        //Retransmit message if its time to do so
-                        if(openRequest.getRetransmissionCount() ==  MAX_RETRANSMIT){
-                            openRequests.remove(openRequest.getRequest().getHeader().getMsgID());
-
-                            log.info("{OutgoingMessageReliabilityHandler] Message with ID " +
-                                openRequest.getRequest().getHeader().getMsgID() + " has reached maximum number of " +
-                                "retransmits. Deleted from list of open requests.");
-
-                            break;
-                        }
-
-                        if(System.currentTimeMillis() >= openRequest.getNextTransmitTime()){
-
-                            Channels.write(CoapChannel.getInstance().channel,
-                                    openRequest.getRequest(), openRequest.getRcptSocketAddress());
-
-                            openRequest.increaseRetransmissionCount();
-                            openRequest.setNextTransmitTime();
-
-                            if(log.isDebugEnabled()){
-                                log.debug("[ConfirmableMessageRetransmitter] Retransmission no. " +
-                                    openRequest.getRetransmissionCount() + " for message with ID " +
-                                    openRequest.getRequest().getHeader().getMsgID() + " to " +
-                                    openRequest.getRcptSocketAddress());
-                            }
-                        }
-                    }
-                    //Sleeping for a millisecond causes a CPU load of 1% instead of 25% without sleep
-                    try{
-                        sleep(1);
-                    } catch (InterruptedException e) {
-                       log.fatal("[OutgoingMessageReliabilityHandler] This should never happen:\n" +
-                               e.getStackTrace());
-                    }
-                }
-            }
-        }.start();
     }
 
     /**
@@ -125,26 +79,40 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
-        if(!(me.getMessage() instanceof Message)){
-            super.messageReceived(ctx, me);
-        }
 
-        Message message = (Message) me.getMessage();
-        if(message.getHeader().getMsgType() == MsgType.ACK || message.getHeader().getMsgType() == MsgType.RST){
-            synchronized (openRequests){
-                if(openRequests.remove(message.getHeader().getMsgID()) != null) {
+        if(me.getMessage() instanceof CoapMessage) {
+
+            CoapMessage coapMessage = (CoapMessage) me.getMessage();
+            InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
+
+            if (coapMessage.getMessageType() == MsgType.ACK || coapMessage.getMessageType() == MsgType.RST) {
+
+                if (log.isDebugEnabled()) {
+                    log.debug("[OutgoingMessageReliabilityHandler] Incoming " + coapMessage.getMessageType() +
+                            " message with ID " + coapMessage.getMessageID() + " from remote address " + remoteAddress);
+                }
+
+                byte[] removedToken;
+                synchronized(openOutgoingConMsg){
+                    removedToken = openOutgoingConMsg.remove(me.getRemoteAddress(), coapMessage.getMessageID());
+                }
+
+                if(removedToken != null){
                     if(log.isDebugEnabled()){
-                        log.debug("[OutgoingMessageReliabilityHandler] Received " + message.getHeader().getMsgType() +
-                                " message for open request with message ID " + message.getHeader().getMsgID());
+                        log.debug("[OutgoingMessageReliabilityHandler] Matching not yet confirmed message found (" +
+                                " remote address: " + remoteAddress + ", message ID " + coapMessage.getMessageID() +
+                                " ).");
+                    }
+
+                    //Do not send empty ACKs further upstream
+                    if(coapMessage.getMessageType() == MsgType.ACK && coapMessage.getCode() == Code.EMPTY){
+                        return;
                     }
                 }
             }
         }
 
-        //Send only non-empty messages further upstream
-        if(message.getHeader().getCode() != Code.EMPTY){
-            ctx.sendUpstream(me);
-        }
+        ctx.sendUpstream(me);
     }
 
     /**
@@ -156,37 +124,132 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
-        if(!(me.getMessage() instanceof Request)){
-            super.messageReceived(ctx, me);
+        if(!(me.getMessage() instanceof CoapMessage)){
+            ctx.sendDownstream(me);
+            return;
         }
 
-        Request request = (Request) me.getMessage();
+        CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
-        if(request.getHeader().getMsgType() == MsgType.CON){
+        if(log.isDebugEnabled()){
+            log.debug("[OutgoingMessageReliabilityHandler] Handle downstream event for message with ID " +
+                coapMessage.getMessageID() + " for " + me.getRemoteAddress() );
+        }
 
-            synchronized (openRequests){
-                if(!openRequests.containsKey(request.getHeader().getMsgID())){
+        if(coapMessage.getMessageID() == -1){
 
-                    OpenOutgoingRequest newOpenRequest =
-                        new OpenOutgoingRequest((InetSocketAddress)me.getRemoteAddress(), request);
+            coapMessage.setMessageID(messageIDFactory.nextMessageID());
 
-                    openRequests.put(request.getHeader().getMsgID(), newOpenRequest);
+            if(coapMessage.getMessageType() == MsgType.CON){
+                if(!openOutgoingConMsg.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
+
+                    synchronized (openOutgoingConMsg){
+                        openOutgoingConMsg.put((InetSocketAddress) me.getRemoteAddress(),
+                                                           coapMessage.getMessageID(),
+                                                           coapMessage.getToken());
+                    }
+
+                    //Schedule first retransmission
+                    Retransmitter retransmitter
+                            = new Retransmitter((InetSocketAddress) me.getRemoteAddress(), coapMessage);
+                    int delay = (int) (TIMEOUT_MILLIS * retransmitter.randomFactor);
+                    executorService.schedule(retransmitter, delay, TimeUnit.MILLISECONDS);
 
                     if(log.isDebugEnabled()){
-                        log.debug("[OutgoingMessageReliabilityHandler] New open request with request ID " +
-                            request.getHeader().getMsgID());
+                        log.debug("[OutgoingMessageReliabilityHandler] First retransmit for " +
+                                coapMessage.getMessageType() + " message with ID " + coapMessage.getMessageID() +
+                                " to be confirmed by " +  me.getRemoteAddress() + " scheduled with a delay of " +
+                                delay + " millis.");
                     }
                 }
             }
         }
 
-
         ctx.sendDownstream(me);
-        if(log.isDebugEnabled()){
-            log.debug("[OutgoingMessageReliabilityHandler] Message with ID " + request.getHeader().getMsgID() + " sent.");
+    }
+
+    //Private class to handle the retransmission of confirmable message using a thread scheduler
+    private class Retransmitter implements Runnable {
+
+        private DatagramChannel datagramChannel = CoapClientDatagramChannelFactory.getInstance().getChannel();
+        private InetSocketAddress rcptAddress;
+        private CoapMessage coapMessage;
+        private double randomFactor;
+        private int retransmits;
+
+
+
+        public Retransmitter(InetSocketAddress rcptAddress, CoapMessage coapMessage){
+            this.rcptAddress = rcptAddress;
+            this.coapMessage = coapMessage;
+            this.randomFactor = 1 + random.nextDouble() * 0.5;
+            this.retransmits = 0;
         }
 
-        //For Debugging only!
-        //messagesSent.put(request.getHeader().getMsgID(), new Date(System.currentTimeMillis()));
+        @Override
+        public void run() {
+            //Retransmit message if it's not yet confirmed
+            if(openOutgoingConMsg.contains(rcptAddress, coapMessage.getMessageID())){
+
+                //Remove message from the list of messages to be confirmed
+                if(retransmits == MAX_RETRANSMITS){
+
+                    byte[] removedToken;
+                    synchronized (openOutgoingConMsg){
+                        removedToken = openOutgoingConMsg.remove(rcptAddress, coapMessage.getMessageID());
+                    }
+
+                    if(log.isDebugEnabled()){
+                        if(removedToken != null){
+                            log.debug("[RetransmitionRunnable] Message with ID " + coapMessage.getMessageID() +
+                                    " for recipient " + rcptAddress + " reached the maximum number of retransmits.");
+                        }
+                    }
+
+                    //TODO let the application know about the timeout
+
+                }
+                else{
+                    ChannelFuture future = Channels.future(datagramChannel);
+
+                    Channels.write(datagramChannel.getPipeline().getContext("OutgoingMessageReliabilityHandler"),
+                                   future,
+                                   coapMessage,
+                                   rcptAddress);
+
+                    retransmits += 1;
+
+                    if(log.isDebugEnabled()){
+                        future.addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(ChannelFuture future) throws Exception {
+                                log.debug("[RetransmitionRunnable] Retransmit no " + retransmits + " for message " +
+                                        "with ID " + coapMessage.getMessageID() + " for recipient " + rcptAddress +
+                                        " finished.");
+                            }
+                        });
+                    }
+
+                    //Schedule the next retransmission, resp. removal from list of messages to be confirmed
+                    int delay = (int)(Math.pow(2, retransmits) * TIMEOUT_MILLIS * randomFactor);
+                    executorService.schedule(this, delay, TimeUnit.MILLISECONDS);
+
+                    if(log.isDebugEnabled()){
+                        if(retransmits + 1 <= MAX_RETRANSMITS){
+                            log.debug("[RetransmitionRunnable] Retransmit no " + (retransmits + 1) + " for " +
+                                    coapMessage.getMessageType() + " message with ID " + coapMessage.getMessageID() +
+                                    " to be confirmed by " +  rcptAddress + " scheduled with a delay of " +
+                                    delay + " millis.");
+                        }
+                        else{
+                            log.debug("[RetransmitionRunnable] Removal of " + coapMessage.getMessageType() +
+                                    " message with ID " + coapMessage.getMessageID() + " to be confirmed by " +
+                                    rcptAddress + " from the list of messages to be confirmed scheduled with a delay " +
+                                    "of " + delay + " millis.");
+                        }
+                    }
+                }
+            }
+        }
     }
 }

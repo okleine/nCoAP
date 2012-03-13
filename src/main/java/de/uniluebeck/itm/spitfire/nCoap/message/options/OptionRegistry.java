@@ -11,7 +11,7 @@ import java.util.HashMap;
  */
 public class OptionRegistry {
 
-    private static Logger log = Logger.getLogger("nCoap");
+    private static Logger log = Logger.getLogger(OptionRegistry.class.getName());
 
     public static enum OptionType {UINT, STRING, OPAQUE, EMPTY}
 

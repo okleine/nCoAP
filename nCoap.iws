@@ -2,11 +2,36 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8a5d0a0d-2ada-4f90-b887-2c9c3fca0620" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleApplication.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleApplication.java" />
+      <change type="DELETED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\application\SimpleApplication.java" afterPath="" />
+      <change type="DELETED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\communication\reliability\IncomingMessageDuplicateHandler.java" afterPath="" />
+      <change type="DELETED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\communication\reliability\OpenIncomingRequest.java" afterPath="" />
+      <change type="DELETED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\communication\reliability\OpenOutgoingRequest.java" afterPath="" />
+      <change type="DELETED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\communication\reliability\OpenRequest.java" afterPath="" />
+      <change type="DELETED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\message\Message.java" afterPath="" />
+      <change type="DELETED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\message\Request.java" afterPath="" />
+      <change type="MOVED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\application\ResponseCallback.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/callback/ResponseCallback.java" />
+      <change type="MOVED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\communication\CoapPipelineFactory.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/core/CoapClientPipelineFactory.java" />
+      <change type="MOVED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\core\CoapChannel.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/core/CoapClientDatagramChannelFactory.java" />
+      <change type="MOVED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\core\MessageIDFactory.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/MessageIDFactory.java" />
+      <change type="MOVED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\core\TokenFactory.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/callback/TokenFactory.java" />
+      <change type="MOVED" beforePath="C:\Users\olli\Documents\Spitfire\impl\nCoAP\src\main\java\de\uniluebeck\itm\spitfire\nCoap\message\Response.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleCoapClientApplication.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/nCoap.iml" afterPath="$PROJECT_DIR$/nCoap.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/nCoap.ipr" afterPath="$PROJECT_DIR$/nCoap.ipr" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/nCoap.iws" afterPath="$PROJECT_DIR$/nCoap.iws" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pom.xml" afterPath="$PROJECT_DIR$/pom.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/callback/ResponseCallbackHandler.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/callback/ResponseCallbackHandler.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/encoding/CoapMessageDecoder.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/encoding/CoapMessageDecoder.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/encoding/CoapMessageEncoder.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/encoding/CoapMessageEncoder.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/IncomingMessageReliabilityHandler.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/IncomingMessageReliabilityHandler.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/OutgoingMessageReliabilityHandler.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/OutgoingMessageReliabilityHandler.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/header/Header.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/header/Header.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OpaqueOption.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OpaqueOption.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/Option.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/Option.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionList.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionList.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionRegistry.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionRegistry.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/StringOption.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/StringOption.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/UintOption.java" afterPath="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/UintOption.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/TestMessageCreation.java" afterPath="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/TestMessageCreation.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionTest.java" afterPath="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/options/TestStringOption.java" afterPath="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/options/TestStringOption.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/options/TestUintOption.java" afterPath="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/options/TestUintOption.java" />
     </list>
     <ignored path="nCoap.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -17,6 +42,11 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="ChangesViewManager" flattened_view="true" show_ignored="false" />
+  <component name="Commander">
+    <leftPanel />
+    <rightPanel />
+    <splitter proportion="0.5" />
+  </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
     <option name="REVERSE_PATCH" value="false" />
@@ -25,21 +55,6 @@
     <disable_hints />
   </component>
   <component name="DebuggerManager">
-    <line_breakpoints>
-      <breakpoint url="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/callback/ResponseCallbackHandler.java" line="86" class="de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler" package="de.uniluebeck.itm.spitfire.nCoap.communication.callback">
-        <option name="ENABLED" value="true" />
-        <option name="LOG_ENABLED" value="false" />
-        <option name="LOG_EXPRESSION_ENABLED" value="false" />
-        <option name="SUSPEND_POLICY" value="SuspendAll" />
-        <option name="COUNT_FILTER_ENABLED" value="false" />
-        <option name="COUNT_FILTER" value="0" />
-        <option name="CONDITION_ENABLED" value="false" />
-        <option name="CLASS_FILTERS_ENABLED" value="false" />
-        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
-        <option name="CONDITION" value="" />
-        <option name="LOG_MESSAGE" value="" />
-      </breakpoint>
-    </line_breakpoints>
     <breakpoint_any>
       <breakpoint>
         <option name="NOTIFY_CAUGHT" value="true" />
@@ -80,100 +95,20 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="MessageIDFactory.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/core/MessageIDFactory.java">
+      <file leaf-file-name="SimpleCoapClientApplication.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleCoapClientApplication.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="63" column="42" selection-start="3016" selection-end="3016" vertical-scroll-proportion="0.0">
+            <state line="54" column="31" selection-start="2513" selection-end="2513" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="SimpleApplication.java" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleApplication.java">
+      <file leaf-file-name="pom.xml" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/pom.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="83" column="6" selection-start="3753" selection-end="3753" vertical-scroll-proportion="0.7388633">
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Message.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/Message.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="76" column="31" selection-start="3287" selection-end="3287" vertical-scroll-proportion="0.0">
+            <state line="25" column="63" selection-start="913" selection-end="913" vertical-scroll-proportion="0.01674877">
               <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="CoapMessageDecoder.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/encoding/CoapMessageDecoder.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="92" column="29" selection-start="4536" selection-end="4536" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Request.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/Request.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="22" column="78" selection-start="1576" selection-end="1576" vertical-scroll-proportion="0.0">
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="OutgoingMessageReliabilityHandler.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/OutgoingMessageReliabilityHandler.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="45" column="13" selection-start="2398" selection-end="2398" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="OpenIncomingRequest.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/OpenIncomingRequest.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="CoapChannel.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/core/CoapChannel.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="43" column="26" selection-start="2278" selection-end="2278" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="TokenFactory.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/core/TokenFactory.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="32" column="13" selection-start="1761" selection-end="1761" vertical-scroll-proportion="0.0">
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ResponseCallbackHandler.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/callback/ResponseCallbackHandler.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="71" column="0" selection-start="3503" selection-end="3503" vertical-scroll-proportion="0.0">
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
             </state>
           </provider>
         </entry>
@@ -192,22 +127,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/encoding/CoapMessageEncoder.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/OutgoingMessageReliabilityHandler.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/Request.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/Response.java" />
-        <option value="$PROJECT_DIR$/src/test/java/de/uniluebeck/itm/spitfire/nCoap/message/TestMessageCreation.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/header/Header.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OpaqueOption.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/Option.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionList.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionRegistry.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/StringOption.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/UintOption.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/core/MessageIDFactory.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/core/CoapChannel.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/Message.java" />
-        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleApplication.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/CoapRequest.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/CoapResponse.java" />
+        <option value="$PROJECT_DIR$/src/main/resources/log4j.properties" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/CoapClientApplication.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/CoapApplication.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/core/Configuration.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/core/CoapServerDatagramChannelFactory.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/core/CoapClientDatagramChannelFactory.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/MessageIDFactory.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleCoapClientApplication.java" />
+        <option value="$PROJECT_DIR$/src/main/resources/coap.properties" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/configuration/Configuration.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/Main.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/IncomingMessageReliabilityHandler.java" />
+        <option value="$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleCoapServerApplication.java" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
   </component>
@@ -217,6 +152,52 @@
         <option name="keepSourceFolders" value="false" />
       </MavenImportingSettings>
     </option>
+  </component>
+  <component name="MavenProjectNavigator">
+    <treeState>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$RootNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="nCoap" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$ProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="Dependencies" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$DependenciesNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$RootNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="nCoap" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$ProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="Plugins" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$PluginsNode" />
+        </PATH_ELEMENT>
+      </PATH>
+      <PATH>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$RootNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="nCoap" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$ProjectNode" />
+        </PATH_ELEMENT>
+        <PATH_ELEMENT>
+          <option name="myItemId" value="Lifecycle" />
+          <option name="myItemType" value="org.jetbrains.idea.maven.navigator.MavenProjectsStructure$LifecycleNode" />
+        </PATH_ELEMENT>
+      </PATH>
+    </treeState>
   </component>
   <component name="ModuleEditorState">
     <option name="LAST_EDITED_MODULE_NAME" />
@@ -248,249 +229,19 @@
       <sortByType />
     </navigator>
     <panes>
+      <pane id="Favorites" />
+      <pane id="Scope" />
+      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
             <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="main" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="main" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="message" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="main" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="core" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="main" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="communication" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="main" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="communication" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="reliability" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="main" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="communication" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="callback" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoAP" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="main" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="nCoap" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="application" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+              <option name="myItemId" value="" />
+              <option name="myItemType" value="" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
-      <pane id="Scope" />
-      <pane id="Favorites" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -508,9 +259,15 @@
     <property name="options.splitter.details.proportions" value="0.2" />
     <property name="options.searchVisible" value="true" />
   </component>
-  <component name="RunManager" selected="Application.SimpleApplication">
-    <configuration default="false" name="CoapChannel" type="Application" factoryName="Application" temporary="true">
-      <option name="MAIN_CLASS_NAME" value="de.uniluebeck.itm.spitfire.nCoap.core.CoapChannel" />
+  <component name="RecentsManager">
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="de.uniluebeck.itm.spitfire.nCoap.message" />
+      <recent name="de.uniluebeck.itm.spitfire.nCoap.message.options" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Application.SimpleCoapClientApplication">
+    <configuration default="false" name="SimpleCoapServerApplication" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="de.uniluebeck.itm.spitfire.nCoap.application.SimpleCoapServerApplication" />
       <option name="VM_PARAMETERS" />
       <option name="PROGRAM_PARAMETERS" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -525,10 +282,10 @@
       <ConfigurationWrapper RunnerId="Run" />
       <method />
     </configuration>
-    <configuration default="false" name="SimpleApplication" type="Application" factoryName="Application" temporary="true">
-      <option name="MAIN_CLASS_NAME" value="de.uniluebeck.itm.spitfire.nCoap.application.SimpleApplication" />
+    <configuration default="false" name="SimpleCoapClientApplication" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="de.uniluebeck.itm.spitfire.nCoap.application.SimpleCoapClientApplication" />
       <option name="VM_PARAMETERS" value="" />
-      <option name="PROGRAM_PARAMETERS" value="&quot;coap://[2001:638:70a:b157:215:7ff:fe20:1002]:5683/.well-known/cor%65&quot;" />
+      <option name="PROGRAM_PARAMETERS" value="&quot;coap://localhost:5683/memory&quot;" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
       <option name="ALTERNATIVE_JRE_PATH" value="" />
@@ -546,6 +303,91 @@
       <ConfigurationWrapper RunnerId="Debug" />
       <ConfigurationWrapper RunnerId="Run" />
       <method />
+    </configuration>
+    <configuration default="false" name="CoapDatagramChannel" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="de.uniluebeck.itm.spitfire.nCoap.core.CoapDatagramChannel" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="nCoap" />
+      <envs />
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Main" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="de.uniluebeck.itm.spitfire.nCoap.application.Main" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="nCoap" />
+      <envs />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="1825" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Debug" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method />
+    </configuration>
+    <configuration default="true" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings">
+          <MavenGeneralSettings>
+            <option name="checksumPolicy" value="FAIL" />
+            <option name="failureBehavior" value="FAST" />
+            <option name="localRepository" value="" />
+            <option name="mavenHome" value="" />
+            <option name="nonRecursive" value="false" />
+            <option name="pluginUpdatePolicy" value="DO_NOT_UPDATE" />
+            <option name="printErrorStackTraces" value="false" />
+            <option name="snapshotUpdatePolicy" value="ALWAYS_UPDATE" />
+            <option name="usePluginRegistry" value="false" />
+            <option name="userSettingsFile" value="" />
+            <option name="workOffline" value="false" />
+          </MavenGeneralSettings>
+        </option>
+        <option name="myRunnerSettings">
+          <MavenRunnerSettings>
+            <option name="jreName" value="1.7" />
+            <option name="mavenProperties">
+              <map />
+            </option>
+            <option name="runMavenInBackground" value="true" />
+            <option name="skipTests" value="false" />
+            <option name="vmOptions" value="" />
+          </MavenRunnerSettings>
+        </option>
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="goals">
+              <list />
+            </option>
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="workingDirPath" value="" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
+        <option name="Make" enabled="false" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
     </configuration>
     <configuration default="true" type="Remote" factoryName="Remote">
       <option name="USE_SOCKET_TRANSPORT" value="true" />
@@ -621,9 +463,11 @@
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
-    <list size="2">
-      <item index="0" class="java.lang.String" itemvalue="Application.CoapChannel" />
-      <item index="1" class="java.lang.String" itemvalue="Application.SimpleApplication" />
+    <list size="4">
+      <item index="0" class="java.lang.String" itemvalue="Application.SimpleCoapServerApplication" />
+      <item index="1" class="java.lang.String" itemvalue="Application.SimpleCoapClientApplication" />
+      <item index="2" class="java.lang.String" itemvalue="Application.CoapDatagramChannel" />
+      <item index="3" class="java.lang.String" itemvalue="Application.Main" />
     </list>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -659,25 +503,25 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1176" extended-state="6" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32950193" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32950193" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3994253" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32950193" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32950193" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24973261" sideWeight="0.6704981" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.62835246" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32994652" sideWeight="0.62835246" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32950193" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.2053476" sideWeight="0.62835246" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3994253" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3716475" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32950193" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32950193" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32950193" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24973261" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
@@ -729,125 +573,85 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/Option.java">
+    <entry file="file://$PROJECT_DIR$/src/main/resources/log4j.properties">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="320" column="13" selection-start="14313" selection-end="14313" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="9" column="57" selection-start="372" selection-end="376" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/encoding/CoapMessageEncoder.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="43" column="11" selection-start="2366" selection-end="2366" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionList.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="120" column="9" selection-start="5419" selection-end="5419" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="17" column="11" selection-start="553" selection-end="553" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/OptionRegistry.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="201" column="13" selection-start="9627" selection-end="9627" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="61" column="48" selection-start="1375" selection-end="1375" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/StringOption.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/MessageIDFactory.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="25" column="9" selection-start="858" selection-end="858" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="42" column="27" selection-start="2216" selection-end="2216" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/options/UintOption.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/core/CoapClientDatagramChannelFactory.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="33" column="9" selection-start="1167" selection-end="1167" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="43" column="0" selection-start="2229" selection-end="2229" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/Response.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/core/CoapServerDatagramChannelFactory.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="59" column="9" selection-start="3282" selection-end="3282" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
+        <state line="39" column="77" selection-start="2193" selection-end="2193" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/core/MessageIDFactory.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/configuration/Configuration.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="63" column="42" selection-start="3016" selection-end="3016" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/core/CoapChannel.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="43" column="26" selection-start="2278" selection-end="2278" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/core/TokenFactory.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="13" selection-start="1761" selection-end="1761" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/Message.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="76" column="31" selection-start="3287" selection-end="3287" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/callback/ResponseCallbackHandler.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="71" column="0" selection-start="3503" selection-end="3503" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/encoding/CoapMessageDecoder.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="92" column="29" selection-start="4536" selection-end="4536" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/message/Request.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="22" column="78" selection-start="1576" selection-end="1576" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
+        <state line="39" column="32" selection-start="2070" selection-end="2070" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/OutgoingMessageReliabilityHandler.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="45" column="13" selection-start="2398" selection-end="2398" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="114" column="0" selection-start="5512" selection-end="5512" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/OpenIncomingRequest.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/communication/reliability/IncomingMessageReliabilityHandler.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="92" column="0" selection-start="4389" selection-end="4389" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleApplication.java">
+    <entry file="file://$PROJECT_DIR$/src/main/resources/coap.properties">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="83" column="6" selection-start="3753" selection-end="3753" vertical-scroll-proportion="0.7388633">
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state line="12" column="4" selection-start="287" selection-end="287" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/CoapServerApplication.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="23" column="52" selection-start="1606" selection-end="1650" vertical-scroll-proportion="-1.12" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/CoapClientApplication.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="41" column="0" selection-start="2250" selection-end="2250" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleCoapServerApplication.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="36" column="40" selection-start="2012" selection-end="2039" vertical-scroll-proportion="0.07814992" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/de/uniluebeck/itm/spitfire/nCoap/application/SimpleCoapClientApplication.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="54" column="31" selection-start="2513" selection-end="2513" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="25" column="63" selection-start="913" selection-end="913" vertical-scroll-proportion="0.01674877">
+          <folding />
         </state>
       </provider>
     </entry>

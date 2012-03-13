@@ -11,7 +11,7 @@ import java.util.Arrays;
  */
 public class OpaqueOption extends Option{
 
-    private static Logger log = Logger.getLogger("nCoap");
+    private static Logger log = Logger.getLogger(OpaqueOption.class.getName());
     
     //Constructor with package visibility
     OpaqueOption(OptionName optionName, byte[] value) throws InvalidOptionException{

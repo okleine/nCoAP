@@ -17,7 +17,7 @@ import java.util.Collection;
  */
 public abstract class Option{
 
-    protected static Logger log = Logger.getLogger("nCoap");
+    private static Logger log = Logger.getLogger(Option.class.getName());
 
     public static final Charset charset = Charset.forName("UTF-8");
 
@@ -210,52 +210,58 @@ public abstract class Option{
     /**
      * Creates and returns a {@link StringOption} instance with given name and value
      *
-     * @param opt_name The name of the option
+     * @param optionName The name of the option
      * @param value A String representing the options value
      * @return appropriate StringOption instance
      * @throws InvalidOptionException if the given name is not a StringOptions name
      */
-    public static StringOption createStringOption(OptionName opt_name, String value) throws InvalidOptionException{
+    public static StringOption createStringOption(OptionName optionName, String value) throws InvalidOptionException{
         //Check whether current number is appropriate for a StringOption
-        if(OptionRegistry.getOptionType(opt_name) != OptionRegistry.OptionType.STRING){
-            String msg = "[Option] Cannot create option " + opt_name + " with string value.";
-            throw new InvalidOptionException(opt_name, msg);
+        if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.STRING){
+            String msg = "[Option] Cannot create option " + optionName + " with string value.";
+            throw new InvalidOptionException(optionName, msg);
         }
-        return new StringOption(opt_name, value);
+        return new StringOption(optionName, value);
     }
 
      /**
      * Creates and returns a {@link UintOption} instance with given name and value
      *                                                                                 *
-     * @param opt_name The name of the option
+     * @param optionName The name of the option
      * @param value A long representing the options value (which is of type unsigned int)
      * @return appropriate UintOption instance
      * @throws InvalidOptionException if the given name is not a UintOptions name
      */
-    public static UintOption createUintOption(OptionName opt_name, long value) throws InvalidOptionException{
+    public static UintOption createUintOption(OptionName optionName, long value) throws InvalidOptionException{
         //Check whether current number is appropriate for a UintOption
-        if(OptionRegistry.getOptionType(opt_name) != OptionRegistry.OptionType.UINT){
-            String msg = "[Option] Cannot create option " + opt_name + " with uint value.";
-            throw new InvalidOptionException(opt_name, msg);
+        if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.UINT){
+            String msg = "[Option] Cannot create option " + optionName + " with uint value.";
+            throw new InvalidOptionException(optionName, msg);
         }
-        return new UintOption(opt_name, value);
+        return new UintOption(optionName, value);
     }
 
     /**
      * Creates and returns a {@link OpaqueOption} instance with given name and value
      *
-     * @param opt_name The name of the option
+     * @param optionName The name of the option
      * @param value A long representing the options value (which is of type unsigned int)
      * @return appropriate UintOption instance
      * @throws InvalidOptionException if the given name is not a OpaqueOptions name
      */
-    public static OpaqueOption createOpaqueOption(OptionName opt_name, byte[] value) throws InvalidOptionException{
+    public static OpaqueOption createOpaqueOption(OptionName optionName, byte[] value) throws InvalidOptionException{
         //Check whether current number is appropriate for a OpaqueOption
-        if(OptionRegistry.getOptionType(opt_name) != OptionRegistry.OptionType.OPAQUE){
-            String msg = "[Option] Cannot create option " + opt_name + " with opaque value.";
-            throw new InvalidOptionException(opt_name, msg);
+        if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.OPAQUE){
+            String msg = "[Option] Cannot create option " + optionName + " with opaque value.";
+            throw new InvalidOptionException(optionName, msg);
         }
-        return new OpaqueOption(opt_name, value);
+        
+        if(optionName == OptionName.TOKEN && value.length == 0){
+            String msg = "[Option] Empty byte[] is the default value for option " + optionName + ". No option created.";
+            throw new InvalidOptionException(optionName, msg);
+        }
+
+        return new OpaqueOption(optionName, value);
     }
 
     public static EmptyOption createEmptyOption(OptionName optionName) throws InvalidOptionException{
@@ -269,34 +275,38 @@ public abstract class Option{
 
     /**
      * Creates and returns option instance of the appropriate type according to the given name
-     * @param opt_name The name of the option
+     * @param optionName The name of the option
      * @param value A long representing the options value (which is of type unsigned int)
      * @return appropriate Option instance (may be StringOption, UintOption, OpaqueOption or EmptyOption)
      * @throws InvalidOptionException
      */
-    public static Option createOption(OptionName opt_name, byte[] value) throws InvalidOptionException{
+    public static Option createOption(OptionName optionName, byte[] value) throws InvalidOptionException{
         //Option numbers multiple of 14 are reserved as intermediate options for larger
         //deltas than 15. Option number 21 is "If-none-match" and must not contain any value
         //(e.g. for PUT requests not being supposed to overwrite existing resources)
-        if (opt_name == OptionName.FENCEPOST || opt_name == OptionName.IF_NONE_MATCH){
-            return new EmptyOption(opt_name);
+        if (optionName == OptionName.FENCEPOST || optionName == OptionName.IF_NONE_MATCH){
+            return new EmptyOption(optionName);
         }
 
-        switch (OptionRegistry.getOptionType(opt_name)){
+        switch (OptionRegistry.getOptionType(optionName)){
             case UINT:
-                return new UintOption(opt_name, value);
+                return new UintOption(optionName, value);
             case STRING:
-                 return new StringOption(opt_name, value);
+                 return new StringOption(optionName, value);
             case OPAQUE:
-                return new OpaqueOption(opt_name, value);
+                return new OpaqueOption(optionName, value);
             case EMPTY:
-                return new EmptyOption(opt_name);
+                return new EmptyOption(optionName);
             default:
-                throw new InvalidOptionException(opt_name, "Type of option number " +  opt_name.number +
+                throw new InvalidOptionException(optionName, "Type of option number " +  optionName.number +
                         " is unknown.");
         }
     }
 
+    /**
+     * Returns the options value as byte array
+     * @return the options value as byte array
+     */
     public byte[] getValue(){
         return value;
     }
@@ -304,19 +314,19 @@ public abstract class Option{
 
     //Seperates a String into fragments using the given seperator and returns a Collection of options of the given
     //type each containg one fragment as payload
-    private static Collection<Option> createSeparatedOptions(OptionName opt_name, String seperator, String value)
+    private static Collection<Option> createSeparatedOptions(OptionName optionName, String seperator, String value)
            throws InvalidOptionException{
 
         if(log.isDebugEnabled()){
-            log.debug("[Option] Create " + opt_name + " options for value '" + value + "'.");
+            log.debug("[Option] Create " + optionName + " options for value '" + value + "'.");
         }
 
         String[] parts = value.split(seperator);
         ArrayList<Option> options = new ArrayList<>(parts.length);
         for(String part : parts){
-            options.add(new StringOption(opt_name, part));
+            options.add(new StringOption(optionName, part));
             if(log.isDebugEnabled()){
-                log.debug("[Option] " + opt_name + " option instance for part '" + part + "' successfully created " +
+                log.debug("[Option] " + optionName + " option instance for part '" + part + "' successfully created " +
                     "(but not yet added to the option list!)");
             }
         }
