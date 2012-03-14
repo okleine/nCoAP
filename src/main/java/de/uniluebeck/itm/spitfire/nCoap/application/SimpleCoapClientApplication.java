@@ -34,6 +34,9 @@ import java.nio.charset.Charset;
 
 
 /**
+ * This is a very simple example application, that sends a confirmable GET request to the URI given as parameter
+ * args[0] for the main method. It prints out the reponse payload on the console.
+ *
  * @author Oliver Kleine
  */
 public class SimpleCoapClientApplication extends CoapClientApplication {
@@ -41,8 +44,6 @@ public class SimpleCoapClientApplication extends CoapClientApplication {
     private static Logger log = Logger.getLogger(SimpleCoapClientApplication.class.getName());
 
     private String name;
-
-    private long start;
 
     public SimpleCoapClientApplication(String name){
         this.name = name;
@@ -56,12 +57,9 @@ public class SimpleCoapClientApplication extends CoapClientApplication {
      */
     @Override
     public void receiveCoapResponse(CoapResponse coapResponse) {
-        long end = System.currentTimeMillis();
-        if(log.isDebugEnabled()){
-            log.debug("[" + name + "] response received after " + (end - start) + " millis.");
-            log.debug("[" + name + "] Payload: " +
-                    new String(coapResponse.getPayload().array(), Charset.forName("UTF-8")));
-        }
+        System.out.println("[" + name + "] response received.");
+        System.out.println("[" + name + "] Response payload: " +
+                new String(coapResponse.getPayload().array(), Charset.forName("UTF-8")));
     }
 
     /**
@@ -70,13 +68,9 @@ public class SimpleCoapClientApplication extends CoapClientApplication {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception{
-
-        for(int i = 0; i < 1; i++){
-            SimpleCoapClientApplication app = new SimpleCoapClientApplication("App");
-            URI uri = new URI(args[0]);
-            CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, uri, app);
-            app.writeCoapRequest(coapRequest);
-        }
-
+        SimpleCoapClientApplication app = new SimpleCoapClientApplication("ClientApp");
+        URI uri = new URI(args[0]);
+        CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, uri, app);
+        app.writeCoapRequest(coapRequest);
     }
 }
