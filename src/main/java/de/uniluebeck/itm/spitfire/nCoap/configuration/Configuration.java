@@ -28,6 +28,8 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 
 
 /**
+ * This class is to deserialize the properties file (coap.properties).
+ *
  * @author Oliver Kleine
  */
 public class Configuration extends PropertiesConfiguration{
@@ -45,6 +47,10 @@ public class Configuration extends PropertiesConfiguration{
         super("coap.properties");
     }
 
+    /**
+     * Returns the one and only instance of {@link Configuration}
+     * @return the one and only instance of {@link Configuration}
+     */
     public static Configuration getInstance(){
         return instance;
     }

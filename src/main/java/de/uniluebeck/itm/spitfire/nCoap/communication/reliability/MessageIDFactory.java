@@ -27,7 +27,6 @@ import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import org.apache.log4j.Logger;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -44,10 +43,10 @@ public class MessageIDFactory {
 
     public static int ALLOCATION_TIMEOUT = Configuration.getInstance().getInt("messageID.allocation.timeout", 120);
 
-    private static Random random = new Random(System.currentTimeMillis());
+    //private static Random random = new Random(System.currentTimeMillis());
     private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(10);
 
-    //Message ID and time to deallocate message ID (Free it for next usage)
+    //Allocated message IDs
     private HashSet<Integer> allocatedMessageIDs = new HashSet<>();
 
     int nextMessageID = 0;
@@ -66,7 +65,10 @@ public class MessageIDFactory {
     }
 
     /**
-     * Returns the next available message ID within range 1 to (2^16)-1
+     * Returns the next available message ID within range 1 to (2^16)-1 and allocates this message ID for
+     * {@link MessageIDFactory#ALLOCATION_TIMEOUT} milliseconds. That means, the same message ID will not be used
+     * as long as it is allocated.
+     *
      * @return the next available message ID within range 1 to (2^16)-1
      */
     public int nextMessageID(){

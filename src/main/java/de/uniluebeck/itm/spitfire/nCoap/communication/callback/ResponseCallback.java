@@ -26,6 +26,8 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 
 /**
+ * Interface to be implemented by client applications to handle responses
+ *
  * @author Oliver Kleine
  */
 public interface ResponseCallback {

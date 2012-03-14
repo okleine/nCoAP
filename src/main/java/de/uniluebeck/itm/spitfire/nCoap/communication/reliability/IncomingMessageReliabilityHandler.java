@@ -42,6 +42,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * This class is the first {@link ChannelUpstreamHandler} to deal with incoming decoded {@link CoapMessage}s. If the
+ * incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty acknowledgement to the
+ * sender if there wasn't a piggy-backed response within a period of 2 seconds. If the incoming message is
+ * confirmable {@link CoapResponse} it immediately sends a proper acknowledgement.
+ *
  * @author Oliver Kleine
  */
 public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
@@ -60,9 +65,20 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         return instance;
     }
 
+    //Empty private constructor for singleton
     private IncomingMessageReliabilityHandler(){
     }
 
+    /**
+     * If the incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty
+     * acknowledgement to the sender if there wasn't a piggy-backed response within a period of 2 seconds.
+     * If the incoming message is a confirmable {@link CoapResponse} it immediately sends a proper acknowledgement.
+     *
+     * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
+     * {@link ChannelUpstreamHandler} interface) to the channel that received the message.
+     * @param me the {@link MessageEvent} containing the actual message
+     * @throws Exception if an error occured
+     */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         if(!(me.getMessage() instanceof CoapMessage)){
@@ -111,6 +127,18 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     }
 
+    /**
+     * If the message to be written is a {@link CoapResponse} this method decides whether the message type is
+     * {@link MsgType.ACK} (if there wasn't an empty acknowledgement sent yet) or {@link MsgType.CON} (if there
+     * already was an empty acknowledgement sent). In the latter case it additionally cancels the sending of
+     * an empty acknowledgement (which was scheduled by the <code>messageReceived</code> method when the request
+     * was received).
+     *
+     * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
+     * {@link ChannelUpstreamHandler} interface) to the channel that received the message.
+     * @param me the {@link MessageEvent} containing the actual message
+     * @throws Exception if an error occured
+     */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         if(me.getMessage() instanceof CoapResponse){

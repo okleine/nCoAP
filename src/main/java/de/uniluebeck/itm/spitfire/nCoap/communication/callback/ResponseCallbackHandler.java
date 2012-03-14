@@ -54,9 +54,12 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
     }
 
     /**
+     * This method handles downstream message events. It adds a token to outgoing requests to enable the method
+     * <code>messageReceived</code> to relate incoming responses to requests.
      *
-     * @param ctx
-     * @param me
+     * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
+     * {@link org.jboss.netty.channel.Channel}
+     * @param me The {@link MessageEvent} containing the {@link de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage}
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me){
@@ -92,6 +95,15 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
         ctx.sendDownstream(me);
     }
 
+    /**
+     * This method relates incoming responses to open requests and invokes the method <code>reveiveCoapResponse</code>
+     * of the client that sent the response. CoaP clients thus should implement the {@link ResponseCallback} interface
+     * by extending the abstract class {@link de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication}.
+     *
+     * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
+     * {@link org.jboss.netty.channel.Channel}
+     * @param me The {@link MessageEvent} containing the {@link de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage}
+     */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
 

@@ -60,7 +60,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
     /**
      * Returns the one and only instance of class OutgoingMessageReliabilityHandler (Singleton)
-     * @return the one and only instance
+     * @return the one and only instance of class OutgoingMessageReliabilityHandle
      */
     public static OutgoingMessageReliabilityHandler getInstance(){
         return instance;
