@@ -1,35 +1,23 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientPipelineFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.IncomingMessageReliabilityHandler;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.OutgoingMessageReliabilityHandler;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
+import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionList;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
-import java.net.InetSocketAddress;
-import java.nio.channels.DatagramChannel;
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.StringOption;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.junit.*;
-import static org.junit.Assert.*;
-import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.*;
-import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.*;
-import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
-import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.StringOption;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
+import static org.junit.Assert.fail;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Test of CoAPMessageEncoder class.
