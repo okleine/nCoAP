@@ -305,5 +305,15 @@ public abstract class CoapMessage {
         return header;
     }
 
-
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof CoapMessage)) {
+            return super.equals(obj);
+        }
+        CoapMessage coapMessage = (CoapMessage)obj;
+        return rcptAddress.equals(coapMessage.rcptAddress) &&
+                header.equals(coapMessage.header) &&
+                optionList.equals(coapMessage.optionList) &&
+                payload.equals(coapMessage.payload);
+    }
 }

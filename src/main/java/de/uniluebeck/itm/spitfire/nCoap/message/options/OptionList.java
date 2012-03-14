@@ -138,4 +138,15 @@ public class OptionList {
     public int getOptionCount(){
         return options.size();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof OptionList)) {
+            return super.equals(obj);
+        }
+        OptionList l = (OptionList) obj;
+        return options.equals(l.options);
+    }
+    
+    
 }
