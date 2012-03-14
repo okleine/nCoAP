@@ -61,7 +61,7 @@ public class CoapMessageEncoder extends OneToOneEncoder{
 
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, msg.getPayload());
         if(log.isDebugEnabled()){
-            log.debug("[CoapMessageEncoder] Length of encoded message: " + buf.array().length);
+            log.debug("[CoapMessageEncoder] Length of encoded message: " + buf.readableBytes());
         }
         return buf;
     }
@@ -133,7 +133,7 @@ public class CoapMessageEncoder extends OneToOneEncoder{
         }
 
         //Write option delta and value length
-        if(option.getValue().length <= 14){
+        if(option.getValue().length <= MAX_OPTION_DELTA){
            //4 bits for the 'option delta' and 4 bits for the 'value length'
            buffer.writeByte(((optionName.number - prevNumber) << 4) | option.getValue().length);
         }

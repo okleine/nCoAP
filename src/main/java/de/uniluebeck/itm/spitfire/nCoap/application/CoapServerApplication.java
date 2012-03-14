@@ -55,6 +55,9 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
     /**
      * This method is called by the Netty framework whenever a new message is received to be processed by the server.
+     * For each incoming request a new Thread is created to handle the request (by invoking the method
+     * <code>receiveCoapRequest</code>).
+     *
      * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
      * {@link ChannelUpstreamHandler} interface) to the channel that received the message.
      * @param me the {@link MessageEvent} containing the actual message

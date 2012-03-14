@@ -38,7 +38,13 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
 
     private static Logger log = Logger.getLogger(SimpleCoapServerApplication.class.getName());
 
-
+    /**
+     * This method makes the server to wait for 5 seconds before it returns a static response
+     * (Code 205, Content: "This is a response!")
+     *
+     * @param coapRequest The incoming {@link CoapRequest} object
+     * @return
+     */
     @Override
     public CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
         try {
@@ -51,7 +57,7 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
         try {
             coapResponse.setPayload((new String("This is a response!").getBytes(Charset.forName("UTF-8"))));
         } catch (MessageDoesNotAllowPayloadException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            log.fatal("[SimpleCoapServerApplication] Error while setting payload for response.");
         }
 
         return coapResponse;
