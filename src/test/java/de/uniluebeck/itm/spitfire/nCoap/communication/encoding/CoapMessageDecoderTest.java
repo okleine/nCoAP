@@ -31,7 +31,7 @@ import static org.junit.Assert.fail;
  * @author Stefan Hueske
  */
 public class CoapMessageDecoderTest {
-    List<DecodeTestMessage> testMessages = new LinkedList<>();
+    List<DecodeTestMessage> testMessages = new LinkedList<DecodeTestMessage>();
     CoapMessageDecoder messageDecoder = new CoapMessageDecoder();
     
     InetSocketAddress testRcptAdress = new InetSocketAddress(33210);

@@ -24,7 +24,7 @@ import org.junit.Test;
  * @author Stefan Hueske
  */
 public class CoapMessageEncoderTest {
-    List<EncodeTestMessage> testMessages = new LinkedList<>();   
+    List<EncodeTestMessage> testMessages = new LinkedList<EncodeTestMessage>();   
     CoapMessageEncoder messageEncoder = new CoapMessageEncoder();
     
     /**
