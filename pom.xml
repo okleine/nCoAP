@@ -5,7 +5,7 @@
     <groupId>de.uniluebeck.itm.spitfire</groupId>
     <artifactId>nCoap</artifactId>
     <packaging>jar</packaging>
-    <version>1.0</version>
+    <version>1.0-SNAPSHOT</version>
     <name>nCoap</name>
     <url>http://maven.apache.org</url>
 
@@ -16,6 +16,13 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>itm-maven-repository-snapshots</id>
+            <name>ITM Maven Snapshots Repository</name>
+            <url>scpexe://itm01.itm.uni-luebeck.de/www/itm/projects/maven/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <build>
         <plugins>
@@ -24,8 +31,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.6</source>
+                    <target>1.6</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -39,19 +46,16 @@
                     </archive>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.dstovall</groupId>
-                <artifactId>onejar-maven-plugin</artifactId>
-                <version>1.4.4</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>one-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
+
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ssh-external</artifactId>
+                <version>1.0</version>
+            </extension>
+        </extensions>
+
     </build>
 
     <pluginRepositories>

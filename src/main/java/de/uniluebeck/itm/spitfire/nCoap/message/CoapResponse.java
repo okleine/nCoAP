@@ -97,7 +97,14 @@ public class CoapResponse extends CoapMessage {
             optionList.addOption(header.getCode(), OptionRegistry.OptionName.MAX_AGE, option);
             return true;
         }
-        catch(InvalidOptionException | ToManyOptionsException e){
+        catch(InvalidOptionException e){
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
+            }
+            optionList.removeAllOptions(OptionRegistry.OptionName.MAX_AGE);
+            return false;
+        }
+        catch(ToManyOptionsException e){
             if(log.isDebugEnabled()){
                 log.debug("[Message] Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
             }
@@ -125,7 +132,14 @@ public class CoapResponse extends CoapMessage {
                 optionList.addOption(header.getCode(), optionName, option);
             }
         }
-        catch (InvalidOptionException | ToManyOptionsException e) {
+        catch (ToManyOptionsException e) {
+            optionList.removeLocationURI();
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option for location URI could not be added.", e);
+            }
+            throw e;
+        }
+        catch (InvalidOptionException e) {
             optionList.removeLocationURI();
             if(log.isDebugEnabled()){
                 log.debug("[Message] Critical option for location URI could not be added.", e);

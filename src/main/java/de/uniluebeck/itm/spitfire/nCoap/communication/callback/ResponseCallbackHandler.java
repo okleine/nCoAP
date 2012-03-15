@@ -72,7 +72,14 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             if(coapRequest.getCallback() != null){
                 try {
                     coapRequest.setToken(TokenFactory.getInstance().getNextToken());
-                } catch (InvalidOptionException | ToManyOptionsException e) {
+                }
+                catch (InvalidOptionException e) {
+                    log.debug("[ResponseCallbackHandler] Error while setting token.\n", e);
+
+                    //TODO tell the application an error occured.
+                    return;
+                }
+                catch (ToManyOptionsException e) {
                     log.debug("[ResponseCallbackHandler] Error while setting token.\n", e);
 
                     //TODO tell the application an error occured.

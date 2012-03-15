@@ -47,7 +47,7 @@ public class MessageIDFactory {
     private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(10);
 
     //Allocated message IDs
-    private HashSet<Integer> allocatedMessageIDs = new HashSet<>();
+    private HashSet<Integer> allocatedMessageIDs = new HashSet<Integer>();
 
     int nextMessageID = 0;
 
