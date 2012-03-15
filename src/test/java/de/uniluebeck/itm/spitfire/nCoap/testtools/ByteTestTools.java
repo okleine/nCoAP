@@ -1,7 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.testtools;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-
+import org.junit.Test;
+import static org.junit.Assert.*;
 /**
  * This class offers tools to create, compare and print byte arrays.
  * @author Stefan Hueske
@@ -79,6 +80,9 @@ public class ByteTestTools {
         //TODO comment this
         hexByteArray = hexByteArray.replace(" ", "");
         hexByteArray = hexByteArray.replace("\n", "");
+        if (hexByteArray.length() % 2 != 0) {
+            hexByteArray = "0" + hexByteArray;
+        }
         byte[] res = new byte[hexByteArray.length() / 2];
         for (int i = 0; i < hexByteArray.length() / 2; i++) {
             String c = hexByteArray.substring(i * 2, i * 2 + 1);
@@ -112,7 +116,7 @@ public class ByteTestTools {
      */
     public static String getBytesAsString(byte[] data, int n) {
         StringBuilder res = new StringBuilder();
-
+        
         for (int i = 0; i < n; i++) {
             if (i % 8 == 0) {
                 res.append(" ");
@@ -139,5 +143,32 @@ public class ByteTestTools {
      */
     public static String getBytesAsString(byte[] data) {
         return getBytesAsString(data, data.length);
+    }
+    
+    @Test
+    public void testByteTestTools() {
+        byte[] byteArray = new byte[3];
+        byteArray[0] = 0x12;
+        byteArray[1] = 0x34;
+        byteArray[2] = 0x56;
+        assertArrayEquals(byteArray, getByteArrayFromString("123456"));
+        
+        byteArray = new byte[3];
+        byteArray[0] = 0x00;
+        byteArray[1] = 0x00;
+        byteArray[2] = 0x00;
+        assertArrayEquals(byteArray, getByteArrayFromString("000000"));
+        
+        byteArray = new byte[3];
+        byteArray[0] = (byte) 0xFF;
+        byteArray[1] = (byte) 0xFF;
+        byteArray[2] = (byte) 0xFF;
+        assertArrayEquals(byteArray, getByteArrayFromString("FFFFFF"));
+        
+        byteArray = new byte[3];
+        byteArray[0] = 0x05;
+        byteArray[1] = 0x43;
+        byteArray[2] = 0x21;
+        assertArrayEquals(byteArray, getByteArrayFromString("54321"));
     }
 }

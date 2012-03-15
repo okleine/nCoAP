@@ -24,7 +24,7 @@ import org.junit.Test;
  * @author Stefan Hueske
  */
 public class CoapMessageEncoderTest {
-    List<TestMessage> testMessages = new LinkedList<>();   
+    List<EncodeTestMessage> testMessages = new LinkedList<>();   
     CoapMessageEncoder messageEncoder = new CoapMessageEncoder();
     
     /**
@@ -37,7 +37,7 @@ public class CoapMessageEncoderTest {
         Header header = new Header(CON, GET, 0);
         OptionList optionList = new OptionList();
         ChannelBuffer payload = ChannelBuffers.EMPTY_BUFFER;
-        testMessages.add(new TestMessage(new CoapMessage(header, optionList, payload) {},
+        testMessages.add(new EncodeTestMessage(new CoapMessage(header, optionList, payload) {},
                 //correct encoded CoAP message
                 "4"    // 0x4 = 0b0100 => (Ver = 1 and Type = 0 = CON)
                 + " 0" // Option Count = 0x0 = 0
@@ -48,7 +48,7 @@ public class CoapMessageEncoderTest {
         header = new Header(NON, POST, 65535);
         optionList = new OptionList();
         payload = ChannelBuffers.EMPTY_BUFFER;
-        testMessages.add(new TestMessage(new CoapMessage(header, optionList, payload) {},
+        testMessages.add(new EncodeTestMessage(new CoapMessage(header, optionList, payload) {},
                 //correct encoded CoAP message
                 "5"    // 0x5 = 0b0101 => (Ver = 1 and Type = 1 = NON)
                 + " 0" // Option Count = 0x0 = 0
@@ -59,7 +59,7 @@ public class CoapMessageEncoderTest {
         header = new Header(ACK, CONTENT_205, 12345);
         optionList = new OptionList();
         payload = ChannelBuffers.EMPTY_BUFFER;
-        testMessages.add(new TestMessage(new CoapMessage(header, optionList, payload) {},
+        testMessages.add(new EncodeTestMessage(new CoapMessage(header, optionList, payload) {},
                 //correct encoded CoAP message
                 "6"    // 0x6 = 0b0110 => (Ver = 1 and Type = 2 = ACK)
                 + " 0" // Option Count = 0x0 = 0
@@ -70,7 +70,7 @@ public class CoapMessageEncoderTest {
         header = new Header(RST, NOT_FOUND_404, 54321);
         optionList = new OptionList();
         payload = ChannelBuffers.EMPTY_BUFFER;
-        testMessages.add(new TestMessage(new CoapMessage(header, optionList, payload) {},
+        testMessages.add(new EncodeTestMessage(new CoapMessage(header, optionList, payload) {},
                 //correct encoded CoAP message
                 "7"    // 0x7 = 0b0111 => (Ver = 1 and Type = 3 = RST)
                 + " 0" // Option Count = 0x0 = 0
@@ -86,7 +86,7 @@ public class CoapMessageEncoderTest {
         optionList.addOption(code, URI_HOST, StringOption.createStringOption(URI_HOST, "testhost"));
         optionList.addOption(code, URI_PORT, UintOption.createUintOption(URI_PORT, 65535));
         payload = ChannelBuffers.wrappedBuffer("testpayload\u00FF".getBytes("UTF8"));
-        testMessages.add(new TestMessage(new CoapMessage(header, optionList, payload) {},
+        testMessages.add(new EncodeTestMessage(new CoapMessage(header, optionList, payload) {},
                 //correct encoded CoAP message
                 "63 45 30 39" //Header
                 + " 1" //option delta => absolute option number: 1 + 0 = 1 = Content-Type
@@ -107,7 +107,7 @@ public class CoapMessageEncoderTest {
     @Test
     public void testEncode() throws Exception {
         System.out.println("Testing CoapMessageEncoder...");
-        for (TestMessage testMessage : testMessages) {
+        for (EncodeTestMessage testMessage : testMessages) {
             Object encodedObject = messageEncoder.encode(null, null, testMessage.messageToEncode);
             if (!(encodedObject instanceof ChannelBuffer)) {
                 fail("The object returned by method encode() is not a ChannelBuffer.");
@@ -121,18 +121,18 @@ public class CoapMessageEncoderTest {
 /**
  * This class consists of a CoAPMessage object and its encoded form as a byte array.
  */
-class TestMessage {
+class EncodeTestMessage {
     //Message which will be encoded in this test
     CoapMessage messageToEncode;
     //The same message, already correct encoded 
     byte[] encodedCoAPMessage;
 
-    public TestMessage(CoapMessage messageToEncode, byte[] encodedCoAPMessage) {
+    public EncodeTestMessage(CoapMessage messageToEncode, byte[] encodedCoAPMessage) {
         this.messageToEncode = messageToEncode;
         this.encodedCoAPMessage = encodedCoAPMessage;
     }
     
-    public TestMessage(CoapMessage messageToEncode, String hexByteArray) {
+    public EncodeTestMessage(CoapMessage messageToEncode, String hexByteArray) {
         this.messageToEncode = messageToEncode;
         this.encodedCoAPMessage = getByteArrayFromString(hexByteArray);
     }    

@@ -1,12 +1,15 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Sets;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionOccurence;
+import java.util.Collections;
 import org.apache.log4j.Logger;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -144,8 +147,8 @@ public class OptionList {
         if (!(obj instanceof OptionList)) {
             return super.equals(obj);
         }
-        OptionList l = (OptionList) obj;
-        return options.equals(l.options);
+        OptionList optionList = (OptionList) obj;
+        return options.equals(optionList.options);
     }
     
     
