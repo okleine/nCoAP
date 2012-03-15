@@ -195,7 +195,14 @@ public class CoapRequest extends CoapMessage {
                 }
             }
         }
-        catch(InvalidOptionException | ToManyOptionsException e){
+        catch(InvalidOptionException e){
+            optionList.removeTargetURI();
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option for target URI could not be added.", e);
+            }
+            throw e;
+        }
+        catch(ToManyOptionsException e){
             optionList.removeTargetURI();
             if(log.isDebugEnabled()){
                 log.debug("[Message] Critical option for target URI could not be added.", e);
@@ -224,7 +231,14 @@ public class CoapRequest extends CoapMessage {
             }
             return true;
         }
-        catch (InvalidOptionException | ToManyOptionsException e) {
+        catch (InvalidOptionException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.ACCEPT);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Elective option (" + OptionRegistry.OptionName.ACCEPT + ") could not be added.", e);
+            }
+            return false;
+        }
+        catch (ToManyOptionsException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.ACCEPT);
             if(log.isDebugEnabled()){
                 log.debug("[Message] Elective option (" + OptionRegistry.OptionName.ACCEPT + ") could not be added.", e);
@@ -271,7 +285,16 @@ public class CoapRequest extends CoapMessage {
                 optionList.addOption(header.getCode(), OptionRegistry.OptionName.PROXY_URI, option);
             }
         }
-        catch(InvalidOptionException | ToManyOptionsException e){
+        catch(InvalidOptionException e){
+            optionList.removeAllOptions(OptionRegistry.OptionName.PROXY_URI);
+
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option (" + OptionRegistry.OptionName.PROXY_URI + ") could not be added.", e);
+            }
+
+            throw e;
+        }
+        catch(ToManyOptionsException e){
             optionList.removeAllOptions(OptionRegistry.OptionName.PROXY_URI);
 
             if(log.isDebugEnabled()){
@@ -299,7 +322,14 @@ public class CoapRequest extends CoapMessage {
                 optionList.addOption(header.getCode(), OptionRegistry.OptionName.IF_MATCH, option);
             }
         }
-        catch (InvalidOptionException | ToManyOptionsException e) {
+        catch (InvalidOptionException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.IF_MATCH);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option (" + OptionRegistry.OptionName.IF_MATCH + ") could not be added.", e);
+            }
+            throw e;
+        }
+        catch (ToManyOptionsException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.IF_MATCH);
             if(log.isDebugEnabled()){
                 log.debug("[Message] Critical option (" + OptionRegistry.OptionName.IF_MATCH + ") could not be added.", e);

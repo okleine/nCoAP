@@ -134,9 +134,15 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                         }
                     });
                 }
-            } catch (InvalidHeaderException | ToManyOptionsException | InvalidOptionException e) {
+            } catch (InvalidHeaderException e) {
                 log.fatal("[ServerApplication | CoapRequestExecutor] Error while setting message ID or token for " +
-                    " response.");
+                    " response.", e);
+            } catch (ToManyOptionsException e){
+                log.fatal("[ServerApplication | CoapRequestExecutor] Error while setting message ID or token for " +
+                    " response.", e);
+            } catch (InvalidOptionException e){
+                log.fatal("[ServerApplication | CoapRequestExecutor] Error while setting message ID or token for " +
+                    " response.", e);
             }
         }
     }

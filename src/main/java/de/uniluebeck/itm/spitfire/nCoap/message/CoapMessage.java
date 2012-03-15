@@ -143,7 +143,16 @@ public abstract class CoapMessage {
             Option option = Option.createUintOption(OptionRegistry.OptionName.CONTENT_TYPE, mediaType.number);
             optionList.addOption(header.getCode(), OptionRegistry.OptionName.CONTENT_TYPE, option);
         }
-        catch(InvalidOptionException | ToManyOptionsException e){
+        catch(InvalidOptionException e){
+            optionList.removeAllOptions(OptionRegistry.OptionName.CONTENT_TYPE);
+
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option (" + OptionRegistry.OptionName.CONTENT_TYPE + ") could not be added.", e);
+            }
+
+            throw e;
+        }
+        catch(ToManyOptionsException e){
             optionList.removeAllOptions(OptionRegistry.OptionName.CONTENT_TYPE);
 
             if(log.isDebugEnabled()){
@@ -174,7 +183,14 @@ public abstract class CoapMessage {
             }
             return true;
         }
-        catch(InvalidOptionException | ToManyOptionsException e){
+        catch(InvalidOptionException e){
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
+            }
+            optionList.removeAllOptions(OptionRegistry.OptionName.ETAG);
+            return false;
+        }
+        catch(ToManyOptionsException e){
             if(log.isDebugEnabled()){
                 log.debug("[Message] Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
             }
@@ -197,7 +213,15 @@ public abstract class CoapMessage {
         try{
             Option option = Option.createOpaqueOption(OptionRegistry.OptionName.TOKEN, token);
             optionList.addOption(header.getCode(), OptionRegistry.OptionName.TOKEN, option);
-        } catch (InvalidOptionException | ToManyOptionsException e) {
+        }
+        catch (InvalidOptionException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.TOKEN);
+            if(log.isDebugEnabled()){
+                log.debug("[Message] Critical option " + OptionRegistry.OptionName.TOKEN + " could not be added.", e);
+            }
+            throw e;
+        }
+        catch (ToManyOptionsException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.TOKEN);
             if(log.isDebugEnabled()){
                 log.debug("[Message] Critical option " + OptionRegistry.OptionName.TOKEN + " could not be added.", e);
@@ -271,20 +295,20 @@ public abstract class CoapMessage {
             //Default values to be assumed when explicitly defined options are missing
             switch(optionName){
                 case URI_HOST:
-                    result = new ArrayList<>(1);
+                    result = new ArrayList<Option>(1);
                     result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST,
                             "[" + rcptAddress.getHostAddress() + "]"));
                     break;
                 case URI_PORT:
-                    result = new ArrayList<>(1);
+                    result = new ArrayList<Option>(1);
                     result.add(Option.createUintOption(OptionRegistry.OptionName.URI_PORT, OptionRegistry.COAP_PORT_DEFAULT));
                     break;
                 case MAX_AGE:
-                    result = new ArrayList<>(1);
+                    result = new ArrayList<Option>(1);
                     result.add(Option.createUintOption(OptionRegistry.OptionName.MAX_AGE, OptionRegistry.MAX_AGE_DEFAULT));
                     break;
                 case TOKEN:
-                    result = new ArrayList<>(1);
+                    result = new ArrayList<Option>(1);
                     result.add(Option.createOpaqueOption(OptionRegistry.OptionName.TOKEN, new byte[0]));
                     break;
             }

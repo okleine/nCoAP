@@ -40,7 +40,7 @@ public abstract class Option{
     public static Collection<Option> createTargetURIOptions(URI uri) throws URISyntaxException, InvalidOptionException {
         uri = uri.normalize();
 
-        ArrayList<Option> result = new ArrayList<>();
+        ArrayList<Option> result = new ArrayList<Option>();
 
         //URI must be absolute and thus contain a scheme part (must be one of "coap" or "coaps")
         String scheme = uri.getScheme();
@@ -144,7 +144,7 @@ public abstract class Option{
      */
     public static Collection<Option> createProxyUriOptions(URI uri) throws InvalidOptionException, URISyntaxException {
         uri = uri.normalize();
-        ArrayList<Option> proxyOptions = new ArrayList<>();
+        ArrayList<Option> proxyOptions = new ArrayList<Option>();
 
         if(!uri.isAbsolute()){
             String msg = "[Option] URI to be added as proxy URI (" + uri.toString() + ") is not absolute.";
@@ -180,7 +180,7 @@ public abstract class Option{
      * @throws InvalidOptionException if one of the location URI related options to be created is not valid
      */
     public static Collection<Option> createLocationUriOptions(URI uri) throws InvalidOptionException{
-        ArrayList<Option> options = new ArrayList<>();
+        ArrayList<Option> options = new ArrayList<Option>();
 
         //Add Location-Path option(s)
         String path = uri.getRawPath();
@@ -322,7 +322,7 @@ public abstract class Option{
         }
 
         String[] parts = value.split(seperator);
-        ArrayList<Option> options = new ArrayList<>(parts.length);
+        ArrayList<Option> options = new ArrayList<Option>(parts.length);
         for(String part : parts){
             options.add(new StringOption(optionName, part));
             if(log.isDebugEnabled()){

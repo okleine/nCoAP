@@ -41,7 +41,7 @@ public class TokenFactory {
 
     private static Logger log = Logger.getLogger(TokenFactory.class.getName());
 
-    public static TokenFactory instance = new TokenFactory();
+    private static TokenFactory instance = new TokenFactory();
     private Random random;
 
     private TokenFactory(){
@@ -52,6 +52,10 @@ public class TokenFactory {
         return instance;
     }
 
+    /**
+     * Returns the next token to be used
+     * @return the next token to be used
+     */
     public byte[] getNextToken(){
         byte[] result = Longs.toByteArray(random.nextLong());
 

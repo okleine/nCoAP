@@ -66,7 +66,8 @@ public class OptionRegistry {
      */
     public static int MAX_AGE_DEFAULT = 60;
     
-    private static final HashMap<OptionName, OptionSyntaxConstraints> syntaxConstraints = new HashMap<>();
+    private static final HashMap<OptionName, OptionSyntaxConstraints> syntaxConstraints
+            = new HashMap<OptionName, OptionSyntaxConstraints>();
     static{
         syntaxConstraints.put(OptionName.CONTENT_TYPE, new OptionSyntaxConstraints(OptionType.UINT, 0, 2));
         syntaxConstraints.put(OptionName.MAX_AGE, new OptionSyntaxConstraints(OptionType.UINT, 0, 4));
@@ -84,10 +85,11 @@ public class OptionRegistry {
         syntaxConstraints.put(OptionName.IF_NONE_MATCH, new OptionSyntaxConstraints(OptionType.EMPTY, 0, 0));
     }
 
-    private static final HashMap<Code, HashMap<OptionName, OptionOccurence>> allowedOptions = new HashMap<>();
+    private static final HashMap<Code, HashMap<OptionName, OptionOccurence>> allowedOptions
+            = new HashMap<Code, HashMap<OptionName, OptionOccurence>>();
     static{
         //GET
-        HashMap<OptionName, OptionOccurence> constraintsGET = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraintsGET = new HashMap<OptionName, OptionOccurence>();
         constraintsGET.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraintsGET.put(OptionName.URI_HOST, OptionOccurence.ONCE);
         constraintsGET.put(OptionName.URI_PATH, OptionOccurence.MULTIPLE);
@@ -99,7 +101,7 @@ public class OptionRegistry {
         allowedOptions.put(Code.GET,  constraintsGET);
 
         //POST
-        HashMap<OptionName, OptionOccurence> constraintsPOST = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraintsPOST = new HashMap<OptionName, OptionOccurence>();
         constraintsPOST.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraintsPOST.put(OptionName.URI_HOST, OptionOccurence.ONCE);
         constraintsPOST.put(OptionName.URI_PATH, OptionOccurence.MULTIPLE);
@@ -108,7 +110,7 @@ public class OptionRegistry {
         allowedOptions.put(Code.POST, constraintsPOST);
 
         //PUT
-        HashMap<OptionName, OptionOccurence> constraintsPUT = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraintsPUT = new HashMap<OptionName, OptionOccurence>();
         constraintsPUT.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraintsPUT.put(OptionName.URI_HOST, OptionOccurence.ONCE);
         constraintsPUT.put(OptionName.URI_PATH, OptionOccurence.MULTIPLE);
@@ -120,7 +122,7 @@ public class OptionRegistry {
         allowedOptions.put(Code.PUT, constraintsPUT);
 
         //DELETE
-        HashMap<OptionName, OptionOccurence> constraintsDELETE = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraintsDELETE = new HashMap<OptionName, OptionOccurence>();
         constraintsDELETE.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraintsDELETE.put(OptionName.URI_HOST, OptionOccurence.ONCE);
         constraintsDELETE.put(OptionName.URI_PATH, OptionOccurence.MULTIPLE);
@@ -129,7 +131,7 @@ public class OptionRegistry {
         allowedOptions.put(Code.DELETE, constraintsDELETE);
 
         //201 CREATED
-        HashMap<OptionName, OptionOccurence> constraints201 = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraints201 = new HashMap<OptionName, OptionOccurence>();
         constraints201.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints201.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraints201.put(OptionName.LOCATION_PATH, OptionOccurence.MULTIPLE);
@@ -137,26 +139,26 @@ public class OptionRegistry {
         allowedOptions.put(Code.CREATED_201, constraints201);
 
         //202 DELETED
-        HashMap<OptionName, OptionOccurence> constraints202 = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraints202 = new HashMap<OptionName, OptionOccurence>();
         constraints202.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints202.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         allowedOptions.put(Code.DELETED_202, constraints202);
 
         //203 VALID
-        HashMap<OptionName, OptionOccurence> constraints203 = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraints203 = new HashMap<OptionName, OptionOccurence>();
         constraints203.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints203.put(OptionName.ETAG, OptionOccurence.MULTIPLE);
         constraints203.put(OptionName.MAX_AGE, OptionOccurence.ONCE);
         allowedOptions.put(Code.VALID_203, constraints203);
 
         //204 CHANGED
-        HashMap<OptionName, OptionOccurence> constraints204 = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraints204 = new HashMap<OptionName, OptionOccurence>();
         constraints204.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints204.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         allowedOptions.put(Code.CHANGED_204, constraints204);
 
         //205 CONTENT
-        HashMap<OptionName, OptionOccurence> constraints205 = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraints205 = new HashMap<OptionName, OptionOccurence>();
         constraints205.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints205.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraints205.put(OptionName.ETAG, OptionOccurence.MULTIPLE);
@@ -164,7 +166,7 @@ public class OptionRegistry {
         allowedOptions.put(Code.CONTENT_205, constraints205);
 
         //both, 4x, 5x only allow Max-Age Option
-        HashMap<OptionName, OptionOccurence> constraints4x5x = new HashMap<>();
+        HashMap<OptionName, OptionOccurence> constraints4x5x = new HashMap<OptionName, OptionOccurence>();
         constraints4x5x.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints4x5x.put(OptionName.MAX_AGE, OptionOccurence.ONCE);
 

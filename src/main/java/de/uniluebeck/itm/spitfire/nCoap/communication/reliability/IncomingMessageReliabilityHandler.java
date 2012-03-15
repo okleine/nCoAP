@@ -129,7 +129,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     /**
      * If the message to be written is a {@link CoapResponse} this method decides whether the message type is
-     * {@link MsgType.ACK} (if there wasn't an empty acknowledgement sent yet) or {@link MsgType.CON} (if there
+     * {@link MsgType#ACK} (if there wasn't an empty acknowledgement sent yet) or {@link MsgType#CON} (if there
      * already was an empty acknowledgement sent). In the latter case it additionally cancels the sending of
      * an empty acknowledgement (which was scheduled by the <code>messageReceived</code> method when the request
      * was received).
@@ -193,14 +193,20 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
                 try {
                     coapMessage = new CoapResponse(MsgType.ACK, Code.EMPTY, messageID);
-                } catch (ToManyOptionsException | InvalidHeaderException e) {
+                }
+                catch (ToManyOptionsException e) {
+                    log.fatal("[IncomingMessageReliabilityHandler] Exception while creating empty ACK. This should " +
+                            " never happen!", e);
+                }
+                catch (InvalidHeaderException e) {
                     log.fatal("[IncomingMessageReliabilityHandler] Exception while creating empty ACK. This should " +
                             " never happen!", e);
                 }
 
                 try {
                     coapMessage.setMessageID(messageID);
-                } catch (InvalidHeaderException e) {
+                }
+                catch (InvalidHeaderException e) {
                     log.fatal("[EmptyACKSender] This should never happen! Exception while setting message ID for " +
                             "empty ACK. This should never happen!", e);
                 }
