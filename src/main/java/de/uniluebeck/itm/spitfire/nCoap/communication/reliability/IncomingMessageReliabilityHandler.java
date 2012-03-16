@@ -96,20 +96,23 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         if(coapMessage instanceof CoapRequest){
 
-            boolean requestIsNew;
+            boolean inserted;
             synchronized (incomingMessagesToBeConfirmed){
-                requestIsNew = (incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
-                                                   coapMessage.getMessageID(), false) == null);
+                if(!incomingMessagesToBeConfirmed.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
+
+                    incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
+                                                   coapMessage.getMessageID(), false);
+                }
+                inserted = true;
             }
 
             if(log.isDebugEnabled()){
                 log.debug("[IncomingMessageReliabilityHandler] New confirmable request with message ID " +
-                        coapMessage.getMessageID() + " from " + me.getRemoteAddress() + " received " +
-                        "(duplicate = " + !requestIsNew + ").");
+                        coapMessage.getMessageID() + " from " + me.getRemoteAddress() + " received (duplicate = " +
+                        !inserted + ")");
             }
-
             //The value of "inserted" is true if the incoming message was no duplicate
-            if(requestIsNew){
+            if(inserted){
                 //Schedule empty ACK if there was no piggy backed ACK within 2 seconds
                 EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
                                                                     coapMessage.getMessageID());
@@ -143,6 +146,11 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+
+        if(log.isDebugEnabled()){
+            log.debug("[IncomingMessageReliablityHandler] Handle Downstream Message Event.");
+        }
+
         if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 

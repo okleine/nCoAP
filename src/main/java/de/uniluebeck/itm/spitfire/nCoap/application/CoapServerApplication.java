@@ -124,7 +124,10 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
                 //Set message ID and token to match the request
                 coapResponse.setMessageID(coapRequest.getMessageID());
-                coapResponse.setToken(coapRequest.getToken());
+
+                if(coapRequest.getToken().length > 0){
+                    coapResponse.setToken(coapRequest.getToken());
+                }
 
                 //Write response
                 ChannelFuture future = Channels.write(channel, coapResponse, remoteAddress);

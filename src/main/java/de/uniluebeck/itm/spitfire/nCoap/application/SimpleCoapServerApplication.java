@@ -27,6 +27,9 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.MessageDoesNotAllowPayloadException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import org.apache.log4j.Logger;
 
 import java.nio.charset.Charset;
@@ -47,16 +50,22 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
      */
     @Override
     public CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
-        log.debug("[SimpleCoapServerApplication] Received request for " + coapRequest.getTargetUri());
-        try {
-           Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            wait(5000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
         CoapResponse coapResponse = new CoapResponse(Code.CONTENT_205);
         try {
-            coapResponse.setPayload((new String("This is a response!").getBytes(Charset.forName("UTF-8"))));
+            coapResponse.setContentType(OptionRegistry.MediaType.APP_LINK_FORMAT);
+        } catch (InvalidOptionException e) {
+            log.fatal("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
+        } catch (ToManyOptionsException e) {
+            log.fatal("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
+        }
+        try {
+            coapResponse.setPayload((new String("</simple>").getBytes(Charset.forName("UTF-8"))));
         } catch (MessageDoesNotAllowPayloadException e) {
             log.fatal("[SimpleCoapServerApplication] Error while setting payload for response.");
         }
