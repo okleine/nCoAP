@@ -94,28 +94,24 @@ public class CoapMessageDecoderTest {
         
         //---------------options and payload tests-----------------------------------------
         //CoAPMessage to decode
-//        Code code = Code.GET;
-//        header = new Header(ACK, code, 12345);
-//        optionList = new OptionList();
-//        optionList.addOption(code, CONTENT_TYPE, UintOption.createUintOption(CONTENT_TYPE, 41));
-//        optionList.addOption(code, URI_HOST, StringOption.createStringOption(URI_HOST, "testhost"));
-//        optionList.addOption(code, URI_PORT, UintOption.createUintOption(URI_PORT, 65535));
-//        payload = ChannelBuffers.wrappedBuffer("testpayload\u00FF".getBytes("UTF8"));
-//        coapMessage = new CoapMessage(header, optionList, payload) {};
-//        coapMessage.setRcptAdress(testRcptAdress.getAddress());
-//        testMessages.add(new DecodeTestMessage(coapMessage,
-//                //correct encoded CoAP message
-//                "63 45 30 39" //Header
-//                + " 1" //option delta => absolute option number: 1 + 0 = 1 = Content-Type
-//                + " 1" //option length in bytes
-//                + "29" // 41 = 0x29
-//                + " 4" //option delta => absolute option number: 4 + 1 = 5 = Uri-Host
-//                + " 8" //option length in bytes
-//                + getBytesAsString("testhost".getBytes("UTF8")) //option value
-//                + " 2" //option delta => absolute option number: 2 + 5 = 7 = Uri-Port
-//                + " 2" //option length in bytes
-//                + "ffff" // 65535 = 0xFFFF
-//                + getBytesAsString("testpayload\u00FF".getBytes("UTF8")))); //payload
+        Code code = GET;
+        header = new Header(CON, code, 12345);
+        optionList = new OptionList();
+        optionList.addOption(code, URI_HOST, StringOption.createStringOption(URI_HOST, "testhost"));
+        optionList.addOption(code, URI_PORT, UintOption.createUintOption(URI_PORT, 65535));
+        payload = ChannelBuffers.wrappedBuffer("testpayload\u00FF".getBytes("UTF8"));
+        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage.setRcptAdress(testRcptAdress.getAddress());
+        testMessages.add(new DecodeTestMessage(coapMessage,
+                //correct encoded CoAP message
+                "42 01 30 39" //Header
+                + " 5" //option delta => absolute option number: 5 + 0 = 5 = Uri-Host
+                + " 8" //option length in bytes
+                + getBytesAsString("testhost".getBytes("UTF8")) //option value
+                + " 2" //option delta => absolute option number: 2 + 5 = 7 = Uri-Port
+                + " 2" //option length in bytes
+                + "ffff" // 65535 = 0xFFFF
+                + getBytesAsString("testpayload\u00FF".getBytes("UTF8")))); //payload
     }
     
     /**
@@ -179,6 +175,11 @@ class TestChannel implements Channel {
         return testRcptAdress;
     }
     
+    @Override
+    public boolean isBound() {
+        return false;
+    }
+    
     public TestChannel(InetSocketAddress testRcptAdress) {
         this.testRcptAdress = testRcptAdress;
     }
@@ -212,11 +213,6 @@ class TestChannel implements Channel {
 
     @Override
     public boolean isOpen() {
-        throw new UnsupportedOperationException("Not supported.");
-    }
-
-    @Override
-    public boolean isBound() {
         throw new UnsupportedOperationException("Not supported.");
     }
 
