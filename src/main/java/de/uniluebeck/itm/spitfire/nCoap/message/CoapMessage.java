@@ -8,6 +8,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
+import sun.net.util.IPAddressUtil;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -91,9 +92,13 @@ public abstract class CoapMessage {
      * @return the value of the messages token option
      */
     public byte[] getToken() {
-        return optionList.getOption(OptionRegistry.OptionName.TOKEN)
-                         .get(0)
-                         .getValue();
+        try{
+            Option result = getOption(OptionRegistry.OptionName.TOKEN).get(0);
+            return result.getValue();
+        }
+        catch(IndexOutOfBoundsException e){
+            return new byte[0];
+        }
     }
 
     /**
@@ -296,8 +301,14 @@ public abstract class CoapMessage {
             switch(optionName){
                 case URI_HOST:
                     result = new ArrayList<Option>(1);
-                    result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST,
+                    if(IPAddressUtil.isIPv6LiteralAddress(rcptAddress.getHostAddress())){
+                        result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST,
                             "[" + rcptAddress.getHostAddress() + "]"));
+                    }
+                    else{
+                        result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST,
+                            rcptAddress.getHostAddress()));
+                    }
                     break;
                 case URI_PORT:
                     result = new ArrayList<Option>(1);
@@ -307,10 +318,7 @@ public abstract class CoapMessage {
                     result = new ArrayList<Option>(1);
                     result.add(Option.createUintOption(OptionRegistry.OptionName.MAX_AGE, OptionRegistry.MAX_AGE_DEFAULT));
                     break;
-                case TOKEN:
-                    result = new ArrayList<Option>(1);
-                    result.add(Option.createOpaqueOption(OptionRegistry.OptionName.TOKEN, new byte[0]));
-                    break;
+
             }
 
             return result;

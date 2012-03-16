@@ -95,19 +95,21 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
 
         if(coapMessage instanceof CoapRequest){
-            boolean inserted;
+
+            boolean requestIsNew;
             synchronized (incomingMessagesToBeConfirmed){
-                inserted = incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
-                                                   coapMessage.getMessageID(), false);
+                requestIsNew = (incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
+                                                   coapMessage.getMessageID(), false) == null);
             }
 
             if(log.isDebugEnabled()){
                 log.debug("[IncomingMessageReliabilityHandler] New confirmable request with message ID " +
-                        coapMessage.getMessageID() + " from " + me.getRemoteAddress() + " received (duplicate = " +
-                        !inserted + ")");
+                        coapMessage.getMessageID() + " from " + me.getRemoteAddress() + " received " +
+                        "(duplicate = " + !requestIsNew + ").");
             }
+
             //The value of "inserted" is true if the incoming message was no duplicate
-            if(inserted){
+            if(requestIsNew){
                 //Schedule empty ACK if there was no piggy backed ACK within 2 seconds
                 EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
                                                                     coapMessage.getMessageID());

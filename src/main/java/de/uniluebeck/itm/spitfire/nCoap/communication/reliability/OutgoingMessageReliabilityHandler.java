@@ -82,6 +82,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
         if(me.getMessage() instanceof CoapMessage) {
 
+            if(log.isDebugEnabled()){
+                log.debug("[OutgoingMessageReliabilityHandler] Handle Upstream Message Event!");
+            }
+
             CoapMessage coapMessage = (CoapMessage) me.getMessage();
             InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 

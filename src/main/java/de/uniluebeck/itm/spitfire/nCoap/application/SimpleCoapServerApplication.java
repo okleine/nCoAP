@@ -47,8 +47,9 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
      */
     @Override
     public CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
+        log.debug("[SimpleCoapServerApplication] Received request for " + coapRequest.getTargetUri());
         try {
-            wait(5000);
+           Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

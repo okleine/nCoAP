@@ -50,7 +50,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
     private static Logger log = Logger.getLogger(CoapServerApplication.class.getName());
 
-    protected final DatagramChannel channel = CoapServerDatagramChannelFactory.getInstance().getChannel();
+    protected final DatagramChannel channel = new CoapServerDatagramChannelFactory(this).getChannel();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     /**
@@ -64,6 +64,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      */
     @Override
     public final void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
+
+        if(log.isDebugEnabled()){
+            log.debug("[CoapServerApplication] Handle Upstream Message Event.");
+        }
+
         if(me.getMessage() instanceof CoapRequest){
             CoapRequest coapRequest = (CoapRequest) me.getMessage();
             executorService.execute(new CoapRequestExecutor(coapRequest, (InetSocketAddress) me.getRemoteAddress()));
