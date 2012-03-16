@@ -42,8 +42,8 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
     private static Logger log = Logger.getLogger(SimpleCoapServerApplication.class.getName());
 
     /**
-     * This method makes the server to wait for 5 seconds before it returns a static response
-     * (Code 205, Content: "This is a response!")
+     * This method makes the server to process incoming request and decide whether the requested resource is
+     * available or not
      *
      * @param coapRequest The incoming {@link CoapRequest} object
      * @return
