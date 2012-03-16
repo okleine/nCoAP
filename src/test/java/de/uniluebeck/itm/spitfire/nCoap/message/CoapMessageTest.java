@@ -4,7 +4,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import org.junit.Test;
 
 /**
- * Test of CoapMessageTest class.
+ * Test of CoapMessage class.
  * @author Stefan Hueske
  */
 public class CoapMessageTest {
@@ -18,5 +18,5 @@ public class CoapMessageTest {
     public void testSetPayloadForDELETE() throws Exception {
         new CoapMessage(Code.DELETE) {}.setPayload("testpayload".getBytes("UTF8"));
     }
-    
+   
 }
