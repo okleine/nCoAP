@@ -50,12 +50,51 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
      */
     @Override
     public CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
-//        try {
-//            wait(5000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
+        
+        if(log.isDebugEnabled()){
+            log.debug("[SimpleCoapServerApplication] Received a request for " + coapRequest.getTargetUri());
+        }
 
+        log.debug("[SimpleCoapServerApplication] Path: " + coapRequest.getTargetUri().getPath());
+        
+        String resource = coapRequest.getTargetUri().getPath();
+        
+        if(resource.equals("/.well-known/core")){
+            return getWellKnownCore();
+        }
+        else if(resource.equals("/simple")){
+            return getSimple(); 
+        }
+        else{
+            if(log.isDebugEnabled()){
+                log.debug("[SimpleCoapServerApplication] Request for unknown resource.");
+            }
+            return new CoapResponse(Code.NOT_FOUND_404);
+        }
+    }
+
+    private CoapResponse getSimple(){
+        CoapResponse coapResponse = new CoapResponse(Code.CONTENT_205);
+        
+        try{
+            coapResponse.setContentType(OptionRegistry.MediaType.TEXT_PLAIN_UTF8);
+        } catch (InvalidOptionException e) {
+            log.fatal("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
+        } catch (ToManyOptionsException e) {
+            log.fatal("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
+        }
+
+        try {
+            coapResponse.setPayload((new String("Content of simple resource").getBytes(Charset.forName("UTF-8"))));
+        } catch (MessageDoesNotAllowPayloadException e) {
+            log.fatal("[SimpleCoapServerApplication] Error while setting payload for response.");
+        }
+        
+        return coapResponse;
+        
+    }
+    
+    private CoapResponse getWellKnownCore(){
         CoapResponse coapResponse = new CoapResponse(Code.CONTENT_205);
         try {
             coapResponse.setContentType(OptionRegistry.MediaType.APP_LINK_FORMAT);
@@ -70,9 +109,10 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
             log.fatal("[SimpleCoapServerApplication] Error while setting payload for response.");
         }
 
-        return coapResponse;
+        return coapResponse;  
     }
-
+    
+    
     public static void main(String[] args){
         SimpleCoapServerApplication serverApplication = new SimpleCoapServerApplication();
         //serverApplication.shutdown();
