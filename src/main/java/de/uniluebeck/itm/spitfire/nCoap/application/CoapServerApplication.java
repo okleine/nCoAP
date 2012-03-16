@@ -50,7 +50,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
     private static Logger log = Logger.getLogger(CoapServerApplication.class.getName());
 
-    protected final DatagramChannel channel = CoapServerDatagramChannelFactory.getInstance().getChannel();
+    protected final DatagramChannel channel = new CoapServerDatagramChannelFactory(this).getChannel();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     /**
@@ -119,7 +119,10 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
                 //Set message ID and token to match the request
                 coapResponse.setMessageID(coapRequest.getMessageID());
-                coapResponse.setToken(coapRequest.getToken());
+
+                if(coapRequest.getToken().length > 0){
+                    coapResponse.setToken(coapRequest.getToken());
+                }
 
                 //Write response
                 ChannelFuture future = Channels.write(channel, coapResponse, remoteAddress);

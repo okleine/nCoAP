@@ -124,6 +124,11 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+
+        if(log.isDebugEnabled()){
+            log.debug("[OutgoingMessageReliablityHandler] Handle Downstream Message Event.");
+        }
+
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendDownstream(me);
             return;

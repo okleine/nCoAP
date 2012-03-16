@@ -23,6 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
+import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
@@ -39,23 +40,23 @@ public class CoapServerDatagramChannelFactory {
 
     public static int COAP_SERVER_PORT = Configuration.getInstance().getInt("server.port", 5683);
 
-    private static CoapServerDatagramChannelFactory instance = new CoapServerDatagramChannelFactory();
+    //private static CoapServerDatagramChannelFactory instance = new CoapServerDatagramChannelFactory();
 
     private DatagramChannel channel;
 
-    private CoapServerDatagramChannelFactory(){
+    public CoapServerDatagramChannelFactory(CoapServerApplication serverApp){
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(new CoapClientPipelineFactory());
+        bootstrap.setPipelineFactory(new CoapServerPipelineFactory(serverApp));
 
         channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(COAP_SERVER_PORT));
     }
 
-    public static CoapServerDatagramChannelFactory getInstance(){
-        return instance;
-    }
+//    public static CoapServerDatagramChannelFactory getInstance(){
+//        return instance;
+//    }
 
     public DatagramChannel getChannel(){
         return channel;

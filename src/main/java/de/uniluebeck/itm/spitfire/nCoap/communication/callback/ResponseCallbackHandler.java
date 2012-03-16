@@ -114,6 +114,10 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
 
+        if(log.isDebugEnabled()){
+            log.debug("[ResponseCallbackHandler] Handle Upstream Message Event.");
+        }
+
         if(!(me.getMessage() instanceof CoapResponse)){
             ctx.sendUpstream(me);
             return;
