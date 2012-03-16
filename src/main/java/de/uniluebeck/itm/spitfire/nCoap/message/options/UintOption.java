@@ -101,7 +101,7 @@ public class UintOption extends Option{
             return false;
         }
         UintOption opt = (UintOption) o;
-        if((optionNumber == opt.optionNumber) && (this.value == opt.value)){
+        if((optionNumber == opt.optionNumber) && (Arrays.equals(value, opt.value))){
             return true;
         }
         return false;

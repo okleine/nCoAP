@@ -38,7 +38,7 @@ public class Header {
     private MsgType msgType;
     private Code code;
     private int msgID = MESSAGE_ID_NOT_SET;
-
+    
     public Header(Code code){
         setCode(code);
     }
@@ -114,5 +114,16 @@ public class Header {
 
     public int getMsgID(){
         return msgID;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Header)) {
+            return super.equals(obj);
+        }        
+        Header header = (Header) obj;
+        return msgType.equals(header.msgType) &&
+                code.equals(header.code) &&
+                msgID == header.msgID;
     }
 }
