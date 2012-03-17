@@ -72,8 +72,8 @@ public class UintOption extends Option{
         }
 
         //Remove eventual leading zeros
-        int iMax = Math.max(8, bytes.length);
-        for(int i = 0; i < iMax; i++){
+        int iMin = Math.min(8, bytes.length);
+        for(int i = 0; i < iMin; i++){
             if(bytes[i] != 0){
                 return Arrays.copyOfRange(bytes, i, bytes.length);
             }
