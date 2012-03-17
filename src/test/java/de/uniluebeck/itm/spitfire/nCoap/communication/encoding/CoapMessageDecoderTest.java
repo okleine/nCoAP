@@ -112,6 +112,33 @@ public class CoapMessageDecoderTest {
                 + " 2" //option length in bytes
                 + "ffff" // 65535 = 0xFFFF
                 + getBytesAsString("testpayload\u00FF".getBytes("UTF8")))); //payload
+        
+        //CoAPMessage to decode
+        code = CONTENT_205;
+        header = new Header(ACK, code, 1);
+        optionList = new OptionList();
+        optionList.addOption(code, CONTENT_TYPE, UintOption.createUintOption(CONTENT_TYPE, 0));
+        optionList.addOption(code, TOKEN, UintOption.createOpaqueOption(TOKEN,
+                getByteArrayFromString("6dee9b506332e8fe")));
+        payload = ChannelBuffers.wrappedBuffer("testpayload\u00FF".getBytes("UTF8"));
+        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage.setRcptAdress(testRcptAdress.getAddress());
+        testMessages.add(new DecodeTestMessage(coapMessage,
+                //correct encoded CoAP message
+                //Header
+                "6"    // 0x6 = 0b0110 => (Ver = 1 and Type = 2 = ACK)
+                + " 2" // Option Count = 0x2 = 2
+                + "45" // Code = 0x45 = 69 = CONTENT_205
+                + "0001" // Message ID = 0xD431 = 0001
+                //Options
+                + " 1" //option delta => absolute option number: 1 + 0 = 1 = CONTENT_TYPE
+                + " 1" //option length in bytes
+                + "00" //CONTENT_TYPE => text/plain; charset=utf-8
+                + " a" //option delta => absolute option number: 10 + 1 = 11 = TOKEN
+                + " 8" //option length in bytes
+                + "6dee9b506332e8fe" // <-- TOKEN
+                + getBytesAsString("testpayload\u00FF".getBytes("UTF8")))); //payload
+        
     }
     
     /**
