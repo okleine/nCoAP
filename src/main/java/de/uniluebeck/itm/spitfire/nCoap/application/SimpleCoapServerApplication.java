@@ -35,6 +35,9 @@ import org.apache.log4j.Logger;
 import java.nio.charset.Charset;
 
 /**
+ * This is a very simple server application providing a .well-known/core resource and a simple resource both only
+ * allowing {@link Code#GET} requests.
+ *
 * @author Oliver Kleine
 */
 public class SimpleCoapServerApplication extends CoapServerApplication {
@@ -60,10 +63,17 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
         String resource = coapRequest.getTargetUri().getPath();
         
         if(resource.equals("/.well-known/core")){
-            return getWellKnownCore();
+            if(coapRequest.getCode() == Code.GET){
+                return getWellKnownCore();
+            }
+            else return new CoapResponse(Code.METHOD_NOT_ALLOWED_405);
         }
         else if(resource.equals("/simple")){
-            return getSimple(); 
+            if(coapRequest.getCode() == Code.GET){
+                return getSimple();
+            }
+            else return new CoapResponse(Code.METHOD_NOT_ALLOWED_405);
+            
         }
         else{
             if(log.isDebugEnabled()){
