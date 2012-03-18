@@ -361,9 +361,16 @@ public abstract class CoapMessage {
             return super.equals(obj);
         }
         CoapMessage coapMessage = (CoapMessage)obj;
-        return rcptAddress.equals(coapMessage.rcptAddress) &&
+        
+        //if this.rcptAddress is null, coapMessage.rcptAddress must also be null to be equal
+        //if this.payload is null, coapMessage.payload must also be null to be equal
+        return (rcptAddress == null ? coapMessage.rcptAddress == null : 
+                rcptAddress.equals(coapMessage.rcptAddress)) &&
+                
+                (payload == null ? coapMessage.payload == null : 
+                payload.equals(coapMessage.payload)) &&
+                
                 header.equals(coapMessage.header) &&
-                optionList.equals(coapMessage.optionList) &&
-                payload.equals(coapMessage.payload);
+                optionList.equals(coapMessage.optionList);
     }
 }
