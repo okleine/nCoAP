@@ -35,6 +35,9 @@ import org.apache.log4j.Logger;
 import java.nio.charset.Charset;
 
 /**
+ * This is a very simple server application providing a .well-known/core resource and a simple resource both only
+ * allowing {@link Code#GET} requests.
+ *
 * @author Oliver Kleine
 */
 public class SimpleCoapServerApplication extends CoapServerApplication {
