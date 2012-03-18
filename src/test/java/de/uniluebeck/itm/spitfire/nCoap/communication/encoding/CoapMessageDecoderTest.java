@@ -129,7 +129,7 @@ public class CoapMessageDecoderTest {
                 "6"    // 0x6 = 0b0110 => (Ver = 1 and Type = 2 = ACK)
                 + " 2" // Option Count = 0x2 = 2
                 + "45" // Code = 0x45 = 69 = CONTENT_205
-                + "0001" // Message ID = 0xD431 = 0001
+                + "0001" // Message ID = 0xD431 = 54321
                 //Options
                 + " 1" //option delta => absolute option number: 1 + 0 = 1 = CONTENT_TYPE
                 + " 1" //option length in bytes
@@ -139,6 +139,26 @@ public class CoapMessageDecoderTest {
                 + "6dee9b506332e8fe" // <-- TOKEN
                 + getBytesAsString("testpayload\u00FF".getBytes("UTF8")))); //payload
         
+        //CoAPMessage to decode
+        code = NOT_FOUND_404;
+        header = new Header(ACK, code, 0);
+        optionList = new OptionList();
+        optionList.addOption(code, TOKEN, UintOption.createOpaqueOption(TOKEN,
+                getByteArrayFromString("35")));
+        payload = ChannelBuffers.wrappedBuffer(new byte[0]);
+        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage.setRcptAdress(testRcptAdress.getAddress());
+        testMessages.add(new DecodeTestMessage(coapMessage,
+                //correct encoded CoAP message
+                //Header
+                "6"    // 0x6 = 0b0110 => (Ver = 1 and Type = 2 = ACK)
+                + " 1" // Option Count = 0x1 = 1
+                + "84" // Code = 0x84 = 132 = NOT_FOUND_404
+                + "0000" // Message ID = 0x0000 = 0000
+                //Options
+                + " b" //option delta => absolute option number: 11 + 0 = 11 = TOKEN
+                + " 1" //option length in bytes
+                + "35")); // <-- TOKEN
     }
     
     /**
