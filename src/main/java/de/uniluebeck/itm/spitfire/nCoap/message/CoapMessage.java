@@ -269,6 +269,23 @@ public abstract class CoapMessage {
     public ChannelBuffer getPayload(){
         return payload;
     }
+    
+    /**
+     * Returns the messages payload as byte array
+     * @return the messages payload as byte array or null if there is no payload
+     */
+    public byte[] getPayloadAsByteArray(){
+        if (payload == null) {
+            return null;
+        }
+        byte[] convertedByteArray = new byte[payload.readableBytes()];
+        for (int i = 0; payload.readable(); i++) {
+            convertedByteArray[i] = payload.readByte();
+        }        
+        return convertedByteArray;
+    }
+    
+    
 
     /**
      * Returns the message option list. Note that the option list does only contain options having non-default values.
