@@ -59,7 +59,7 @@ public class SimpleCoapClientApplication extends CoapClientApplication {
     public void receiveCoapResponse(CoapResponse coapResponse) {
         System.out.println("[" + name + "] response received.");
         System.out.println("[" + name + "] Response payload: " +
-                new String(coapResponse.getPayload().array(), Charset.forName("UTF-8")));
+                new String(coapResponse.getPayloadAsByteArray(), Charset.forName("UTF-8")));
     }
 
     /**

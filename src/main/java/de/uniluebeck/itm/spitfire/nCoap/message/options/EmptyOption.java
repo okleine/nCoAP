@@ -13,6 +13,7 @@ public class EmptyOption extends Option{
     //Constructor with package visibility
     EmptyOption(OptionName opt_name) throws InvalidOptionException{
         super(opt_name);
+        value = new byte[0];
     }
 
     static void encodeFencepostOptions (ByteArrayOutputStream baos, int number, int prevNumber){

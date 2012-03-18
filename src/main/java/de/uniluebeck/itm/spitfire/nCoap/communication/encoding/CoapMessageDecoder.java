@@ -103,6 +103,12 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
             result.setRcptAdress(((InetSocketAddress)channel.getLocalAddress()).getAddress());
 
+
+            if(log.isDebugEnabled()){
+                log.debug("[CoapMessageDecoder] Recipient address is " +
+                    ((channel.getLocalAddress() + ", bound: " + channel.isBound())));
+            }
+
             return result;
         }
         catch(InvalidOptionException e){

@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -106,7 +107,7 @@ public class StringOption extends Option{
             return false;
         }
         StringOption opt = (StringOption) o;
-        if((this.optionNumber == opt.optionNumber) && this.value.equals(opt.value)){
+        if((this.optionNumber == opt.optionNumber) && Arrays.equals(this.value, opt.value)){
             return true;
         }
         return false;
