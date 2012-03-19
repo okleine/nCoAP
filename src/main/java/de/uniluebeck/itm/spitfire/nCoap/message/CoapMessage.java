@@ -319,14 +319,12 @@ public abstract class CoapMessage {
             switch(optionName){
                 case URI_HOST:
                     result = new ArrayList<Option>(1);
-                    if(IPAddressUtil.isIPv6LiteralAddress(rcptAddress.getHostAddress())){
-                        result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST,
-                            "[" + rcptAddress.getHostAddress() + "]"));
+
+                    String targetIP = rcptAddress.getHostAddress();
+                    if(IPAddressUtil.isIPv6LiteralAddress(targetIP)){
+                        targetIP = "[" + targetIP + "]";
                     }
-                    else{
-                        result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST,
-                            rcptAddress.getHostAddress()));
-                    }
+                    result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST, targetIP));
                     break;
                 case URI_PORT:
                     result = new ArrayList<Option>(1);

@@ -32,6 +32,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import org.apache.log4j.Logger;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 
 /**
@@ -52,7 +53,7 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
      * @return
      */
     @Override
-    public CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
+    public CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderSocketAddress) {
         
         if(log.isDebugEnabled()){
             log.debug("[SimpleCoapServerApplication] Received a request for " + coapRequest.getTargetUri());
