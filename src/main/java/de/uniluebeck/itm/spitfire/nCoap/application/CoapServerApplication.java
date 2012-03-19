@@ -98,7 +98,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * @param coapRequest The incoming {@link CoapRequest} object
      * @return the {@link CoapResponse} object to be sent back
      */
-    public abstract CoapResponse receiveCoapRequest(CoapRequest coapRequest);
+    public abstract CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderAddress);
 
 
     private class CoapRequestExecutor implements Runnable {
@@ -115,7 +115,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         public void run() {
             try {
                 //Create the response
-                CoapResponse coapResponse = receiveCoapRequest(coapRequest);
+                CoapResponse coapResponse = receiveCoapRequest(coapRequest, remoteAddress);
 
                 //Set message ID and token to match the request
                 coapResponse.setMessageID(coapRequest.getMessageID());

@@ -8,6 +8,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
+import sun.net.util.IPAddressUtil;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -301,8 +302,11 @@ public abstract class CoapMessage {
             switch(optionName){
                 case URI_HOST:
                     result = new ArrayList<Option>(1);
-                    result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST,
-                            "[" + rcptAddress.getHostAddress() + "]"));
+                    String targetIP = rcptAddress.getHostAddress();
+                    if(IPAddressUtil.isIPv6LiteralAddress(targetIP)){
+                        targetIP = "[" + targetIP + "]";
+                    }
+                    result.add(Option.createStringOption(OptionRegistry.OptionName.URI_HOST, targetIP));
                     break;
                 case URI_PORT:
                     result = new ArrayList<Option>(1);
