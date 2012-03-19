@@ -69,7 +69,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             log.debug("[ResponseCallbackHandler] Handling downstream event!");
             CoapRequest coapRequest = (CoapRequest) me.getMessage();
 
-            if(coapRequest.getCallback() != null){
+            if(coapRequest.getResponseCallback() != null){
                 try {
                     coapRequest.setToken(TokenFactory.getInstance().getNextToken());
                 }
@@ -92,7 +92,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
 
                 callbacks.put(new ByteArrayWrapper(coapRequest.getToken()),
                         (InetSocketAddress) me.getRemoteAddress(),
-                        coapRequest.getCallback());
+                        coapRequest.getResponseCallback());
 
                 if(log.isDebugEnabled()){
                     log.debug("[ResponseCallbackHandler] Number of registered callbacks: " + callbacks.size());
@@ -129,18 +129,18 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
            log.debug("[ResponseCallbackHandler] Received message is a response: \n" +
                     "\tRemote Address: " + me.getRemoteAddress() + "\n" +
                     "\tToken: " + Helper.toHexString(coapResponse.getToken()));
+        }
 
-            ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
-                                                         me.getRemoteAddress());
+        ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
+                                                     me.getRemoteAddress());
 
-            if(callback != null){
-                if(log.isDebugEnabled()){
-                    log.debug("[ResponseCallbackHandler] Response callback found. " +
-                            "Invoking method receiveCoapResponse");
-                }
-
-                callback.receiveCoapResponse(coapResponse);
+        if(callback != null){
+            if(log.isDebugEnabled()){
+                log.debug("[ResponseCallbackHandler] Response callback found. " +
+                        "Invoking method receiveCoapResponse");
             }
+
+            callback.receiveCoapResponse(coapResponse);
         }
     }
 
