@@ -7,18 +7,23 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OpaqueOption;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionList;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import org.junit.Test;
 
 
@@ -112,9 +117,72 @@ public class CoAPRequestResponseTest {
         assertTrue("4th retransmission did not arrived in time.", 
                 timeDiff > 30000 - tolerance &&
                 timeDiff < 45000 + tolerance);
+    }
+    
+    /**
+     * Tests the processing of a piggy-backed response on the client side.
+     */
+    @Test
+    public synchronized void requestClientSidePiggyBackedTest() throws Exception {
+        testClient.reset();
+        testReceiver.reset();
+        
+        //send request from testClient to testReceiver
+        CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, 
+                new URI("coap://localhost:" + CoAPTestReceiver.PORT + "/testpath"), testClient);
+        testClient.writeCoapRequest(coapRequest);
+        
+        //wait for request message to arrive
+        long time = System.currentTimeMillis();
+        while (testReceiver.receivedMessages.size() == 0) {
+            if (System.currentTimeMillis() - time > 800) {
+                fail("testReceiver did not receive the request within time.");
+            }
+            Thread.sleep(50);
+        }
+        testReceiver.disableReceiving();
+        assertEquals("testReceiver received more than one message", 1,
+                testReceiver.receivedMessages.size());
+        
+        CoapMessage receivedRequest = testReceiver.receivedMessages.get(0).message;
+        assertEquals(MsgType.CON, receivedRequest.getHeader().getMsgType());
+        assertEquals(Code.GET, receivedRequest.getHeader().getCode());
+        int messageID = receivedRequest.getMessageID();
+        byte[] token = receivedRequest.getToken();
+        
+        //create response
+        Header responseHeader = new Header(MsgType.ACK, Code.CONTENT_205, 1);
+        OptionList responseOptionList = new OptionList();
+        if (token.length != 0) {
+            responseOptionList.addOption(Code.CONTENT_205, OptionRegistry.OptionName.TOKEN, 
+                    OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, token));
+        }
+        ChannelBuffer responsePayload = ChannelBuffers.wrappedBuffer("responsepayload".getBytes("UTF8"));
+        CoapMessage responseMessage = new CoapMessage(responseHeader, responseOptionList, responsePayload) {};
+        
+        //send response to client
+        Channels.write(testReceiver.channel, responseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
+        //testReceiver.channel.write(responseMessage, new InetSocketAddress(CoAPTestClient.PORT));
+        
+        //wait for response message to arrive
+        time = System.currentTimeMillis();
+        while (testClient.receivedResponses.size() == 0) {
+            if (System.currentTimeMillis() - time > 800) {
+                fail("testClient did not receive the response within time.");
+            }
+            Thread.sleep(50);
+        }
+        testClient.disableReceiving();
+        assertEquals("testClient received more than one message", 1,
+                testClient.receivedResponses.size());
+        CoapResponse receivedResponse = testClient.receivedResponses.get(0).message;
+        assertArrayEquals(token, receivedResponse.getOption(OptionRegistry.OptionName.TOKEN).get(0).getValue());
+        assertEquals(responsePayload, receivedResponse.getPayload());
         
     }
+    
 }
+
 class CoAPTestClient extends CoapClientApplication {
     public static final int PORT = CoapClientDatagramChannelFactory.COAP_CLIENT_PORT;
             
@@ -124,21 +192,21 @@ class CoAPTestClient extends CoapClientApplication {
             new LinkedList<ReceivedMessage<CoapResponse>>();
     
     @Override
-    public void receiveCoapResponse(CoapResponse coapResponse) {
+    public synchronized void receiveCoapResponse(CoapResponse coapResponse) {
         if (receivingEnabled) {
             receivedResponses.add(new ReceivedMessage<CoapResponse>(coapResponse));
         }
     }
     
-    public void enableReceiving() {
+    public synchronized void enableReceiving() {
         receivingEnabled = true;
     }
     
-    public void disableReceiving() {
+    public synchronized void disableReceiving() {
         receivingEnabled = false;
     }
     
-    public void reset() {
+    public synchronized void reset() {
         receivedResponses.clear();
         enableReceiving();
     }
@@ -176,7 +244,7 @@ class CoAPTestReceiver extends SimpleChannelHandler {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+    public synchronized void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         if (e.getMessage() instanceof CoapMessage) {
             CoapMessage coapMessage = (CoapMessage) e.getMessage();
             if (receivingEnabled) {
@@ -185,15 +253,15 @@ class CoAPTestReceiver extends SimpleChannelHandler {
         }
     }
     
-    public void enableReceiving() {
+    public synchronized void enableReceiving() {
         receivingEnabled = true;
     }
     
-    public void disableReceiving() {
+    public synchronized void disableReceiving() {
         receivingEnabled = false;
     }
     
-    public void reset() {
+    public synchronized void reset() {
         receivedMessages.clear();
         enableReceiving();
     }
