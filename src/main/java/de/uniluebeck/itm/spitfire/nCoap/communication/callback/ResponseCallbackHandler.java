@@ -124,24 +124,24 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
         }
 
         CoapResponse coapResponse = (CoapResponse) me.getMessage();
-
+        
         if(log.isDebugEnabled()){
            log.debug("[ResponseCallbackHandler] Received message is a response: \n" +
                     "\tRemote Address: " + me.getRemoteAddress() + "\n" +
                     "\tToken: " + Helper.toHexString(coapResponse.getToken()));
-
-            ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
-                                                         me.getRemoteAddress());
-
-            if(callback != null){
-                if(log.isDebugEnabled()){
-                    log.debug("[ResponseCallbackHandler] Response callback found. " +
-                            "Invoking method receiveCoapResponse");
-                }
-
-                callback.receiveCoapResponse(coapResponse);
-            }
         }
+        ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
+                                                        me.getRemoteAddress());
+
+        if(callback != null){
+            if(log.isDebugEnabled()){
+                log.debug("[ResponseCallbackHandler] Response callback found. " +
+                        "Invoking method receiveCoapResponse");
+            }
+
+            callback.receiveCoapResponse(coapResponse);
+        }
+        
     }
 
     //This wrapper is necessary since two raw byte arrays don't equal even if they have the same content!
