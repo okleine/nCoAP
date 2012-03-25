@@ -49,6 +49,7 @@ public class CoAPRequestResponseTest {
      */
     @Test 
     public synchronized void reliabilityRetransmissionTest() throws Exception {
+        System.out.println("Testing reliability...");
         testClient.reset();
         testReceiver.reset();
         
@@ -124,29 +125,44 @@ public class CoAPRequestResponseTest {
      */
     @Test
     public synchronized void clientSidePiggyBackedTest() throws Exception {
+        System.out.println("Testing piggy-backed response on client side...");
+        /* Sequence diagram:
+
+        testClient          testReceiver
+            |                   |
+            +------------------>|     Header: GET (T=CON)
+            |    coapRequest    |   Uri-Path: "temperature"
+            |                   |   
+            |                   |
+            |                   |
+            |<------------------+     Header: 2.05 Content (T=ACK)
+            |  responseMessage  |    Payload: "responsepayload"  
+            |                   |    
+            |                   |
+         */
+        
+        //reset client and receiver -> delete all received messages
+        //                             and enable receiving
         testClient.reset();
         testReceiver.reset();
         
-        //send request from testClient to testReceiver
+        //create and send request from testClient to testReceiver
         CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, 
                 new URI("coap://localhost:" + CoAPTestReceiver.PORT + "/testpath"), testClient);
         testClient.writeCoapRequest(coapRequest);
         
-        //wait for request message to arrive
-        long time = System.currentTimeMillis();
-        while (testReceiver.receivedMessages.size() == 0) {
-            if (System.currentTimeMillis() - time > 800) {
-                fail("testReceiver did not receive the request within time.");
-            }
-            Thread.sleep(50);
-        }
+        //wait for request message to arrive at testReceiver
+        testReceiver.blockUntilMessagesReceivedOrTimeout(500 /*ms timeout*/,1 /*msg count*/);
         testReceiver.disableReceiving();
-        assertEquals("testReceiver received more than one message", 1,
+        assertEquals("testReceiver should receive a single message", 1,
                 testReceiver.receivedMessages.size());
         
+        //receivedRequest is the actual CoAP request send out by nCoAP via testClient
         CoapMessage receivedRequest = testReceiver.receivedMessages.get(0).message;
-        assertEquals(MsgType.CON, receivedRequest.getHeader().getMsgType());
-        assertEquals(Code.GET, receivedRequest.getHeader().getCode());
+        assertEquals("receivedRequest: type should be CON",
+                MsgType.CON, receivedRequest.getHeader().getMsgType());
+        assertEquals("receivedRequest: code should be GET",
+                Code.GET, receivedRequest.getHeader().getCode());
         int messageID = receivedRequest.getMessageID();
         byte[] token = receivedRequest.getToken();
         
@@ -160,24 +176,20 @@ public class CoAPRequestResponseTest {
         ChannelBuffer responsePayload = ChannelBuffers.wrappedBuffer("responsepayload".getBytes("UTF8"));
         CoapMessage responseMessage = new CoapMessage(responseHeader, responseOptionList, responsePayload) {};
         
-        //send response to client
-        Channels.write(testReceiver.channel, responseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
-        //testReceiver.channel.write(responseMessage, new InetSocketAddress(CoAPTestClient.PORT));
+        //send response from testReceiver to testClient
+        Channels.write(testReceiver.channel, responseMessage, 
+                new InetSocketAddress("localhost", CoAPTestClient.PORT));
         
-        //wait for response message to arrive
-        time = System.currentTimeMillis();
-        while (testClient.receivedResponses.size() == 0) {
-            if (System.currentTimeMillis() - time > 800) {
-                fail("testClient did not receive the response within time.");
-            }
-            Thread.sleep(50);
-        }
+        //wait for response message to arrive at testClient (via callback)
+        testClient.blockUntilMessagesReceivedOrTimeout(800, 1);
         testClient.disableReceiving();
-        assertEquals("testClient received more than one message", 1,
+        assertEquals("testClient should receive a single message", 1,
                 testClient.receivedResponses.size());
         CoapResponse receivedResponse = testClient.receivedResponses.get(0).message;
-        assertArrayEquals(token, receivedResponse.getOption(OptionRegistry.OptionName.TOKEN).get(0).getValue());
-        assertEquals(responsePayload, receivedResponse.getPayload());
+        assertArrayEquals("receivedResponse: token does not match", 
+                token, receivedResponse.getOption(OptionRegistry.OptionName.TOKEN).get(0).getValue());
+        assertEquals("receivedResponse: payload does not match",
+                responsePayload, receivedResponse.getPayload());
     }
     
     /**
@@ -185,7 +197,10 @@ public class CoAPRequestResponseTest {
      */
     @Test
     public synchronized void clientSideSeparateTest() throws Exception {
+//        System.out.println("Testing separate response on client side...");
+        
         //TODO uncomment when separate-response bug in IncomingMessageReliabilityHandler is fixed
+
 //        //(see http://tools.ietf.org/html/draft-ietf-core-coap-08#page-77)
 //        testClient.reset();
 //        testReceiver.reset();
@@ -302,6 +317,19 @@ class CoAPTestClient extends CoapClientApplication {
         receivedResponses.clear();
         enableReceiving();
     }
+    
+    public void blockUntilMessagesReceivedOrTimeout(long timeout, int messagesCount) 
+            throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        while(System.currentTimeMillis() - startTime < timeout) {
+            synchronized(this) {
+                if (receivedResponses.size() >= messagesCount) {
+                    return;
+                }
+            }
+            Thread.sleep(50);
+        }
+    }
 }
 
 class CoAPTestReceiver extends SimpleChannelHandler {
@@ -356,6 +384,19 @@ class CoAPTestReceiver extends SimpleChannelHandler {
     public synchronized void reset() {
         receivedMessages.clear();
         enableReceiving();
+    }
+    
+    public void blockUntilMessagesReceivedOrTimeout(long timeout, int messagesCount) 
+            throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        while(System.currentTimeMillis() - startTime < timeout) {
+            synchronized(this) {
+                if (receivedMessages.size() >= messagesCount) {
+                    return;
+                }
+            }
+            Thread.sleep(50);
+        }
     }
 }
 
