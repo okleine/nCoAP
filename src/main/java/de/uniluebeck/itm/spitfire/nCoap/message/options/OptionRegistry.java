@@ -43,6 +43,7 @@ public class OptionRegistry {
 
     public static enum MediaType {
         TEXT_PLAIN_UTF8(0),
+        TEXT_N3(4),
         APP_LINK_FORMAT(40),
         APP_XML(41),
         APP_OCTET_STREAM(42),
@@ -53,6 +54,21 @@ public class OptionRegistry {
 
         MediaType(int number){
             this.number = number;
+        }
+
+        /**
+         * Returns the corresonding {@link MediaType} for the given number
+         * @param number the number to look up the corresponding {@link MediaType}
+         * @return  the corresonding {@link MediaType} for the given number or null if there is no.
+         */
+        public static MediaType getByNumber(int number){
+            for(MediaType mediaType : MediaType.values()){
+                if(mediaType.number == number){
+                    return mediaType;
+                }
+            }
+            
+            return null;
         }
     }
 

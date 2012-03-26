@@ -99,8 +99,12 @@ public class CoapRequest extends CoapMessage {
         super(header, optionList, payload);
     }
 
-    public ResponseCallback getCallback() {
+    public ResponseCallback getResponseCallback() {
         return callback;
+    }
+
+    public void setResponseCallback(ResponseCallback responseCallback){
+        this.callback = responseCallback;
     }
 
      /**
