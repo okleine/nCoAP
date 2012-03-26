@@ -1,8 +1,10 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
+import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -12,6 +14,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OpaqueOption;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionList;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.StringOption;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.LinkedList;
@@ -24,6 +27,7 @@ import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import static org.junit.Assert.*;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 
@@ -34,12 +38,28 @@ import org.junit.Test;
  * @author Stefan Hueske
  */
 public class CoAPRequestResponseTest {
-    private static final CoAPTestClient testClient = new CoAPTestClient();
-    private static final CoAPTestReceiver testReceiver = new CoAPTestReceiver();
+    private static  CoAPTestServer testServer;
+    private static  CoAPTestClient testClient;
+    private static  CoAPTestReceiver testReceiver = new CoAPTestReceiver();
+    
     
     //All tests are synchronized because JUnit tests could be
     //executed parallel. This is currently not supportet by the
     //nCoAP implementation.
+    
+    @BeforeClass
+    public static void setClientAndServerPorts() {
+        //TODO find free ports automatically
+        int clientPort = 25683;
+        Configuration.getInstance().setProperty("client.port", clientPort);
+        CoapClientDatagramChannelFactory.COAP_CLIENT_PORT = clientPort;
+        testClient = new CoAPTestClient();
+
+        int serverPort = 5683;
+        Configuration.getInstance().setProperty("server.port", serverPort);
+        CoapServerDatagramChannelFactory.COAP_SERVER_PORT = serverPort;
+        testServer = new CoAPTestServer();
+    }
     
     /**
      * Tests the timing of all retransmissions for a CON message.
@@ -131,7 +151,7 @@ public class CoAPRequestResponseTest {
         testClient          testReceiver
             |                   |
             +------------------>|     Header: GET (T=CON)
-            |    coapRequest    |   Uri-Path: "temperature"
+            |    coapRequest    |   Uri-Path: "testpath"
             |                   |   
             |                   |
             |                   |
@@ -190,6 +210,95 @@ public class CoAPRequestResponseTest {
                 token, receivedResponse.getOption(OptionRegistry.OptionName.TOKEN).get(0).getValue());
         assertEquals("receivedResponse: payload does not match",
                 responsePayload, receivedResponse.getPayload());
+        
+    }
+    
+    /**
+     * Tests the processing of a piggy-backed response on the server side.
+     */
+    @Test
+    public synchronized void serverSidePiggyBackedTest() throws Exception {
+        System.out.println("Testing piggy-backed response on client side...");
+        /* Sequence diagram:
+
+        testReceiver        testServer
+            |                   |
+            +------------------>|     Header: GET (T=CON)
+            |    coapRequest    |   Uri-Path: "testpath"
+            |                   |   
+            |                   |
+            |                   |
+            |<------------------+     Header: 2.05 Content (T=ACK)
+            |  responseMessage  |    Payload: "responsepayload"  
+            |                   |    
+            |                   |
+         */
+        
+        //reset server and receiver -> delete all received messages
+        //                             and enable receiving
+        testServer.reset();
+        testReceiver.reset();
+        
+        //create coapRequest which will later be sent from testReceiver to testServer
+        int requestMessageID = 12345;
+        byte[] requestToken = {0x12, 0x34, 0x56};
+        String requestUriPath = "testpath";
+        Header requestHeader = new Header(MsgType.CON, Code.GET, requestMessageID);
+        OptionList requestOptionList = new OptionList();
+        requestOptionList.addOption(Code.GET, OptionRegistry.OptionName.TOKEN, 
+                    OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, requestToken));
+        requestOptionList.addOption(Code.GET, OptionRegistry.OptionName.URI_PATH, 
+                    StringOption.createStringOption(OptionRegistry.OptionName.URI_PATH, requestUriPath));
+        CoapMessage coapRequest = new CoapMessage(requestHeader, requestOptionList, null) {};
+        
+        //create response which will later be sent back from testServer to testReceiver
+        CoapResponse responseMessage = new CoapResponse(MsgType.CON, Code.CONTENT_205);
+        ChannelBuffer responsePayload = ChannelBuffers.wrappedBuffer("responsepayload".getBytes("UTF8"));
+        responseMessage.setPayload(responsePayload);
+        
+        //register response at testServer
+        testServer.responsesToSend.add(responseMessage);
+        
+        //send request from testReceiver to testServer
+        Channels.write(testReceiver.channel, coapRequest, 
+                new InetSocketAddress("localhost", CoAPTestServer.PORT));
+        
+        //when the request arrives, testServer will send the registered
+        //response 'responseMessage' immediately back to testReceiver
+        //-> wait for responseMessage at testReceiver
+        testReceiver.blockUntilMessagesReceivedOrTimeout(800, 1);
+        testReceiver.disableReceiving();
+        assertEquals("testReceiver should receive a single message", 1,
+                testReceiver.receivedMessages.size());
+        assertEquals("testServer should receive a single message", 1,
+                testServer.receivedRequests.size());
+        testServer.disableReceiving();
+        
+        CoapRequest receivedRequest = testServer.receivedRequests.get(0).message; 
+        CoapMessage receivedResponse = testReceiver.receivedMessages.get(0).message;
+        
+        //check the received request from testServer
+        assertEquals("receivedRequest: messageID does not match", 
+                requestMessageID, receivedRequest.getMessageID());
+        assertArrayEquals("receivedRequest: token does not match", 
+                requestToken, receivedRequest.getToken());
+        assertEquals("receivedRequest: URI_PATH does not match", 
+                requestUriPath, ((StringOption) receivedRequest
+                .getOption(OptionRegistry.OptionName.URI_PATH).get(0)).getDecodedValue());
+        assertEquals("receivedRequest: message type does not match", 
+                MsgType.CON, receivedRequest.getMessageType());
+        
+        //check the received response from testReceiver
+        assertEquals("receivedResponse: messageID does not match", 
+                requestMessageID, receivedResponse.getMessageID());
+        assertArrayEquals("receivedResponse: token does not match", 
+                requestToken, receivedResponse.getToken());
+        assertEquals("receivedResponse: code does not match", 
+                Code.CONTENT_205, receivedResponse.getCode());
+        assertEquals("receivedResponse: payload does not match", 
+                responsePayload, receivedResponse.getPayload());
+        assertEquals("receivedResponse: message type does not match", 
+                MsgType.ACK, receivedResponse.getMessageType());
     }
     
     /**
@@ -332,11 +441,71 @@ class CoAPTestClient extends CoapClientApplication {
     }
 }
 
+class CoAPTestServer extends CoapServerApplication {
+    public static final int PORT = CoapServerDatagramChannelFactory.COAP_SERVER_PORT;
+            
+    //if false receivedRequests will not be modified
+    boolean receivingEnabled = true;
+    public List<ReceivedMessage<CoapRequest>> receivedRequests = 
+            new LinkedList<ReceivedMessage<CoapRequest>>();
+    
+    public List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
+    
+    //time to block thread in receiveCoapRequest() to force a separate response
+    public long waitBeforeSendingResponse = 0;
+    
+    public synchronized void enableReceiving() {
+        receivingEnabled = true;
+    }
+    
+    public synchronized void disableReceiving() {
+        receivingEnabled = false;
+    }
+    
+    public synchronized void reset() {
+        receivedRequests.clear();
+        responsesToSend.clear();
+        enableReceiving();
+    }
+    
+    public void blockUntilMessagesReceivedOrTimeout(long timeout, int messagesCount) 
+            throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        while(System.currentTimeMillis() - startTime < timeout) {
+            synchronized(this) {
+                if (receivedRequests.size() >= messagesCount) {
+                    return;
+                }
+            }
+            Thread.sleep(50);
+        }
+    }
+
+    @Override
+    public CoapResponse receiveCoapRequest(CoapRequest coapRequest,
+            InetSocketAddress senderAddress) {
+        if (receivingEnabled) {
+            synchronized(this) {
+                receivedRequests.add(new ReceivedMessage<CoapRequest>(coapRequest));
+            }
+        }
+        try {
+            Thread.sleep(waitBeforeSendingResponse);
+        } catch (InterruptedException ex) {
+            fail(ex.toString());
+        }
+        if(responsesToSend.isEmpty()) {
+            fail("responsesToSend is empty. This could be caused by an unexpected request.");
+        }
+        return responsesToSend.remove(0);
+    }
+}
+
 class CoAPTestReceiver extends SimpleChannelHandler {
     public static final int PORT = 30431;
     DatagramChannel channel;
 
-    //if false receivedResponses will not be modified
+    //if false receivedMessages will not be modified
     boolean receivingEnabled = true;
     public List<ReceivedMessage<CoapMessage>> receivedMessages = 
             new LinkedList<ReceivedMessage<CoapMessage>>();
