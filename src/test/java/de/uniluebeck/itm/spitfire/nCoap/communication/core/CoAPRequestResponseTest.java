@@ -397,6 +397,103 @@ public class CoAPRequestResponseTest {
         
     }
     
+    /**
+     * Tests the processing of a separate response on the server side.
+     */
+    @Test
+    public synchronized void serverSideSeparateTest() throws Exception {
+        System.out.println("Testing separate response on server side...");
+        /* Sequence diagram:
+ 
+        testReceiver        testServer
+            |                   |
+            |    requestMsg     |            
+            +------------------>|     Header: GET (T=CON, Code=1, MID=0x7d38=32056)
+            |        GET        |      Token: 0x53
+            |                   |   Uri-Path: "temperature"
+            |                   |
+            |  ackForRequestMsg |
+            |<- - - - - - - - - +     Header: (T=ACK, Code=0, MID=0x7d38=32056)
+            |                   |
+            |    responseMsg    |
+            |<------------------+     Header: 2.05 Content (T=CON, Code=69)
+            |        2.05       |      Token: 0x53
+            |                   |    Payload: "22.3 C"
+            |                   |
+            | ackForResponseMsg |
+            + - - - - - - - - ->|     Header: (T=ACK, Code=0)
+            |                   |
+         */
+        
+        //reset server and receiver -> delete all received messages
+        //                             and enable receiving
+        testServer.reset();
+        testReceiver.reset();
+        
+        //create 'requestMsg'
+        int requestMessageID = 32056;
+        byte[] requestToken = {0x53};
+        String requestUriPath = "temperature";
+        Header requestHeader = new Header(MsgType.CON, Code.GET, requestMessageID);
+        OptionList requestOptionList = new OptionList();
+        requestOptionList.addOption(Code.GET, OptionRegistry.OptionName.TOKEN, 
+                    OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, requestToken));
+        requestOptionList.addOption(Code.GET, OptionRegistry.OptionName.URI_PATH, 
+                    StringOption.createStringOption(OptionRegistry.OptionName.URI_PATH, requestUriPath));
+        CoapMessage requestMsg = new CoapMessage(requestHeader, requestOptionList, null) {};
+        
+        //create 'responseMsg'
+        CoapResponse responseMsgToSend = new CoapResponse(MsgType.CON, Code.CONTENT_205);
+        ChannelBuffer responsePayload = ChannelBuffers.wrappedBuffer("22.3 C".getBytes("UTF8"));
+        responseMsgToSend.setPayload(responsePayload);
+        
+        //register response 'responseMsg' at testServer
+        testServer.responsesToSend.add(responseMsgToSend);
+        
+        //set time (in ms) to wait before testServer sends the response
+        testServer.waitBeforeSendingResponse = 2500;
+        
+        //send 'requestMsg' from testReceiver to testServer
+        Channels.write(testReceiver.channel, requestMsg, 
+                new InetSocketAddress("localhost", CoAPTestServer.PORT));
+                
+        //wait for two messages at testReceiver
+        //('ackForRequestMsg' and 'responseMsg')
+        testReceiver.blockUntilMessagesReceivedOrTimeout(3600, 2);
+        
+        //disable receiving at testServer and testReceiver
+        testReceiver.disableReceiving();
+        testServer.disableReceiving();
+        
+        //check amount of messages
+        assertEquals("testReceiver should receive two messages", 2,
+                testReceiver.receivedMessages.size());
+        assertEquals("testServer should receive a single message", 1,
+                testServer.receivedRequests.size());
+        
+        //get received messages
+        CoapMessage ackForRequestMsg = testReceiver.receivedMessages.get(0).message;
+        CoapMessage responseMsg = testReceiver.receivedMessages.get(1).message;
+        
+        //send 'ackForResponseMsg' to testServer        
+        CoapMessage ackForResponseMsg = new CoapResponse(MsgType.ACK, Code.EMPTY, responseMsg.getMessageID());
+        Channels.write(testReceiver.channel, ackForResponseMsg, 
+                new InetSocketAddress("localhost", CoAPTestServer.PORT));
+        
+        //check 'ackForRequestMsg'
+        assertEquals("ackForRequestMsg: message ID does not match",
+                requestMessageID, ackForRequestMsg.getMessageID());
+        assertEquals("ackForRequestMsg: message code must be zero",
+                Code.EMPTY, ackForRequestMsg.getCode());
+        
+        //check 'responseMsg'
+        assertArrayEquals("responseMsg: token does not match",
+                requestToken, responseMsg.getToken());
+        assertEquals("responseMsg: payload does not match", 
+                responsePayload, responseMsg.getPayload());
+        
+    }
+    
 }
 
 class CoAPTestClient extends CoapClientApplication {
