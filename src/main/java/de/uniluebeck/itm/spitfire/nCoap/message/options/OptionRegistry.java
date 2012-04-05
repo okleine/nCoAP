@@ -43,12 +43,14 @@ public class OptionRegistry {
 
     public static enum MediaType {
         TEXT_PLAIN_UTF8(0),
-        TEXT_N3(4),
         APP_LINK_FORMAT(40),
         APP_XML(41),
         APP_OCTET_STREAM(42),
         APP_EXI(47),
-        APP_JSON(50);
+        APP_JSON(50),
+        APP_RDF_XML(201),
+        APP_TURTLE(202),
+        APP_N3(203);
 
         public final int number;
 
