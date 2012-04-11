@@ -57,6 +57,8 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> incomingMessagesToBeConfirmed
             = HashBasedTable.create();
 
+    private Object monitor = new Object();
+
     private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(10);
 
     private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
@@ -97,7 +99,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         if(coapMessage instanceof CoapRequest){
 
             boolean inserted;
-            synchronized (incomingMessagesToBeConfirmed){
+            synchronized (monitor){
                 if(!incomingMessagesToBeConfirmed.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
 
                     incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
@@ -160,9 +162,17 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             }
 
             boolean alreadyConfirmed;
-            synchronized(incomingMessagesToBeConfirmed){
-                alreadyConfirmed = incomingMessagesToBeConfirmed.remove(me.getRemoteAddress(),
+            synchronized(monitor){
+                Object o = incomingMessagesToBeConfirmed.remove(me.getRemoteAddress(),
                                                                      coapResponse.getMessageID());
+                
+                if (o == null){
+                    System.out.println("Object o ist NULL!!!");
+                }
+                else{
+                    System.out.println("Object o ist NICHT NULL!!!");
+                }
+                alreadyConfirmed = (Boolean) o;
             }
 
             if(alreadyConfirmed){
@@ -191,7 +201,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         @Override
         public void run(){
             boolean confirmed = false;
-             synchronized (incomingMessagesToBeConfirmed){
+             synchronized (monitor){
                  if(incomingMessagesToBeConfirmed.contains(rcptAddress, messageID)){
                     confirmed = true;
                     incomingMessagesToBeConfirmed.put(rcptAddress, messageID, true);
