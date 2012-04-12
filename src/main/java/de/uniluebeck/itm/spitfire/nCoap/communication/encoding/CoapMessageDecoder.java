@@ -39,6 +39,7 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 /**
@@ -101,14 +102,15 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                 result = new CoapResponse(header, optionList, buffer);
             }
 
-            result.setRcptAdress(((InetSocketAddress)channel.getLocalAddress()).getAddress());
+            //TODO Set IP address of server socket (currently [0::] for wildcard address)
+            InetAddress rcptAddress = ((InetSocketAddress)channel.getLocalAddress()).getAddress();
+            result.setRcptAdress(rcptAddress);
 
 
             if(log.isDebugEnabled()){
-                log.debug("[CoapMessageDecoder] Recipient address is " +
-                    ((channel.getLocalAddress() + ", bound: " + channel.isBound())));
+                log.debug("[CoapMessageDecoder] Set receipient address to: " + rcptAddress);
             }
-
+            
             return result;
         }
         catch(InvalidOptionException e){
