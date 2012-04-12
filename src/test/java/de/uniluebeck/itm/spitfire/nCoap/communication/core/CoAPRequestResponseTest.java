@@ -562,6 +562,7 @@ class CoAPTestServer extends CoapServerApplication {
     public synchronized void reset() {
         receivedRequests.clear();
         responsesToSend.clear();
+        waitBeforeSendingResponse = 0;
         enableReceiving();
     }
     
