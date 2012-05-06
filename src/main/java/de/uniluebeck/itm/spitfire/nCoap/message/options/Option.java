@@ -116,7 +116,9 @@ public abstract class Option{
 
             //Each URI-path option to be added contains one fragment as payload. The fragments of the path
             //are the substrings of the full path seperated by "/"
-            result.addAll(createSeparatedOptions(OptionName.URI_PATH, "/", path));
+            if(path.length() > 0){
+                result.addAll(createSeparatedOptions(OptionName.URI_PATH, "/", path));
+            }
         }
 
         //Add URI-Query option(s)

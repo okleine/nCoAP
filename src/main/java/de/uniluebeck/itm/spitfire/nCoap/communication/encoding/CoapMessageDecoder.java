@@ -59,6 +59,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         ChannelBuffer buffer = (ChannelBuffer) obj;
 
+        System.out.println("[CoapMessageDecoder] ChannelBuffer capacity: " + buffer.capacity());
+
         //Decode incoming message
         if(log.isDebugEnabled()){
             log.debug("[Message] Create new message object from ChannelBuffer");
