@@ -2,6 +2,7 @@ package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
+import de.uniluebeck.itm.spitfire.nCoap.helper.Helper;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import org.apache.log4j.Logger;
 
@@ -72,8 +73,7 @@ public class UintOption extends Option{
         }
 
         //Remove eventual leading zeros
-        int iMax = Math.max(8, bytes.length);
-        for(int i = 0; i < iMax; i++){
+        for(int i = 0; i < bytes.length; i++){
             if(bytes[i] != 0){
                 return Arrays.copyOfRange(bytes, i, bytes.length);
             }
@@ -101,7 +101,7 @@ public class UintOption extends Option{
             return false;
         }
         UintOption opt = (UintOption) o;
-        if((optionNumber == opt.optionNumber) && (this.value == opt.value)){
+        if((optionNumber == opt.optionNumber) && (this.getDecodedValue() == opt.getDecodedValue())){
             return true;
         }
         return false;

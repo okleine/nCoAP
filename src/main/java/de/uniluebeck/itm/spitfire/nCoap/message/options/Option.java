@@ -22,7 +22,7 @@ public abstract class Option{
     public static final Charset charset = Charset.forName("UTF-8");
 
     protected int optionNumber;
-    protected byte[] value;
+    protected byte[] value = new byte[0];
 
     protected Option(OptionName optionName){
         optionNumber = optionName.number;

@@ -7,6 +7,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionOcc
 import org.apache.log4j.Logger;
 
 import java.util.List;
+import java.util.Map.Entry;
 
 /**
  *
@@ -137,5 +138,45 @@ public class OptionList {
 
     public int getOptionCount(){
         return options.size();
+    }
+
+    /**
+     * Two instances of {@link OptionList} are equal if and only if both contain the same number of {@link Option}s
+     * of each {@link OptionName} in the same order per {@link OptionName}. To be more precisely, internally the
+     * {@link Option}s are stored in a {@link LinkedListMultimap} with {@link OptionName} as key and an instance of
+     * {@link Option} as value. The order of the keys does not influence the equality of two {@link OptionList}s
+     * but the order of the values per key does.
+     *
+     * @param obj The object to test the equality with
+     * @return  <code>true</code> if the given object is an instance of {@link OptionList} and is equal to this instance
+     * according to the conditions explained above. Otherwise it returns <code>false</code>.
+     */
+    public boolean equals(Object obj){
+        if(!(obj instanceof OptionList)){
+            return false;
+        }
+        
+        OptionList optionList = (OptionList) obj;
+        
+        if(options.size() != optionList.options.size()){
+            return false;
+        }
+        
+        for(OptionName optionName : OptionName.values()){
+            List<Option> list1 = options.get(optionName);
+            List<Option> list2 = optionList.options.get(optionName);
+            
+            if(list1.size() != list2.size()){
+                return false;
+            }
+            
+            for(int i = 0; i < list1.size(); i++ ){
+                if(!list1.get(i).equals(list2.get(i))){
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }

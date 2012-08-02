@@ -220,7 +220,7 @@ public class OptionRegistry {
                 log.debug("[OptionRegistry] Occurence constraint for option " + opt_name + " with code " + code + " is: "
                         + result.toString());
             }
-            return result;
+            return result != null ? result : OptionOccurence.NONE;
         }
         catch(NullPointerException e){
             return OptionOccurence.NONE;

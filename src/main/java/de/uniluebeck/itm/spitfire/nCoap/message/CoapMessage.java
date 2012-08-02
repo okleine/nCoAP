@@ -338,5 +338,17 @@ public abstract class CoapMessage {
         return header;
     }
 
+    public boolean equals(Object obj){
+        if(!(obj instanceof CoapMessage)){
+            return false;
+        }
 
+        CoapMessage msg = (CoapMessage) obj;
+        return this.getHeader().getVersion() == msg.getHeader().getVersion()
+            && this.getHeader().getMsgType().number == msg.getHeader().getMsgType().number
+            && this.getHeader().getCode().number == msg.getHeader().getCode().number
+            && this.getHeader().getMsgID() == msg.getHeader().getMsgID()
+            && optionList.equals(msg.getOptionList())
+            && payload.equals(msg.getPayload());
+    }
 }
