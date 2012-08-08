@@ -108,6 +108,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             InetAddress rcptAddress = ((InetSocketAddress)channel.getLocalAddress()).getAddress();
             result.setRcptAdress(rcptAddress);
 
+
             if(log.isDebugEnabled()){
                 log.debug("[CoapMessageDecoder] Set receipient address to: " + rcptAddress);
             }

@@ -122,6 +122,8 @@ public class CoapRequest extends CoapMessage {
             StringOption uriHost = (StringOption) list.toArray()[0];
             uri = uri + uriHost.getDecodedValue();
 
+            log.debug("[CoapRequest] Host: " + uriHost.getDecodedValue());
+
             //add port
             list = getOption(OptionRegistry.OptionName.URI_PORT);
             UintOption uriPort = (UintOption) list.toArray()[0];
@@ -145,6 +147,8 @@ public class CoapRequest extends CoapMessage {
                 //remove the last "&"
                 uri = uri.substring(0, uri.length() - 1);
             }
+
+            log.debug("[CoapRequest] URI is: " + uri);
 
             return new URI(uri);
         }

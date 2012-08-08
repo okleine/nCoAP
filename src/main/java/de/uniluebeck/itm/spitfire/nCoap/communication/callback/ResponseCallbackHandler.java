@@ -124,7 +124,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
         }
 
         CoapResponse coapResponse = (CoapResponse) me.getMessage();
-
+        
         if(log.isDebugEnabled()){
            log.debug("[ResponseCallbackHandler] Received message is a response: \n" +
                     "\tRemote Address: " + me.getRemoteAddress() + "\n" +
@@ -142,6 +142,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
 
             callback.receiveCoapResponse(coapResponse);
         }
+        
     }
 
     //This wrapper is necessary since two raw byte arrays don't equal even if they have the same content!

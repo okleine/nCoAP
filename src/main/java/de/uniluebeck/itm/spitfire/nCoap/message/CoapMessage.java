@@ -269,6 +269,23 @@ public abstract class CoapMessage {
     public ChannelBuffer getPayload(){
         return payload;
     }
+    
+    /**
+     * Returns the messages payload as byte array
+     * @return the messages payload as byte array or null if there is no payload
+     */
+    public byte[] getPayloadAsByteArray(){
+        if (payload == null) {
+            return null;
+        }
+        byte[] convertedByteArray = new byte[payload.readableBytes()];
+        for (int i = 0; payload.readable(); i++) {
+            convertedByteArray[i] = payload.readByte();
+        }        
+        return convertedByteArray;
+    }
+    
+    
 
     /**
      * Returns the message option list. Note that the option list does only contain options having non-default values.
@@ -302,6 +319,7 @@ public abstract class CoapMessage {
             switch(optionName){
                 case URI_HOST:
                     result = new ArrayList<Option>(1);
+
                     String targetIP = rcptAddress.getHostAddress();
                     if(IPAddressUtil.isIPv6LiteralAddress(targetIP)){
                         targetIP = "[" + targetIP + "]";
@@ -316,10 +334,7 @@ public abstract class CoapMessage {
                     result = new ArrayList<Option>(1);
                     result.add(Option.createUintOption(OptionRegistry.OptionName.MAX_AGE, OptionRegistry.MAX_AGE_DEFAULT));
                     break;
-                case TOKEN:
-                    result = new ArrayList<Option>(1);
-                    result.add(Option.createOpaqueOption(OptionRegistry.OptionName.TOKEN, new byte[0]));
-                    break;
+
             }
 
             return result;

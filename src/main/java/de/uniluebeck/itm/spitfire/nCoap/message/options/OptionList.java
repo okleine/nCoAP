@@ -1,9 +1,11 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Sets;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionOccurence;
+import java.util.Collections;
 import org.apache.log4j.Logger;
 
 import java.util.List;
