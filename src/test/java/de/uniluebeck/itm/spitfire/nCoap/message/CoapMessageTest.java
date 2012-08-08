@@ -29,9 +29,20 @@ public class CoapMessageTest {
         CoapMessage message = new CoapMessage(Code.CONTENT_205) {};
         byte[] payload = "testpayload".getBytes(Charsets.UTF_8);
         message.setPayload(ChannelBuffers.wrappedBuffer(payload));
-        assertArrayEquals(payload, message.getPayloadAsByteArray());
+        assertArrayEquals(payload, getPayloadAsByteArray(message.getPayload())); //TODO fix
         
         message = new CoapMessage(Code.CONTENT_205) {};
-        assertNull(message.getPayloadAsByteArray());
+        assertNull(getPayloadAsByteArray(message.getPayload())); //TODO fix
+    }
+    
+    public static byte[] getPayloadAsByteArray(ChannelBuffer payload){
+        if (payload == null) {
+            return null;
+        }
+        byte[] convertedByteArray = new byte[payload.readableBytes()];
+        for (int i = 0; payload.readable(); i++) {
+            convertedByteArray[i] = payload.readByte();
+        }        
+        return convertedByteArray;
     }
 }
