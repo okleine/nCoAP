@@ -28,6 +28,7 @@ import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -304,96 +305,97 @@ public class CoAPRequestResponseTest {
     /**
      * Tests the processing of a separate response on the client side.
      */
+    @Ignore //TODO fix issue https://github.com/okleine/nCoAP/issues/10
     @Test
     public synchronized void clientSideSeparateTest() throws Exception {
-//        System.out.println("Testing separate response on client side...");
+        System.out.println("Testing separate response on client side...");
         
         //TODO uncomment when separate-response bug in IncomingMessageReliabilityHandler is fixed
 
-//        //(see http://tools.ietf.org/html/draft-ietf-core-coap-08#page-77)
-//        testClient.reset();
-//        testReceiver.reset();
-//        
-//        //send request from testClient to testReceiver
-//        CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, 
-//                new URI("coap://localhost:" + CoAPTestReceiver.PORT + "/testpath"), testClient);
-//        testClient.writeCoapRequest(coapRequest);
-//        
-//        //wait for request message to arrive
-//        long time = System.currentTimeMillis();
-//        while (testReceiver.receivedMessages.size() == 0) {
-//            if (System.currentTimeMillis() - time > 800) {
-//                fail("testReceiver did not receive the request within time.");
-//            }
-//            Thread.sleep(50);
-//        }
-//        testReceiver.disableReceiving();
-//        assertEquals("testReceiver received more than one message", 1,
-//                testReceiver.receivedMessages.size());
-//        
-//        //get values from received request
-//        CoapMessage receivedRequest = testReceiver.receivedMessages.get(0).message;
-//        assertEquals(MsgType.CON, receivedRequest.getHeader().getMsgType());
-//        assertEquals(Code.GET, receivedRequest.getHeader().getCode());
-//        int requestMessageID = receivedRequest.getMessageID();
-//        byte[] requestToken = receivedRequest.getToken();
-//        
-//        //create emppty response
-//        Header emptyResponseHeader = new Header(MsgType.ACK, Code.EMPTY, requestMessageID);
-//        OptionList emptyResponseOptionList = new OptionList();
-//        CoapMessage emptyResponseMessage = new CoapMessage(emptyResponseHeader, emptyResponseOptionList, null) {};
-//        
-//        //send empty response to client
-//        testReceiver.reset();
-//        Channels.write(testReceiver.channel, emptyResponseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
-//        
-//        //wait 3 seconds then test if retransmissions were send (should not)
-//        Thread.sleep(3000);
-//        assertEquals("testReceiver received unexpected messages", 0, testReceiver.receivedMessages.size());
-//        
-//        //send (separate) CON response to testClient
-//        int responseMessageID = 1111;
-//        Header responseHeader = new Header(MsgType.CON, Code.CONTENT_205, responseMessageID);
-//        OptionList responseOptionList = new OptionList();
-//        if (requestToken.length != 0) {
-//            responseOptionList.addOption(Code.CONTENT_205, OptionRegistry.OptionName.TOKEN, 
-//                    OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, requestToken));
-//        }
-//        ChannelBuffer responsePayload = ChannelBuffers.wrappedBuffer("responsepayload".getBytes("UTF8"));
-//        CoapMessage responseMessage = new CoapMessage(responseHeader, responseOptionList, responsePayload) {};
-//        
-//        //send response to client
-//        Channels.write(testReceiver.channel, responseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
-//        
-//        //wait for (separate) CON response to arrive
-//        time = System.currentTimeMillis();
-//        while (testClient.receivedResponses.size() == 0) {
-//            if (System.currentTimeMillis() - time > 500) {
-//                fail("testClient did not receive the response within time.");
-//            }
-//            Thread.sleep(50);
-//        }
-//        testClient.disableReceiving();
-//        assertEquals("testClient received more than one message", 1,
-//                testClient.receivedResponses.size());
-//        CoapResponse receivedResponse = testClient.receivedResponses.get(0).message;
-//        assertArrayEquals(requestToken, receivedResponse.getOption(OptionRegistry.OptionName.TOKEN).get(0).getValue());
-//        assertEquals(responsePayload, receivedResponse.getPayload());
-//        
-//        //wait for empty ACK from testClient to testReceiver
-//        time = System.currentTimeMillis();
-//        while (testReceiver.receivedMessages.size() == 0) {
-//            if (System.currentTimeMillis() - time > 50000000) {
-//                fail("testReceiver did not receive the empty ACK within time.");
-//            }
-//            Thread.sleep(50);
-//        }
-//        testReceiver.disableReceiving();
-//        assertEquals("testReceiver received more than one message", 1,
-//                testReceiver.receivedMessages.size());
-//        CoapMessage receivedEmptyACK = testReceiver.receivedMessages.get(0).message;
-//        assertEquals("received message is not empty", Code.EMPTY, receivedEmptyACK.getCode());
-//        assertEquals("received message is not ACK", MsgType.ACK, receivedEmptyACK.getMessageType());
+        //(see http://tools.ietf.org/html/draft-ietf-core-coap-08#page-77)
+        testClient.reset();
+        testReceiver.reset();
+        
+        //send request from testClient to testReceiver
+        CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, 
+                new URI("coap://localhost:" + CoAPTestReceiver.PORT + "/testpath"), testClient);
+        testClient.writeCoapRequest(coapRequest);
+        
+        //wait for request message to arrive
+        long time = System.currentTimeMillis();
+        while (testReceiver.receivedMessages.size() == 0) {
+            if (System.currentTimeMillis() - time > 800) {
+                fail("testReceiver did not receive the request within time.");
+            }
+            Thread.sleep(50);
+        }
+        testReceiver.disableReceiving();
+        assertEquals("testReceiver received more than one message", 1,
+                testReceiver.receivedMessages.size());
+        
+        //get values from received request
+        CoapMessage receivedRequest = testReceiver.receivedMessages.get(0).message;
+        assertEquals(MsgType.CON, receivedRequest.getHeader().getMsgType());
+        assertEquals(Code.GET, receivedRequest.getHeader().getCode());
+        int requestMessageID = receivedRequest.getMessageID();
+        byte[] requestToken = receivedRequest.getToken();
+        
+        //create emppty response
+        Header emptyResponseHeader = new Header(MsgType.ACK, Code.EMPTY, requestMessageID);
+        OptionList emptyResponseOptionList = new OptionList();
+        CoapMessage emptyResponseMessage = new CoapMessage(emptyResponseHeader, emptyResponseOptionList, null) {};
+        
+        //send empty response to client
+        testReceiver.reset();
+        Channels.write(testReceiver.channel, emptyResponseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
+        
+        //wait 3 seconds then test if retransmissions were send (should not)
+        Thread.sleep(3000);
+        assertEquals("testReceiver received unexpected messages", 0, testReceiver.receivedMessages.size());
+        
+        //send (separate) CON response to testClient
+        int responseMessageID = 1111;
+        Header responseHeader = new Header(MsgType.CON, Code.CONTENT_205, responseMessageID);
+        OptionList responseOptionList = new OptionList();
+        if (requestToken.length != 0) {
+            responseOptionList.addOption(Code.CONTENT_205, OptionRegistry.OptionName.TOKEN, 
+                    OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, requestToken));
+        }
+        ChannelBuffer responsePayload = ChannelBuffers.wrappedBuffer("responsepayload".getBytes("UTF8"));
+        CoapMessage responseMessage = new CoapMessage(responseHeader, responseOptionList, responsePayload) {};
+        
+        //send response to client
+        Channels.write(testReceiver.channel, responseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
+        
+        //wait for (separate) CON response to arrive
+        time = System.currentTimeMillis();
+        while (testClient.receivedResponses.size() == 0) {
+            if (System.currentTimeMillis() - time > 500) {
+                fail("testClient did not receive the response within time.");
+            }
+            Thread.sleep(50);
+        }
+        testClient.disableReceiving();
+        assertEquals("testClient received more than one message", 1,
+                testClient.receivedResponses.size());
+        CoapResponse receivedResponse = testClient.receivedResponses.get(0).message;
+        assertArrayEquals(requestToken, receivedResponse.getOption(OptionRegistry.OptionName.TOKEN).get(0).getValue());
+        assertEquals(responsePayload, receivedResponse.getPayload());
+        
+        //wait for empty ACK from testClient to testReceiver
+        time = System.currentTimeMillis();
+        while (testReceiver.receivedMessages.size() == 0) {
+            if (System.currentTimeMillis() - time > 50000000) {
+                fail("testReceiver did not receive the empty ACK within time.");
+            }
+            Thread.sleep(50);
+        }
+        testReceiver.disableReceiving();
+        assertEquals("testReceiver received more than one message", 1,
+                testReceiver.receivedMessages.size());
+        CoapMessage receivedEmptyACK = testReceiver.receivedMessages.get(0).message;
+        assertEquals("received message is not empty", Code.EMPTY, receivedEmptyACK.getCode());
+        assertEquals("received message is not ACK", MsgType.ACK, receivedEmptyACK.getMessageType());
         
     }
     
