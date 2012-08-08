@@ -123,7 +123,9 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 CoapResponse coapResponse = receiveCoapRequest(coapRequest, remoteAddress);
 
                 //Set message ID and token to match the request
+                System.out.println("Message ID of incoming request: " + coapRequest.getMessageID());
                 coapResponse.setMessageID(coapRequest.getMessageID());
+                
 
                 if(coapRequest.getToken().length > 0){
                     coapResponse.setToken(coapRequest.getToken());

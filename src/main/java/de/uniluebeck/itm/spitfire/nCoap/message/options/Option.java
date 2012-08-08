@@ -22,7 +22,7 @@ public abstract class Option{
     public static final Charset charset = Charset.forName("UTF-8");
 
     protected int optionNumber;
-    protected byte[] value;
+    protected byte[] value = new byte[0];
 
     protected Option(OptionName optionName){
         optionNumber = optionName.number;
@@ -116,7 +116,9 @@ public abstract class Option{
 
             //Each URI-path option to be added contains one fragment as payload. The fragments of the path
             //are the substrings of the full path seperated by "/"
-            result.addAll(createSeparatedOptions(OptionName.URI_PATH, "/", path));
+            if(path.length() > 0){
+                result.addAll(createSeparatedOptions(OptionName.URI_PATH, "/", path));
+            }
         }
 
         //Add URI-Query option(s)

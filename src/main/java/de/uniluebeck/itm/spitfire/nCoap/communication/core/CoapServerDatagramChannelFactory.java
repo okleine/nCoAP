@@ -29,6 +29,7 @@ import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
+import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
@@ -46,7 +47,7 @@ public class CoapServerDatagramChannelFactory {
 
     public CoapServerDatagramChannelFactory(CoapServerApplication serverApp){
         ChannelFactory channelFactory =
-                new NioDatagramChannelFactory(Executors.newCachedThreadPool());
+                new OioDatagramChannelFactory(Executors.newCachedThreadPool());
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapServerPipelineFactory(serverApp));

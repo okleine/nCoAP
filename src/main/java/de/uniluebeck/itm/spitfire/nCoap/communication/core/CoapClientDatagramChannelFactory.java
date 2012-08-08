@@ -27,6 +27,7 @@ import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import org.apache.log4j.Logger;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 
@@ -46,8 +47,13 @@ public class CoapClientDatagramChannelFactory {
     private DatagramChannel channel;
 
     private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
+    static{
+        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(1024);
+        instance.getChannel().getConfig().setReceiveBufferSizePredictor(predictor);
+    }
 
     public static synchronized CoapClientDatagramChannelFactory getInstance(){
+        //log.debug("ReceiveBufferSize: " + instance.getChannel().getConfig().;
         return instance;
     }
 

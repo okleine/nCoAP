@@ -353,22 +353,17 @@ public abstract class CoapMessage {
         return header;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof CoapMessage)) {
-            return super.equals(obj);
+    public boolean equals(Object obj){
+        if(!(obj instanceof CoapMessage)){
+            return false;
         }
-        CoapMessage coapMessage = (CoapMessage)obj;
-        
-        //if this.rcptAddress is null, coapMessage.rcptAddress must also be null to be equal
-        //if this.payload is null, coapMessage.payload must also be null to be equal
-        return (rcptAddress == null ? coapMessage.rcptAddress == null : 
-                rcptAddress.equals(coapMessage.rcptAddress)) &&
-                
-                (payload == null ? coapMessage.payload == null : 
-                payload.equals(coapMessage.payload)) &&
-                
-                header.equals(coapMessage.header) &&
-                optionList.equals(coapMessage.optionList);
+
+        CoapMessage msg = (CoapMessage) obj;
+        return this.getHeader().getVersion() == msg.getHeader().getVersion()
+            && this.getHeader().getMsgType().number == msg.getHeader().getMsgType().number
+            && this.getHeader().getCode().number == msg.getHeader().getCode().number
+            && this.getHeader().getMsgID() == msg.getHeader().getMsgID()
+            && optionList.equals(msg.getOptionList())
+            && payload.equals(msg.getPayload());
     }
 }

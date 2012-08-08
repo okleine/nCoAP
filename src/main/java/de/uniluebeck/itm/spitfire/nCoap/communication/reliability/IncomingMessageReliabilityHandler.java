@@ -104,6 +104,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
                     incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
                                                    coapMessage.getMessageID(), false);
+                    monitor.notifyAll();
                 }
                 inserted = true;
             }
@@ -157,29 +158,31 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             if(log.isDebugEnabled()){
-                log.debug("[OutgoingMessageReliabilityHandler] Handle downstream event for message with ID " +
+                log.debug("[IncomingMessageReliabilityHandler] Handle downstream event for message with ID " +
                     coapResponse.getMessageID() + " for " + me.getRemoteAddress() );
             }
 
-            boolean alreadyConfirmed;
+            Boolean alreadyConfirmed;
+
             synchronized(monitor){
-                Object o = incomingMessagesToBeConfirmed.remove(me.getRemoteAddress(),
-                                                                     coapResponse.getMessageID());
-                
-                if (o == null){
-                    System.out.println("Object o ist NULL!!!");
-                }
-                else{
-                    System.out.println("Object o ist NICHT NULL!!!");
-                }
-                alreadyConfirmed = (Boolean) o;
+                alreadyConfirmed = incomingMessagesToBeConfirmed.remove(me.getRemoteAddress(),
+                                                                 coapResponse.getMessageID());
             }
 
-            if(alreadyConfirmed){
-                coapResponse.getHeader().setMsgType(MsgType.CON);
+            if (alreadyConfirmed == null){
+                System.out.println("Object o ist NULL!!!");
+
+                coapResponse.getHeader().setMsgType(MsgType.NON);
             }
             else{
-                coapResponse.getHeader().setMsgType(MsgType.ACK);
+                System.out.println("Object o ist NICHT NULL!!!");
+
+                if(alreadyConfirmed){
+                    coapResponse.getHeader().setMsgType(MsgType.CON);
+                }
+                else{
+                    coapResponse.getHeader().setMsgType(MsgType.ACK);
+                }
             }
         }
 
