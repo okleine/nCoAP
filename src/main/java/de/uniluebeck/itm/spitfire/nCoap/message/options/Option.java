@@ -1,9 +1,12 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
+import com.google.common.net.InetAddresses;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
-import org.apache.log4j.Logger;
-import sun.net.util.IPAddressUtil;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -17,9 +20,10 @@ import java.util.Collection;
  */
 public abstract class Option{
 
-    private static Logger log = Logger.getLogger(Option.class.getName());
+    private static Logger log = LoggerFactory.getLogger(Option.class.getName());
 
-    public static final Charset charset = Charset.forName("UTF-8");
+    //public static final Charset charset = Charset.forName("UTF-8");
+    public static final String charset = "UTF-8";
 
     protected int optionNumber;
     protected byte[] value = new byte[0];
@@ -67,43 +71,36 @@ public abstract class Option{
         String host = uri.getHost();
 
         //Do only add an URI host option if the host is no IP-Address
-        if(log.isDebugEnabled()){
-            log.debug("[Option] Target URI host: " + host);
-        }
+        log.debug("Target URI host: " + host);
 
         if(host.startsWith("[") && host.endsWith("]")){
             host = host.substring(1, host.length() - 1);
         }
-        if(!IPAddressUtil.isIPv6LiteralAddress(host) && !IPAddressUtil.isIPv4LiteralAddress(host)){
-            result.add(new StringOption(OptionName.URI_HOST, host.getBytes(Option.charset)));
-            if(log.isDebugEnabled()){
-                log.debug("[Option] URI-Host option added to result list.");
+        if(!InetAddresses.isInetAddress(host)){
+            try {
+                result.add(new StringOption(OptionName.URI_HOST, host.getBytes(Option.charset)));
+            } catch (UnsupportedEncodingException e) {
+                log.debug("This should never happen:\n", e);
             }
+            log.debug("URI-Host option added to result list.");
         }
         else{
-            if(log.isDebugEnabled()){
-                log.debug("[Option] URI-Host is an IP literal and thus not added to the result list.");
-            }
+            log.debug("URI-Host " + host + " is an IP literal and thus not added to the result list.");
         }
 
         //Create URI-port option
         int port = uri.getPort();
 
         //Check whether the port value is non-standard
-        if(log.isDebugEnabled()){
-            log.debug("[Option] Target URI-Port: " + port);
-        }
+        log.debug("Target URI-Port: " + port);
+
         if(port > 0 && port != OptionRegistry.COAP_PORT_DEFAULT){
             result.add(new UintOption(OptionName.URI_PORT, port));
-            if(log.isDebugEnabled()){
-                log.debug("[Option] Target URI-Port option added to result list.");
-            }
+            log.debug("Target URI-Port option added to result list.");
         }
         else{
-            if(log.isDebugEnabled()){
-                log.debug("[Option] URI-Port is either empty or default (= " + OptionRegistry.COAP_PORT_DEFAULT +
+            log.debug("URI-Port is either empty or default (= " + OptionRegistry.COAP_PORT_DEFAULT +
                         ") and thus not added as option.");
-            }
         }
 
         //Add URI-Path option(s)
@@ -149,21 +146,25 @@ public abstract class Option{
         ArrayList<Option> proxyOptions = new ArrayList<Option>();
 
         if(!uri.isAbsolute()){
-            String msg = "[Option] URI to be added as proxy URI (" + uri.toString() + ") is not absolute.";
+            String msg = "URI to be added as proxy URI (" + uri.toString() + ") is not absolute.";
             throw new URISyntaxException(uri.toString(), msg);
         }
 
-        byte[] encodedUri = uri.toString().getBytes(StringOption.charset);
-        if(log.isDebugEnabled()){
-            log.debug("[Option] Length of encoded proxy URI: " + encodedUri.length + " bytes.");
+        byte[] encodedUri = new byte[0];
+        try {
+            encodedUri = uri.toString().getBytes(StringOption.charset);
+        } catch (UnsupportedEncodingException e) {
+            log.debug("This should never happen:\n", e);
         }
+        log.debug("Length of encoded proxy URI: " + encodedUri.length + " bytes.");
 
         int startPos = 0;
         while(startPos < encodedUri.length){
             //All but the last option must contain a payload of 270 bytes
             int endPos = Math.min(startPos + OptionRegistry.getMaxLength(OptionName.PROXY_URI),
                                    encodedUri.length);
-            proxyOptions.add(new StringOption(OptionName.PROXY_URI, Arrays.copyOfRange(encodedUri, startPos, endPos)));
+            proxyOptions.add(new StringOption(OptionName.PROXY_URI,
+                             Tools.getByteArrayRange(encodedUri, startPos, endPos)));
             startPos = endPos;
         }
         return proxyOptions;
@@ -220,7 +221,7 @@ public abstract class Option{
     public static StringOption createStringOption(OptionName optionName, String value) throws InvalidOptionException{
         //Check whether current number is appropriate for a StringOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.STRING){
-            String msg = "[Option] Cannot create option " + optionName + " with string value.";
+            String msg = "Cannot create option " + optionName + " with string value.";
             throw new InvalidOptionException(optionName, msg);
         }
         return new StringOption(optionName, value);
@@ -237,7 +238,7 @@ public abstract class Option{
     public static UintOption createUintOption(OptionName optionName, long value) throws InvalidOptionException{
         //Check whether current number is appropriate for a UintOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.UINT){
-            String msg = "[Option] Cannot create option " + optionName + " with uint value.";
+            String msg = "Cannot create option " + optionName + " with uint value.";
             throw new InvalidOptionException(optionName, msg);
         }
         return new UintOption(optionName, value);
@@ -319,18 +320,14 @@ public abstract class Option{
     private static Collection<Option> createSeparatedOptions(OptionName optionName, String seperator, String value)
            throws InvalidOptionException{
 
-        if(log.isDebugEnabled()){
-            log.debug("[Option] Create " + optionName + " options for value '" + value + "'.");
-        }
+        log.debug("Create " + optionName + " options for value '" + value + "'.");
 
         String[] parts = value.split(seperator);
         ArrayList<Option> options = new ArrayList<Option>(parts.length);
         for(String part : parts){
             options.add(new StringOption(optionName, part));
-            if(log.isDebugEnabled()){
-                log.debug("[Option] " + optionName + " option instance for part '" + part + "' successfully created " +
+            log.debug("" + optionName + " option instance for part '" + part + "' successfully created " +
                     "(but not yet added to the option list!)");
-            }
         }
 
         return options;

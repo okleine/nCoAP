@@ -24,7 +24,9 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
 import com.google.common.primitives.Longs;
-import org.apache.log4j.Logger;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -39,7 +41,7 @@ import java.util.Random;
  */
 public class TokenFactory {
 
-    private static Logger log = Logger.getLogger(TokenFactory.class.getName());
+    private static Logger log = LoggerFactory.getLogger(TokenFactory.class.getName());
 
     private static TokenFactory instance = new TokenFactory();
     private Random random;
@@ -57,11 +59,11 @@ public class TokenFactory {
      * @return the next token to be used
      */
     public byte[] getNextToken(){
-        byte[] result = Longs.toByteArray(random.nextLong());
+        byte[] tmp = Longs.toByteArray(random.nextLong());
 
         for(int i = 0; i < 8; i++){
-            if(result[i] != 0){
-                return Arrays.copyOfRange(result, i, result.length);
+            if(tmp[i] != 0){
+                return Tools.getByteArrayRange(tmp, i, 8);
             }
         }
         return new byte[0];

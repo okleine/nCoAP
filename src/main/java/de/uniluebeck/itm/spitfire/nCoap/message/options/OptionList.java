@@ -4,7 +4,8 @@ import com.google.common.collect.LinkedListMultimap;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionOccurence;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map.Entry;
@@ -15,7 +16,7 @@ import java.util.Map.Entry;
  */
 public class OptionList {
 
-    private static Logger log = Logger.getLogger(OptionList.class.getName());
+    private static Logger log = LoggerFactory.getLogger(OptionList.class.getName());
     public static int MAX_NUMBER_OF_OPTIONS = 15;
 
 
@@ -80,11 +81,8 @@ public class OptionList {
             throw new InvalidOptionException(option.getOptionNumber(), msg);
         }
 
-        if(log.isDebugEnabled()){
-            log.debug("[OptionList] " + optionName + " option with value " + Option.getHexString(option.getValue()) +
+        log.debug("" + optionName + " option with value " + Option.getHexString(option.getValue()) +
                 " succesfully added to option list.");
-        }
-
     }
 
     /**
@@ -118,9 +116,7 @@ public class OptionList {
         deleted += options.removeAll(OptionName.URI_PORT).size();
         deleted += options.removeAll(OptionName.URI_QUERY).size();
 
-        if(log.isDebugEnabled()){
-            log.debug("[Message] Removed " + deleted + " target URI options from option list");
-        }
+        log.debug("Removed " + deleted + " target URI options from option list");
         return deleted;
     }
 

@@ -27,7 +27,9 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -41,7 +43,7 @@ import java.nio.charset.Charset;
  */
 public class SimpleCoapClientApplication extends CoapClientApplication {
 
-    private static Logger log = Logger.getLogger(SimpleCoapClientApplication.class.getName());
+    private static Logger log = LoggerFactory.getLogger(SimpleCoapClientApplication.class.getName());
 
     private String name;
 

@@ -24,7 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
-import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
+//import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -39,7 +39,8 @@ import java.util.concurrent.Executors;
  */
 public class CoapServerDatagramChannelFactory {
 
-    public static int COAP_SERVER_PORT = Configuration.getInstance().getInt("server.port", 5683);
+    //public static int COAP_SERVER_PORT = Configuration.getInstance().getInt("server.port", 5683);
+    public static int COAP_SERVER_PORT = 5683;
 
     //private static CoapServerDatagramChannelFactory instance = new CoapServerDatagramChannelFactory();
 

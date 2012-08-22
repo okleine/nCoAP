@@ -32,7 +32,8 @@ import org.jboss.netty.channel.socket.DatagramChannel;
 import java.net.InetSocketAddress;
 
 /**
- * This is the abstract class to be extended by a CoAP client. By <code>writeCoapRequest</code> it provides an
+ * This is the abstract class to be extended by a CoAP client.
+ * By {@link #writeCoapRequest(de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest)}it provides an
  * easy-to-use method to write CoAP requests to a server.
  *
  * @author Oliver Kleine

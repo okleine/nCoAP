@@ -1,10 +1,12 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -14,16 +16,18 @@ import java.util.Locale;
  */
 public class StringOption extends Option{
 
-    private static Logger log = Logger.getLogger(StringOption.class.getName());
+    private static Logger log = LoggerFactory.getLogger(StringOption.class.getName());
 
     //Constructor with encoded value should only be used for incoming messages
     StringOption(OptionName opt_name, byte[] value) throws InvalidOptionException{
         super(opt_name);
         setValue(opt_name, value);
 
-        if(log.isDebugEnabled()){
-            log.debug("[StringOption] New Option (" + opt_name + ")" +
-                      " created (value: " + this.value + ", encoded length: " + this.value.length + ")");
+        try {
+            log.debug("New Option (" + opt_name + ") created (value: " + new String(this.value, charset) +
+                    ", encoded length: " + this.value.length + ")");
+        } catch (UnsupportedEncodingException e) {
+            log.debug("This should never happen:\n" + e);
         }
     }
 
@@ -68,7 +72,12 @@ public class StringOption extends Option{
     private static byte[] convertToByteArrayWithoutPercentEncoding(OptionName optionName, String s)
             throws InvalidOptionException {
 
-        ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(charset));
+        ByteArrayInputStream in = null;
+        try {
+            in = new ByteArrayInputStream(s.getBytes(charset));
+        } catch (UnsupportedEncodingException e) {
+            log.debug("This should never happen: \n", e);
+        }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         int i;
@@ -118,6 +127,12 @@ public class StringOption extends Option{
      * @return the options value as decoded String assuming the value to be UTF-8 encoded
      */
     public String getDecodedValue() {
-        return new String(value, charset);
+        String result = null;
+        try {
+            result = new String(value, charset);
+        } catch (UnsupportedEncodingException e) {
+           log.debug("This should never happen:\n", e);
+        }
+        return result;
     }
 }

@@ -24,15 +24,16 @@
 package de.uniluebeck.itm.spitfire.nCoap.application;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.helper.Helper;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
-import org.apache.log4j.Logger;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
@@ -48,7 +49,7 @@ import java.util.concurrent.Executors;
  */
 public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler{
 
-    private static Logger log = Logger.getLogger(CoapServerApplication.class.getName());
+    private static Logger log = LoggerFactory.getLogger(CoapServerApplication.class.getName());
 
     protected final DatagramChannel channel = new CoapServerDatagramChannelFactory(this).getChannel();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -118,7 +119,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 CoapResponse coapResponse = receiveCoapRequest(coapRequest, remoteAddress);
 
                 //Set message ID and token to match the request
-                System.out.println("Message ID of incoming request: " + coapRequest.getMessageID());
+                log.debug("Message ID of incoming request: " + coapRequest.getMessageID());
                 coapResponse.setMessageID(coapRequest.getMessageID());
                 
 
@@ -129,24 +130,23 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 //Write response
                 ChannelFuture future = Channels.write(channel, coapResponse, remoteAddress);
 
-                if(log.isDebugEnabled()){
-                    future.addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) throws Exception {
-                            log.debug("[ServerApplication | CoapRequestExecutor] Sending of response to recipient " +
-                                remoteAddress + " with message ID " + coapRequest.getMessageID() + " and " +
-                                "token " + Helper.toHexString(coapRequest.getToken()) + " completed.");
-                        }
-                    });
-                }
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        log.debug("CoapRequestExecutor] Sending of response to recipient " +
+                            remoteAddress + " with message ID " + coapRequest.getMessageID() + " and " +
+                            "token " + Tools.toHexString(coapRequest.getToken()) + " completed.");
+                    }
+                });
+
             } catch (InvalidHeaderException e) {
-                log.fatal("[ServerApplication | CoapRequestExecutor] Error while setting message ID or token for " +
+                log.error("Error while setting message ID or token for " +
                     " response.", e);
             } catch (ToManyOptionsException e){
-                log.fatal("[ServerApplication | CoapRequestExecutor] Error while setting message ID or token for " +
+                log.error("Error while setting message ID or token for " +
                     " response.", e);
             } catch (InvalidOptionException e){
-                log.fatal("[ServerApplication | CoapRequestExecutor] Error while setting message ID or token for " +
+                log.error("Error while setting message ID or token for " +
                     " response.", e);
             }
         }

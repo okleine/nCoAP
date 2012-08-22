@@ -23,15 +23,16 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message.header;
 
-import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Oliver Kleine
  */
 public class Header {
 
-    private static Logger log = Logger.getLogger(Header.class.getName());
+    private static Logger log = LoggerFactory.getLogger(Header.class.getName());
 
     public static int MESSAGE_ID_NOT_SET = -1;
 
@@ -71,10 +72,8 @@ public class Header {
         //result.setOptionCount(optionCount);
         result.setMsgID(msgID);
 
-        if(log.isDebugEnabled()){
-            log.debug("[Header] New Header created from ChannelBuffer (type: " + result.msgType +
+        log.debug("New Header created from ChannelBuffer (type: " + result.msgType +
                 ", code: " + result.code + ", msgID: " + result.msgID + ")");
-        }
 
         return result;
     }
@@ -107,9 +106,7 @@ public class Header {
         }
         this.msgID = msgID;
 
-        if(log.isDebugEnabled()){
-            log.debug("[Header] Message ID " + this.msgID + " successfully set.");
-        }
+        log.debug("Message ID " + this.msgID + " successfully set.");
     }
 
     public int getMsgID(){

@@ -5,7 +5,7 @@
     <groupId>de.uniluebeck.itm.spitfire</groupId>
     <artifactId>nCoap</artifactId>
     <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>l
+    <version>1.0-SNAPSHOT</version>
     <name>nCoap</name>
     <url>http://maven.apache.org</url>
 
@@ -20,12 +20,12 @@
         <repository>
             <id>itm-maven-repository-releases</id>
             <name>ITM Maven Releases Repository</name>
-            <url>scpexe://itm01.itm.uni-luebeck.de/www/itm/projects/maven/releases</url>
+            <url>http://maven.itm.uni-luebeck.de/content/repositories/releases/</url>
         </repository>
         <snapshotRepository>
             <id>itm-maven-repository-snapshots</id>
             <name>ITM Maven Snapshots Repository</name>
-            <url>scpexe://itm01.itm.uni-luebeck.de/www/itm/projects/maven/snapshots</url>
+            <url>http://maven.itm.uni-luebeck.de/content/repositories/snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -43,6 +43,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -54,6 +55,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <version>2.2</version>
                 <executions>
                     <execution>
                         <goals>
@@ -83,11 +85,19 @@
     </pluginRepositories>
 
     <dependencies>
+        <!--
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.16</version>
             <scope>compile</scope>
+        </dependency>
+        -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.6.6</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -106,10 +116,13 @@
             <artifactId>guava</artifactId>
             <version>11.0</version>
             </dependency>
+        <!--
         <dependency>
             <groupId>commons-configuration</groupId>
             <artifactId>commons-configuration</artifactId>
             <version>1.8</version>
         </dependency>
+        -->
     </dependencies>
+
 </project>

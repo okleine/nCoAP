@@ -30,7 +30,8 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
@@ -43,7 +44,7 @@ import java.nio.charset.Charset;
 */
 public class SimpleCoapServerApplication extends CoapServerApplication {
 
-    private static Logger log = Logger.getLogger(SimpleCoapServerApplication.class.getName());
+    private static Logger log = LoggerFactory.getLogger(SimpleCoapServerApplication.class.getName());
 
     /**
      * This method makes the server to process incoming request and decide whether the requested resource is
@@ -55,11 +56,8 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
     @Override
     public CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderSocketAddress) {
         
-        if(log.isDebugEnabled()){
-            log.debug("[SimpleCoapServerApplication] Received a request for " + coapRequest.getTargetUri());
-        }
-
-        log.debug("[SimpleCoapServerApplication] Path: " + coapRequest.getTargetUri().getPath());
+        log.debug("Received a request for " + coapRequest.getTargetUri());
+        log.debug("Path: " + coapRequest.getTargetUri().getPath());
         
         String resource = coapRequest.getTargetUri().getPath();
         
@@ -77,9 +75,7 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
             
         }
         else{
-            if(log.isDebugEnabled()){
-                log.debug("[SimpleCoapServerApplication] Request for unknown resource.");
-            }
+            log.debug("Request for unknown resource.");
             return new CoapResponse(Code.NOT_FOUND_404);
         }
     }
@@ -90,15 +86,15 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
         try{
             coapResponse.setContentType(OptionRegistry.MediaType.TEXT_PLAIN_UTF8);
         } catch (InvalidOptionException e) {
-            log.fatal("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
+            log.error("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
         } catch (ToManyOptionsException e) {
-            log.fatal("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
+            log.error("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
         }
 
         try {
             coapResponse.setPayload((new String("Content of simple resource").getBytes(Charset.forName("UTF-8"))));
         } catch (MessageDoesNotAllowPayloadException e) {
-            log.fatal("[SimpleCoapServerApplication] Error while setting payload for response.");
+            log.error(" Error while setting payload for response.");
         }
         
         return coapResponse;
@@ -110,14 +106,14 @@ public class SimpleCoapServerApplication extends CoapServerApplication {
         try {
             coapResponse.setContentType(OptionRegistry.MediaType.APP_LINK_FORMAT);
         } catch (InvalidOptionException e) {
-            log.fatal("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
+            log.error("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
         } catch (ToManyOptionsException e) {
-            log.fatal("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
+            log.error("[" + this.getClass().getName() + "] " + e.getClass().getName(), e);
         }
         try {
             coapResponse.setPayload((new String("</simple>").getBytes(Charset.forName("UTF-8"))));
         } catch (MessageDoesNotAllowPayloadException e) {
-            log.fatal("[SimpleCoapServerApplication] Error while setting payload for response.");
+            log.error(" Error while setting payload for response.");
         }
 
         return coapResponse;  

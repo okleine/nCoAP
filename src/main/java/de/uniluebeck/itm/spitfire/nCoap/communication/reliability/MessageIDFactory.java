@@ -23,8 +23,9 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
-import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
-import org.apache.log4j.Logger;
+//import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.concurrent.Executors;
@@ -39,9 +40,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class MessageIDFactory {
 
-    private static Logger log = Logger.getLogger(MessageIDFactory.class.getName());
+    private static Logger log = LoggerFactory.getLogger(MessageIDFactory.class.getName());
 
-    public static int ALLOCATION_TIMEOUT = Configuration.getInstance().getInt("messageID.allocation.timeout", 120);
+    //public static int ALLOCATION_TIMEOUT = Configuration.getInstance().getInt("messageID.allocation.timeout", 120);
+    public static int ALLOCATION_TIMEOUT = 120;
 
     //private static Random random = new Random(System.currentTimeMillis());
     private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(10);
@@ -105,13 +107,10 @@ public class MessageIDFactory {
             }
 
             if(removed){
-                if(log.isDebugEnabled()){
-                    log.debug("[MessageIDFactory | MessageIDDeallocator] Deallocated message ID " + messageID);
-                }
+                log.debug("Deallocated message ID " + messageID);
             }
             else{
-                log.fatal("[MessageIDFactory | MessageIDDeallocator] Message ID " + messageID + " could not be " +
-                        "removed! This should never happen.");
+                log.error("Message ID " + messageID + " could not be removed! This should never happen.");
             }
         }
     }

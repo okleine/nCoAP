@@ -28,8 +28,9 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
-import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.URI;
@@ -43,7 +44,7 @@ import java.util.List;
  */
 public class CoapRequest extends CoapMessage {
 
-    private static Logger log = Logger.getLogger(CoapRequest.class.getName());
+    private static Logger log = LoggerFactory.getLogger(CoapRequest.class.getName());
 
     private ResponseCallback callback;
 
@@ -70,10 +71,10 @@ public class CoapRequest extends CoapMessage {
 
         setTargetURI(targetUri);
 
-        if(log.isDebugEnabled()){
-            log.debug("[CoapDefaultRequest] Created new request instance " +
-                "(MsgType: " + msgType + ", Code: " + code + ", TargetURI: " + getTargetUri() + ")");
-        }
+
+        log.debug("Created new request instance " +
+            "(MsgType: " + msgType + ", Code: " + code + ", TargetURI: " + getTargetUri() + ")");
+
     }
 
     /**
@@ -149,7 +150,7 @@ public class CoapRequest extends CoapMessage {
             return new URI(uri);
         }
         catch (URISyntaxException e) {
-            log.fatal("[Message] This should never happen!", e);
+            log.error("[Message] This should never happen!", e);
             return null;
         }
     }
@@ -179,10 +180,10 @@ public class CoapRequest extends CoapMessage {
 
             //Add options to the list
             for(Option option : targetUriOptions){
-                if(log.isDebugEnabled()){
-                    log.debug("[Message] Add " + OptionRegistry.getOptionName(option.getOptionNumber()) +
-                            " option with value: " + Option.getHexString(option.getValue()));
-                }
+
+                log.debug("Add " + OptionRegistry.getOptionName(option.getOptionNumber()) +
+                        " option with value: " + Option.getHexString(option.getValue()));
+
 
                 OptionRegistry.OptionName optionName = OptionRegistry.getOptionName(option.getOptionNumber());
                 optionList.addOption(header.getCode(), optionName, option);
@@ -193,24 +194,20 @@ public class CoapRequest extends CoapMessage {
                 try{
                     rcptAddress = InetAddress.getByName(targetUri.getHost());
                 } catch (UnknownHostException e) {
-                    if(log.isDebugEnabled()){
-                        log.debug("[Message] The target hostname " + targetUri.getHost() + " could not be resolved.");
-                    }
+                    log.debug("The target hostname " + targetUri.getHost() + " could not be resolved.");
                 }
             }
         }
         catch(InvalidOptionException e){
             optionList.removeTargetURI();
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option for target URI could not be added.", e);
-            }
+
+            log.debug("Critical option for target URI could not be added.", e);
+
             throw e;
         }
         catch(ToManyOptionsException e){
             optionList.removeTargetURI();
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option for target URI could not be added.", e);
-            }
+            log.debug("Critical option for target URI could not be added.", e);
             throw e;
         }
     }
@@ -237,16 +234,12 @@ public class CoapRequest extends CoapMessage {
         }
         catch (InvalidOptionException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.ACCEPT);
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Elective option (" + OptionRegistry.OptionName.ACCEPT + ") could not be added.", e);
-            }
+            log.debug("Elective option (" + OptionRegistry.OptionName.ACCEPT + ") could not be added.", e);
             return false;
         }
         catch (ToManyOptionsException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.ACCEPT);
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Elective option (" + OptionRegistry.OptionName.ACCEPT + ") could not be added.", e);
-            }
+            log.debug("Elective option (" + OptionRegistry.OptionName.ACCEPT + ") could not be added.", e);
             return false;
         }
     }
@@ -291,19 +284,13 @@ public class CoapRequest extends CoapMessage {
         }
         catch(InvalidOptionException e){
             optionList.removeAllOptions(OptionRegistry.OptionName.PROXY_URI);
-
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option (" + OptionRegistry.OptionName.PROXY_URI + ") could not be added.", e);
-            }
+            log.debug("Critical option (" + OptionRegistry.OptionName.PROXY_URI + ") could not be added.", e);
 
             throw e;
         }
         catch(ToManyOptionsException e){
             optionList.removeAllOptions(OptionRegistry.OptionName.PROXY_URI);
-
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option (" + OptionRegistry.OptionName.PROXY_URI + ") could not be added.", e);
-            }
+            log.debug("Critical option (" + OptionRegistry.OptionName.PROXY_URI + ") could not be added.", e);
 
             throw e;
         }
@@ -328,16 +315,12 @@ public class CoapRequest extends CoapMessage {
         }
         catch (InvalidOptionException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.IF_MATCH);
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option (" + OptionRegistry.OptionName.IF_MATCH + ") could not be added.", e);
-            }
+            log.debug("Critical option (" + OptionRegistry.OptionName.IF_MATCH + ") could not be added.", e);
             throw e;
         }
         catch (ToManyOptionsException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.IF_MATCH);
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option (" + OptionRegistry.OptionName.IF_MATCH + ") could not be added.", e);
-            }
+            log.debug("Critical option (" + OptionRegistry.OptionName.IF_MATCH + ") could not be added.", e);
             throw e;
         }
     }
@@ -356,12 +339,10 @@ public class CoapRequest extends CoapMessage {
             optionList.addOption(header.getCode(), OptionRegistry.OptionName.IF_NONE_MATCH, option);
         } catch (InvalidOptionException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.IF_NONE_MATCH);
-            log.fatal("[Message] This should never happen!", e);
+            log.error("This should never happen!", e);
         } catch (ToManyOptionsException e) {
             optionList.removeAllOptions(OptionRegistry.OptionName.IF_NONE_MATCH);
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option (" + OptionRegistry.OptionName.IF_NONE_MATCH + ") could not be added.", e);
-            }
+            log.debug("Critical option (" + OptionRegistry.OptionName.IF_NONE_MATCH + ") could not be added.", e);
             throw e;
         }
     }
