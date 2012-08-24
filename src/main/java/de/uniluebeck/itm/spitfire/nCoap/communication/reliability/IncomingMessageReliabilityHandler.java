@@ -91,7 +91,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
-        if(coapMessage.getMessageType() != MsgType.CON){
+        if(coapMessage.getMessageType() != MsgType.CON || !coapMessage.isRequest()){
             ctx.sendUpstream(me);
             return;
         }
@@ -127,15 +127,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
                 ctx.sendUpstream(me);
             }
-        }
-        else{
-            EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
-                                                                    coapMessage.getMessageID(), datagramChannel);
+            else{
+                EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
+                                                                        coapMessage.getMessageID(), datagramChannel);
 
-            //Schedule to send an empty ACK asap
-            executorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
+                //Schedule to send an empty ACK asap
+                executorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
+            }
         }
-
     }
 
     /**

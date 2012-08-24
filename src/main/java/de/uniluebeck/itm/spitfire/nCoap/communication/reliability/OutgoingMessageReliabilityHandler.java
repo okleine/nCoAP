@@ -68,6 +68,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     }
 
     private OutgoingMessageReliabilityHandler(){
+        //private constructor to make it singleton
     }
 
     /**
