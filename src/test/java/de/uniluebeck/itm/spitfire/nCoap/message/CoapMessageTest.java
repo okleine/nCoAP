@@ -2,12 +2,11 @@ package de.uniluebeck.itm.spitfire.nCoap.message;
 
 import com.google.common.base.Charsets;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import java.io.UnsupportedEncodingException;
-import org.apache.commons.lang.CharSet;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNull;
 import org.junit.Test;
-import static org.junit.Assert.*;
 /**
  * Test of CoapMessage class.
  * @author Stefan Hueske

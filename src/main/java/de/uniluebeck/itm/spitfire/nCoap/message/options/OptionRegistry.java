@@ -1,7 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 
@@ -11,7 +12,7 @@ import java.util.HashMap;
  */
 public class OptionRegistry {
 
-    private static Logger log = Logger.getLogger(OptionRegistry.class.getName());
+    private static Logger log = LoggerFactory.getLogger(OptionRegistry.class.getName());
 
     public static enum OptionType {UINT, STRING, OPAQUE, EMPTY}
 
@@ -216,10 +217,8 @@ public class OptionRegistry {
     public static OptionOccurence getAllowedOccurence(Code code, OptionName opt_name){
         try{
             OptionOccurence result = allowedOptions.get(code).get(opt_name);
-            if(log.isDebugEnabled()){
-                log.debug("[OptionRegistry] Occurence constraint for option " + opt_name + " with code " + code + " is: "
+            log.debug("Occurence constraint for option " + opt_name + " with code " + code + " is: "
                         + result.toString());
-            }
             return result != null ? result : OptionOccurence.NONE;
         }
         catch(NullPointerException e){

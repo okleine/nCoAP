@@ -2,9 +2,10 @@ package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.spitfire.nCoap.helper.Helper;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
-import org.apache.log4j.Logger;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
@@ -14,17 +15,14 @@ import java.util.Arrays;
  */
 public class UintOption extends Option{
 
-    private static Logger log = Logger.getLogger(UintOption.class.getName());
+    private static Logger log = LoggerFactory.getLogger(UintOption.class.getName());
 
     //constructor with encoded value should only be used for incoming messages
     UintOption(OptionName optionName, byte[] value) throws InvalidOptionException{
         super(optionName);
         setValue(optionName, value);
 
-        if(log.isDebugEnabled()){
-            log.debug("[UintOption] New Option (" + optionName + ")" +
-                      " created (Value: " + getHexString(value)+ ")");
-        }
+        log.debug("New Option (" + optionName + ")" + " created (Value: " + getHexString(value)+ ")");
     }
 
     //constructor with decoded value should only be used for outgoing messages
@@ -32,10 +30,7 @@ public class UintOption extends Option{
         super(optionName);
         setValue(optionName, value);
 
-        if(log.isDebugEnabled()){
-            log.debug("[UintOption] New Option (" + optionName + ")" +
-                      " created (Value: " + getHexString(this.value)+ ")");
-        }
+        log.debug("New Option (" + optionName + ")" + " created (Value: " + getHexString(this.value)+ ")");
     }
 
     private void setValue(OptionName optionName, byte[] bytes) throws InvalidOptionException {
@@ -75,7 +70,7 @@ public class UintOption extends Option{
         //Remove eventual leading zeros
         for(int i = 0; i < bytes.length; i++){
             if(bytes[i] != 0){
-                return Arrays.copyOfRange(bytes, i, bytes.length);
+                return Tools.getByteArrayRange(bytes, i, bytes.length);
             }
         }
 

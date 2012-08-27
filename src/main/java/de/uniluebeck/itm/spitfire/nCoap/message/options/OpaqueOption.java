@@ -1,7 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
@@ -11,7 +12,7 @@ import java.util.Arrays;
  */
 public class OpaqueOption extends Option{
 
-    private static Logger log = Logger.getLogger(OpaqueOption.class.getName());
+    private static Logger log = LoggerFactory.getLogger(OpaqueOption.class.getName());
     
     //Constructor with package visibility
     OpaqueOption(OptionName optionName, byte[] value) throws InvalidOptionException{
@@ -24,10 +25,8 @@ public class OpaqueOption extends Option{
 
         setValue(optionName, value);
 
-        if(log.isDebugEnabled()){
-            log.debug("[OpaqueOption] New Option (" + optionName + ")" +
+        log.debug("New Option (" + optionName + ")" +
                   " created (value: " + getHexString(value) + ", encoded length: " + value.length + ")");
-        }
     }
 
     private void setValue(OptionName optionName, byte[] value) throws InvalidOptionException{

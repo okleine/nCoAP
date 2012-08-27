@@ -4,7 +4,7 @@ import de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication;
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
-import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
+//import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -42,8 +42,7 @@ public class CoAPRequestResponseTest {
     private static  CoAPTestServer testServer;
     private static  CoAPTestClient testClient;
     private static  CoAPTestReceiver testReceiver = new CoAPTestReceiver();
-    
-    
+        
     //All tests are synchronized because JUnit tests could be
     //executed parallel. This is currently not supportet by the
     //nCoAP implementation.
@@ -51,14 +50,14 @@ public class CoAPRequestResponseTest {
     @BeforeClass
     public static void setClientAndServerPorts() {
         //TODO find free ports automatically
-        int clientPort = 25683;
-        Configuration.getInstance().setProperty("client.port", clientPort);
-        CoapClientDatagramChannelFactory.COAP_CLIENT_PORT = clientPort;
+//        int clientPort = 25683;
+//        Configuration.getInstance().setProperty("client.port", clientPort);
+//        CoapClientDatagramChannelFactory.COAP_CLIENT_PORT = clientPort;
         testClient = new CoAPTestClient();
-
-        int serverPort = 5683;
-        Configuration.getInstance().setProperty("server.port", serverPort);
-        CoapServerDatagramChannelFactory.COAP_SERVER_PORT = serverPort;
+//
+//        int serverPort = 5683;
+////        Configuration.getInstance().setProperty("server.port", serverPort);
+//        CoapServerDatagramChannelFactory.COAP_SERVER_PORT = serverPort;
         testServer = new CoAPTestServer();
     }
     
@@ -385,7 +384,7 @@ public class CoAPRequestResponseTest {
         //wait for empty ACK from testClient to testReceiver
         time = System.currentTimeMillis();
         while (testReceiver.receivedMessages.size() == 0) {
-            if (System.currentTimeMillis() - time > 50000000) {
+            if (System.currentTimeMillis() - time > 500) {
                 fail("testReceiver did not receive the empty ACK within time.");
             }
             Thread.sleep(50);

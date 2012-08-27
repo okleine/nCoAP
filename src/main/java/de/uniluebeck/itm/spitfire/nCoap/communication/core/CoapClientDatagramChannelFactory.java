@@ -23,13 +23,14 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
-import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
-import org.apache.log4j.Logger;
+//import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
@@ -40,9 +41,10 @@ import java.util.concurrent.Executors;
  */
 public class CoapClientDatagramChannelFactory {
 
-    private static Logger log = Logger.getLogger(CoapClientDatagramChannelFactory.class.getName());
+    private static Logger log = LoggerFactory.getLogger(CoapClientDatagramChannelFactory.class.getName());
 
-    public static int COAP_CLIENT_PORT = Configuration.getInstance().getInt("client.port", 5683);
+    //public static int COAP_CLIENT_PORT = Configuration.getInstance().getInt("client.port", 5683);
+    public static int COAP_CLIENT_PORT = 5682;
 
     private DatagramChannel channel;
 
@@ -53,7 +55,6 @@ public class CoapClientDatagramChannelFactory {
     }
 
     public static synchronized CoapClientDatagramChannelFactory getInstance(){
-        //log.debug("ReceiveBufferSize: " + instance.getChannel().getConfig().;
         return instance;
     }
 

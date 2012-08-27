@@ -28,8 +28,9 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
-import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -40,7 +41,7 @@ import java.util.Collection;
  */
 public class CoapResponse extends CoapMessage {
 
-    private static Logger log = Logger.getLogger(CoapMessage.class.getName());
+    private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
     public CoapResponse(Code code){
         super(code);
@@ -98,16 +99,12 @@ public class CoapResponse extends CoapMessage {
             return true;
         }
         catch(InvalidOptionException e){
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
-            }
+            log.debug("Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
             optionList.removeAllOptions(OptionRegistry.OptionName.MAX_AGE);
             return false;
         }
         catch(ToManyOptionsException e){
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
-            }
+            log.debug("Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
             optionList.removeAllOptions(OptionRegistry.OptionName.MAX_AGE);
             return false;
         }
@@ -134,16 +131,12 @@ public class CoapResponse extends CoapMessage {
         }
         catch (ToManyOptionsException e) {
             optionList.removeLocationURI();
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option for location URI could not be added.", e);
-            }
+            log.debug("Critical option for location URI could not be added.", e);
             throw e;
         }
         catch (InvalidOptionException e) {
             optionList.removeLocationURI();
-            if(log.isDebugEnabled()){
-                log.debug("[Message] Critical option for location URI could not be added.", e);
-            }
+            log.debug("Critical option for location URI could not be added.", e);
             throw e;
         }
     }

@@ -33,11 +33,12 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
-import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -48,7 +49,7 @@ import java.net.InetSocketAddress;
  */
 public class CoapMessageDecoder extends OneToOneDecoder{
 
-    private static Logger log = Logger.getLogger(CoapMessageDecoder.class.getName());
+    private static Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class.getName());
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
@@ -59,12 +60,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         ChannelBuffer buffer = (ChannelBuffer) obj;
 
-        System.out.println("[CoapMessageDecoder] ChannelBuffer capacity: " + buffer.capacity());
-
         //Decode incoming message
-        if(log.isDebugEnabled()){
-            log.debug("[Message] Create new message object from ChannelBuffer");
-        }
+        log.debug("Create new message object from ChannelBuffer");
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4){
@@ -82,10 +79,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         Header header =
                 new Header(MsgType.getMsgTypeFromNumber(msgTypeNumber), Code.getCodeFromNumber(codeNumber), msgID);
 
-        if(log.isDebugEnabled()){
-            log.debug("[CoAPMessageDecoder] New Header created from ChannelBuffer (type: " + header.getMsgType() +
+        log.debug("New Header created from ChannelBuffer (type: " + header.getMsgType() +
                     ", code: " + header.getCode() + ", msgID: " + header.getMsgID() + ")");
-        }
 
         //Create OptionList
         try{
@@ -108,10 +103,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             InetAddress rcptAddress = ((InetSocketAddress)channel.getLocalAddress()).getAddress();
             result.setRcptAdress(rcptAddress);
 
-            if(log.isDebugEnabled()){
-                log.debug("[CoapMessageDecoder] Set receipient address to: " + rcptAddress);
-            }
-            
+            log.debug("Set receipient address to: " + rcptAddress);
+
             return result;
         }
         catch(InvalidOptionException e){
@@ -163,12 +156,10 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             }
             catch(InvalidOptionException e){
                 if(e.isCritical()){
-                    log.error("[CoapMessageDecoder] Malformed " + e.getOptionName() + " option is critical. Send RST!");
+                    log.error("Malformed " + e.getOptionName() + " option is critical. Send RST!");
                     throw e;
                 }
-                if(log.isDebugEnabled()){
-                    log.debug("[CoapMessageDecoder] Malformed " + e.getOptionName() + " option silently ignored.");
-                }
+                log.debug("Malformed " + e.getOptionName() + " option silently ignored.");
             }
         }
 
@@ -213,9 +204,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                     + " between " + minLength + " and " + maxLength + " (both including) but has " +  valueLength);
         }
 
-        if(log.isDebugEnabled()){
-            log.debug("[Option] Creating " + optionName + " option with encoded value length of " + valueLength + " bytes");
-        }
+        log.debug("Creating " + optionName + " option with encoded value length of " + valueLength + " bytes");
 
         //Read encoded value from buffer
         byte[] encodedValue = new byte[valueLength];

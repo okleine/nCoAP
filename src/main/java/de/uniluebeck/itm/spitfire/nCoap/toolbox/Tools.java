@@ -21,14 +21,14 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uniluebeck.itm.spitfire.nCoap.helper;
+package de.uniluebeck.itm.spitfire.nCoap.toolbox;
 
 import java.util.Random;
 
 /**
  * @author Oliver Kleine
  */
-public class Helper {
+public class Tools {
 
     public static Random random = new Random(System.currentTimeMillis());
 
@@ -38,5 +38,24 @@ public class Helper {
         result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1) + "-";
       }
       return "["+ result.subSequence(0, Math.max(result.length() - 1, 0)) + "]";
+    }
+
+    public static byte[] getByteArrayRange(byte[] in, int firstIncl, int lastExcl)
+            throws ArrayIndexOutOfBoundsException{
+
+        if(firstIncl < 0 || lastExcl > in.length){
+            throw new ArrayIndexOutOfBoundsException("Either " + firstIncl + " or " + lastExcl);
+        }
+
+        if(lastExcl < firstIncl){
+            return new byte[0];
+        }
+
+        byte[] result = new byte[lastExcl- firstIncl];
+        for(int i = 0; i < result.length; i++){
+            result[i] = in[i+firstIncl];
+        }
+
+        return result;
     }
 }

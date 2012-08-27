@@ -32,9 +32,10 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
-import org.apache.log4j.Logger;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
@@ -51,7 +52,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
-    private static Logger log = Logger.getLogger(IncomingMessageReliabilityHandler.class.getName());
+    private static Logger log = LoggerFactory.getLogger(IncomingMessageReliabilityHandler.class.getName());
 
     //Remote socket address, message ID, already confirmed
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> incomingMessagesToBeConfirmed
@@ -90,49 +91,50 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
-        if(coapMessage.getMessageType() != MsgType.CON){
+        if(coapMessage.getMessageType() != MsgType.CON || !coapMessage.isRequest()){
             ctx.sendUpstream(me);
             return;
         }
 
+        DatagramChannel datagramChannel = (DatagramChannel) ctx.getChannel();
 
         if(coapMessage instanceof CoapRequest){
 
-            boolean inserted;
+            boolean inserted = false;
             synchronized (monitor){
                 if(!incomingMessagesToBeConfirmed.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
 
                     incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
                                                    coapMessage.getMessageID(), false);
+
+                    inserted = true;
                     monitor.notifyAll();
                 }
-                inserted = true;
+
             }
 
-            if(log.isDebugEnabled()){
-                log.debug("[IncomingMessageReliabilityHandler] New confirmable request with message ID " +
+            log.debug("New confirmable request with message ID " +
                         coapMessage.getMessageID() + " from " + me.getRemoteAddress() + " received (duplicate = " +
                         !inserted + ")");
-            }
+
             //The value of "inserted" is true if the incoming message was no duplicate
             if(inserted){
                 //Schedule empty ACK if there was no piggy backed ACK within 2 seconds
                 EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
-                                                                    coapMessage.getMessageID());
+                                                                    coapMessage.getMessageID(), datagramChannel);
 
                 executorService.schedule(emptyACKSender, 2000, TimeUnit.MILLISECONDS);
 
                 ctx.sendUpstream(me);
             }
-        }
-        else{
-            EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
-                                                                    coapMessage.getMessageID());
+            else{
+                EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
+                                                                        coapMessage.getMessageID(), datagramChannel);
 
-            //Schedule to send an empty ACK asap
-            executorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
+                //Schedule to send an empty ACK asap
+                executorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
+            }
         }
-
     }
 
     /**
@@ -150,17 +152,13 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        if(log.isDebugEnabled()){
-            log.debug("[IncomingMessageReliablityHandler] Handle Downstream Message Event.");
-        }
+        log.debug("[IncomingMessageReliablityHandler] Handle Downstream Message Event.");
 
         if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
-            if(log.isDebugEnabled()){
-                log.debug("[IncomingMessageReliabilityHandler] Handle downstream event for message with ID " +
+            log.debug("Handle downstream event for message with ID " +
                     coapResponse.getMessageID() + " for " + me.getRemoteAddress() );
-            }
 
             Boolean alreadyConfirmed;
 
@@ -170,12 +168,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             }
 
             if (alreadyConfirmed == null){
-                System.out.println("Object o ist NULL!!!");
-
                 coapResponse.getHeader().setMsgType(MsgType.NON);
             }
             else{
-                System.out.println("Object o ist NICHT NULL!!!");
 
                 if(alreadyConfirmed){
                     coapResponse.getHeader().setMsgType(MsgType.CON);
@@ -194,11 +189,12 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         private InetSocketAddress rcptAddress;
         private int messageID;
 
-        private DatagramChannel datagramChannel = CoapClientDatagramChannelFactory.getInstance().getChannel();
+        private DatagramChannel datagramChannel;
 
-        public EmptyACKSender(InetSocketAddress rcptAddress, int messageID){
+        public EmptyACKSender(InetSocketAddress rcptAddress, int messageID, DatagramChannel datagramChannel){
             this.rcptAddress = rcptAddress;
             this.messageID = messageID;
+            this.datagramChannel = datagramChannel;
         }
 
         @Override
@@ -218,11 +214,11 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                     coapMessage = new CoapResponse(MsgType.ACK, Code.EMPTY, messageID);
                 }
                 catch (ToManyOptionsException e) {
-                    log.fatal("[IncomingMessageReliabilityHandler] Exception while creating empty ACK. This should " +
+                    log.error("Exception while creating empty ACK. This should " +
                             " never happen!", e);
                 }
                 catch (InvalidHeaderException e) {
-                    log.fatal("[IncomingMessageReliabilityHandler] Exception while creating empty ACK. This should " +
+                    log.error("Exception while creating empty ACK. This should " +
                             " never happen!", e);
                 }
 
@@ -230,7 +226,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                     coapMessage.setMessageID(messageID);
                 }
                 catch (InvalidHeaderException e) {
-                    log.fatal("[EmptyACKSender] This should never happen! Exception while setting message ID for " +
+                    log.error("This should never happen! Exception while setting message ID for " +
                             "empty ACK. This should never happen!", e);
                 }
 
@@ -240,15 +236,13 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                                coapMessage,
                                rcptAddress);
 
-                if(log.isDebugEnabled()){
-                    future.addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) throws Exception {
-                            log.debug("[EmptyACKSender] Sent empty ACK for message with ID " + messageID +
-                                    " to recipient " + rcptAddress);
-                        }
-                    });
-                }
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                    log.debug("Sent empty ACK for message with ID " + messageID +
+                            " to recipient " + rcptAddress);
+                    }
+                });
             }
         }
     }
