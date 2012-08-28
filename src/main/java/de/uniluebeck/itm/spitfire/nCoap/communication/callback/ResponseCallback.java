@@ -24,18 +24,36 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Interface to be implemented by client applications to handle responses
  *
  * @author Oliver Kleine
  */
-public interface ResponseCallback {
+public abstract class ResponseCallback {
+
+    private Logger log = LoggerFactory.getLogger(ResponseCallback.class.getName());
 
     /**
-     * Method to be called by the ReponseCallbackHandler for an incoming response
+     * Method to be called by the ReponseCallbackHandler for an incoming response (which is of any type but
+     * empty acknowledgement)
      * @param coapResponse the response message
      */
-    public void receiveCoapResponse(CoapResponse coapResponse);
+    public void receiveResponse (CoapResponse coapResponse){
+        log.info("Received response with code " + coapResponse.getCode() + ".");
+    };
+
+    /**
+     * Method to be called by the ReponseCallbackHandler for an incoming empty acknowledgement
+     */
+    public void receiveEmptyACK(){
+        log.info("Received empty acknowledgement.");
+    };
+
+    public void receiveInternalError(String errorMessage){
+        log.info("Internal error message received:\n" + errorMessage);
+    };
 
 }

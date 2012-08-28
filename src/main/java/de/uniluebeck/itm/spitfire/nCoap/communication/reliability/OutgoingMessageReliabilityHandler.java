@@ -25,9 +25,12 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowledgementMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalErrorMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -94,7 +97,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
                 byte[] removedToken;
                 synchronized(openOutgoingConMsg){
-                    removedToken = openOutgoingConMsg.remove(me.getRemoteAddress(), coapMessage.getMessageID());
+                    removedToken =  openOutgoingConMsg.remove(me.getRemoteAddress(), coapMessage.getMessageID());
                 }
 
                 if(removedToken != null){
@@ -102,8 +105,13 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                                 " remote address: " + remoteAddress + ", message ID " + coapMessage.getMessageID() +
                                 " ).");
 
-                    //Do not send empty ACKs further upstream
+                    //Set token option for incoming empty ACK
                     if(coapMessage.getMessageType() == MsgType.ACK && coapMessage.getCode() == Code.EMPTY){
+                        InternalAcknowledgementMessage ack =
+                                new InternalAcknowledgementMessage(new ByteArrayWrapper(removedToken));
+
+                        MessageEvent emptyAckReceived = new UpstreamMessageEvent(ctx.getChannel(), ack, remoteAddress);
+                        ctx.sendUpstream(emptyAckReceived);
                         return;
                     }
                 }
@@ -149,10 +157,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                     }
 
                     //Schedule first retransmission
-                    Retransmitter retransmitter
-                            = new Retransmitter((InetSocketAddress) me.getRemoteAddress(), coapMessage);
-                    int delay = (int) (TIMEOUT_MILLIS * retransmitter.randomFactor);
-                    executorService.schedule(retransmitter, delay, TimeUnit.MILLISECONDS);
+                    MessageRetransmitter messageRetransmitter
+                            = new MessageRetransmitter((InetSocketAddress) me.getRemoteAddress(), coapMessage);
+                    int delay = (int) (TIMEOUT_MILLIS * messageRetransmitter.randomFactor);
+                    executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS);
 
                     log.debug("First retransmit for " +
                                 coapMessage.getMessageType() + " message with ID " + coapMessage.getMessageID() +
@@ -166,7 +174,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     }
 
     //Private class to handle the retransmission of confirmable message using a thread scheduler
-    private class Retransmitter implements Runnable {
+    private class MessageRetransmitter implements Runnable {
 
         private DatagramChannel datagramChannel = CoapClientDatagramChannelFactory.getInstance().getChannel();
         private InetSocketAddress rcptAddress;
@@ -176,7 +184,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
 
 
-        public Retransmitter(InetSocketAddress rcptAddress, CoapMessage coapMessage){
+        public MessageRetransmitter(InetSocketAddress rcptAddress, CoapMessage coapMessage){
             this.rcptAddress = rcptAddress;
             this.coapMessage = coapMessage;
             this.randomFactor = 1 + random.nextDouble() * 0.5;
@@ -197,11 +205,22 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                     }
 
                     if(removedToken != null){
-                            log.debug("Message with ID " + coapMessage.getMessageID() +
-                                    " for recipient " + rcptAddress + " reached the maximum number of retransmits.");
+                        log.debug("Message with ID " + coapMessage.getMessageID() +
+                                " for recipient " + rcptAddress + " reached the maximum number of retransmits.");
                     }
 
-                    //TODO let the application know about the timeout
+                    //Send internal error message to the application
+                    String errorMessage = "Despite " + MAX_RETRANSMITS + " retransmits of the message with ID " +
+                            coapMessage.getMessageID() + " there was no response received from " +
+                            rcptAddress + ". Request timed out.";
+
+                    log.error(errorMessage);
+
+                    UpstreamMessageEvent ume = new UpstreamMessageEvent(datagramChannel,
+                                        new InternalErrorMessage(errorMessage, removedToken), rcptAddress);
+
+                    datagramChannel.getPipeline().getContext("OutgoingMessageReliabilityHandler").sendUpstream(ume);
+                    return;
 
                 }
                 else{
