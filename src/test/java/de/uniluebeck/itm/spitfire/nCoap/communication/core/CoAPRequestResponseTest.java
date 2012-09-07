@@ -194,7 +194,7 @@ public class CoAPRequestResponseTest {
                     OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, token));
         }
         ChannelBuffer responsePayload = ChannelBuffers.wrappedBuffer("responsepayload".getBytes("UTF8"));
-        CoapMessage responseMessage = new CoapMessage(responseHeader, responseOptionList, responsePayload) {};
+        CoapResponse responseMessage = new CoapResponse(responseHeader, responseOptionList, responsePayload);
         
         //send response from testReceiver to testClient
         Channels.write(testReceiver.channel, responseMessage, 
@@ -249,7 +249,7 @@ public class CoAPRequestResponseTest {
                     OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, requestToken));
         requestOptionList.addOption(Code.GET, OptionRegistry.OptionName.URI_PATH, 
                     StringOption.createStringOption(OptionRegistry.OptionName.URI_PATH, requestUriPath));
-        CoapMessage coapRequest = new CoapMessage(requestHeader, requestOptionList, null) {};
+        CoapRequest coapRequest = new CoapRequest(requestHeader, requestOptionList, null);
         
         //create response which will later be sent back from testServer to testReceiver
         CoapResponse responseMessage = new CoapResponse(MsgType.CON, Code.CONTENT_205);
@@ -340,9 +340,8 @@ public class CoAPRequestResponseTest {
         byte[] requestToken = receivedRequest.getToken();
         
         //create emppty response
-        Header emptyResponseHeader = new Header(MsgType.ACK, Code.EMPTY, requestMessageID);
-        OptionList emptyResponseOptionList = new OptionList();
-        CoapMessage emptyResponseMessage = new CoapMessage(emptyResponseHeader, emptyResponseOptionList, null) {};
+        CoapResponse emptyResponseMessage = new CoapResponse(Code.EMPTY);
+        emptyResponseMessage.setMessageID(requestMessageID);
         
         //send empty response to client
         testReceiver.reset();
@@ -361,7 +360,7 @@ public class CoAPRequestResponseTest {
                     OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, requestToken));
         }
         ChannelBuffer responsePayload = ChannelBuffers.wrappedBuffer("responsepayload".getBytes("UTF8"));
-        CoapMessage responseMessage = new CoapMessage(responseHeader, responseOptionList, responsePayload) {};
+        CoapResponse responseMessage = new CoapResponse(responseHeader, responseOptionList, responsePayload);
         
         //send response to client
         Channels.write(testReceiver.channel, responseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
@@ -441,7 +440,7 @@ public class CoAPRequestResponseTest {
                     OpaqueOption.createOpaqueOption(OptionRegistry.OptionName.TOKEN, requestToken));
         requestOptionList.addOption(Code.GET, OptionRegistry.OptionName.URI_PATH, 
                     StringOption.createStringOption(OptionRegistry.OptionName.URI_PATH, requestUriPath));
-        CoapMessage requestMsg = new CoapMessage(requestHeader, requestOptionList, null) {};
+        CoapRequest requestMsg = new CoapRequest(requestHeader, requestOptionList, null);     
         
         //create 'responseMsg'
         CoapResponse responseMsgToSend = new CoapResponse(MsgType.CON, Code.CONTENT_205);
@@ -482,17 +481,22 @@ public class CoAPRequestResponseTest {
                 new InetSocketAddress("localhost", CoAPTestServer.PORT));
         
         //check 'ackForRequestMsg'
-        assertEquals("ackForRequestMsg: message ID does not match",
-                requestMessageID, ackForRequestMsg.getMessageID());
+        assertEquals("ackForRequestMsg: message type does not match",
+                MsgType.ACK, ackForResponseMsg.getMessageType());
         assertEquals("ackForRequestMsg: message code must be zero",
                 Code.EMPTY, ackForRequestMsg.getCode());
+        assertEquals("ackForRequestMsg: message ID does not match",
+                requestMessageID, ackForRequestMsg.getMessageID());
         
         //check 'responseMsg'
+        assertEquals("ackForRequestMsg: message type does not match",
+                MsgType.CON, responseMsg.getMessageType());
+        assertEquals("ackForRequestMsg: message code does not match",
+                Code.CONTENT_205, responseMsg.getCode());
         assertArrayEquals("responseMsg: token does not match",
                 requestToken, responseMsg.getToken());
         assertEquals("responseMsg: payload does not match", 
                 responsePayload, responseMsg.getPayload());
-        
     }
     
 }

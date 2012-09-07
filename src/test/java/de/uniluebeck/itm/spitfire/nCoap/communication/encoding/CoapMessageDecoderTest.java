@@ -1,6 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
@@ -44,7 +46,7 @@ public class CoapMessageDecoderTest {
         Header header = new Header(CON, GET, 0);
         OptionList optionList = new OptionList();
         ChannelBuffer payload = ChannelBuffers.EMPTY_BUFFER;
-        CoapMessage coapMessage = new CoapMessage(header, optionList, payload) {};
+        CoapMessage coapMessage = new CoapRequest(header, optionList, payload);
         coapMessage.setRcptAdress(testRcptAdress.getAddress());
         testMessages.add(new DecodeTestMessage(coapMessage,
                 //correct encoded CoAP message
@@ -57,7 +59,7 @@ public class CoapMessageDecoderTest {
         header = new Header(NON, POST, 65535);
         optionList = new OptionList();
         payload = ChannelBuffers.EMPTY_BUFFER;
-        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage = new CoapResponse(header, optionList, payload);
         coapMessage.setRcptAdress(testRcptAdress.getAddress());
         testMessages.add(new DecodeTestMessage(coapMessage,
                 //correct encoded CoAP message
@@ -70,7 +72,7 @@ public class CoapMessageDecoderTest {
         header = new Header(ACK, CONTENT_205, 12345);
         optionList = new OptionList();
         payload = ChannelBuffers.EMPTY_BUFFER;
-        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage = new CoapResponse(header, optionList, payload) {};
         coapMessage.setRcptAdress(testRcptAdress.getAddress());
         testMessages.add(new DecodeTestMessage(coapMessage,
                 //correct encoded CoAP message
@@ -83,7 +85,7 @@ public class CoapMessageDecoderTest {
         header = new Header(RST, NOT_FOUND_404, 54321);
         optionList = new OptionList();
         payload = ChannelBuffers.EMPTY_BUFFER;
-        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage = new CoapResponse(header, optionList, payload) {};
         coapMessage.setRcptAdress(testRcptAdress.getAddress());
         testMessages.add(new DecodeTestMessage(coapMessage,
                 //correct encoded CoAP message
@@ -100,7 +102,7 @@ public class CoapMessageDecoderTest {
         optionList.addOption(code, URI_HOST, StringOption.createStringOption(URI_HOST, "testhost"));
         optionList.addOption(code, URI_PORT, UintOption.createUintOption(URI_PORT, 65535));
         payload = ChannelBuffers.wrappedBuffer("testpayload\u00FF".getBytes("UTF8"));
-        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage = new CoapRequest(header, optionList, payload) {};
         coapMessage.setRcptAdress(testRcptAdress.getAddress());
         testMessages.add(new DecodeTestMessage(coapMessage,
                 //correct encoded CoAP message
@@ -121,7 +123,7 @@ public class CoapMessageDecoderTest {
         optionList.addOption(code, TOKEN, UintOption.createOpaqueOption(TOKEN,
                 getByteArrayFromString("6dee9b506332e8fe")));
         payload = ChannelBuffers.wrappedBuffer("testpayload\u00FF".getBytes("UTF8"));
-        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage = new CoapResponse(header, optionList, payload) {};
         coapMessage.setRcptAdress(testRcptAdress.getAddress());
         testMessages.add(new DecodeTestMessage(coapMessage,
                 //correct encoded CoAP message
@@ -146,7 +148,7 @@ public class CoapMessageDecoderTest {
         optionList.addOption(code, TOKEN, UintOption.createOpaqueOption(TOKEN,
                 getByteArrayFromString("35")));
         payload = ChannelBuffers.wrappedBuffer(new byte[0]);
-        coapMessage = new CoapMessage(header, optionList, payload) {};
+        coapMessage = new CoapResponse(header, optionList, payload) {};
         coapMessage.setRcptAdress(testRcptAdress.getAddress());
         testMessages.add(new DecodeTestMessage(coapMessage,
                 //correct encoded CoAP message
