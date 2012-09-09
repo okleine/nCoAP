@@ -70,8 +70,12 @@ public class CoAPRequestResponseTest {
     @Test 
     public synchronized void reliabilityRetransmissionTest() throws Exception {
         System.out.println("Testing reliability...");
+        
+        CoAPTestReceiver testReceiverServer = this.testReceiver;
+        
         testClient.reset();
-        testReceiver.reset();
+        testReceiverServer.reset();
+        testServer.disableReceiving();
         
         CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, 
                 new URI("coap://localhost:" + CoAPTestReceiver.PORT + "/testpath"));
@@ -102,10 +106,10 @@ public class CoAPRequestResponseTest {
         Thread.sleep(45000 + tolerance); //see above
 
         testClient.disableReceiving();
-        testReceiver.disableReceiving();
+        testReceiverServer.disableReceiving();
         System.out.println("Messages received:");
         int i = 0;
-        for (ReceivedMessage<CoapMessage> msg: testReceiver.receivedMessages) {
+        for (ReceivedMessage<CoapMessage> msg: testReceiverServer.receivedMessages) {
             System.out.printf("Msg %d: Received after %6.3f seconds.%n", 
                     ++i, (msg.receivingTime - firstRequestSendTime) / 1000.0);
         }
@@ -113,28 +117,28 @@ public class CoAPRequestResponseTest {
         assertEquals("Unexpected response received by testClient",
                 0, testClient.receivedResponses.size());
         //Expect 5 received messages, 1 org. request + 4 retransmissions
-        assertEquals("testReceiver did not receive 5 messages",
-                5, testReceiver.receivedMessages.size());
+        assertEquals("testReceiverServer did not receive 5 messages",
+                5, testReceiverServer.receivedMessages.size());
         
         
         //Check if receiving times match with the intervals above
         
-        long timeDiff = testReceiver.receivedMessages.get(1).receivingTime - firstRequestSendTime;
+        long timeDiff = testReceiverServer.receivedMessages.get(1).receivingTime - firstRequestSendTime;
         assertTrue("1st retransmission did not arrive in time.", 
                 timeDiff > 2000 - tolerance &&
                 timeDiff < 3000 + tolerance);
         
-        timeDiff = testReceiver.receivedMessages.get(2).receivingTime - firstRequestSendTime;
+        timeDiff = testReceiverServer.receivedMessages.get(2).receivingTime - firstRequestSendTime;
         assertTrue("2nd retransmission did not arrive in time.", 
                 timeDiff > 6000 - tolerance &&
                 timeDiff < 9000 + tolerance);
         
-        timeDiff = testReceiver.receivedMessages.get(3).receivingTime - firstRequestSendTime;
+        timeDiff = testReceiverServer.receivedMessages.get(3).receivingTime - firstRequestSendTime;
         assertTrue("3rd retransmission did not arrive in time.", 
                 timeDiff > 14000 - tolerance &&
                 timeDiff < 21000 + tolerance);
         
-        timeDiff = testReceiver.receivedMessages.get(4).receivingTime - firstRequestSendTime;
+        timeDiff = testReceiverServer.receivedMessages.get(4).receivingTime - firstRequestSendTime;
         assertTrue("4th retransmission did not arrive in time.", 
                 timeDiff > 30000 - tolerance &&
                 timeDiff < 45000 + tolerance);
@@ -148,7 +152,7 @@ public class CoAPRequestResponseTest {
         System.out.println("Testing piggy-backed response on client side...");
         /* Sequence diagram:
 
-        testClient          testReceiver
+        testClient       testReceiverServer
             |                   |
             +------------------>|     Header: GET (T=CON)
             |    coapRequest    |   Uri-Path: "testpath"
@@ -163,8 +167,9 @@ public class CoAPRequestResponseTest {
         
         //reset client and receiver -> delete all received messages
         //                             and enable receiving
+        CoAPTestReceiver testReceiverServer = this.testReceiver;
         testClient.reset();
-        testReceiver.reset();
+        testReceiverServer.reset();
         
         //create and send request from testClient to testReceiver
         CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, 
@@ -172,16 +177,16 @@ public class CoAPRequestResponseTest {
         testClient.writeCoapRequest(coapRequest);
         
         //wait for request message to arrive at testReceiver
-        testReceiver.blockUntilMessagesReceivedOrTimeout(500 /*ms timeout*/,1 /*msg count*/);
-        testReceiver.disableReceiving();
-        assertEquals("testReceiver should receive a single message", 1,
-                testReceiver.receivedMessages.size());
+        testReceiverServer.blockUntilMessagesReceivedOrTimeout(500 /*ms timeout*/,1 /*msg count*/);
+        testReceiverServer.disableReceiving();
+        assertEquals("testReceiverServer should receive a single message", 1,
+                testReceiverServer.receivedMessages.size());
         
         //receivedRequest is the actual CoAP request send out by nCoAP via testClient
-        CoapMessage receivedRequest = testReceiver.receivedMessages.get(0).message;
-        assertEquals("receivedRequest: type should be CON",
+        CoapMessage receivedRequest = testReceiverServer.receivedMessages.get(0).message;
+        assertEquals("Received request from client should be of type CON",
                 MsgType.CON, receivedRequest.getHeader().getMsgType());
-        assertEquals("receivedRequest: code should be GET",
+        assertEquals("Received request from client should have code GET",
                 Code.GET, receivedRequest.getHeader().getCode());
         int messageID = receivedRequest.getMessageID();
         byte[] token = receivedRequest.getToken();
@@ -197,7 +202,7 @@ public class CoAPRequestResponseTest {
         CoapResponse responseMessage = new CoapResponse(responseHeader, responseOptionList, responsePayload);
         
         //send response from testReceiver to testClient
-        Channels.write(testReceiver.channel, responseMessage, 
+        Channels.write(testReceiverServer.channel, responseMessage, 
                 new InetSocketAddress("localhost", CoAPTestClient.PORT));
         
         //wait for response message to arrive at testClient (via callback)
@@ -221,7 +226,7 @@ public class CoAPRequestResponseTest {
         System.out.println("Testing piggy-backed response on server side...");
         /* Sequence diagram:
 
-        testReceiver        testServer
+     testReceiverClient     testServer
             |                   |
             +------------------>|     Header: GET (T=CON)
             |    coapRequest    |   Uri-Path: "testpath"
@@ -236,8 +241,9 @@ public class CoAPRequestResponseTest {
         
         //reset server and receiver -> delete all received messages
         //                             and enable receiving
+        CoAPTestReceiver testReceiverClient = this.testReceiver;
         testServer.reset();
-        testReceiver.reset();
+        testReceiverClient.reset();
         
         //create coapRequest which will later be sent from testReceiver to testServer
         int requestMessageID = 12345;
@@ -260,22 +266,22 @@ public class CoAPRequestResponseTest {
         testServer.responsesToSend.add(responseMessage);
         
         //send request from testReceiver to testServer
-        Channels.write(testReceiver.channel, coapRequest, 
+        Channels.write(testReceiverClient.channel, coapRequest, 
                 new InetSocketAddress("localhost", CoAPTestServer.PORT));
         
         //when the request arrives, testServer will send the registered
         //response 'responseMessage' immediately back to testReceiver
         //-> wait for responseMessage at testReceiver
-        testReceiver.blockUntilMessagesReceivedOrTimeout(800, 1);
-        testReceiver.disableReceiving();
-        assertEquals("testReceiver should receive a single message", 1,
-                testReceiver.receivedMessages.size());
+        testReceiverClient.blockUntilMessagesReceivedOrTimeout(800, 1);
+        testReceiverClient.disableReceiving();
+        assertEquals("testReceiverClient should receive a single message", 1,
+                testReceiverClient.receivedMessages.size());
         assertEquals("testServer should receive a single message", 1,
                 testServer.receivedRequests.size());
         testServer.disableReceiving();
         
         CoapRequest receivedRequest = testServer.receivedRequests.get(0).message; 
-        CoapMessage receivedResponse = testReceiver.receivedMessages.get(0).message;
+        CoapMessage receivedResponse = testReceiverClient.receivedMessages.get(0).message;
         
         //check the received request from testServer
         assertEquals("receivedRequest: messageID does not match", 
@@ -309,31 +315,30 @@ public class CoAPRequestResponseTest {
     public synchronized void clientSideSeparateTest() throws Exception {
         System.out.println("Testing separate response on client side...");
         
-        //TODO uncomment when separate-response bug in IncomingMessageReliabilityHandler is fixed
-
         //(see http://tools.ietf.org/html/draft-ietf-core-coap-08#page-77)
+        CoAPTestReceiver testReceiverServer = this.testReceiver;
         testClient.reset();
-        testReceiver.reset();
+        testReceiverServer.reset();
         
-        //send request from testClient to testReceiver
+        //send request from testClient to testReceiverServer
         CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, 
                 new URI("coap://localhost:" + CoAPTestReceiver.PORT + "/testpath"), testClient);
         testClient.writeCoapRequest(coapRequest);
         
         //wait for request message to arrive
         long time = System.currentTimeMillis();
-        while (testReceiver.receivedMessages.size() == 0) {
+        while (testReceiverServer.receivedMessages.size() == 0) {
             if (System.currentTimeMillis() - time > 800) {
-                fail("testReceiver did not receive the request within time.");
+                fail("testReceiverServer did not receive the request within time.");
             }
             Thread.sleep(50);
         }
-        testReceiver.disableReceiving();
-        assertEquals("testReceiver received more than one message", 1,
-                testReceiver.receivedMessages.size());
+        testReceiverServer.disableReceiving();
+        assertEquals("testReceiverServer received more than one message", 1,
+                testReceiverServer.receivedMessages.size());
         
         //get values from received request
-        CoapMessage receivedRequest = testReceiver.receivedMessages.get(0).message;
+        CoapMessage receivedRequest = testReceiverServer.receivedMessages.get(0).message;
         assertEquals(MsgType.CON, receivedRequest.getHeader().getMsgType());
         assertEquals(Code.GET, receivedRequest.getHeader().getCode());
         int requestMessageID = receivedRequest.getMessageID();
@@ -344,12 +349,12 @@ public class CoAPRequestResponseTest {
         emptyResponseMessage.setMessageID(requestMessageID);
         
         //send empty response to client
-        testReceiver.reset();
-        Channels.write(testReceiver.channel, emptyResponseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
+        testReceiverServer.reset();
+        Channels.write(testReceiverServer.channel, emptyResponseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
         
         //wait 3 seconds then test if retransmissions were send (should not)
         Thread.sleep(3000);
-        assertEquals("testReceiver received unexpected messages", 0, testReceiver.receivedMessages.size());
+        assertEquals("testReceiverServer received unexpected messages", 0, testReceiverServer.receivedMessages.size());
         
         //send (separate) CON response to testClient
         int responseMessageID = 1111;
@@ -363,7 +368,7 @@ public class CoAPRequestResponseTest {
         CoapResponse responseMessage = new CoapResponse(responseHeader, responseOptionList, responsePayload);
         
         //send response to client
-        Channels.write(testReceiver.channel, responseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
+        Channels.write(testReceiverServer.channel, responseMessage, new InetSocketAddress("localhost", CoAPTestClient.PORT));
         
         //wait for (separate) CON response to arrive
         time = System.currentTimeMillis();
@@ -382,16 +387,16 @@ public class CoAPRequestResponseTest {
         
         //wait for empty ACK from testClient to testReceiver
         time = System.currentTimeMillis();
-        while (testReceiver.receivedMessages.size() == 0) {
+        while (testReceiverServer.receivedMessages.size() == 0) {
             if (System.currentTimeMillis() - time > 500) {
-                fail("testReceiver did not receive the empty ACK within time.");
+                fail("testReceiverServer did not receive the empty ACK within time.");
             }
             Thread.sleep(50);
         }
-        testReceiver.disableReceiving();
-        assertEquals("testReceiver received more than one message", 1,
-                testReceiver.receivedMessages.size());
-        CoapMessage receivedEmptyACK = testReceiver.receivedMessages.get(0).message;
+        testReceiverServer.disableReceiving();
+        assertEquals("testReceiverServer received more than one message", 1,
+                testReceiverServer.receivedMessages.size());
+        CoapMessage receivedEmptyACK = testReceiverServer.receivedMessages.get(0).message;
         assertEquals("received message is not empty", Code.EMPTY, receivedEmptyACK.getCode());
         assertEquals("received message is not ACK", MsgType.ACK, receivedEmptyACK.getMessageType());
         
@@ -405,7 +410,7 @@ public class CoAPRequestResponseTest {
         System.out.println("Testing separate response on server side...");
         /* Sequence diagram:
  
-        testReceiver        testServer
+    testReceiverClient      testServer
             |                   |
             |    requestMsg     |            
             +------------------>|     Header: GET (T=CON, Code=1, MID=0x7d38=32056)
@@ -427,8 +432,9 @@ public class CoAPRequestResponseTest {
         
         //reset server and receiver -> delete all received messages
         //                             and enable receiving
+        CoAPTestReceiver testReceiverClient = this.testReceiver;
         testServer.reset();
-        testReceiver.reset();
+        testReceiverClient.reset();
         
         //create 'requestMsg'
         int requestMessageID = 32056;
@@ -454,48 +460,48 @@ public class CoAPRequestResponseTest {
         testServer.waitBeforeSendingResponse = 2500;
         
         //send 'requestMsg' from testReceiver to testServer
-        Channels.write(testReceiver.channel, requestMsg, 
+        Channels.write(testReceiverClient.channel, requestMsg, 
                 new InetSocketAddress("localhost", CoAPTestServer.PORT));
                 
         //wait for two messages at testReceiver
         //('ackForRequestMsg' and 'responseMsg')
-        testReceiver.blockUntilMessagesReceivedOrTimeout(3600, 2);
+        testReceiverClient.blockUntilMessagesReceivedOrTimeout(3600, 2);
         
         //disable receiving at testServer and testReceiver
-        testReceiver.disableReceiving();
+        testReceiverClient.disableReceiving();
         testServer.disableReceiving();
         
         //check amount of messages
-        assertEquals("testReceiver should receive two messages", 2,
-                testReceiver.receivedMessages.size());
+        assertEquals("testReceiverClient should receive two messages", 2,
+                testReceiverClient.receivedMessages.size());
         assertEquals("testServer should receive a single message", 1,
                 testServer.receivedRequests.size());
         
         //get received messages
-        CoapMessage ackForRequestMsg = testReceiver.receivedMessages.get(0).message;
-        CoapMessage responseMsg = testReceiver.receivedMessages.get(1).message;
+        CoapMessage ackForRequestMsg = testReceiverClient.receivedMessages.get(0).message;
+        CoapMessage responseMsg = testReceiverClient.receivedMessages.get(1).message;
         
         //send 'ackForResponseMsg' to testServer        
         CoapMessage ackForResponseMsg = new CoapResponse(MsgType.ACK, Code.EMPTY, responseMsg.getMessageID());
-        Channels.write(testReceiver.channel, ackForResponseMsg, 
+        Channels.write(testReceiverClient.channel, ackForResponseMsg, 
                 new InetSocketAddress("localhost", CoAPTestServer.PORT));
         
         //check 'ackForRequestMsg'
-        assertEquals("ackForRequestMsg: message type does not match",
+        assertEquals("ackForRequestMsg, 'Empty ACK from testServer': message type does not match",
                 MsgType.ACK, ackForResponseMsg.getMessageType());
-        assertEquals("ackForRequestMsg: message code must be zero",
+        assertEquals("ackForRequestMsg, 'Empty ACK from testServer': message code must be zero",
                 Code.EMPTY, ackForRequestMsg.getCode());
-        assertEquals("ackForRequestMsg: message ID does not match",
+        assertEquals("ackForRequestMsg, 'Empty ACK from testServer': message ID does not match",
                 requestMessageID, ackForRequestMsg.getMessageID());
         
         //check 'responseMsg'
-        assertEquals("ackForRequestMsg: message type does not match",
+        assertEquals("responseMsg, 'CON Response from testServer': message type does not match",
                 MsgType.CON, responseMsg.getMessageType());
-        assertEquals("ackForRequestMsg: message code does not match",
+        assertEquals("responseMsg, 'CON Response from testServer': message code does not match",
                 Code.CONTENT_205, responseMsg.getCode());
-        assertArrayEquals("responseMsg: token does not match",
+        assertArrayEquals("responseMsg, 'CON Response from testServer': token does not match",
                 requestToken, responseMsg.getToken());
-        assertEquals("responseMsg: payload does not match", 
+        assertEquals("responseMsg, 'CON Response from testServer': payload does not match", 
                 responsePayload, responseMsg.getPayload());
     }
     
@@ -591,16 +597,17 @@ class CoAPTestServer extends CoapServerApplication {
             synchronized(this) {
                 receivedRequests.add(new ReceivedMessage<CoapRequest>(coapRequest));
             }
+            try {
+                Thread.sleep(waitBeforeSendingResponse);
+            } catch (InterruptedException ex) {
+                fail(ex.toString());
+            }
+            if(responsesToSend.isEmpty()) {
+                fail("responsesToSend is empty. This could be caused by an unexpected request.");
+            }
+            return responsesToSend.remove(0);
         }
-        try {
-            Thread.sleep(waitBeforeSendingResponse);
-        } catch (InterruptedException ex) {
-            fail(ex.toString());
-        }
-        if(responsesToSend.isEmpty()) {
-            fail("responsesToSend is empty. This could be caused by an unexpected request.");
-        }
-        return responsesToSend.remove(0);
+        return new CoapResponse(MsgType.RST, Code.EMPTY);
     }
 }
 
