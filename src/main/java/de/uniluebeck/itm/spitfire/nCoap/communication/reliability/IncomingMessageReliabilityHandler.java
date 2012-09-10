@@ -91,19 +91,12 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
-        /*
-        if(coapMessage.getMessageType() != MsgType.CON || !coapMessage.isRequest()){
-            ctx.sendUpstream(me);
-            return;
-        }
-        */
-
         if(coapMessage.getMessageType() == MsgType.CON){
 
             DatagramChannel datagramChannel = (DatagramChannel) ctx.getChannel();
 
             EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
-                    coapMessage.getMessageID(), datagramChannel);
+                    coapMessage.getMessageID(), datagramChannel, coapMessage.isRequest());
 
             if(coapMessage.isRequest()){
                 boolean inserted = false;
@@ -189,26 +182,33 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         private InetSocketAddress rcptAddress;
         private int messageID;
+        private boolean receivedMessageIsRequest;
 
         private DatagramChannel datagramChannel;
 
-        public EmptyACKSender(InetSocketAddress rcptAddress, int messageID, DatagramChannel datagramChannel){
+        public EmptyACKSender(InetSocketAddress rcptAddress, int messageID, DatagramChannel datagramChannel,
+                              boolean receivedMessageIsRequest){
             this.rcptAddress = rcptAddress;
             this.messageID = messageID;
             this.datagramChannel = datagramChannel;
+            this.receivedMessageIsRequest = receivedMessageIsRequest;
         }
 
         @Override
         public void run(){
-            boolean confirmed = false;
-             synchronized (monitor){
-                 if(incomingMessagesToBeConfirmed.contains(rcptAddress, messageID)){
-                    confirmed = true;
-                    incomingMessagesToBeConfirmed.put(rcptAddress, messageID, true);
-                }
-             }
+            log.debug("Start!");
 
-             if(confirmed){
+            boolean confirmed = false;
+            if(receivedMessageIsRequest){
+                synchronized (monitor){
+                    if(incomingMessagesToBeConfirmed.contains(rcptAddress, messageID)){
+                        confirmed = true;
+                        incomingMessagesToBeConfirmed.put(rcptAddress, messageID, true);
+                    }
+                }
+            }
+
+             if(confirmed || !receivedMessageIsRequest){
                 CoapMessage coapMessage = null;
 
                 try {
@@ -227,7 +227,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                     coapMessage.setMessageID(messageID);
                 }
                 catch (InvalidHeaderException e) {
-                    log.error("This should never happen! Exception while setting message ID for " +
+                    log.error("Exception while setting message ID for " +
                             "empty ACK. This should never happen!", e);
                 }
 

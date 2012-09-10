@@ -76,7 +76,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
     /**
      * This method is invoked with an upstream message event. If the message has one of the codes ACK or RESET it is
-     * most likely a response for a request waiting for a response. Thus the corresponding request is removed from
+     * a response for a request waiting for a response. Thus the corresponding request is removed from
      * the list of open requests and the request will not be retransmitted anymore.
      * @param ctx The {@link ChannelHandlerContext}
      * @param me The {@link MessageEvent}
