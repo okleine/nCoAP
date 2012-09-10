@@ -310,7 +310,6 @@ public class CoAPRequestResponseTest {
     /**
      * Tests the processing of a separate response on the client side.
      */
-    @Ignore //TODO fix issue https://github.com/okleine/nCoAP/issues/10
     @Test
     public synchronized void clientSideSeparateTest() throws Exception {
         System.out.println("Testing separate response on client side...");
@@ -346,6 +345,7 @@ public class CoAPRequestResponseTest {
         
         //create emppty response
         CoapResponse emptyResponseMessage = new CoapResponse(Code.EMPTY);
+        emptyResponseMessage.getHeader().setMsgType(MsgType.ACK);
         emptyResponseMessage.setMessageID(requestMessageID);
         
         //send empty response to client
@@ -516,7 +516,7 @@ class CoAPTestClient extends CoapClientApplication {
             new LinkedList<ReceivedMessage<CoapResponse>>();
     
     @Override
-    public synchronized void receiveCoapResponse(CoapResponse coapResponse) {
+    public synchronized void receiveResponse(CoapResponse coapResponse) {
         if (receivingEnabled) {
             receivedResponses.add(new ReceivedMessage<CoapResponse>(coapResponse));
         }

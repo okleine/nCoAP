@@ -32,10 +32,8 @@ public class OptionTest {
     public void testCreateTargetURIOptions() throws Exception {
         List<UriToCoAPUriOptionsTest> list = new LinkedList<UriToCoAPUriOptionsTest>();
         
-        //causes fail, needs to be fixed. See issue #8 on https://github.com/okleine/nCoAP/issues/8
-        //TODO uncomment when fixed
-//        list.add(new UriEncodeTest("coap://[2001:db8::2:1]", 
-//                new Option[]{}));
+        list.add(new UriToCoAPUriOptionsTest("coap://[2001:db8::2:1]", 
+                new Option[]{}));
         
         list.add(new UriToCoAPUriOptionsTest("coap://[2001:db8::2:1]:5555/testpath/",
                 new Option[]{ //expected encoding
@@ -118,7 +116,7 @@ public class OptionTest {
                 }));
         
         //TODO uncomment this when percent encoding is fixed
-        //See issue #9 on https://github.com/okleine/nCoAP/issues/9
+        //See issue #14 on https://github.com/okleine/nCoAP/issues/14
         
 //        list.add(new CoAPUriOptionsToUriTest("coap://host.com:5555/testpath/test%5Dpath", //expected encoding
 //                new Option[]{ 

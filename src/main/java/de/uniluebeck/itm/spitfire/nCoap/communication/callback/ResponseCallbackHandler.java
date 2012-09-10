@@ -24,15 +24,17 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
 import com.google.common.collect.HashBasedTable;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowledgementMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalErrorMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,8 +69,8 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me){
 
         if(me.getMessage() instanceof CoapRequest){
+            log.debug("CoapRequest received on downstream");
 
-            log.debug(" Handling downstream event!");
             CoapRequest coapRequest = (CoapRequest) me.getMessage();
 
             if(coapRequest.getResponseCallback() != null){
@@ -76,27 +78,32 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
                     coapRequest.setToken(TokenFactory.getInstance().getNextToken());
                 }
                 catch (InvalidOptionException e) {
-                    log.debug(" Error while setting token.\n", e);
+                    String errorMessage = "Internal CoAP error while setting token: " + e.getCause();
+                    log.error(errorMessage);
 
-                    //TODO tell the application an error occured.
+                    UpstreamMessageEvent ume = new UpstreamMessageEvent(ctx.getChannel(),
+                            new InternalErrorMessage(errorMessage, coapRequest.getToken()), me.getRemoteAddress());
+                    ctx.sendUpstream(ume);
                     return;
                 }
                 catch (ToManyOptionsException e) {
-                    log.debug(" Error while setting token.\n", e);
+                    String errorMessage = "Internal CoAP error while setting token: " + e.getCause();
+                    log.error(errorMessage);
 
-                    //TODO tell the application an error occured.
+                    UpstreamMessageEvent ume = new UpstreamMessageEvent(ctx.getChannel(),
+                            new InternalErrorMessage(errorMessage, coapRequest.getToken()), me.getRemoteAddress());
+                    ctx.sendUpstream(ume);
                     return;
                 }
-
-                log.debug(" New Confirmable Request added: \n" +
-                            "\tRemote Address: " + me.getRemoteAddress() + "\n" +
-                            "\tToken: " + Tools.toHexString(coapRequest.getToken()));
 
                 callbacks.put(new ByteArrayWrapper(coapRequest.getToken()),
                         (InetSocketAddress) me.getRemoteAddress(),
                         coapRequest.getResponseCallback());
 
-                log.debug(" Number of registered callbacks: " + callbacks.size());
+                log.info("New confirmable Request added (Remote Address: " + me.getRemoteAddress() +
+                        ", Token: " + Tools.toHexString(coapRequest.getToken()));
+
+                log.debug("Number of registered callbacks: " + callbacks.size());
             }
         }
         ctx.sendDownstream(me);
@@ -114,63 +121,55 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
 
-        log.debug(" Handle Upstream Message Event.");
+        if(me.getMessage() instanceof CoapResponse){
+            CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
-        if(!(me.getMessage() instanceof CoapResponse)){
-            ctx.sendUpstream(me);
-            return;
+            log.debug(" Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
+                        ") is a response (Remote Address: " + me.getRemoteAddress() +
+                        ", Token: " + Tools.toHexString(coapResponse.getToken()));
+
+
+            ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
+                                                         me.getRemoteAddress());
+
+            if(callback != null){
+                log.debug(" Received response for request with token " + Tools.toHexString(coapResponse.getToken()));
+                callback.receiveResponse(coapResponse);
+            }
         }
+        else if (me.getMessage() instanceof InternalAcknowledgementMessage){
 
-        CoapResponse coapResponse = (CoapResponse) me.getMessage();
+            ByteArrayWrapper token = ((InternalAcknowledgementMessage) me.getMessage()).getContent();
 
-        log.debug(" Received message is a response: \n" +
-                    "\tRemote Address: " + me.getRemoteAddress() + "\n" +
-                    "\tToken: " + Tools.toHexString(coapResponse.getToken()));
+            ResponseCallback callback = callbacks.get(token, me.getRemoteAddress());
 
-        ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
-                                                     me.getRemoteAddress());
+            if(callback != null){
+                log.debug("Received empty acknowledgement for request with token " + token.toHexString());
+                callback.receiveEmptyACK();
+            }
+        }
+        else if (me.getMessage() instanceof InternalErrorMessage){
+            InternalErrorMessage errorMessage = (InternalErrorMessage) me.getMessage();
+            ByteArrayWrapper token = new ByteArrayWrapper(errorMessage.getToken());
+            ResponseCallback callback = callbacks.get(token, me.getRemoteAddress());
 
-        if(callback != null){
-            log.debug(" Response callback found. " +
-                        "Invoking method receiveCoapResponse");
+            if(callback != null){
+                String error = "Received internal error message for request with token " + token.toHexString() +
+                        ":\n" + errorMessage.getContent();
+                log.debug(error);
+                callback.receiveInternalError(error);
+            }
 
-            callback.receiveCoapResponse(coapResponse);
+        }
+        else{
+            ctx.sendUpstream(me);
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception{
-        log.debug(" Exception caught:\n", e);
+        log.debug(" Exception caught:", e.getCause());
     }
 
-    //This wrapper is necessary since two raw byte arrays don't equal even if they have the same content!
-    private class ByteArrayWrapper{
-        private final byte[] data;
 
-        public ByteArrayWrapper(byte[] data)
-        {
-            if (data == null)
-            {
-                throw new NullPointerException();
-            }
-            this.data = data;
-        }
-
-        @Override
-        public boolean equals(Object other)
-        {
-            if (!(other instanceof ByteArrayWrapper))
-            {
-                return false;
-            }
-            return Arrays.equals(data, ((ByteArrayWrapper) other).data);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Arrays.hashCode(data);
-        }
-
-    }
 }

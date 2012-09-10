@@ -235,7 +235,7 @@ public enum Code {
      * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
      */
     public boolean isRequest(){
-        return number < 5;
+        return (number < 5 && number > 0);
     }
 
     /**
