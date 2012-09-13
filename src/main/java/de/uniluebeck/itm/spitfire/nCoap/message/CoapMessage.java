@@ -305,19 +305,24 @@ public abstract class CoapMessage {
             throw e;
         }
 
-        long exponent = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() & 7;
+        List<Option> tmp = optionList.getOption(optionName);
 
-        Blocksize result = Blocksize.getByExponent(exponent);
+        if(tmp.size() > 0){
+            long exponent = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() & 7;
 
-        if(result != null){
-            return result;
+            Blocksize result = Blocksize.getByExponent(exponent);
+
+            if(result != null){
+                return result;
+            }
+            else{
+                String msg = "SZX field with value " + exponent + " is not valid for Option " + optionName + ".";
+                InvalidOptionException e = new InvalidOptionException(optionName, msg);
+                log.error(msg, e);
+                throw e;
+            }
         }
-        else{
-            String msg = "SZX field with value " + exponent + " is not valid for Option " + optionName + ".";
-            InvalidOptionException e = new InvalidOptionException(optionName, msg);
-            log.error(msg, e);
-            throw e;
-        }
+        return null;
     }
 
     public boolean isLastBlock(OptionName optionName) throws InvalidOptionException {
