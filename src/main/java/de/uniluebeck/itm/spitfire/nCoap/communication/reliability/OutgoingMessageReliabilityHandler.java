@@ -57,7 +57,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(10);
 
     //Contains remote socket address and message ID of not yet confirmed messages
+
+    //private static Object openOutgoingConMsgMonitor = new Object();
     private final HashBasedTable<InetSocketAddress, Integer, byte[]> openOutgoingConMsg = HashBasedTable.create();
+
     private MessageIDFactory messageIDFactory = MessageIDFactory.getInstance();
 
     private static OutgoingMessageReliabilityHandler instance = new OutgoingMessageReliabilityHandler();
@@ -131,8 +134,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        log.debug("Handle Downstream Message Event.");
-
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendDownstream(me);
             return;
@@ -147,6 +148,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
             coapMessage.setMessageID(messageIDFactory.nextMessageID());
 
+            log.debug("Message ID set to " + coapMessage.getMessageID());
             if(coapMessage.getMessageType() == MsgType.CON){
                 if(!openOutgoingConMsg.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
 
@@ -154,18 +156,17 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                         openOutgoingConMsg.put((InetSocketAddress) me.getRemoteAddress(),
                                                            coapMessage.getMessageID(),
                                                            coapMessage.getToken());
+                        //Schedule first retransmission
+                        MessageRetransmitter messageRetransmitter
+                                = new MessageRetransmitter((InetSocketAddress) me.getRemoteAddress(), coapMessage);
+                        int delay = (int) (TIMEOUT_MILLIS * messageRetransmitter.randomFactor);
+                        executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS);
+
+                        log.debug("First retransmit for " +
+                                    coapMessage.getMessageType() + " message with ID " + coapMessage.getMessageID() +
+                                    " to be confirmed by " +  me.getRemoteAddress() + " scheduled with a delay of " +
+                                    delay + " millis.");
                     }
-
-                    //Schedule first retransmission
-                    MessageRetransmitter messageRetransmitter
-                            = new MessageRetransmitter((InetSocketAddress) me.getRemoteAddress(), coapMessage);
-                    int delay = (int) (TIMEOUT_MILLIS * messageRetransmitter.randomFactor);
-                    executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS);
-
-                    log.debug("First retransmit for " +
-                                coapMessage.getMessageType() + " message with ID " + coapMessage.getMessageID() +
-                                " to be confirmed by " +  me.getRemoteAddress() + " scheduled with a delay of " +
-                                delay + " millis.");
                 }
             }
         }
@@ -187,7 +188,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         public MessageRetransmitter(InetSocketAddress rcptAddress, CoapMessage coapMessage){
             this.rcptAddress = rcptAddress;
             this.coapMessage = coapMessage;
-            this.randomFactor = 1 + random.nextDouble() * 0.5;
+            this.randomFactor = 5 + random.nextDouble() * 0.5;
             this.retransmits = 0;
         }
 

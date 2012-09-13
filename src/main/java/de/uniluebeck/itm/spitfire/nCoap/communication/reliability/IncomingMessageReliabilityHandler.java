@@ -196,8 +196,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         @Override
         public void run(){
-            log.debug("Start!");
-
             boolean confirmed = false;
             if(receivedMessageIsRequest){
                 synchronized (monitor){

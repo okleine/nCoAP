@@ -50,7 +50,7 @@ public class CoapClientDatagramChannelFactory {
 
     private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
     static{
-        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(1024);
+        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(34000);
         instance.getChannel().getConfig().setReceiveBufferSizePredictor(predictor);
     }
 

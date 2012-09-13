@@ -151,15 +151,16 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                 Option newOption = decodeOption(buffer, prevOptionNumber);
                  //Add new Option to the list
                 OptionName optionName = OptionRegistry.getOptionName(newOption.getOptionNumber());
+                log.debug("Option " + optionName + " to be created.");
                 result.addOption(code, optionName, newOption);
                 prevOptionNumber = newOption.getOptionNumber();
             }
             catch(InvalidOptionException e){
                 if(e.isCritical()){
-                    log.error("Malformed " + e.getOptionName() + " option is critical. Send RST!");
+                    log.error("Malformed " + e.getOptionName() + " option is critical.");
                     throw e;
                 }
-                log.debug("Malformed " + e.getOptionName() + " option silently ignored.");
+                log.debug("Malformed " + e.getOptionName() + " option silently ignored.", e);
             }
         }
 
@@ -179,8 +180,13 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         byte firstByte = buf.readByte();
 
         //Exclude option delta and add to previous option optionNumber
-        OptionName optionName = OptionRegistry
-                .getOptionName((UnsignedBytes.toInt(firstByte) >>> 4) +  prevOptionNumber);
+        int optionNumber = (UnsignedBytes.toInt(firstByte) >>> 4) +  prevOptionNumber;
+        log.debug("Actually decoded option has number: " + optionNumber);
+
+        OptionName optionName = OptionRegistry.getOptionName(optionNumber);
+        log.debug("Actually decoded option has name:" + optionName);
+
+
 
         //Option optionNumber 21 is "If-none-match" and must not contain any value. This is e.g. useful for
         //PUT requests not being supposed to overwrite existing resources
