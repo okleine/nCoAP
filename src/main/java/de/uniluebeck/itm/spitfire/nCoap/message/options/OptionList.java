@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 
 /**
  *
@@ -29,6 +29,15 @@ public class OptionList {
      */
     public OptionList(){
         options = LinkedListMultimap.create(0);
+    }
+
+    public OptionList(OptionList optionList){
+        this();
+        for(Map.Entry entry : optionList.options.entries()){
+            OptionName optionName = (OptionName) entry.getKey();
+            Option option = (Option) entry.getValue();
+            this.options.put(optionName, option);
+        }
     }
 
     /**
@@ -83,6 +92,10 @@ public class OptionList {
 
         log.debug("" + optionName + " option with value " + Option.getHexString(option.getValue()) +
                 " succesfully added to option list.");
+    }
+
+    private LinkedListMultimap<OptionName, Option> getOptionList(){
+        return options;
     }
 
     /**

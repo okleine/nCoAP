@@ -109,18 +109,24 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
 
                     try {
                         if(response.getBlockNumber(BLOCK_2) == transfer.getNextBlockNumber()){
+                            log.debug("Received response (Token: " + (new ByteArrayWrapper(token).toHexString()) +
+                                      " , Block: " + response.getBlockNumber(BLOCK_2) + "), ");
+
                             transfer.getPartialPayload()
                                     .writeBytes(response.getPayload(), 0, response.getPayload().readableBytes());
                             transfer.setNextBlockNumber(transfer.getNextBlockNumber() + 1);
                         }
                         else{
-                            log.debug("Blocknumber " + response.getBlockNumber(BLOCK_2) + " for token " +
-                                    new ByteArrayWrapper(token).toHexString() + " was already received. Ignore.");
+                            log.debug("Received duplicate response (Token: " + (new ByteArrayWrapper(token).toHexString()) +
+                                    " , Block: " + response.getBlockNumber(BLOCK_2) + "). IGNORE!");
+
+                            me.getFuture().setSuccess();
+                            return;
                         }
-                    } catch (InvalidOptionException e) {
+                    }
+                    catch (InvalidOptionException e) {
                         log.error("This should never happen!", e);
                     }
-
                 }
 
                 //Check whether payload of the response is complete
@@ -202,6 +208,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
 
     }
 
+
     private class BlockwiseTransfer {
 
         private CoapMessage coapMessage;
@@ -209,11 +216,11 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
         private int nextBlockNumber = 0;
 
         public BlockwiseTransfer(CoapMessage coapMessage, ChannelBuffer partialPayload){
-            this.coapMessage = coapMessage;
-            this.partialPayload = partialPayload;
+           this.coapMessage = coapMessage;
+           this.partialPayload = partialPayload;
         }
 
-        public CoapMessage getCoapMessage() {
+        public CoapMessage getCoapMessage() throws InvalidHeaderException {
             return coapMessage;
         }
 

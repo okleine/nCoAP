@@ -26,6 +26,7 @@ package de.uniluebeck.itm.spitfire.nCoap.message;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -75,6 +76,11 @@ public class CoapRequest extends CoapMessage {
         log.debug("Created new request instance " +
             "(MsgType: " + msgType + ", Code: " + code + ", TargetURI: " + getTargetUri() + ")");
 
+    }
+
+    public CoapRequest(CoapRequest coapRequest) throws InvalidHeaderException {
+        super(coapRequest);
+        this.callback = coapRequest.getResponseCallback();
     }
 
     /**
