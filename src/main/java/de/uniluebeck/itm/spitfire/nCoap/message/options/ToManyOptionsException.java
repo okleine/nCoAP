@@ -9,7 +9,9 @@ package de.uniluebeck.itm.spitfire.nCoap.message.options;
  */
 public class ToManyOptionsException extends Exception {
 
-    public ToManyOptionsException(String msg){
+	private static final long serialVersionUID = 1L;
+
+	public ToManyOptionsException(String msg){
         super(msg);
     }
 }

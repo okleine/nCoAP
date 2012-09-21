@@ -13,7 +13,9 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionNam
  */
 public class InvalidOptionException extends Exception{
 
-    private OptionName optionName;
+	private static final long serialVersionUID = 1L;
+
+	private OptionName optionName;
     private boolean critical;
 
 

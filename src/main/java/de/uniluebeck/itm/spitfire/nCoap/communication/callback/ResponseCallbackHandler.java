@@ -26,8 +26,6 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowledgementMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalErrorMessage;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -39,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 
 /**
  * @author Oliver Kleine

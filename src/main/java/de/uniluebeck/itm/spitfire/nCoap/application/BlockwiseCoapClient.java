@@ -1,7 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.application;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.Blocksize;
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.InvalidMessageException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;

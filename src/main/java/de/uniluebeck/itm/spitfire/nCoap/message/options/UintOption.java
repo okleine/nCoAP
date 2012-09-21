@@ -7,8 +7,6 @@ import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-
 /**
  *
  * @author Oliver Kleine

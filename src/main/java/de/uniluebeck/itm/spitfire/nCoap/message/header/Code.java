@@ -212,7 +212,7 @@ public enum Code {
      * The corresponding numerical CoAP message code
      */
     public final int number;
-    private final List allowedOptions;
+    private final List<OptionRegistry.OptionName> allowedOptions;
 
     Code(int number, OptionRegistry.OptionName[] allowedOptions){
         this.number = number;

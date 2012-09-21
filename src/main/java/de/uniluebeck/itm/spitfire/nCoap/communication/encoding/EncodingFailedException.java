@@ -28,6 +28,8 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
  */
 public class EncodingFailedException extends Exception{
 
+    private static final long serialVersionUID = 1L;
+
     public EncodingFailedException(String msg) {
         super(msg);
     }

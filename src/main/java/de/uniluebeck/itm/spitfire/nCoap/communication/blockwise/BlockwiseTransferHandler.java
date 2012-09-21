@@ -30,13 +30,9 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
     private static Logger log = LoggerFactory.getLogger(BlockwiseTransferHandler.class.getName());
 
     private Object incompleteResponseMonitor = new Object();
-    private Object incompleteRequestMonitor = new Object();
 
     private HashMap<ByteArrayWrapper, BlockwiseTransfer> incompleteResponsePayload =
             new HashMap<ByteArrayWrapper, BlockwiseTransfer>();
-
-    private HashMap<ByteArrayWrapper, ChannelBuffer> incompleteRequestPayload =
-            new HashMap<ByteArrayWrapper, ChannelBuffer>();
 
     private static BlockwiseTransferHandler instance = new BlockwiseTransferHandler();
 

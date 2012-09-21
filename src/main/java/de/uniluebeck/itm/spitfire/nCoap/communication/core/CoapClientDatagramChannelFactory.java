@@ -29,8 +29,6 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
@@ -40,8 +38,6 @@ import java.util.concurrent.Executors;
  * @author Oliver Kleine
  */
 public class CoapClientDatagramChannelFactory {
-
-    private static Logger log = LoggerFactory.getLogger(CoapClientDatagramChannelFactory.class.getName());
 
     //public static int COAP_CLIENT_PORT = Configuration.getInstance().getInt("client.port", 5683);
     public static int COAP_CLIENT_PORT = 5682;

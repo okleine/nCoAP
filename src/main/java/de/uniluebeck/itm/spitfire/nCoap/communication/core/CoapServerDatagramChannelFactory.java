@@ -28,7 +28,6 @@ import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
-import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 
 import java.net.InetSocketAddress;

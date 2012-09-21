@@ -452,6 +452,8 @@ public abstract class CoapMessage {
                     result = new ArrayList<Option>(1);
                     result.add(Option.createUintOption(BLOCK_2, 0));
                     break;
+                default:
+                    break;
             }
 
             return result;
