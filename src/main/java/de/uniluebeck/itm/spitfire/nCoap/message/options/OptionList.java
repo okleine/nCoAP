@@ -150,21 +150,21 @@ public class OptionList {
         if(!(obj instanceof OptionList)){
             return false;
         }
-        
+
         OptionList optionList = (OptionList) obj;
-        
+
         if(options.size() != optionList.options.size()){
             return false;
         }
-        
+
         for(OptionName optionName : OptionName.values()){
             List<Option> list1 = options.get(optionName);
             List<Option> list2 = optionList.options.get(optionName);
-            
+
             if(list1.size() != list2.size()){
                 return false;
             }
-            
+
             for(int i = 0; i < list1.size(); i++ ){
                 if(!list1.get(i).equals(list2.get(i))){
                     return false;
