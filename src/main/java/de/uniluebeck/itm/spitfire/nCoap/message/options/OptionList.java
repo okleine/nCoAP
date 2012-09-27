@@ -63,6 +63,7 @@ public class OptionList {
         if(allowed_occurence == OptionRegistry.OptionOccurence.NONE){
             String msg = "[OptionList] " + optionName + " option has no meaning with"
                             + " a message with code " + code + ".";
+
             throw new InvalidOptionException(option.getOptionNumber(), msg);
         }
         else if(allowed_occurence == OptionRegistry.OptionOccurence.ONCE){

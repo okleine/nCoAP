@@ -290,7 +290,7 @@ public abstract class CoapMessage implements Cloneable {
             return getBlocksize(BLOCK_1);
         } catch (InvalidOptionException e) {
             log.error("This should never happen!", e);
-            return null;
+            return Blocksize.UNDEFINED;
         }
     }
 
@@ -299,7 +299,7 @@ public abstract class CoapMessage implements Cloneable {
             return getBlocksize(BLOCK_2);
         } catch (InvalidOptionException e) {
             log.error("This should never happen!", e);
-            return null;
+            return Blocksize.UNDEFINED;
         }
     }
 
@@ -356,15 +356,11 @@ public abstract class CoapMessage implements Cloneable {
             throw e;
         }
 
-        try{
-            UintOption option = (UintOption) getOption(optionName).get(0);
-            log.debug("Option " + option.toString() + ", value: " + option.getDecodedValue());
+        UintOption option = (UintOption) getOption(optionName).get(0);
+        log.debug("Option " + option.toString() + ", value: " + option.getDecodedValue());
 
-            return option.getDecodedValue() >> 4;
-        }
-        catch (IndexOutOfBoundsException e){
-            return 0;
-        }
+        return option.getDecodedValue() >> 4;
+
     }
 
     /**

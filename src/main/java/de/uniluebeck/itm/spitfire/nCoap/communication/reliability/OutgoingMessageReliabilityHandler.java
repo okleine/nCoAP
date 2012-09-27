@@ -50,7 +50,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     private static Logger log = LoggerFactory.getLogger(OutgoingMessageReliabilityHandler.class.getName());
 
     private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(
-            1,
+            10,
             new ThreadFactoryBuilder().setNameFormat("OutgoingMessageReliability-Thread %d").build()
     );
 
@@ -157,15 +157,26 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         if(coapMessage.getMessageID() == -1){
 
             coapMessage.setMessageID(messageIDFactory.nextMessageID());
+            log.debug("MsgID " + coapMessage.getMessageID() + " set.");
 
-            log.debug("Set message ID " + coapMessage.getMessageID());
             if(coapMessage.getMessageType() == MsgType.CON){
                 if(!waitingForACK.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
                     MessageRetransmissionScheduler scheduler =
                             new MessageRetransmissionScheduler((InetSocketAddress) me.getRemoteAddress(), coapMessage);
-
-                    executorService.schedule(scheduler, 0, TimeUnit.MILLISECONDS);
+                    try{
+                        executorService.schedule(scheduler, 0, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Exception e){
+                        log.error("Exception!", e);
+                    }
+                    log.debug("Hier!");
                 }
+                else{
+                    log.debug("Already contained!");
+                }
+            }
+            else{
+                log.debug("No CON message.");
             }
         }
 
@@ -188,27 +199,31 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
         @Override
         public void run() {
+
+            log.debug("Schedule retransmissions for " + coapMessage.getMessageID());
+
+            //Schedule retransmissions
+            ScheduledFuture[] futures = new ScheduledFuture[MAX_RETRANSMITS];
+
+            int delay = 0;
+            for(int i = 0; i < MAX_RETRANSMITS; i++){
+
+                delay += (int)(Math.pow(2, i) * TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
+
+                MessageRetransmitter messageRetransmitter
+                        = new MessageRetransmitter(rcptAddress, coapMessage, i+1);
+
+                futures[i] = executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS);
+
+                log.debug("Scheduled in " + delay + " millis {}", messageRetransmitter);
+            }
+
             synchronized (OutgoingMessageReliabilityHandler.getInstance().getClass()){
-
-                //Schedule retransmissions
-                ScheduledFuture[] futures = new ScheduledFuture[MAX_RETRANSMITS];
-
-                int delay = 0;
-                for(int i = 0; i < MAX_RETRANSMITS; i++){
-                    delay += (int)(Math.pow(2, i) * TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
-
-                    MessageRetransmitter messageRetransmitter
-                            = new MessageRetransmitter(rcptAddress, coapMessage, i+1);
-
-                    futures[i] = executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS);
-
-                    log.debug("Scheduled in " + delay + " millis {}", messageRetransmitter);
-                }
-
                 waitingForACK.put(rcptAddress, coapMessage.getMessageID(), futures);
             }
         }
     }
+
     private class MessageRetransmitter implements Runnable {
 
         private Logger log = LoggerFactory.getLogger(OutgoingMessageReliabilityHandler.class.getName());

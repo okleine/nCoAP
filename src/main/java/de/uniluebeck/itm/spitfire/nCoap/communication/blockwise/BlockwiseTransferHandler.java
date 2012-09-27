@@ -65,28 +65,24 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                 return;
             }
 
-            if(request.getMaxBlocksizeForResponse() != null){
-                BlockwiseTransfer transfer =
-                        new BlockwiseTransfer(request, ChannelBuffers.dynamicBuffer());
+            BlockwiseTransfer transfer =
+                    new BlockwiseTransfer(request, ChannelBuffers.dynamicBuffer());
 
-                synchronized (incompleteResponseMonitor){
-                    incompleteResponsePayload.put(new ByteArrayWrapper(token), transfer);
-                }
-
-                ctx.sendDownstream(me);
-                return;
+            synchronized (incompleteResponseMonitor){
+                incompleteResponsePayload.put(new ByteArrayWrapper(token), transfer);
             }
+
+            ctx.sendDownstream(me);
 
             //TODO handle blockwise transfer for outgoing requests with payload
-            {
-                ctx.sendDownstream(me);
-            }
 
         }
         else{
             //TODO handle blockwise transfer for outgoing responses with payload
             ctx.sendDownstream(me);
         }
+
+
     }
 
     @Override
@@ -111,6 +107,13 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                         if(response.getBlockNumber(BLOCK_2) == transfer.getNextBlockNumber()){
                             log.debug("Received response (Token: " + (new ByteArrayWrapper(token).toHexString()) +
                                       " , Block: " + response.getBlockNumber(BLOCK_2) + "), ");
+
+                            //Copy Payload
+                            ChannelBuffer payloadCopy = ChannelBuffers.copiedBuffer(response.getPayload());
+                            byte[] bytes = new byte[payloadCopy.readableBytes()];
+                            payloadCopy.getBytes(0, bytes);
+                            log.debug("Payload Hex: " + new ByteArrayWrapper(bytes).toHexString());
+                            //**********************************************
 
                             transfer.getPartialPayload()
                                     .writeBytes(response.getPayload(), 0, response.getPayload().readableBytes());
@@ -170,6 +173,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                         nextCoapRequest.setMessageID(-1);
                         nextCoapRequest.setBlockOption(BLOCK_2, receivedBlockNumber + 1,
                                                        false, response.getMaxBlocksizeForResponse());
+
 
                         ChannelFuture future = Channels.future(me.getChannel());
 

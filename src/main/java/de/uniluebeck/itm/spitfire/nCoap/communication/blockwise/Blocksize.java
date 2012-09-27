@@ -9,6 +9,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.blockwise;
  */
 public enum Blocksize {
 
+    UNDEFINED(-1),
     SIZE_16(0),
     SIZE_32(1),
     SIZE_64(2),
