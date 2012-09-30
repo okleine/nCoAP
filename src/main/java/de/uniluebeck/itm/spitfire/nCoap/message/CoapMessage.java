@@ -329,7 +329,9 @@ public abstract class CoapMessage implements Cloneable {
                 throw e;
             }
         }
-        return null;
+        else{
+            return Blocksize.UNDEFINED;
+        }
     }
 
     public boolean isLastBlock(OptionName optionName) throws InvalidOptionException {
@@ -342,7 +344,7 @@ public abstract class CoapMessage implements Cloneable {
             throw e;
         }
 
-        long value = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
+        long value = ((UintOption) getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
         return value == 0;
     }
 

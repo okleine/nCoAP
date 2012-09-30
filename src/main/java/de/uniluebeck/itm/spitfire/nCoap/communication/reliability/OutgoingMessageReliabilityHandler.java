@@ -200,7 +200,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         @Override
         public void run() {
 
-            log.debug("Schedule retransmissions for " + coapMessage.getMessageID());
+            log.debug("Schedule retransmissions for MsgID " + coapMessage.getMessageID());
 
             //Schedule retransmissions
             ScheduledFuture[] futures = new ScheduledFuture[MAX_RETRANSMITS];

@@ -5,6 +5,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.MessageDoesNotAllowPayloadException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
@@ -92,37 +93,42 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
             return;
         }
 
+        CoapMessage coapMessage = (CoapMessage) me.getMessage();
+        if(coapMessage.getCode().isError() || coapMessage.getMessageType().equals(MsgType.RST)){
+            errorMessageReceived(ctx, me);
+            return;
+        }
+
         if(me.getMessage() instanceof CoapResponse){
             CoapResponse response = (CoapResponse) me.getMessage();
 
-            if(response.getMaxBlocksizeForResponse() != null){
-                final byte[] token = response.getToken();
+            final byte[] token = response.getToken();
 
-                //Add latest received payload to already received payload
-                BlockwiseTransfer transfer;
-                synchronized (incompleteResponseMonitor){
-                    transfer = incompleteResponsePayload.get(new ByteArrayWrapper(token));
-
+            BlockwiseTransfer transfer;
+            //Add latest received payload to already received payload
+            synchronized (incompleteResponseMonitor){
+                transfer = incompleteResponsePayload.get(new ByteArrayWrapper(token));
+                if(transfer != null){
                     try {
                         if(response.getBlockNumber(BLOCK_2) == transfer.getNextBlockNumber()){
                             log.debug("Received response (Token: " + (new ByteArrayWrapper(token).toHexString()) +
                                       " , Block: " + response.getBlockNumber(BLOCK_2) + "), ");
 
-                            //Copy Payload
-                            ChannelBuffer payloadCopy = ChannelBuffers.copiedBuffer(response.getPayload());
-                            byte[] bytes = new byte[payloadCopy.readableBytes()];
-                            payloadCopy.getBytes(0, bytes);
-                            log.debug("Payload Hex: " + new ByteArrayWrapper(bytes).toHexString());
-                            //**********************************************
+                            if (log.isDebugEnabled()){
+                                //Copy Payload
+                                ChannelBuffer payloadCopy = ChannelBuffers.copiedBuffer(response.getPayload());
+                                byte[] bytes = new byte[payloadCopy.readableBytes()];
+                                payloadCopy.getBytes(0, bytes);
+                                log.debug("Payload Hex: " + new ByteArrayWrapper(bytes).toHexString());
+                            }
 
                             transfer.getPartialPayload()
                                     .writeBytes(response.getPayload(), 0, response.getPayload().readableBytes());
                             transfer.setNextBlockNumber(transfer.getNextBlockNumber() + 1);
                         }
                         else{
-                            log.debug("Received duplicate response (Token: " + (new ByteArrayWrapper(token).toHexString()) +
-                                    " , Block: " + response.getBlockNumber(BLOCK_2) + "). IGNORE!");
-
+                            log.debug("Received unexpected response (Token: " + (new ByteArrayWrapper(token).toHexString()) +
+                                   " , Block: " + response.getBlockNumber(BLOCK_2) + "). IGNORE!");
                             me.getFuture().setSuccess();
                             return;
                         }
@@ -131,8 +137,10 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                         log.error("This should never happen!", e);
                     }
                 }
+            }
 
-                //Check whether payload of the response is complete
+            //Check whether payload of the response is complete
+            if(transfer != null){
                 try {
                     if(response.isLastBlock(BLOCK_2)){
 
@@ -157,8 +165,6 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                                         new ByteArrayWrapper(token).toHexString() + " from list");
                             }
                         }
-                        //End the original ChannelFuture
-                        me.getFuture().isSuccess();
                         return;
 
                     }
@@ -201,17 +207,25 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                 catch (MessageDoesNotAllowPayloadException e) {
                     log.error("This should never happen!", e);
                 }
-                catch (ToManyOptionsException e) {
+                catch (ToManyOptionsException e){
                     log.error("This should never happen!", e);
-                } catch (InvalidHeaderException e) {
+                }
+                catch (InvalidHeaderException e) {
                     log.error("This should never happen!", e);
                 }
             }
-            ctx.sendUpstream(me);
         }
 
+        ctx.sendUpstream(me);
     }
 
+    private void errorMessageReceived(ChannelHandlerContext ctx, MessageEvent me){
+        CoapMessage coapMessage = (CoapMessage) me.getMessage();
+        synchronized (incompleteResponseMonitor){
+            incompleteResponsePayload.remove(coapMessage.getToken());
+        }
+        ctx.sendUpstream(me);
+    }
 
     private class BlockwiseTransfer {
 
