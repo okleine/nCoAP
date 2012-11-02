@@ -79,17 +79,27 @@ public class CoapMessageEncoder extends OneToOneEncoder{
 
         for(OptionName optionName : OptionName.values()){
             for(Option option : optionList.getOption(optionName)){
-                encodeOption(buffer, optionName, option, prevNumber);
-                prevNumber = optionName.number;
 
-                log.debug(" Encoded option(No: " + optionName.number +
+                // Small hack, due to two types of the observe option
+                if(optionName == OptionName.OBSERVE_RESPONSE) {
+                    encodeOption(buffer, OptionName.OBSERVE_REQUEST, option, prevNumber);
+                    prevNumber = OptionName.OBSERVE_REQUEST.number;
+                    log.debug(" Encoded option(No: " + OptionName.OBSERVE_REQUEST.number +
                             ", Value: " + Option.getHexString(option.getValue()) + ")");
+                } else {
+                    encodeOption(buffer, optionName, option, prevNumber);
+                    prevNumber = optionName.number;
+                    log.debug(" Encoded option(No: " + optionName.number +
+                            ", Value: " + Option.getHexString(option.getValue()) + ")");
+                }
             }
         }
     }
 
     private void encodeOption(ChannelBuffer buffer, OptionName optionName, Option option, int prevNumber)
             throws Exception {
+
+
 
         log.debug(" Start encoding option number " + optionName.number);
 

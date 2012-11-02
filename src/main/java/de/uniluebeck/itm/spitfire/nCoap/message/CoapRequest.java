@@ -346,4 +346,27 @@ public class CoapRequest extends CoapMessage {
             throw e;
         }
     }
+
+    /**
+     * Set the observe option. This causes eventually already contained observe options to be removed from
+     * the list even in case of an exception.
+     *
+     * @throws ToManyOptionsException if adding an observe options would exceed the maximum number of
+     * options per message.
+     */
+    public void setObserveOptionRequest() throws ToManyOptionsException {
+        optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_REQUEST);
+        try{
+            Option option = Option.createEmptyOption(OptionRegistry.OptionName.OBSERVE_REQUEST);
+            optionList.addOption(header.getCode(), OptionRegistry.OptionName.OBSERVE_REQUEST, option);
+        } catch (InvalidOptionException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_REQUEST);
+            log.error("This should never happen!", e);
+        } catch (ToManyOptionsException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_REQUEST);
+            log.debug("Critical option (" + OptionRegistry.OptionName.OBSERVE_REQUEST + ") could not be added.", e);
+            throw e;
+        }
+    }
+
 }

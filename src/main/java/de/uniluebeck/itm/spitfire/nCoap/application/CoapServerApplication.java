@@ -92,6 +92,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 log.info("[ServerApplication] Externeal resources released. Shutdown completed.");
             }
         });
+
     }
 
     /**
@@ -121,7 +122,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 //Set message ID and token to match the request
                 log.debug("Message ID of incoming request: " + coapRequest.getMessageID());
                 coapResponse.setMessageID(coapRequest.getMessageID());
-                
+
 
                 if(coapRequest.getToken().length > 0){
                     coapResponse.setToken(coapRequest.getToken());

@@ -28,6 +28,8 @@ public class OptionRegistry {
         URI_PORT(7),
         LOCATION_QUERY(8),
         URI_PATH(9),
+        OBSERVE_REQUEST(10),
+        OBSERVE_RESPONSE(-10),
         TOKEN(11),
         ACCEPT(12),
         IF_MATCH(13),
@@ -38,7 +40,7 @@ public class OptionRegistry {
         IF_NONE_MATCH(21);
 
         public final int number;
-        
+
         OptionName(int number){
             this.number = number;
         }
@@ -73,7 +75,7 @@ public class OptionRegistry {
                     return mediaType;
                 }
             }
-            
+
             return null;
         }
     }
@@ -87,7 +89,7 @@ public class OptionRegistry {
      * The default max age option value is 60
      */
     public static int MAX_AGE_DEFAULT = 60;
-    
+
     private static final HashMap<OptionName, OptionSyntaxConstraints> syntaxConstraints
             = new HashMap<OptionName, OptionSyntaxConstraints>();
     static{
@@ -107,6 +109,8 @@ public class OptionRegistry {
         syntaxConstraints.put(OptionName.BLOCK_2, new OptionSyntaxConstraints(OptionType.UINT, 1, 3));
         syntaxConstraints.put(OptionName.BLOCK_1, new OptionSyntaxConstraints(OptionType.UINT, 1, 3));
         syntaxConstraints.put(OptionName.IF_NONE_MATCH, new OptionSyntaxConstraints(OptionType.EMPTY, 0, 0));
+        syntaxConstraints.put(OptionName.OBSERVE_REQUEST, new OptionSyntaxConstraints(OptionType.EMPTY, 0, 0));
+        syntaxConstraints.put(OptionName.OBSERVE_RESPONSE, new OptionSyntaxConstraints(OptionType.UINT, 0, 2));
     }
 
     private static final HashMap<Code, HashMap<OptionName, OptionOccurence>> allowedOptions
@@ -123,6 +127,7 @@ public class OptionRegistry {
         constraintsGET.put(OptionName.ACCEPT, OptionOccurence.MULTIPLE);
         constraintsGET.put(OptionName.ETAG, OptionOccurence.MULTIPLE);
         constraintsGET.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraintsGET.put(OptionName.OBSERVE_REQUEST, OptionOccurence.ONCE);
         allowedOptions.put(Code.GET,  constraintsGET);
 
         //POST
@@ -202,6 +207,7 @@ public class OptionRegistry {
         constraints205.put(OptionName.MAX_AGE, OptionOccurence.ONCE);
         constraints205.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
         constraints205.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
+        constraints205.put(OptionName.OBSERVE_RESPONSE, OptionOccurence.ONCE);
         allowedOptions.put(Code.CONTENT_205, constraints205);
 
         //both, 4x, 5x only allow Max-Age Option
@@ -247,9 +253,14 @@ public class OptionRegistry {
     }
 
     public static OptionType getOptionType(OptionName opt_name){
-        return syntaxConstraints.get(opt_name).opt_type;
+        OptionSyntaxConstraints osc = syntaxConstraints.get(opt_name);
+        if(osc == null) {
+            throw new NullPointerException("OptionSyntaxConstraints does not exists!");
+        }
+        return osc.opt_type;
     }
 
+    // TODO: zwei mal 10?
     public static OptionName getOptionName(int number) throws InvalidOptionException{
         for(OptionName o :OptionName.values()){
             if(o.number == number){

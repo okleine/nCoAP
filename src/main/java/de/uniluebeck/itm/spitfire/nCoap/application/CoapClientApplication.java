@@ -42,7 +42,7 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public abstract class CoapClientApplication extends ResponseCallback{
+public abstract class CoapClientApplication extends ResponseCallback {
 
     private final DatagramChannel channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
 

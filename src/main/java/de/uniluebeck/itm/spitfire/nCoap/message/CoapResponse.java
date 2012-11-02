@@ -171,4 +171,29 @@ public class CoapResponse extends CoapMessage {
 
         return new URI(result);
     }
+
+    /**
+     * Set the observe option. This causes eventually already contained observe options to be removed from
+     * the list even in case of an exception.
+     *
+     * @param Sets the sequence number for the observe option
+     *
+     * @throws ToManyOptionsException if adding an observe options would exceed the maximum number of
+     * options per message.
+     */
+    public void setObserveOptionResponse(long sequenceNumber) throws ToManyOptionsException {
+        optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+        try{
+            Option option = Option.createUintOption(OptionRegistry.OptionName.OBSERVE_RESPONSE, sequenceNumber);
+            optionList.addOption(header.getCode(), OptionRegistry.OptionName.OBSERVE_RESPONSE, option);
+        } catch (InvalidOptionException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+            log.error("This should never happen!", e);
+        } catch (ToManyOptionsException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+            log.debug("Critical option (" + OptionRegistry.OptionName.OBSERVE_RESPONSE + ") could not be added.", e);
+            throw e;
+        }
+    }
+
 }
