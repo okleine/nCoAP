@@ -25,6 +25,7 @@ package de.uniluebeck.itm.spitfire.nCoap.application;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapObservableRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
@@ -92,7 +93,6 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 log.info("[ServerApplication] Externeal resources released. Shutdown completed.");
             }
         });
-
     }
 
     /**
@@ -102,6 +102,10 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      */
     public abstract CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderAddress);
 
+
+    public void receiveCoapObservableRequest(CoapObservableRequest coapObservableRequest) {
+        receiveCoapRequest(coapObservableRequest.getCoapRequest(), coapObservableRequest.getRemoteAddress());
+    }
 
     private class CoapRequestExecutor implements Runnable {
 

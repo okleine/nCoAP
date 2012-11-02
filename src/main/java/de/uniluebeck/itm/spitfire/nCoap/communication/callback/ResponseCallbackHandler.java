@@ -28,6 +28,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowled
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalErrorMessage;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapNotificationResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
@@ -118,7 +119,23 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
 
-        if(me.getMessage() instanceof CoapResponse){
+        // NotifyResponse ohne entfernen
+        if(me.getMessage() instanceof CoapNotificationResponse){
+            CoapResponse coapResponse = (CoapResponse) me.getMessage();
+
+            log.debug(" Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
+                        ") is a response (Remote Address: " + me.getRemoteAddress() +
+                        ", Token: " + Tools.toHexString(coapResponse.getToken()));
+
+
+            ResponseCallback callback = callbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
+                                                         me.getRemoteAddress());
+
+            if(callback != null){
+                log.debug(" Received response for request with token " + Tools.toHexString(coapResponse.getToken()));
+                callback.receiveResponse(coapResponse);
+            }
+        } else if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             log.debug(" Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
