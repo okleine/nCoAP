@@ -44,6 +44,10 @@ public class Header {
         setCode(code);
     }
 
+    public Header(Header header) throws InvalidHeaderException {
+        this(header.getMsgType(), header.getCode(), header.msgID);
+    }
+
     public Header(MsgType msgType, Code code) {
         this(code);
         setMsgType(msgType);

@@ -30,6 +30,11 @@ public abstract class Option{
         optionNumber = optionName.number;
     }
 
+    protected Option(Option option) throws InvalidOptionException {
+        this(OptionRegistry.getOptionName(option.getOptionNumber()));
+        this.value = option.getValue();
+    }
+
     /**
      * Creates all URI related options from the given URI
      * @param uri URI to extract the URI options from
@@ -66,6 +71,7 @@ public abstract class Option{
         }
 
         //Create URI-host option
+        log.debug("Target URI: " + uri);
         String host = uri.getHost();
 
         //Do only add an URI host option if the host is no IP-Address

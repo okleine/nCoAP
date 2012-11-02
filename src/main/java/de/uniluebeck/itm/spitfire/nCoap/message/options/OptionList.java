@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -28,6 +29,15 @@ public class OptionList {
      */
     public OptionList(){
         options = LinkedListMultimap.create(0);
+    }
+
+    public OptionList(OptionList optionList){
+        this();
+        for(Map.Entry entry : optionList.options.entries()){
+            OptionName optionName = (OptionName) entry.getKey();
+            Option option = (Option) entry.getValue();
+            this.options.put(optionName, option);
+        }
     }
 
     /**
@@ -53,6 +63,7 @@ public class OptionList {
         if(allowed_occurence == OptionRegistry.OptionOccurence.NONE){
             String msg = "[OptionList] " + optionName + " option has no meaning with"
                             + " a message with code " + code + ".";
+
             throw new InvalidOptionException(option.getOptionNumber(), msg);
         }
         else if(allowed_occurence == OptionRegistry.OptionOccurence.ONCE){
@@ -82,6 +93,10 @@ public class OptionList {
 
         log.debug("" + optionName + " option with value " + Option.getHexString(option.getValue()) +
                 " succesfully added to option list.");
+    }
+
+    private LinkedListMultimap<OptionName, Option> getOptionList(){
+        return options;
     }
 
     /**

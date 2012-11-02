@@ -46,10 +46,10 @@ public class MessageIDFactory {
     public static int ALLOCATION_TIMEOUT = 120;
 
     //private static Random random = new Random(System.currentTimeMillis());
-    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(10);
+    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
 
     //Allocated message IDs
-    private HashSet<Integer> allocatedMessageIDs = new HashSet<Integer>();
+    private final HashSet<Integer> allocatedMessageIDs = new HashSet<Integer>();
 
     int nextMessageID = 0;
 
@@ -73,9 +73,9 @@ public class MessageIDFactory {
      *
      * @return the next available message ID within range 1 to (2^16)-1
      */
-    public int nextMessageID(){
+    public synchronized int nextMessageID(){
 
-        boolean created = false;
+        boolean created;
         do{
             synchronized(allocatedMessageIDs){
                 nextMessageID = (nextMessageID + 1) & 0x0000FFF;

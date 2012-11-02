@@ -53,6 +53,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
+
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
         if(!(obj instanceof ChannelBuffer)){
             return obj;
@@ -94,9 +95,11 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
             if(header.getCode().isRequest()){
                 result = new CoapRequest(header, optionList, buffer);
+                log.debug("Decoded CoapRequest.");
             }
             else{
                 result = new CoapResponse(header, optionList, buffer);
+                log.debug("Decoded CoapResponse.");
             }
 
             //TODO Set IP address of server socket (currently [0::] for wildcard address)
@@ -109,6 +112,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         }
         catch(InvalidOptionException e){
             //TODO send RST
+            log.debug("Invalid option in received message.", e);
             return null;
         }
     }

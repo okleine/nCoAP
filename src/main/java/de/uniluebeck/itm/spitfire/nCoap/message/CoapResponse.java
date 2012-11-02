@@ -58,6 +58,9 @@ public class CoapResponse extends CoapMessage {
         setMessageID(messageID);
     }
 
+    public CoapResponse(CoapResponse coapResponse) throws InvalidHeaderException {
+        super(coapResponse);
+    }
 //    public CoapResponse(MsgType msgType, Code code, int messageID, byte[] token)
 //            throws InvalidHeaderException,ToManyOptionsException, InvalidOptionException {
 //

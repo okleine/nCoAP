@@ -7,9 +7,8 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
-import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.*;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
@@ -20,10 +19,12 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
+
 /**
  * @author Oliver Kleine
  */
-public abstract class CoapMessage {
+public abstract class CoapMessage implements Cloneable {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
@@ -53,6 +54,12 @@ public abstract class CoapMessage {
         this.header = header;
         this.optionList = optionList;
         this.payload = payload;
+    }
+
+    protected CoapMessage(CoapMessage coapMessage) throws InvalidHeaderException {
+        this(new Header(coapMessage.getHeader()),
+             new OptionList(coapMessage.getOptionList()),
+             coapMessage.getPayload());
     }
 
     /**
@@ -283,7 +290,7 @@ public abstract class CoapMessage {
             return getBlocksize(BLOCK_1);
         } catch (InvalidOptionException e) {
             log.error("This should never happen!", e);
-            return null;
+            return Blocksize.UNDEFINED;
         }
     }
 
@@ -292,7 +299,7 @@ public abstract class CoapMessage {
             return getBlocksize(BLOCK_2);
         } catch (InvalidOptionException e) {
             log.error("This should never happen!", e);
-            return null;
+            return Blocksize.UNDEFINED;
         }
     }
 
@@ -322,7 +329,9 @@ public abstract class CoapMessage {
                 throw e;
             }
         }
-        return null;
+        else{
+            return Blocksize.UNDEFINED;
+        }
     }
 
     public boolean isLastBlock(OptionName optionName) throws InvalidOptionException {
@@ -335,7 +344,7 @@ public abstract class CoapMessage {
             throw e;
         }
 
-        long value = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
+        long value = ((UintOption) getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
         return value == 0;
     }
 
@@ -349,10 +358,11 @@ public abstract class CoapMessage {
             throw e;
         }
 
-        UintOption option = (UintOption) optionList.getOption(optionName).get(0);
+        UintOption option = (UintOption) getOption(optionName).get(0);
         log.debug("Option " + option.toString() + ", value: " + option.getDecodedValue());
 
-        return ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() >> 4;
+        return option.getDecodedValue() >> 4;
+
     }
 
     /**
@@ -485,4 +495,10 @@ public abstract class CoapMessage {
             && optionList.equals(msg.getOptionList())
             && payload.equals(msg.getPayload());
     }
+
+    @Override
+    public CoapMessage clone() throws CloneNotSupportedException {
+        return (CoapMessage) super.clone();
+    }
+
 }

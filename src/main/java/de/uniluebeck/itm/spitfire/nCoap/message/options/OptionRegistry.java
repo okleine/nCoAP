@@ -212,6 +212,7 @@ public class OptionRegistry {
 
         //both, 4x, 5x only allow Max-Age Option
         HashMap<OptionName, OptionOccurence> constraints4x5x = new HashMap<OptionName, OptionOccurence>();
+        constraints4x5x.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraints4x5x.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints4x5x.put(OptionName.MAX_AGE, OptionOccurence.ONCE);
 

@@ -231,6 +231,15 @@ public enum Code {
     }
 
     /**
+     * This method indicates wheter the message code refers to a response with error code. Both requests and
+     * responses containing codes smaller than 128 return false.
+     * @return <code>true</code> in case of an error code, <code>false</code> otherwise
+     */
+    public boolean isError(){
+        return (number >= 128);
+    }
+
+    /**
      * This method indicates wheter the message code refers to a request or a response
      * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
      */
