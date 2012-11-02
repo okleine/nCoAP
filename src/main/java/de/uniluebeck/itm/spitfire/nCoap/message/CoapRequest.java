@@ -26,6 +26,7 @@ package de.uniluebeck.itm.spitfire.nCoap.message;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -75,6 +76,11 @@ public class CoapRequest extends CoapMessage {
         log.debug("Created new request instance " +
             "(MsgType: " + msgType + ", Code: " + code + ", TargetURI: " + getTargetUri() + ")");
 
+    }
+
+    public CoapRequest(CoapRequest coapRequest) throws InvalidHeaderException {
+        super(coapRequest);
+        this.callback = coapRequest.getResponseCallback();
     }
 
     /**
@@ -346,4 +352,27 @@ public class CoapRequest extends CoapMessage {
             throw e;
         }
     }
+
+    /**
+     * Set the observe option. This causes eventually already contained observe options to be removed from
+     * the list even in case of an exception.
+     *
+     * @throws ToManyOptionsException if adding an observe options would exceed the maximum number of
+     * options per message.
+     */
+    public void setObserveOptionRequest() throws ToManyOptionsException {
+        optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_REQUEST);
+        try{
+            Option option = Option.createEmptyOption(OptionRegistry.OptionName.OBSERVE_REQUEST);
+            optionList.addOption(header.getCode(), OptionRegistry.OptionName.OBSERVE_REQUEST, option);
+        } catch (InvalidOptionException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_REQUEST);
+            log.error("This should never happen!", e);
+        } catch (ToManyOptionsException e) {
+            optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_REQUEST);
+            log.debug("Critical option (" + OptionRegistry.OptionName.OBSERVE_REQUEST + ") could not be added.", e);
+            throw e;
+        }
+    }
+
 }

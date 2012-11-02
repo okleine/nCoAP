@@ -9,9 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -30,6 +28,11 @@ public abstract class Option{
 
     protected Option(OptionName optionName){
         optionNumber = optionName.number;
+    }
+
+    protected Option(Option option) throws InvalidOptionException {
+        this(OptionRegistry.getOptionName(option.getOptionNumber()));
+        this.value = option.getValue();
     }
 
     /**
@@ -68,6 +71,7 @@ public abstract class Option{
         }
 
         //Create URI-host option
+        log.debug("Target URI: " + uri);
         String host = uri.getHost();
 
         //Do only add an URI host option if the host is no IP-Address

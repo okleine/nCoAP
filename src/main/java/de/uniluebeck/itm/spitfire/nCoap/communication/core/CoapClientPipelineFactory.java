@@ -23,6 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransferHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
@@ -43,6 +44,7 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
         pipeline.addLast("CoAP Message Decoder", new CoapMessageDecoder());
         pipeline.addLast("OutgoingMessageReliabilityHandler", OutgoingMessageReliabilityHandler.getInstance());
         pipeline.addLast("IncomingMessageReliabilityHandler", IncomingMessageReliabilityHandler.getInstance());
+        pipeline.addLast("BlockwiseTransferHandler", BlockwiseTransferHandler.getInstance());
         pipeline.addLast("ResponseCallbackHandler", ResponseCallbackHandler.getInstance());
 
         return pipeline;

@@ -53,6 +53,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
+
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
         if(!(obj instanceof ChannelBuffer)){
             return obj;
@@ -84,7 +85,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         //Create OptionList
         try{
-            OptionList optionList = decodeOptionList(buffer, optionCount, Code.getCodeFromNumber(codeNumber));
+            OptionList optionList = decodeOptionList(buffer, optionCount, Code.getCodeFromNumber(codeNumber), header);
 
             //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
             //at the same position (buf.readableBytes() == 0).
@@ -94,9 +95,11 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
             if(header.getCode().isRequest()){
                 result = new CoapRequest(header, optionList, buffer);
+                log.debug("Decoded CoapRequest.");
             }
             else{
                 result = new CoapResponse(header, optionList, buffer);
+                log.debug("Decoded CoapResponse.");
             }
 
             //TODO Set IP address of server socket (currently [0::] for wildcard address)
@@ -109,6 +112,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         }
         catch(InvalidOptionException e){
             //TODO send RST
+            log.debug("Invalid option in received message.", e);
             return null;
         }
     }
@@ -130,11 +134,12 @@ public class CoapMessageDecoder extends OneToOneDecoder{
      * @param buffer The ChannelBuffer containing the options to be decoded
      * @param optionCount The number of options to be decoded
      * @param code The message code of the message that is intended to include the new OptionList
+     * @param header
      * @return An OptionList object containing the decoded options
      * @throws InvalidOptionException if a critical option is malformed, e.g. size is out of defined bounds
      * @throws ToManyOptionsException if there are too many options contained in the list
      */
-    private OptionList decodeOptionList(ChannelBuffer buffer, int optionCount, Code code)
+    private OptionList decodeOptionList(ChannelBuffer buffer, int optionCount, Code code, Header header)
             throws InvalidOptionException, ToManyOptionsException {
 
         if(optionCount > 15){
@@ -148,18 +153,19 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             //Create the next readable option from the ChannelBuffer and move the buffers read-index to
             //the starting position of the next option (resp. of the payload if existing)
             try{
-                Option newOption = decodeOption(buffer, prevOptionNumber);
+                Option newOption = decodeOption(buffer, prevOptionNumber, header);
                  //Add new Option to the list
                 OptionName optionName = OptionRegistry.getOptionName(newOption.getOptionNumber());
+                log.debug("Option " + optionName + " to be created.");
                 result.addOption(code, optionName, newOption);
                 prevOptionNumber = newOption.getOptionNumber();
             }
             catch(InvalidOptionException e){
                 if(e.isCritical()){
-                    log.error("Malformed " + e.getOptionName() + " option is critical. Send RST!");
+                    log.error("Malformed " + e.getOptionName() + " option is critical.");
                     throw e;
                 }
-                log.debug("Malformed " + e.getOptionName() + " option silently ignored.");
+                log.debug("Malformed " + e.getOptionName() + " option silently ignored.", e);
             }
         }
 
@@ -172,15 +178,25 @@ public class CoapMessageDecoder extends OneToOneDecoder{
      * Otherwise an InvalidOptionException is thrown
      * @param buf A ChannelBuffer with its reader index at an options starting position
      * @param prevOptionNumber The option number of the previous option in the ChannelBuffer (or ZERO if there is no)
+     * @param header
      * @return The decoded Option
      * @throws InvalidOptionException if the option to be decoded is invalid
      */
-    private Option decodeOption(ChannelBuffer buf, int prevOptionNumber) throws InvalidOptionException {
+    private Option decodeOption(ChannelBuffer buf, int prevOptionNumber, Header header) throws InvalidOptionException {
         byte firstByte = buf.readByte();
 
         //Exclude option delta and add to previous option optionNumber
-        OptionName optionName = OptionRegistry
-                .getOptionName((UnsignedBytes.toInt(firstByte) >>> 4) +  prevOptionNumber);
+        int optionNumber = (UnsignedBytes.toInt(firstByte) >>> 4) +  prevOptionNumber;
+
+        // Small hack, due to two types of the observe option
+        if(!header.getCode().isRequest() && optionNumber == OptionName.OBSERVE_REQUEST.number) {
+            optionNumber = OptionName.OBSERVE_RESPONSE.number;
+        }
+
+        log.debug("Actually decoded option has number: " + optionNumber);
+
+        OptionName optionName = OptionRegistry.getOptionName(optionNumber);
+        log.debug("Actually decoded option has name:" + optionName);
 
         //Option optionNumber 21 is "If-none-match" and must not contain any value. This is e.g. useful for
         //PUT requests not being supposed to overwrite existing resources

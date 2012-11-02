@@ -28,15 +28,19 @@ public class OptionRegistry {
         URI_PORT(7),
         LOCATION_QUERY(8),
         URI_PATH(9),
+        OBSERVE_REQUEST(10),
+        OBSERVE_RESPONSE(-10),
         TOKEN(11),
         ACCEPT(12),
         IF_MATCH(13),
         FENCEPOST(14),
         URI_QUERY(15),
+        BLOCK_2(17),
+        BLOCK_1(19),
         IF_NONE_MATCH(21);
 
         public final int number;
-        
+
         OptionName(int number){
             this.number = number;
         }
@@ -51,7 +55,8 @@ public class OptionRegistry {
         APP_JSON(50),
         APP_RDF_XML(201),
         APP_TURTLE(202),
-        APP_N3(203);
+        APP_N3(203),
+        APP_SHDT(205);
 
         public final int number;
 
@@ -70,7 +75,7 @@ public class OptionRegistry {
                     return mediaType;
                 }
             }
-            
+
             return null;
         }
     }
@@ -84,7 +89,7 @@ public class OptionRegistry {
      * The default max age option value is 60
      */
     public static int MAX_AGE_DEFAULT = 60;
-    
+
     private static final HashMap<OptionName, OptionSyntaxConstraints> syntaxConstraints
             = new HashMap<OptionName, OptionSyntaxConstraints>();
     static{
@@ -101,7 +106,11 @@ public class OptionRegistry {
         syntaxConstraints.put(OptionName.ACCEPT, new OptionSyntaxConstraints(OptionType.UINT, 0, 2));
         syntaxConstraints.put(OptionName.IF_MATCH, new OptionSyntaxConstraints(OptionType.OPAQUE, 0, 8));
         syntaxConstraints.put(OptionName.URI_QUERY, new OptionSyntaxConstraints(OptionType.STRING, 1, 270));
+        syntaxConstraints.put(OptionName.BLOCK_2, new OptionSyntaxConstraints(OptionType.UINT, 1, 3));
+        syntaxConstraints.put(OptionName.BLOCK_1, new OptionSyntaxConstraints(OptionType.UINT, 1, 3));
         syntaxConstraints.put(OptionName.IF_NONE_MATCH, new OptionSyntaxConstraints(OptionType.EMPTY, 0, 0));
+        syntaxConstraints.put(OptionName.OBSERVE_REQUEST, new OptionSyntaxConstraints(OptionType.EMPTY, 0, 0));
+        syntaxConstraints.put(OptionName.OBSERVE_RESPONSE, new OptionSyntaxConstraints(OptionType.UINT, 0, 2));
     }
 
     private static final HashMap<Code, HashMap<OptionName, OptionOccurence>> allowedOptions
@@ -117,6 +126,8 @@ public class OptionRegistry {
         constraintsGET.put(OptionName.PROXY_URI, OptionOccurence.MULTIPLE);
         constraintsGET.put(OptionName.ACCEPT, OptionOccurence.MULTIPLE);
         constraintsGET.put(OptionName.ETAG, OptionOccurence.MULTIPLE);
+        constraintsGET.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraintsGET.put(OptionName.OBSERVE_REQUEST, OptionOccurence.ONCE);
         allowedOptions.put(Code.GET,  constraintsGET);
 
         //POST
@@ -126,6 +137,8 @@ public class OptionRegistry {
         constraintsPOST.put(OptionName.URI_PATH, OptionOccurence.MULTIPLE);
         constraintsPOST.put(OptionName.URI_PORT, OptionOccurence.ONCE);
         constraintsPOST.put(OptionName.URI_QUERY, OptionOccurence.MULTIPLE);
+        constraintsPOST.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraintsPOST.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
         allowedOptions.put(Code.POST, constraintsPOST);
 
         //PUT
@@ -138,6 +151,8 @@ public class OptionRegistry {
         constraintsPUT.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraintsPUT.put(OptionName.IF_MATCH, OptionOccurence.MULTIPLE);
         constraintsPUT.put(OptionName.IF_NONE_MATCH, OptionOccurence.ONCE);
+        constraintsPUT.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraintsPUT.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
         allowedOptions.put(Code.PUT, constraintsPUT);
 
         //DELETE
@@ -155,12 +170,16 @@ public class OptionRegistry {
         constraints201.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraints201.put(OptionName.LOCATION_PATH, OptionOccurence.MULTIPLE);
         constraints201.put(OptionName.LOCATION_QUERY, OptionOccurence.MULTIPLE);
+        constraints201.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraints201.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
         allowedOptions.put(Code.CREATED_201, constraints201);
 
         //202 DELETED
         HashMap<OptionName, OptionOccurence> constraints202 = new HashMap<OptionName, OptionOccurence>();
         constraints202.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints202.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
+        constraints202.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraints202.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
         allowedOptions.put(Code.DELETED_202, constraints202);
 
         //203 VALID
@@ -168,12 +187,16 @@ public class OptionRegistry {
         constraints203.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints203.put(OptionName.ETAG, OptionOccurence.MULTIPLE);
         constraints203.put(OptionName.MAX_AGE, OptionOccurence.ONCE);
+        constraints203.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraints203.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
         allowedOptions.put(Code.VALID_203, constraints203);
 
         //204 CHANGED
         HashMap<OptionName, OptionOccurence> constraints204 = new HashMap<OptionName, OptionOccurence>();
         constraints204.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints204.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
+        constraints204.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraints204.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
         allowedOptions.put(Code.CHANGED_204, constraints204);
 
         //205 CONTENT
@@ -182,10 +205,14 @@ public class OptionRegistry {
         constraints205.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraints205.put(OptionName.ETAG, OptionOccurence.MULTIPLE);
         constraints205.put(OptionName.MAX_AGE, OptionOccurence.ONCE);
+        constraints205.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
+        constraints205.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
+        constraints205.put(OptionName.OBSERVE_RESPONSE, OptionOccurence.ONCE);
         allowedOptions.put(Code.CONTENT_205, constraints205);
 
         //both, 4x, 5x only allow Max-Age Option
         HashMap<OptionName, OptionOccurence> constraints4x5x = new HashMap<OptionName, OptionOccurence>();
+        constraints4x5x.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraints4x5x.put(OptionName.TOKEN, OptionOccurence.ONCE);
         constraints4x5x.put(OptionName.MAX_AGE, OptionOccurence.ONCE);
 
@@ -227,9 +254,14 @@ public class OptionRegistry {
     }
 
     public static OptionType getOptionType(OptionName opt_name){
-        return syntaxConstraints.get(opt_name).opt_type;
+        OptionSyntaxConstraints osc = syntaxConstraints.get(opt_name);
+        if(osc == null) {
+            throw new NullPointerException("OptionSyntaxConstraints does not exists!");
+        }
+        return osc.opt_type;
     }
 
+    // TODO: zwei mal 10?
     public static OptionName getOptionName(int number) throws InvalidOptionException{
         for(OptionName o :OptionName.values()){
             if(o.number == number){

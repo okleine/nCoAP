@@ -24,13 +24,14 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -60,7 +61,10 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     private Object monitor = new Object();
 
-    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(10);
+    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(
+            50,
+            new ThreadFactoryBuilder().setNameFormat("IncomingMessageReliability-Thread %d").build()
+    );
 
     private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
 
@@ -90,6 +94,11 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         }
 
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
+
+        log.debug("Incoming " + coapMessage.getMessageType() +
+                " (MsgID " + coapMessage.getMessageID() +
+                ", MsgHash " + coapMessage.hashCode() +
+                ", Block " + coapMessage.getBlockNumber(OptionRegistry.OptionName.BLOCK_2) + ").");
 
         if(coapMessage.getMessageType() == MsgType.CON){
 
@@ -196,8 +205,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         @Override
         public void run(){
-            log.debug("Start!");
-
             boolean confirmed = false;
             if(receivedMessageIsRequest){
                 synchronized (monitor){

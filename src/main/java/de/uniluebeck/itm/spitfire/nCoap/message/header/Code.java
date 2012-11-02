@@ -212,7 +212,7 @@ public enum Code {
      * The corresponding numerical CoAP message code
      */
     public final int number;
-    private final List allowedOptions;
+    private final List<OptionRegistry.OptionName> allowedOptions;
 
     Code(int number, OptionRegistry.OptionName[] allowedOptions){
         this.number = number;
@@ -228,6 +228,15 @@ public enum Code {
      */
     public boolean isMeaningful(OptionRegistry.OptionName opt_name){
         return allowedOptions.contains(opt_name);
+    }
+
+    /**
+     * This method indicates wheter the message code refers to a response with error code. Both requests and
+     * responses containing codes smaller than 128 return false.
+     * @return <code>true</code> in case of an error code, <code>false</code> otherwise
+     */
+    public boolean isError(){
+        return (number >= 128);
     }
 
     /**

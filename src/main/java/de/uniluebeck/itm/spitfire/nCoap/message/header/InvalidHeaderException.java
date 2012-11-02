@@ -29,6 +29,8 @@ package de.uniluebeck.itm.spitfire.nCoap.message.header;
  */
 public class InvalidHeaderException extends Exception{
 
+    private static final long serialVersionUID = 1L;
+
     public InvalidHeaderException(String msg){
         super(msg);
     }
