@@ -23,7 +23,7 @@ public class OptionListTest {
     public void fillCodeConstraintsList() {
         
         codeConstraintsList.add(new CodeConstraints(Code.GET)
-                .addOnceAllowed(TOKEN, URI_HOST, URI_PORT)
+                .addOnceAllowed(TOKEN, URI_HOST, URI_PORT, OBSERVE_REQUEST)
                 .addNotAllowed(CONTENT_TYPE, MAX_AGE, LOCATION_PATH, 
                 LOCATION_QUERY, IF_MATCH, IF_NONE_MATCH, FENCEPOST));
         
@@ -68,7 +68,7 @@ public class OptionListTest {
                 IF_MATCH, FENCEPOST, URI_QUERY, IF_NONE_MATCH));
         
         codeConstraintsList.add(new CodeConstraints(Code.CONTENT_205)
-                .addOnceAllowed(TOKEN, CONTENT_TYPE, MAX_AGE)
+                .addOnceAllowed(TOKEN, CONTENT_TYPE, MAX_AGE, OBSERVE_RESPONSE)
                 .addNotAllowed(PROXY_URI, URI_HOST,
                 LOCATION_PATH, URI_PORT, LOCATION_QUERY, URI_PATH, ACCEPT,
                 IF_MATCH, FENCEPOST, URI_QUERY, IF_NONE_MATCH));
@@ -93,7 +93,7 @@ public class OptionListTest {
         for (Code code : code4x5x) {
             codeConstraintsList.add(new CodeConstraints(code)
                 .addOnceAllowed(TOKEN, MAX_AGE)
-                .addNotAllowed(CONTENT_TYPE, PROXY_URI, ETAG, URI_HOST, 
+                .addNotAllowed(PROXY_URI, ETAG, URI_HOST, 
                 LOCATION_PATH, URI_PORT, LOCATION_QUERY, URI_PATH, ACCEPT, 
                 IF_MATCH, FENCEPOST, URI_QUERY, IF_NONE_MATCH));       
         }

@@ -30,6 +30,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -65,11 +66,27 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * @param me the {@link MessageEvent} containing the actual message
      */
     @Override
-    public final void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
+    public final void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         if(me.getMessage() instanceof CoapRequest){
-            CoapRequest coapRequest = (CoapRequest) me.getMessage();
-            executorService.execute(new CoapRequestExecutor(coapRequest, (InetSocketAddress) me.getRemoteAddress()));
-            return;
+            final CoapRequest coapRequest = (CoapRequest) me.getMessage();
+            
+            //check if request has observable option
+            if(!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty()) {
+                //request is observable
+                executorService.execute(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        CoapObservableRequest observableRequest = new CoapObservableRequest(coapRequest, 
+                                (InetSocketAddress) me.getRemoteAddress(), (DatagramChannel) me.getChannel());
+                        receiveCoapObservableRequest(observableRequest);
+                    }
+                });
+            } else {
+                //request is not observable
+                executorService.execute(new CoapRequestExecutor(coapRequest, (InetSocketAddress) me.getRemoteAddress()));
+                return;
+            }
         }
 
         ctx.sendUpstream(me);
@@ -101,7 +118,6 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * @return the {@link CoapResponse} object to be sent back
      */
     public abstract CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderAddress);
-
 
     public void receiveCoapObservableRequest(CoapObservableRequest coapObservableRequest) {
         receiveCoapRequest(coapObservableRequest.getCoapRequest(), coapObservableRequest.getRemoteAddress());

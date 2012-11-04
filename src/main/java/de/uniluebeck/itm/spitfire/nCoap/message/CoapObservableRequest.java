@@ -1,16 +1,15 @@
 package de.uniluebeck.itm.spitfire.nCoap.message;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.MessageIDFactory;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 
 public class CoapObservableRequest {
 
@@ -30,8 +29,15 @@ public class CoapObservableRequest {
 
     public void notifyObserver(CoapNotificationResponse coapResponse) {
         try {
+            if (sequenceNumber == 1) {
+                //is first response
+                coapResponse.setMessageID(coapRequest.getMessageID());
+            } else {
+                //response is 2nd or later
+                coapResponse.setMessageID(MessageIDFactory.getInstance().nextMessageID());
+                coapResponse.getHeader().setMsgType(MsgType.CON);
+            }
             coapResponse.setObserveOptionResponse(sequenceNumber++);
-            coapResponse.setMessageID(coapRequest.getMessageID());
             if(coapRequest.getToken().length > 0){
                 coapResponse.setToken(coapRequest.getToken());
             }
