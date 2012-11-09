@@ -26,6 +26,8 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapNotificationResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapObservableRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -87,7 +89,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      * @throws Exception if an error occured
      */
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception {
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendUpstream(me);
             return;
@@ -157,7 +159,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        if(me.getMessage() instanceof CoapResponse){
+        if(me.getMessage() instanceof CoapResponse && !(me.getMessage() instanceof CoapNotificationResponse)){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             log.debug("Handle downstream event for message with ID " +

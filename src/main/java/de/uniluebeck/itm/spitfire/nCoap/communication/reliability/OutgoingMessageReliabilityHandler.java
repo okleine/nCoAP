@@ -42,9 +42,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapNotificationResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
@@ -69,6 +71,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
     private static OutgoingMessageReliabilityHandler instance = new OutgoingMessageReliabilityHandler();
 
+    CoapServerApplication.ObservableResourceManager observableResourceManager;
+    
     /**
      * Returns the one and only instance of class OutgoingMessageReliabilityHandler (Singleton)
      * @return the one and only instance of class OutgoingMessageReliabilityHandle
@@ -106,6 +110,13 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 ", Block " + coapMessage.getBlockNumber(OptionRegistry.OptionName.BLOCK_2) +
                 ", Sender " + remoteAddress + ").");
 
+        if (observableResourceManager != null && coapMessage.getMessageType() == MsgType.RST) {
+            if (observableResourceManager.resetReceived(coapMessage.getMessageID())) {
+                //the observer to whom the notification with the RSTs message ID belongs was found and removed
+                return;
+            }
+        }
+        
         if (coapMessage.getMessageType() == MsgType.ACK || coapMessage.getMessageType() == MsgType.RST) {
 
             //Look up remaining retransmissions
@@ -119,7 +130,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 log.debug("Open CON found (MsgID " + coapMessage.getMessageID() +
                     ", Rcpt " + remoteAddress + "). CANCEL RETRANSMISSIONS!");
 
-                int canceledRetransmissions = 0;
+                int canceledRetransmissions = -1; //changed from 0 to -1 because last future is now timeout notification
                 for(ScheduledFuture future : futures){
                     if(future.cancel(false)){
                         canceledRetransmissions++;
@@ -154,15 +165,32 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             ctx.sendDownstream(me);
             return;
         }
-
+        
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
         log.debug("Outgoing " + coapMessage.getMessageType() + " (MsgID " + coapMessage.getMessageID() +
                 ", MsgHash " + Integer.toHexString(coapMessage.hashCode()) + ", Rcpt " + me.getRemoteAddress() +
                 ", Block " + coapMessage.getBlockNumber(OptionRegistry.OptionName.BLOCK_2) + ").");
 
+        if (coapMessage instanceof CoapNotificationResponse) {
+            CoapNotificationResponse notification = (CoapNotificationResponse) coapMessage;
+            observableResourceManager = notification.getObservableResourceManager();
+            if (notification.getMessageType() == MsgType.CON) {
+                if(!waitingForACK.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
+                    MessageRetransmissionScheduler scheduler =
+                            new MessageRetransmissionScheduler((InetSocketAddress) me.getRemoteAddress(), coapMessage);
+                    try{
+                        executorService.schedule(scheduler, 0, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Exception e){
+                        log.error("Exception!", e);
+                    }
+                }
+            }
+        }
+        
         if(coapMessage.getMessageID() == -1){
-
+            
             coapMessage.setMessageID(messageIDFactory.nextMessageID());
             log.debug("MsgID " + coapMessage.getMessageID() + " set.");
 
@@ -209,22 +237,34 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
             log.debug("Schedule retransmissions for MsgID " + coapMessage.getMessageID());
 
-            //Schedule retransmissions
-            ScheduledFuture[] futures = new ScheduledFuture[MAX_RETRANSMITS];
+            //Schedule retransmissions + timeout notification
+            ScheduledFuture[] futures = new ScheduledFuture[MAX_RETRANSMITS + 1];
 
             int delay = 0;
             for(int i = 0; i < MAX_RETRANSMITS; i++){
-
+                
                 delay += (int)(Math.pow(2, i) * TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
-
+                
                 MessageRetransmitter messageRetransmitter
                         = new MessageRetransmitter(rcptAddress, coapMessage, i+1);
-
+                
                 futures[i] = executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS);
-
+                
                 log.debug("Scheduled in " + delay + " millis {}", messageRetransmitter);
             }
+            
+            delay += (int)(Math.pow(2, MAX_RETRANSMITS) * TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
+            futures[MAX_RETRANSMITS] = executorService.schedule(new Runnable() {
 
+                @Override
+                public void run() {
+                    //CON timeout
+                    if (observableResourceManager != null && coapMessage instanceof CoapNotificationResponse) {
+                        observableResourceManager.resetReceived(coapMessage.getMessageID());
+                    }
+                }
+            }, delay, TimeUnit.MILLISECONDS);
+            
             synchronized (OutgoingMessageReliabilityHandler.getInstance().getClass()){
                 waitingForACK.put(rcptAddress, coapMessage.getMessageID(), futures);
             }

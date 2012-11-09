@@ -134,10 +134,15 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
                         ") is a response (Remote Address: " + me.getRemoteAddress() +
                         ", Token: " + Tools.toHexString(coapResponse.getToken()));
 
-
-            ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
-                                                         me.getRemoteAddress());
-
+            ResponseCallback callback;
+            if (!coapResponse.getOption(OptionName.OBSERVE_RESPONSE).isEmpty()) {
+                //notification for observe request - do not remove callback
+                callback = callbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
+                                                             me.getRemoteAddress());
+            } else {
+                callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
+                                                             me.getRemoteAddress());
+            }
             if(callback != null){
                 log.debug(" Received response for request with token " + Tools.toHexString(coapResponse.getToken()));
                 callback.receiveResponse(coapResponse);

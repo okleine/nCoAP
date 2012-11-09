@@ -27,14 +27,18 @@ public class CoapObservableRequest {
         this.channel = channel;
     }
 
-    public void notifyObserver(CoapNotificationResponse coapResponse) {
+    public synchronized int notifyObserver(CoapNotificationResponse coapResponse) {
+        int responseMessageID = -1;
         try {
             if (sequenceNumber == 1) {
-                //is first response
-                coapResponse.setMessageID(coapRequest.getMessageID());
+                //is first notification
+                responseMessageID = coapRequest.getMessageID();
+                coapResponse.getHeader().setMsgType(MsgType.ACK);
+                coapResponse.setMessageID(responseMessageID);
             } else {
-                //response is 2nd or later
-                coapResponse.setMessageID(MessageIDFactory.getInstance().nextMessageID());
+                //response is 2nd notification or later
+                responseMessageID = MessageIDFactory.getInstance().nextMessageID();
+                coapResponse.setMessageID(responseMessageID);
                 coapResponse.getHeader().setMsgType(MsgType.CON);
             }
             coapResponse.setObserveOptionResponse(sequenceNumber++);
@@ -58,6 +62,7 @@ public class CoapObservableRequest {
                     " never happen!", e);
             e.printStackTrace();
         }
+        return responseMessageID;
     }
 
     public CoapRequest getCoapRequest() {

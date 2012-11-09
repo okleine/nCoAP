@@ -24,6 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.application;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapNotificationResponse;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapObservableRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -38,6 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -56,6 +60,8 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     protected final DatagramChannel channel = new CoapServerDatagramChannelFactory(this).getChannel();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
+    private ObservableResourceManager observableResourceManager = new ObservableResourceManager();
+    
     /**
      * This method is called by the Netty framework whenever a new message is received to be processed by the server.
      * For each incoming request a new Thread is created to handle the request (by invoking the method
@@ -71,20 +77,17 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
             final CoapRequest coapRequest = (CoapRequest) me.getMessage();
             
             //check if request has observable option
-            if(!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty()) {
+            if(!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty() 
+                    && observableResourceManager.hasResource(coapRequest)) {
                 //request is observable
-                executorService.execute(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        CoapObservableRequest observableRequest = new CoapObservableRequest(coapRequest, 
-                                (InetSocketAddress) me.getRemoteAddress(), (DatagramChannel) me.getChannel());
-                        receiveCoapObservableRequest(observableRequest);
-                    }
-                });
+                CoapObservableRequest observableRequest = new CoapObservableRequest(coapRequest, 
+                        (InetSocketAddress) me.getRemoteAddress(), (DatagramChannel) me.getChannel());
+                //the first response will be send immediately
+                observableResourceManager.addObserver(observableRequest);    
             } else {
-                //request is not observable
-                executorService.execute(new CoapRequestExecutor(coapRequest, (InetSocketAddress) me.getRemoteAddress()));
+                //request is not observable or resource is not registered
+                executorService.execute(new CoapRequestExecutor(coapRequest, 
+                        (InetSocketAddress) me.getRemoteAddress()));
                 return;
             }
         }
@@ -118,10 +121,6 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * @return the {@link CoapResponse} object to be sent back
      */
     public abstract CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderAddress);
-
-    public void receiveCoapObservableRequest(CoapObservableRequest coapObservableRequest) {
-        receiveCoapRequest(coapObservableRequest.getCoapRequest(), coapObservableRequest.getRemoteAddress());
-    }
 
     private class CoapRequestExecutor implements Runnable {
 
@@ -171,5 +170,67 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                     " response.", e);
             }
         }
+    }
+    
+    public class ObservableResourceManager {
+        
+        private HashMap<String, CoapNotificationResponse> observableResources = 
+                new HashMap<String, CoapNotificationResponse>();
+        private HashMap<String, List<CoapObservableRequest>> observers = 
+                new HashMap<String, List<CoapObservableRequest>>();
+        private HashMap<Integer, CoapObservableRequest> responseMessageIdMap =
+                new HashMap<Integer, CoapObservableRequest>();
+        
+        public synchronized void update(String targetUriPath, CoapNotificationResponse response) {
+            response.setObservableResourceManager(this);
+            observableResources.put(targetUriPath, response);
+            List<CoapObservableRequest> observersForTargetUri = observers.get(targetUriPath);
+            if (observersForTargetUri != null) {
+                for (CoapObservableRequest coapObservableRequest : observersForTargetUri) {
+                    responseMessageIdMap.put(coapObservableRequest.notifyObserver(response), coapObservableRequest);
+                    //TODO expire Message ID, timeout for retransmissions of con is 93 sec
+                }
+            }
+        }
+        
+        //TODO create update(String targetUriPath, String plainTextPayload)
+        
+        public synchronized void addObserver(CoapObservableRequest request) {
+            String targetUriPath = request.getCoapRequest().getTargetUri().getPath();
+            
+            List<CoapObservableRequest> observersForTargetUri = observers.get(targetUriPath);
+            if (observersForTargetUri == null) {
+                observersForTargetUri = new LinkedList<CoapObservableRequest>();
+                observers.put(targetUriPath, observersForTargetUri);
+            }
+            observersForTargetUri.add(request);
+            
+            responseMessageIdMap.put(request.notifyObserver(observableResources.get(targetUriPath)), request);
+        }
+        
+        public synchronized boolean removeObserver(CoapObservableRequest observer) {
+            if (observer != null) {
+                List<CoapObservableRequest> observersForTargetUri = 
+                        observers.get(observer.getCoapRequest().getTargetUri().getPath());
+                if (observersForTargetUri != null) {
+                    return observersForTargetUri.remove(observer);
+                }
+            }
+            return false;
+        }
+        
+        public synchronized boolean hasResource(CoapRequest coapRequest) {
+            return observableResources.containsKey(coapRequest.getTargetUri().getPath());
+        }
+        
+        public boolean resetReceived(int messageID) {
+            CoapObservableRequest observer = responseMessageIdMap.get(messageID);
+            return removeObserver(observer);
+        }
+        
+    }
+    
+    public ObservableResourceManager getObservableResourceManager() {
+        return observableResourceManager;
     }
 }
