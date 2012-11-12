@@ -24,6 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 //import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
@@ -32,6 +33,8 @@ import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -44,6 +47,8 @@ public class CoapClientDatagramChannelFactory {
 
     private DatagramChannel channel;
 
+    private static Logger log = LoggerFactory.getLogger(CoapClientDatagramChannelFactory.class.getName());
+    
     private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
     static{
         FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(34000);
@@ -61,8 +66,16 @@ public class CoapClientDatagramChannelFactory {
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory());
-
-        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(COAP_CLIENT_PORT));
+        
+        int triesLeft = 10;
+        for (int port = COAP_CLIENT_PORT; channel == null && triesLeft > 0; port++, triesLeft--) {
+            try {
+            channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(port)); 
+            } catch(Exception e) {
+                log.info(String.format("Exception while binding client on port %d. %d tries left."
+                        + "(Port maybe port already in use?) Message: %s", port, triesLeft, e.getMessage()));
+            }
+        }
     }
 
     public DatagramChannel getChannel(){
