@@ -158,7 +158,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                 OptionName optionName = OptionRegistry.getOptionName(newOption.getOptionNumber());
                 log.debug("Option " + optionName + " to be created.");
                 result.addOption(code, optionName, newOption);
-                prevOptionNumber = newOption.getOptionNumber();
+                prevOptionNumber = Math.abs(newOption.getOptionNumber()); //double datatype for observe option hack
             }
             catch(InvalidOptionException e){
                 if(e.isCritical()){
