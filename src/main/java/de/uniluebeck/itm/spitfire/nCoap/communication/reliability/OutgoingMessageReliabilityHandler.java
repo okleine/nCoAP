@@ -206,6 +206,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             ScheduledFuture[] futures = new ScheduledFuture[MAX_RETRANSMITS];
 
             int delay = 0;
+
+            //Schedule retransmits
             for(int i = 0; i < MAX_RETRANSMITS; i++){
 
                 delay += (int)(Math.pow(2, i) * TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
