@@ -1,6 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,12 @@ public class OpaqueOption extends Option{
 
         //Set value if there was no Exception thrown so far
         this.value = value;
+    }
+
+    @Override
+    public String getDecodedValue(){
+        ByteArrayWrapper decodedValue = new ByteArrayWrapper(value);
+        return decodedValue.toHexString();
     }
 
     @Override

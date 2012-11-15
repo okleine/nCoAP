@@ -63,7 +63,6 @@ public class OptionList {
         if(allowed_occurence == OptionRegistry.OptionOccurence.NONE){
             String msg = "[OptionList] " + optionName + " option has no meaning with"
                             + " a message with code " + code + ".";
-
             throw new InvalidOptionException(option.getOptionNumber(), msg);
         }
         else if(allowed_occurence == OptionRegistry.OptionOccurence.ONCE){
@@ -177,16 +176,29 @@ public class OptionList {
             List<Option> list2 = optionList.options.get(optionName);
             
             if(list1.size() != list2.size()){
+                log.info("Option count does not match.");
                 return false;
             }
             
             for(int i = 0; i < list1.size(); i++ ){
                 if(!list1.get(i).equals(list2.get(i))){
+                    log.info("Elements do not match (" + list1.get(i) + " vs. " + list2.get(i));
                     return false;
                 }
             }
         }
 
         return true;
+    }
+
+    @Override
+    public String toString(){
+        String result = "{[" + this.getClass().getName() + "] ";
+        for(Map.Entry<OptionName, Option > entry : options.entries()){
+            result += entry.getValue();
+            result += " ";
+        }
+        result += "}";
+        return result;
     }
 }

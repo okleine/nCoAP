@@ -23,7 +23,6 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
-//import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * This class is to create and manage message IDs for outgoing messages. The usage of this class to create
- * new message IDs ensures that a message ID is not used twice within 60 seconds.
+ * new message IDs ensures that a message ID is not used twice within 120 seconds.
  *
  * @author Oliver Kleine
  */
@@ -59,7 +58,7 @@ public class MessageIDFactory {
      * Returns the one and only instance of the message ID factory
      * @return the one and only instance of the message ID factory
      */
-    public static MessageIDFactory getInstance(){
+    private static MessageIDFactory getInstance(){
         return instance;
     }
 
@@ -73,15 +72,17 @@ public class MessageIDFactory {
      *
      * @return the next available message ID within range 1 to (2^16)-1
      */
-    public synchronized int nextMessageID(){
+
+    public static int nextMessageID(){
+        return MessageIDFactory.getInstance().getNextMessageID();
+    }
+
+    private synchronized int getNextMessageID(){
 
         boolean created;
         do{
-            synchronized(allocatedMessageIDs){
-                nextMessageID = (nextMessageID + 1) & 0x0000FFF;
-                //nextMessageID = (random.nextInt() & 0x0000FFF);
-                created = allocatedMessageIDs.add(nextMessageID);
-            }
+            nextMessageID = (nextMessageID + 1) & 0x0000FFF;
+            created = allocatedMessageIDs.add(nextMessageID);
         }
         while(!created);
 

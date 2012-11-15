@@ -7,8 +7,6 @@ import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-
 /**
  *
  * @author Oliver Kleine
@@ -78,9 +76,10 @@ public class UintOption extends Option{
         return new byte[0];
     }
 
-    public long getDecodedValue(){
+    public Long getDecodedValue(){
         return Longs.fromByteArray(Bytes.concat(new byte[8-value.length], value));
     }
+
     /**
      * This method checks the equality of any given object with the current UintOption from which the method
      * is called. The method returns <code>true</code> if and only if the given object is an instance of
@@ -96,7 +95,7 @@ public class UintOption extends Option{
             return false;
         }
         UintOption opt = (UintOption) o;
-        if((optionNumber == opt.optionNumber) && (this.getDecodedValue() == opt.getDecodedValue())){
+        if((optionNumber == opt.optionNumber) && (this.getDecodedValue().equals(opt.getDecodedValue()))){
             return true;
         }
         return false;

@@ -43,7 +43,6 @@ public class CoapClientDatagramChannelFactory {
 
     private static Logger log = LoggerFactory.getLogger(CoapClientDatagramChannelFactory.class.getName());
 
-    //public static int COAP_CLIENT_PORT = Configuration.getInstance().getInt("client.port", 5683);
     public static int COAP_CLIENT_PORT = 5682;
 
     private DatagramChannel channel;
@@ -61,7 +60,7 @@ public class CoapClientDatagramChannelFactory {
     private CoapClientDatagramChannelFactory(){
         //Create Datagram Channel
         ChannelFactory channelFactory =
-                new NioDatagramChannelFactory(Executors.newCachedThreadPool());
+                new NioDatagramChannelFactory(CoapExecutorService.getExecutorService());
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory());

@@ -25,6 +25,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -58,13 +59,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     //Remote socket address, message ID, already confirmed
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> incomingMessagesToBeConfirmed
             = HashBasedTable.create();
-
-    private Object monitor = new Object();
-
-    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(
-            50,
-            new ThreadFactoryBuilder().setNameFormat("IncomingMessageReliability-Thread %d").build()
-    );
 
     private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
 
@@ -110,14 +104,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             if(coapMessage.isRequest()){
                 boolean inserted = false;
 
-                synchronized (monitor){
+                synchronized (this){
                     if(!incomingMessagesToBeConfirmed.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
 
                         incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
                                                        coapMessage.getMessageID(), false);
 
                         inserted = true;
-                        monitor.notifyAll();
+                        this.notifyAll();
                     }
                 }
 
@@ -128,14 +122,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 //The value of "inserted" is true if the incoming message was no duplicate
                 if(inserted){
                     //Schedule empty ACK if there was no piggy backed ACK within 2 seconds
-                    executorService.schedule(emptyACKSender, 2000, TimeUnit.MILLISECONDS);
+                    CoapExecutorService.schedule(emptyACKSender, 2000, TimeUnit.MILLISECONDS);
                 }
             }
             else {
                 log.debug("New confirmable response with message ID " + coapMessage.getMessageID() + " from "
                         + me.getRemoteAddress() + " received. Send empty ACK immediately.");
                 //Schedule to send an empty ACK asap
-                executorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
+                CoapExecutorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
             }
         }
 
@@ -165,7 +159,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
             Boolean alreadyConfirmed;
 
-            synchronized(monitor){
+            synchronized(this){
                 alreadyConfirmed = incomingMessagesToBeConfirmed.remove(me.getRemoteAddress(),
                                                                  coapResponse.getMessageID());
             }
@@ -207,7 +201,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         public void run(){
             boolean confirmed = false;
             if(receivedMessageIsRequest){
-                synchronized (monitor){
+                synchronized (this){
                     if(incomingMessagesToBeConfirmed.contains(rcptAddress, messageID)){
                         confirmed = true;
                         incomingMessagesToBeConfirmed.put(rcptAddress, messageID, true);
