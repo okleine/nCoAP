@@ -493,10 +493,4 @@ public abstract class CoapMessage implements Cloneable {
             && optionList.equals(msg.getOptionList())
             && payload.equals(msg.getPayload());
     }
-
-    @Override
-    public CoapMessage clone() throws CloneNotSupportedException {
-        return (CoapMessage) super.clone();
-    }
-
 }

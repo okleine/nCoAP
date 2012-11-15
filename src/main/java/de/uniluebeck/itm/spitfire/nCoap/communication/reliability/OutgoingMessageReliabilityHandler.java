@@ -55,7 +55,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     );
 
     //Contains remote socket address and message ID of not yet confirmed messages
-
     private final HashBasedTable<InetSocketAddress, Integer, ScheduledFuture[]> waitingForACK = HashBasedTable.create();
 
     private MessageIDFactory messageIDFactory = MessageIDFactory.getInstance();
@@ -72,6 +71,56 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
     private OutgoingMessageReliabilityHandler(){
         //private constructor to make it singleton
+    }
+
+    /**
+     * This method is invoked with a downstream message event. If it is a new message (i.e. to be
+     * transmitted the first time) of type CON , it is added to the list of open requests waiting for a response.
+     * @param ctx The {@link ChannelHandlerContext}
+     * @param me The {@link MessageEvent}
+     * @throws Exception
+     */
+    @Override
+    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+
+        if(!(me.getMessage() instanceof CoapMessage)){
+            ctx.sendDownstream(me);
+            return;
+        }
+
+        CoapMessage coapMessage = (CoapMessage) me.getMessage();
+
+        log.debug("Outgoing " + coapMessage.getMessageType() + " (MsgID " + coapMessage.getMessageID() +
+                ", MsgHash " + Integer.toHexString(coapMessage.hashCode()) + ", Rcpt " + me.getRemoteAddress() +
+                ", Block " + coapMessage.getBlockNumber(OptionRegistry.OptionName.BLOCK_2) + ").");
+
+        if(coapMessage.getMessageID() == -1){
+
+            coapMessage.setMessageID(messageIDFactory.nextMessageID());
+            log.debug("MsgID " + coapMessage.getMessageID() + " set.");
+
+            if(coapMessage.getMessageType() == MsgType.CON){
+                if(!waitingForACK.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
+                    MessageRetransmissionScheduler scheduler =
+                            new MessageRetransmissionScheduler((InetSocketAddress) me.getRemoteAddress(), coapMessage);
+                    try{
+                        executorService.schedule(scheduler, 0, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Exception e){
+                        log.error("Exception!", e);
+                    }
+                    log.debug("Hier!");
+                }
+                else{
+                    log.debug("Already contained!");
+                }
+            }
+            else{
+                log.debug("No CON message.");
+            }
+        }
+
+        ctx.sendDownstream(me);
     }
 
     /**
@@ -133,55 +182,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         ctx.sendUpstream(me);
     }
 
-    /**
-     * This method is invoked with a downstream message event. If it is a new message (i.e. to be
-     * transmitted the first time) of type CON , it is added to the list of open requests waiting for a response.
-     * @param ctx The {@link ChannelHandlerContext}
-     * @param me The {@link MessageEvent}
-     * @throws Exception
-     */
-    @Override
-    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        if(!(me.getMessage() instanceof CoapMessage)){
-            ctx.sendDownstream(me);
-            return;
-        }
-
-        CoapMessage coapMessage = (CoapMessage) me.getMessage();
-
-        log.debug("Outgoing " + coapMessage.getMessageType() + " (MsgID " + coapMessage.getMessageID() +
-                ", MsgHash " + Integer.toHexString(coapMessage.hashCode()) + ", Rcpt " + me.getRemoteAddress() +
-                ", Block " + coapMessage.getBlockNumber(OptionRegistry.OptionName.BLOCK_2) + ").");
-
-        if(coapMessage.getMessageID() == -1){
-
-            coapMessage.setMessageID(messageIDFactory.nextMessageID());
-            log.debug("MsgID " + coapMessage.getMessageID() + " set.");
-
-            if(coapMessage.getMessageType() == MsgType.CON){
-                if(!waitingForACK.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
-                    MessageRetransmissionScheduler scheduler =
-                            new MessageRetransmissionScheduler((InetSocketAddress) me.getRemoteAddress(), coapMessage);
-                    try{
-                        executorService.schedule(scheduler, 0, TimeUnit.MILLISECONDS);
-                    }
-                    catch (Exception e){
-                        log.error("Exception!", e);
-                    }
-                    log.debug("Hier!");
-                }
-                else{
-                    log.debug("Already contained!");
-                }
-            }
-            else{
-                log.debug("No CON message.");
-            }
-        }
-
-        ctx.sendDownstream(me);
-    }
 
     private class MessageRetransmissionScheduler implements Runnable{
 
@@ -225,57 +226,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             }
         }
     }
-
-    private class MessageRetransmitter implements Runnable {
-
-        private Logger log = LoggerFactory.getLogger(OutgoingMessageReliabilityHandler.class.getName());
-
-        private final DatagramChannel DATAGRAM_CHANNEL = CoapClientDatagramChannelFactory.getInstance().getChannel();
-
-        private InetSocketAddress rcptAddress;
-        private CoapMessage coapMessage;
-        private int retransmitNo;
-
-        public MessageRetransmitter(InetSocketAddress rcptAddress, CoapMessage coapMessage, int retransmitNo){
-            this.rcptAddress = rcptAddress;
-            this.retransmitNo = retransmitNo;
-            this.coapMessage = coapMessage;
-        }
-
-        @Override
-        public void run() {
-            log.info("BEGIN {}", this);
-
-            synchronized (OutgoingMessageReliabilityHandler.getInstance().getClass()){
-
-                ChannelFuture future = Channels.future(DATAGRAM_CHANNEL);
-
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                    log.info("Retransmition completed {}", MessageRetransmitter.this);
-                    }
-                });
-
-                Channels.write(DATAGRAM_CHANNEL.getPipeline().getContext("OutgoingMessageReliabilityHandler"),
-                        future,
-                        coapMessage,
-                        rcptAddress);
-            }
-        }
-
-        @Override
-        public String toString() {
-            try {
-                return "MessageRetransmitter {" +
-                        "retransmitNo " + retransmitNo +
-                        ", MsgID " + coapMessage.getMessageID() +
-                        ", MsgHash " + Integer.toHexString(coapMessage.hashCode()) +
-                        ", Block " + coapMessage.getBlockNumber(OptionRegistry.OptionName.BLOCK_2) +
-                        ", Hashcode " + Integer.toHexString(MessageRetransmitter.this.hashCode()) + "}";
-            } catch (InvalidOptionException e) {
-                return null;
-            }
-        }
-    }
 }
+
+
