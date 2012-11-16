@@ -5,7 +5,11 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+
+import javax.annotation.Nullable;
 
 /**
  *
@@ -13,9 +17,15 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionNam
  */
 public class InvalidOptionException extends Exception{
 
+    @Nullable
+    private Header messageHeader;
     private OptionName optionName;
     private boolean critical;
 
+    public InvalidOptionException(Header header, OptionName optionName, String msg){
+        this(optionName, msg);
+        this.messageHeader = header;
+    }
 
     public InvalidOptionException(OptionName optionName, String msg){
         super(msg);
@@ -23,9 +33,9 @@ public class InvalidOptionException extends Exception{
         this.critical = OptionRegistry.isCritial(optionName);
     }
 
-     public InvalidOptionException(int opt_number, String msg){
+     public InvalidOptionException(int optNumber, String msg){
         super(msg);
-        this.critical = OptionRegistry.isCritical(opt_number);
+        this.critical = OptionRegistry.isCritical(optNumber);
     }
 
     /**
@@ -43,5 +53,14 @@ public class InvalidOptionException extends Exception{
      */
     public OptionName getOptionName(){
         return optionName;
+    }
+
+    /**
+     * Returns the {@link Header} instance that caused this exception (if available) or null otherwise
+     * @return the {@link Header} instance that caused this exception (if available) or null otherwise
+     */
+    @Nullable
+    public Header getMessageHeader() {
+        return messageHeader;
     }
 }

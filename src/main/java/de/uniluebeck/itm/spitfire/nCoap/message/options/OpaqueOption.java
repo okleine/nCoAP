@@ -20,7 +20,7 @@ public class OpaqueOption extends Option{
         super(optionName);
         //Check whether current number is appropriate for an OpaqueOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.OPAQUE){
-            String msg = "[OpaqueOption] Cannot set option " + optionName + " for an OpaqueOption.";
+            String msg = optionName + " is no opaque option.";
             throw new InvalidOptionException(optionNumber, msg);
         }
 

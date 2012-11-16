@@ -140,7 +140,7 @@ public abstract class CoapMessage implements Cloneable {
     /**
      * Sets the message ID for this message. Normally, there is no need to set the message ID manually. It is set or
      * overwritten automatically by the
-     * {@link de.uniluebeck.itm.spitfire.nCoap.communication.reliability.OutgoingMessageReliabilityHandler}.
+     * {@link de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler}.
      *
      * @param messageId the message ID for the message
      * @throws InvalidHeaderException if the message ID to be set is Invalid

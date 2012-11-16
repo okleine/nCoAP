@@ -21,10 +21,9 @@
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
+package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -40,8 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -209,7 +206,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 }
             }
 
-             if(confirmed || !receivedMessageIsRequest){
+            if(confirmed || !receivedMessageIsRequest){
                 CoapMessage coapMessage = null;
 
                 try {
@@ -234,15 +231,15 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
                 ChannelFuture future = Channels.future(datagramChannel);
                 Channels.write(datagramChannel.getPipeline().getContext("OutgoingMessageReliabilityHandler"),
-                               future,
-                               coapMessage,
-                               rcptAddress);
+                        future,
+                        coapMessage,
+                        rcptAddress);
 
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                    log.debug("Sent empty ACK for message with ID " + messageID +
-                            " to recipient " + rcptAddress);
+                        log.debug("Sent empty ACK for message with ID " + messageID +
+                                " to recipient " + rcptAddress);
                     }
                 });
             }

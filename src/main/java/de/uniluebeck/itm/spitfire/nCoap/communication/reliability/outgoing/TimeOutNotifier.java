@@ -1,9 +1,7 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
+package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalErrorMessage;
 import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

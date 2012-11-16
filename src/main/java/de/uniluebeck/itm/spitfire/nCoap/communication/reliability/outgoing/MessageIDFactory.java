@@ -21,7 +21,7 @@
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package de.uniluebeck.itm.spitfire.nCoap.communication.reliability;
+package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
