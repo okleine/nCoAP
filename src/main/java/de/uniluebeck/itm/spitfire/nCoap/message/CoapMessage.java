@@ -9,6 +9,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
@@ -37,17 +38,20 @@ public abstract class CoapMessage implements Cloneable {
     protected OptionList optionList;
     private ChannelBuffer payload;
 
+    private CoapMessage(){
+        this.optionList = new OptionList();
+        this.payload = ChannelBuffers.buffer(0);
+    }
+
     protected CoapMessage(Code code){
-        header = new Header(code);
-        optionList = new OptionList();
+        this();
+        this.header = new Header(code);
+
     }
 
     protected CoapMessage(MsgType msgType, Code code) {
-
-        header = new Header(msgType, code);
-
-        //create option list
-        optionList = new OptionList();
+        this();
+        this.header = new Header(msgType, code);
     }
 
     protected CoapMessage(Header header, OptionList optionList, ChannelBuffer payload){
@@ -136,7 +140,7 @@ public abstract class CoapMessage implements Cloneable {
     /**
      * Sets the message ID for this message. Normally, there is no need to set the message ID manually. It is set or
      * overwritten automatically by the
-     * {@link de.uniluebeck.itm.spitfire.nCoap.communication.reliability.OutgoingMessageReliabilityHandler}.
+     * {@link de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler}.
      *
      * @param messageId the message ID for the message
      * @throws InvalidHeaderException if the message ID to be set is Invalid
@@ -249,7 +253,7 @@ public abstract class CoapMessage implements Cloneable {
     }
 
     /**
-     * This method is to set a block option. This method is not intended to be used. Its purpose is internally.
+     * This method is to set a block option. This method is not intended to be used. Its purpose is internal.
      * If you want to activate one or both of the block options, please either use {@link this.setRequestBlocksize}
      * or (@link this.setResponseBlocksize}.
      *
@@ -290,7 +294,7 @@ public abstract class CoapMessage implements Cloneable {
             return getBlocksize(BLOCK_1);
         } catch (InvalidOptionException e) {
             log.error("This should never happen!", e);
-            return Blocksize.UNDEFINED;
+            return null;
         }
     }
 
@@ -299,7 +303,7 @@ public abstract class CoapMessage implements Cloneable {
             return getBlocksize(BLOCK_2);
         } catch (InvalidOptionException e) {
             log.error("This should never happen!", e);
-            return Blocksize.UNDEFINED;
+            return null;
         }
     }
 
@@ -329,9 +333,7 @@ public abstract class CoapMessage implements Cloneable {
                 throw e;
             }
         }
-        else{
-            return Blocksize.UNDEFINED;
-        }
+        return null;
     }
 
     public boolean isLastBlock(OptionName optionName) throws InvalidOptionException {
@@ -344,7 +346,7 @@ public abstract class CoapMessage implements Cloneable {
             throw e;
         }
 
-        long value = ((UintOption) getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
+        long value = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
         return value == 0;
     }
 
@@ -358,11 +360,15 @@ public abstract class CoapMessage implements Cloneable {
             throw e;
         }
 
-        UintOption option = (UintOption) getOption(optionName).get(0);
-        log.debug("Option " + option.toString() + ", value: " + option.getDecodedValue());
+        try{
+            UintOption option = (UintOption) getOption(optionName).get(0);
+            log.debug("Option " + option.toString() + ", value: " + option.getDecodedValue());
 
-        return option.getDecodedValue() >> 4;
-
+            return option.getDecodedValue() >> 4;
+        }
+        catch (IndexOutOfBoundsException e){
+            return 0;
+        }
     }
 
     /**
@@ -488,17 +494,19 @@ public abstract class CoapMessage implements Cloneable {
         }
 
         CoapMessage msg = (CoapMessage) obj;
-        return this.getHeader().getVersion() == msg.getHeader().getVersion()
-            && this.getHeader().getMsgType().number == msg.getHeader().getMsgType().number
-            && this.getHeader().getCode().number == msg.getHeader().getCode().number
-            && this.getHeader().getMsgID() == msg.getHeader().getMsgID()
+        return this.getHeader().equals(msg.getHeader())
             && optionList.equals(msg.getOptionList())
             && payload.equals(msg.getPayload());
     }
 
     @Override
-    public CoapMessage clone() throws CloneNotSupportedException {
-        return (CoapMessage) super.clone();
+    public String toString(){
+        return this.getClass().getName() + ":" +
+                " MsgID " + getMessageID() +
+                ", MygType " + getMessageType() +
+                ", Code " + getCode() +
+                ", Token " + new ByteArrayWrapper(getToken()).toHexString() +
+                ", Block_2 " + getMaxBlocksizeForResponse();
     }
 
 }

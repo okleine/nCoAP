@@ -28,8 +28,8 @@ public class OptionListTest {
                 LOCATION_QUERY, IF_MATCH, IF_NONE_MATCH, FENCEPOST));
         
         codeConstraintsList.add(new CodeConstraints(Code.POST)
-                .addOnceAllowed(TOKEN, URI_HOST, URI_PORT)
-                .addNotAllowed(CONTENT_TYPE, MAX_AGE, PROXY_URI,
+                .addOnceAllowed(TOKEN, URI_HOST, URI_PORT, CONTENT_TYPE)
+                .addNotAllowed(MAX_AGE, PROXY_URI,
                 ETAG, LOCATION_PATH, LOCATION_QUERY, ACCEPT,
                 IF_MATCH, FENCEPOST, IF_NONE_MATCH));
         

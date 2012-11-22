@@ -34,11 +34,11 @@ public class Header {
 
     private static Logger log = LoggerFactory.getLogger(Header.class.getName());
 
-    public static int MESSAGE_ID_NOT_SET = -1;
+    public static int MESSAGE_ID_UNDEFINED = -1;
 
     private MsgType msgType;
     private Code code;
-    private int msgID = MESSAGE_ID_NOT_SET;
+    private int msgID = MESSAGE_ID_UNDEFINED;
 
     public Header(Code code){
         setCode(code);
@@ -115,5 +115,24 @@ public class Header {
 
     public int getMsgID(){
         return msgID;
+    }
+
+    @Override
+    public boolean equals(Object other){
+        if(!(other instanceof Header)){
+            return false;
+        }
+
+        Header otherHeader = (Header) other;
+
+        return this.getVersion() == otherHeader.getVersion() &&
+               this.code == otherHeader.getCode() &&
+               this.msgID == otherHeader.getMsgID() &&
+               this.msgType == otherHeader.getMsgType();
+    }
+
+    @Override
+    public String toString(){
+        return "{[" + this.getClass().getName() + "] " + msgType + ", " + code + ", " + msgID + "}";
     }
 }

@@ -25,4 +25,8 @@ public class InternalErrorMessage implements InternalMessage{
     public byte[] getToken() {
         return token;
     }
+
+    public String toString(){
+        return "{[" + this.getClass().getName() + "] Token: " + getToken() + ", Message: " + getContent() + "}";
+    }
 }

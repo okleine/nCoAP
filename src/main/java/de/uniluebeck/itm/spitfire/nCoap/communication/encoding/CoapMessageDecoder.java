@@ -34,14 +34,15 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+
+import static org.jboss.netty.channel.Channels.fireMessageReceived;
 
 /**
  *
@@ -52,6 +53,53 @@ public class CoapMessageDecoder extends OneToOneDecoder{
     private static Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class.getName());
 
     @Override
+    public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
+        try{
+            super.handleUpstream(ctx, evt);
+        }
+        catch(InvalidOptionException e){
+            handleInvalidOptionException(ctx, (MessageEvent) evt, e);
+        }
+    }
+
+    private void handleInvalidOptionException(ChannelHandlerContext ctx, final MessageEvent me, InvalidOptionException e){
+        log.debug("Invalid option in received message.", e);
+
+        Header header = e.getMessageHeader();
+        if(header == null){
+            log.error("This should never happen.", e);
+            return;
+        }
+
+        if(header.getMsgType() == MsgType.CON){
+            try {
+                CoapResponse response = new CoapResponse(MsgType.RST, Code.EMPTY, header.getMsgID());
+                ChannelFuture future = Channels.future(ctx.getChannel());
+                DownstreamMessageEvent dme = new DownstreamMessageEvent(ctx.getChannel(),
+                                                                        future,
+                                                                        response,
+                                                                        me.getRemoteAddress());
+
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        log.info("RST message succesfully sent to " + me.getRemoteAddress());
+                    }
+                });
+
+                ctx.sendDownstream(dme);
+
+            }
+            catch (ToManyOptionsException e1) {
+                log.error("This should never happen.", e);
+            }
+            catch (InvalidHeaderException e1) {
+                log.error("This should never happen.", e);
+            }
+        }
+    }
+
+    @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
 
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
@@ -60,9 +108,6 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         }
 
         ChannelBuffer buffer = (ChannelBuffer) obj;
-
-        //Decode incoming message
-        log.debug("Create new message object from ChannelBuffer");
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4){
@@ -80,41 +125,33 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         Header header =
                 new Header(MsgType.getMsgTypeFromNumber(msgTypeNumber), Code.getCodeFromNumber(codeNumber), msgID);
 
-        log.debug("New Header created from ChannelBuffer (type: " + header.getMsgType() +
-                    ", code: " + header.getCode() + ", msgID: " + header.getMsgID() + ")");
+        log.debug("Header created: {}", header);
 
         //Create OptionList
-        try{
-            OptionList optionList = decodeOptionList(buffer, optionCount, Code.getCodeFromNumber(codeNumber), header);
+        OptionList optionList = decodeOptionList(buffer, optionCount, Code.getCodeFromNumber(codeNumber), header);
 
-            //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
-            //at the same position (buf.readableBytes() == 0).
-            buffer.discardReadBytes();
+        //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
+        //at the same position (buf.readableBytes() == 0).
+        buffer.discardReadBytes();
 
-            CoapMessage result;
+        CoapMessage result;
 
-            if(header.getCode().isRequest()){
-                result = new CoapRequest(header, optionList, buffer);
-                log.debug("Decoded CoapRequest.");
-            }
-            else{
-                result = new CoapResponse(header, optionList, buffer);
-                log.debug("Decoded CoapResponse.");
-            }
-
-            //TODO Set IP address of server socket (currently [0::] for wildcard address)
-            InetAddress rcptAddress = ((InetSocketAddress)channel.getLocalAddress()).getAddress();
-            result.setRcptAdress(rcptAddress);
-
-            log.debug("Set receipient address to: " + rcptAddress);
-
-            return result;
+        if(header.getCode().isRequest()){
+            result = new CoapRequest(header, optionList, buffer);
+            log.debug("Decoded CoapRequest.");
         }
-        catch(InvalidOptionException e){
-            //TODO send RST
-            log.debug("Invalid option in received message.", e);
-            return null;
+        else{
+            result = new CoapResponse(header, optionList, buffer);
+            log.debug("Decoded CoapResponse.");
         }
+
+        //TODO Set IP address of local socket (currently [0::] for wildcard address)
+        InetAddress rcptAddress = ((InetSocketAddress) channel.getLocalAddress()).getAddress();
+        result.setRcptAdress(rcptAddress);
+
+        log.debug("Set receipient address to: " + rcptAddress);
+
+        return result;
     }
 
     /**

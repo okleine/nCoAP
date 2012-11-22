@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.message;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.MessageIDFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import java.net.InetSocketAddress;
@@ -37,7 +37,7 @@ public class CoapObservableRequest {
                 coapResponse.setMessageID(responseMessageID);
             } else {
                 //response is 2nd notification or later
-                responseMessageID = MessageIDFactory.getInstance().nextMessageID();
+                responseMessageID = MessageIDFactory.nextMessageID();
                 coapResponse.setMessageID(responseMessageID);
                 coapResponse.getHeader().setMsgType(MsgType.CON);
             }

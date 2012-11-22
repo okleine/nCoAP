@@ -375,4 +375,9 @@ public class CoapRequest extends CoapMessage {
         }
     }
 
+    public String toString(){
+        String result = super.toString();
+        result += ", target URI " + getTargetUri();
+        return result;
+    }
 }

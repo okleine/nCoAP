@@ -52,27 +52,27 @@ public abstract class Option{
         //URI must be absolute and thus contain a scheme part (must be one of "coap" or "coaps")
         String scheme = uri.getScheme();
         if(scheme == null){
-            String msg = "[Option] URI must be absolute and " +
+            String msg = "URI must be absolute and " +
                     "scheme must be either \"coap\" or \"coaps\" but is " + scheme;
             throw new URISyntaxException(uri.toString(), msg);
         }
         else{
             scheme = scheme.toLowerCase();
             if(!(scheme.equals("coap") || scheme.equals("coaps"))){
-                String msg = "[Option] URI scheme must be either \"coap\" or \"coaps\" but is " + scheme;
+                String msg = "URI scheme must be either \"coap\" or \"coaps\" but is " + scheme;
                 throw new URISyntaxException(uri.toString(), msg);
             }
         }
 
         //Target URI must not have fragment part
         if(uri.getFragment() != null){
-            String msg = "[Option] Target URI must not have a fragment part.";
+            String msg = "Target URI must not have a fragment part.";
             throw new URISyntaxException(uri.toString(), msg);
         }
 
         //Create URI-host option
-        log.debug("Target URI: " + uri);
         String host = uri.getHost();
+        log.debug("Host: " + uri.getHost() + ", Path: " + uri.getPath() + ", Auth.: " + uri.getAuthority());
 
         //Do only add an URI host option if the host is no IP-Address
         log.debug("Target URI host: " + host);
@@ -80,6 +80,7 @@ public abstract class Option{
         if(host.startsWith("[") && host.endsWith("]")){
             host = host.substring(1, host.length() - 1);
         }
+
         if(!InetAddresses.isInetAddress(host)){
             try {
                 result.add(new StringOption(OptionName.URI_HOST, host.getBytes(Option.charset)));
@@ -349,11 +350,28 @@ public abstract class Option{
     public int getOptionNumber(){
         return optionNumber;
     }
+
+    public abstract Object getDecodedValue();
+
     @Override
     public abstract boolean equals(Object o);
 
     @Override
     public int hashCode(){
         return optionNumber;
+    }
+
+    @Override
+    public String toString(){
+        try{
+            return "{[" + this.getClass().getName() + "]"
+                    + " " + OptionRegistry.getOptionName(optionNumber)
+                    + ", " + getDecodedValue()
+                    + "}";
+        }
+        catch(InvalidOptionException e){
+            log.error("This should never happen." , e);
+            return null;
+        }
     }
 }

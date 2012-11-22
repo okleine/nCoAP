@@ -1,6 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ public class OpaqueOption extends Option{
         super(optionName);
         //Check whether current number is appropriate for an OpaqueOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.OPAQUE){
-            String msg = "[OpaqueOption] Cannot set option " + optionName + " for an OpaqueOption.";
+            String msg = optionName + " is no opaque option.";
             throw new InvalidOptionException(optionNumber, msg);
         }
 
@@ -43,6 +44,12 @@ public class OpaqueOption extends Option{
 
         //Set value if there was no Exception thrown so far
         this.value = value;
+    }
+
+    @Override
+    public String getDecodedValue(){
+        ByteArrayWrapper decodedValue = new ByteArrayWrapper(value);
+        return decodedValue.toHexString();
     }
 
     @Override

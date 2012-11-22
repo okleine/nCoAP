@@ -45,6 +45,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapNotificationResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
@@ -66,9 +67,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     //Contains remote socket address and message ID of not yet confirmed messages
 
     private final HashBasedTable<InetSocketAddress, Integer, ScheduledFuture[]> waitingForACK = HashBasedTable.create();
-
-    private MessageIDFactory messageIDFactory = MessageIDFactory.getInstance();
-
+    
     private static OutgoingMessageReliabilityHandler instance = new OutgoingMessageReliabilityHandler();
 
     CoapServerApplication.ObservableResourceManager observableResourceManager;
@@ -191,7 +190,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         
         if(coapMessage.getMessageID() == -1){
             
-            coapMessage.setMessageID(messageIDFactory.nextMessageID());
+            coapMessage.setMessageID(MessageIDFactory.nextMessageID());
             log.debug("MsgID " + coapMessage.getMessageID() + " set.");
 
             if(coapMessage.getMessageType() == MsgType.CON){

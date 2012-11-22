@@ -66,10 +66,11 @@ public class OptionRegistry {
 
         /**
          * Returns the corresonding {@link MediaType} for the given number
-         * @param number the number to look up the corresponding {@link MediaType}
+         *
+         * @param number the number to look up the corresponding {@link de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType}
          * @return  the corresonding {@link MediaType} for the given number or null if there is no.
          */
-        public static MediaType getByNumber(int number){
+        public static MediaType getByNumber(Long number){
             for(MediaType mediaType : MediaType.values()){
                 if(mediaType.number == number){
                     return mediaType;
@@ -137,6 +138,7 @@ public class OptionRegistry {
         constraintsPOST.put(OptionName.URI_PATH, OptionOccurence.MULTIPLE);
         constraintsPOST.put(OptionName.URI_PORT, OptionOccurence.ONCE);
         constraintsPOST.put(OptionName.URI_QUERY, OptionOccurence.MULTIPLE);
+        constraintsPOST.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraintsPOST.put(OptionName.BLOCK_2, OptionOccurence.ONCE);
         constraintsPOST.put(OptionName.BLOCK_1, OptionOccurence.ONCE);
         allowedOptions.put(Code.POST, constraintsPOST);
@@ -212,9 +214,10 @@ public class OptionRegistry {
 
         //both, 4x, 5x only allow Max-Age Option
         HashMap<OptionName, OptionOccurence> constraints4x5x = new HashMap<OptionName, OptionOccurence>();
-        constraints4x5x.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraints4x5x.put(OptionName.TOKEN, OptionOccurence.ONCE);
+        constraints4x5x.put(OptionName.CONTENT_TYPE, OptionOccurence.ONCE);
         constraints4x5x.put(OptionName.MAX_AGE, OptionOccurence.ONCE);
+
 
         allowedOptions.put(Code.BAD_REQUEST_400, constraints4x5x);
         allowedOptions.put(Code.UNAUTHORIZED_401, constraints4x5x);

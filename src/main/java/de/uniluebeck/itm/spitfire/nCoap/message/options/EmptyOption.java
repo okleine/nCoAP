@@ -20,6 +20,11 @@ public class EmptyOption extends Option{
     }
 
     @Override
+    public String getDecodedValue(){
+        return "NONE";
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (!(o instanceof EmptyOption)){
             return false;
