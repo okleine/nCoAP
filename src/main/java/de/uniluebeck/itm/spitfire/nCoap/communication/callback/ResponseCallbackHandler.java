@@ -37,9 +37,10 @@ import com.google.common.collect.HashBasedTable;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowledgementMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalErrorMessage;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapNotificationResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
@@ -126,7 +127,6 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
      */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
-        
         if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
@@ -173,6 +173,13 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
 
         }
         else{
+            ctx.sendUpstream(me);
+        }
+        
+        //forward InternalErrorMessages and reset messages
+        if (me.getMessage() instanceof InternalErrorMessage 
+                || (me.getMessage() instanceof CoapMessage 
+                && ((CoapMessage)me.getMessage()).getMessageType() == MsgType.RST)) {
             ctx.sendUpstream(me);
         }
     }

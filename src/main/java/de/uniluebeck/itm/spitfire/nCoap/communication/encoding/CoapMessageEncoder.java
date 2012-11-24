@@ -23,6 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.Option;
@@ -47,7 +48,13 @@ public class CoapMessageEncoder extends OneToOneEncoder{
 
     @Override
     protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception {
-
+        
+        //prevents netty from trying to write an InternalMessage to a Socket
+        if(object instanceof InternalMessage) {
+            log.debug(" InternalMessage received.");
+            return null;
+        }
+        
         if(!(object instanceof CoapMessage)){
             log.debug(" No Message object!");
             return object;

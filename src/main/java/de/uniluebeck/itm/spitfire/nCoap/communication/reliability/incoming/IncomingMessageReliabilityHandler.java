@@ -26,8 +26,6 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming;
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapNotificationResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapObservableRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -150,9 +148,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        if(me.getMessage() instanceof CoapResponse && !(me.getMessage() instanceof CoapNotificationResponse)){
+        if(me.getMessage() instanceof CoapResponse) {   
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
-
+            
             log.debug("Handle downstream event for message with ID " +
                     coapResponse.getMessageID() + " for " + me.getRemoteAddress() );
 
@@ -162,7 +160,13 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 alreadyConfirmed = incomingMessagesToBeConfirmed.remove(me.getRemoteAddress(),
                                                                  coapResponse.getMessageID());
             }
-
+            
+            if (!coapResponse.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
+                //CoAP Response is a notification, message type is already set
+                ctx.sendDownstream(me);
+                return;
+            }
+            
             if (alreadyConfirmed == null){
                 coapResponse.getHeader().setMsgType(MsgType.NON);
             }

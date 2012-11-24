@@ -148,7 +148,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 log.debug("No open CON found (MsgID " + coapMessage.getMessageID() +
                         ", Rcpt " + remoteAddress + "). IGNORE!");
                 me.getFuture().setSuccess();
-                return;
+                //return removed to pass reset messages upwards
+                //return;
             }
         }
 
