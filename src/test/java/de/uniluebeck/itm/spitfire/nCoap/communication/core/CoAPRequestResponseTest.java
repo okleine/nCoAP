@@ -2,6 +2,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication;
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.Service;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 //import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
@@ -439,7 +440,7 @@ public class CoAPRequestResponseTest {
         //create 'requestMsg'
         int requestMessageID = 32056;
         byte[] requestToken = {0x53};
-        String requestUriPath = "temperature";
+        String requestUriPath = "testpath";
         Header requestHeader = new Header(MsgType.CON, Code.GET, requestMessageID);
         OptionList requestOptionList = new OptionList();
         requestOptionList.addOption(Code.GET, OptionRegistry.OptionName.TOKEN, 
@@ -549,6 +550,7 @@ class CoAPTestClient extends CoapClientApplication {
     }
 }
 
+
 class CoAPTestServer extends CoapServerApplication {
     public static final int PORT = CoapServerDatagramChannelFactory.COAP_SERVER_PORT;
             
@@ -561,6 +563,16 @@ class CoAPTestServer extends CoapServerApplication {
     
     //time to block thread in receiveCoapRequest() to force a separate response
     public long waitBeforeSendingResponse = 0;
+
+    public CoAPTestServer() {
+        registerService("/testpath", new Service() {
+
+            @Override
+            public CoapResponse getStatus(CoapRequest request) {
+                return receiveCoapRequest(request);
+            }
+        });
+    }
     
     public synchronized void enableReceiving() {
         receivingEnabled = true;
@@ -590,9 +602,7 @@ class CoAPTestServer extends CoapServerApplication {
         }
     }
 
-    @Override
-    public CoapResponse receiveCoapRequest(CoapRequest coapRequest,
-            InetSocketAddress senderAddress) {
+    public CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
         if (receivingEnabled) {
             synchronized(this) {
                 receivedRequests.add(new ReceivedMessage<CoapRequest>(coapRequest));
