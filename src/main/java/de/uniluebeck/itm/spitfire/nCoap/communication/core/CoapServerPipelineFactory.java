@@ -26,6 +26,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
+import de.uniluebeck.itm.spitfire.nCoap.communication.observe.ObservableHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelHandler;
@@ -53,6 +54,7 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         pipeline.addLast("OutgoingMessageReliabilityHandler", OutgoingMessageReliabilityHandler.getInstance());
         pipeline.addLast("IncomingMessageReliabilityHandler", IncomingMessageReliabilityHandler.getInstance());
         pipeline.addLast("ResponseCallbackHandler", ResponseCallbackHandler.getInstance());
+        pipeline.addLast("ObservableHandler", ObservableHandler.getInstance());
         pipeline.addLast("ServerApplication", serverApp);
 
         return pipeline;

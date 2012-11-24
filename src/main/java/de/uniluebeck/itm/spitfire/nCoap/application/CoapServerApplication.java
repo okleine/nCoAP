@@ -24,26 +24,25 @@
 package de.uniluebeck.itm.spitfire.nCoap.application;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapNotificationResponse;
-import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapObservableRequest;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+
+import java.net.InetSocketAddress;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Abstract class to be extended by a CoAP server application. Even though the communication is based on the Netty
@@ -53,14 +52,16 @@ import java.util.concurrent.Executors;
  *
  * @author Oliver Kleine
  */
-public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler{
+public class CoapServerApplication extends SimpleChannelUpstreamHandler implements Observer {
 
     private static Logger log = LoggerFactory.getLogger(CoapServerApplication.class.getName());
 
     protected final DatagramChannel channel = new CoapServerDatagramChannelFactory(this).getChannel();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    private ObservableResourceManager observableResourceManager = new ObservableResourceManager();
+    //This map holds all registered services
+    //[uri path] --> [Service]
+    ConcurrentHashMap<String, Service> registeredServices = new ConcurrentHashMap<String, Service>();
     
     /**
      * This method is called by the Netty framework whenever a new message is received to be processed by the server.
@@ -75,23 +76,12 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     public final void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         if(me.getMessage() instanceof CoapRequest){
             final CoapRequest coapRequest = (CoapRequest) me.getMessage();
-            
-            //check if request has observable option
-            if(!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty() 
-                    && observableResourceManager.hasResource(coapRequest)) {
-                //request is observable
-                CoapObservableRequest observableRequest = new CoapObservableRequest(coapRequest, 
-                        (InetSocketAddress) me.getRemoteAddress(), (DatagramChannel) me.getChannel());
-                //the first response will be send immediately
-                observableResourceManager.addObserver(observableRequest);    
-            } else {
-                //request is not observable or resource is not registered
-                executorService.execute(new CoapRequestExecutor(coapRequest, 
+
+            executorService.execute(new CoapRequestExecutor(coapRequest, 
                         (InetSocketAddress) me.getRemoteAddress()));
                 return;
-            }
         }
-
+        
         ctx.sendUpstream(me);
     }
 
@@ -114,13 +104,25 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
             }
         });
     }
-
+    
     /**
-     * Method to be overridden by extending classes to handle incoming coapRequests
-     * @param coapRequest The incoming {@link CoapRequest} object
-     * @return the {@link CoapResponse} object to be sent back
+     * Searches for a service to respons to the passed request.
+     * If no matching service was found a 404 Not Found response will be returned.
+     * 
+     * @param coapRequest request
+     * @param senderAddress requests remote address
+     * @return resource from service or 404 Not Found
      */
-    public abstract CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderAddress);
+    private CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderAddress) {
+        String uriPath = coapRequest.getTargetUri().getPath();
+        //TODO .well-known/core        
+        Service service = registeredServices.get(uriPath);
+        if (service != null) {
+            return service.getStatus(coapRequest);
+        } else {
+            return new CoapResponse(Code.NOT_FOUND_404);
+        }     
+    }
 
     private class CoapRequestExecutor implements Runnable {
 
@@ -172,65 +174,45 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         }
     }
     
-    public class ObservableResourceManager {
-        
-        private HashMap<String, CoapNotificationResponse> observableResources = 
-                new HashMap<String, CoapNotificationResponse>();
-        private HashMap<String, List<CoapObservableRequest>> observers = 
-                new HashMap<String, List<CoapObservableRequest>>();
-        private HashMap<Integer, CoapObservableRequest> responseMessageIdMap =
-                new HashMap<Integer, CoapObservableRequest>();
-        
-        public synchronized void update(String targetUriPath, CoapNotificationResponse response) {
-            response.setObservableResourceManager(this);
-            observableResources.put(targetUriPath, response);
-            List<CoapObservableRequest> observersForTargetUri = observers.get(targetUriPath);
-            if (observersForTargetUri != null) {
-                for (CoapObservableRequest coapObservableRequest : observersForTargetUri) {
-                    responseMessageIdMap.put(coapObservableRequest.notifyObserver(response), coapObservableRequest);
-                    //TODO expire Message ID, timeout for retransmissions of con is 93 sec
-                }
-            }
+    /**
+     * Register a service to a path.
+     * It is not possible to register multiple services at a single path.
+     * However the same service can be registered multiple times at different paths.
+     * 
+     * @param uriPath uri path
+     * @param service resource providing service
+     */
+    public void registerService(String uriPath, Service service) {
+        if (registeredServices.containsKey(uriPath)) {
+            unsubscribeService(uriPath);
         }
-        
-        //TODO create update(String targetUriPath, String plainTextPayload)
-        
-        public synchronized void addObserver(CoapObservableRequest request) {
-            String targetUriPath = request.getCoapRequest().getTargetUri().getPath();
-            
-            List<CoapObservableRequest> observersForTargetUri = observers.get(targetUriPath);
-            if (observersForTargetUri == null) {
-                observersForTargetUri = new LinkedList<CoapObservableRequest>();
-                observers.put(targetUriPath, observersForTargetUri);
-            }
-            observersForTargetUri.add(request);
-            
-            responseMessageIdMap.put(request.notifyObserver(observableResources.get(targetUriPath)), request);
-        }
-        
-        public synchronized boolean removeObserver(CoapObservableRequest observer) {
-            if (observer != null) {
-                List<CoapObservableRequest> observersForTargetUri = 
-                        observers.get(observer.getCoapRequest().getTargetUri().getPath());
-                if (observersForTargetUri != null) {
-                    return observersForTargetUri.remove(observer);
-                }
-            }
-            return false;
-        }
-        
-        public synchronized boolean hasResource(CoapRequest coapRequest) {
-            return observableResources.containsKey(coapRequest.getTargetUri().getPath());
-        }
-        
-        public boolean resetReceived(int messageID) {
-            CoapObservableRequest observer = responseMessageIdMap.get(messageID);
-            return removeObserver(observer);
-        }
-        
+        registeredServices.put(uriPath, service);
+        service.addObserver(this);
+        service.addPath(uriPath);
     }
     
-    public ObservableResourceManager getObservableResourceManager() {
-        return observableResourceManager;
+    /**
+     * Removes a service from a path.
+     * 
+     * @param uriPath service path
+     * @return true if a registered service was removed
+     */
+    public boolean unsubscribeService(String uriPath) {
+        Service service = registeredServices.remove(uriPath);
+        if (service != null) {
+            service.deleteObserver(this);
+            service.removePath(uriPath);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    @Override
+    public void update(Observable o, Object arg) {
+        if (o instanceof Service) {
+            //write internal message on channel if service updates
+            channel.write(new InternalServiceUpdate((Service) o));
+        }
     }
 }
