@@ -21,7 +21,7 @@ public abstract class Option{
     private static Logger log = LoggerFactory.getLogger(Option.class.getName());
 
     //public static final Charset charset = Charset.forName("UTF-8");
-    public static final String charset = "UTF-8";
+    public static final String CHARSET = "UTF-8";
 
     protected int optionNumber;
     protected byte[] value = new byte[0];
@@ -83,7 +83,7 @@ public abstract class Option{
 
         if(!InetAddresses.isInetAddress(host)){
             try {
-                result.add(new StringOption(OptionName.URI_HOST, host.getBytes(Option.charset)));
+                result.add(new StringOption(OptionName.URI_HOST, host.getBytes(Option.CHARSET)));
             } catch (UnsupportedEncodingException e) {
                 log.debug("This should never happen:\n", e);
             }
@@ -157,7 +157,7 @@ public abstract class Option{
 
         byte[] encodedUri = new byte[0];
         try {
-            encodedUri = uri.toString().getBytes(StringOption.charset);
+            encodedUri = uri.toString().getBytes(StringOption.CHARSET);
         } catch (UnsupportedEncodingException e) {
             log.debug("This should never happen:\n", e);
         }
@@ -227,7 +227,7 @@ public abstract class Option{
         //Check whether current number is appropriate for a StringOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.STRING){
             String msg = "Cannot create option " + optionName + " with string value.";
-            throw new InvalidOptionException(optionName, msg);
+            throw new InvalidOptionException(optionName.number, msg);
         }
         return new StringOption(optionName, value);
     }
@@ -244,7 +244,7 @@ public abstract class Option{
         //Check whether current number is appropriate for a UintOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.UINT){
             String msg = "Cannot create option " + optionName + " with uint value.";
-            throw new InvalidOptionException(optionName, msg);
+            throw new InvalidOptionException(optionName.number, msg);
         }
         return new UintOption(optionName, value);
     }
@@ -261,12 +261,12 @@ public abstract class Option{
         //Check whether current number is appropriate for a OpaqueOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.OPAQUE){
             String msg = "[Option] Cannot create option " + optionName + " with opaque value.";
-            throw new InvalidOptionException(optionName, msg);
+            throw new InvalidOptionException(optionName.number, msg);
         }
         
         if(optionName == OptionName.TOKEN && value.length == 0){
             String msg = "[Option] Empty byte[] is the default value for option " + optionName + ". No option created.";
-            throw new InvalidOptionException(optionName, msg);
+            throw new InvalidOptionException(optionName.number, msg);
         }
 
         return new OpaqueOption(optionName, value);
@@ -276,7 +276,7 @@ public abstract class Option{
         //Check whether current number is appropriate for an EmptyOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.EMPTY){
             String msg = "[Option] Cannot create option " + optionName + " as instance of EmptyOption.";
-            throw new InvalidOptionException(optionName, msg);
+            throw new InvalidOptionException(optionName.number, msg);
         }
         return new EmptyOption(optionName);
     }
@@ -306,7 +306,7 @@ public abstract class Option{
             case EMPTY:
                 return new EmptyOption(optionName);
             default:
-                throw new InvalidOptionException(optionName, "Type of option number " +  optionName.number +
+                throw new InvalidOptionException(optionName.number, "Type of option number " +  optionName.number +
                         " is unknown.");
         }
     }
@@ -363,15 +363,9 @@ public abstract class Option{
 
     @Override
     public String toString(){
-        try{
-            return "{[" + this.getClass().getName() + "]"
-                    + " " + OptionRegistry.getOptionName(optionNumber)
-                    + ", " + getDecodedValue()
-                    + "}";
-        }
-        catch(InvalidOptionException e){
-            log.error("This should never happen." , e);
-            return null;
-        }
+        return "{[" + this.getClass().getName() + "]"
+                + " " + OptionRegistry.getOptionName(optionNumber)
+                + ", " + getDecodedValue()
+                + "}";
     }
 }

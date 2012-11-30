@@ -40,16 +40,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author Oliver Kleine
  */
-public class CoapMessageEncoder extends OneToOneEncoder{
+public class CoapMessageEncoder extends OneToOneEncoder {
 
-    public static int MAX_OPTION_DELTA = 14;
-    private static Logger log = LoggerFactory.getLogger(CoapMessageEncoder.class.getName());
+    public static final int MAX_OPTION_DELTA = 14;
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
-    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception {
+    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception{
 
         if(!(object instanceof CoapMessage)){
-            log.debug(" No Message object!");
             return object;
         }
 
@@ -59,7 +58,7 @@ public class CoapMessageEncoder extends OneToOneEncoder{
         encodeOptions(buffer, msg.getOptionList());
 
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, msg.getPayload());
-        log.debug(" Length of encoded message: " + buf.readableBytes());
+        log.debug("Encoded message length: " + buf.readableBytes());
 
         return buf;
     }
@@ -72,7 +71,7 @@ public class CoapMessageEncoder extends OneToOneEncoder{
             (header.getMsgID()));
     }
 
-    private void encodeOptions(ChannelBuffer buffer, OptionList optionList) throws Exception {
+    private void encodeOptions(ChannelBuffer buffer, OptionList optionList) throws EncodingFailedException {
 
         //Encode options one after the other and append buf option to the buf
         int prevNumber = 0;
@@ -82,20 +81,20 @@ public class CoapMessageEncoder extends OneToOneEncoder{
                 encodeOption(buffer, optionName, option, prevNumber);
                 prevNumber = optionName.number;
 
-                log.debug(" Encoded option(No: " + optionName.number +
+                log.debug("Encoded option(No: " + optionName.number +
                             ", Value: " + Option.getHexString(option.getValue()) + ")");
             }
         }
     }
 
     private void encodeOption(ChannelBuffer buffer, OptionName optionName, Option option, int prevNumber)
-            throws Exception {
+            throws EncodingFailedException {
 
         log.debug(" Start encoding option number " + optionName.number);
 
         //The previous option number must be smaller or equal to the actual one
         if(prevNumber > optionName.number){
-            String msg = "[CoapMessageEncoder] Parameter value prevNumber (" + prevNumber +
+            String msg = "Parameter value prevNumber (" + prevNumber +
                          ") for encoding must not be larger then current option number (" + optionName.number + ")";
             throw new EncodingFailedException(msg);
         }

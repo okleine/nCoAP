@@ -23,10 +23,12 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
+
 /**
  * @author Oliver Kleine
  */
-public class InvalidMessageException extends Exception{
+public class InvalidMessageException extends CoapException {
 
     public InvalidMessageException(String msg) {
         super(msg);

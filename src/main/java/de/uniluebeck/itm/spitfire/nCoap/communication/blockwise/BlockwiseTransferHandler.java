@@ -13,15 +13,15 @@ import org.jboss.netty.channel.SimpleChannelHandler;
  */
 public class BlockwiseTransferHandler extends SimpleChannelHandler{
 
-    private static BlockwiseTransferHandler instance = new BlockwiseTransferHandler();
-
-    private BlockwiseTransferHandler(){
-
-    }
-
-    public static BlockwiseTransferHandler getInstance(){
-        return instance;
-    }
+//    private static BlockwiseTransferHandler instance = new BlockwiseTransferHandler();
+//
+//    private BlockwiseTransferHandler(){
+//
+//    }
+//
+//    public static BlockwiseTransferHandler getInstance(){
+//        return instance;
+//    }
 
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception {

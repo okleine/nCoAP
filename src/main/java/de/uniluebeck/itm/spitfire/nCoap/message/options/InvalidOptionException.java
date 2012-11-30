@@ -5,7 +5,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
-import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 
@@ -15,27 +15,20 @@ import javax.annotation.Nullable;
  *
  * @author Oliver Kleine
  */
-public class InvalidOptionException extends Exception{
+public class InvalidOptionException extends CoapException {
 
-    @Nullable
-    private Header messageHeader;
-    private OptionName optionName;
-    private boolean critical;
 
-    public InvalidOptionException(Header header, OptionName optionName, String msg){
-        this(optionName, msg);
+    @Nullable private Header messageHeader;
+    private int optionNumber;
+
+    public InvalidOptionException(Header header, int optionNumber, String msg){
+        this(optionNumber, msg);
         this.messageHeader = header;
     }
 
-    public InvalidOptionException(OptionName optionName, String msg){
+    public InvalidOptionException(int optionNumber, String msg){
         super(msg);
-        this.optionName = optionName;
-        this.critical = OptionRegistry.isCritial(optionName);
-    }
-
-     public InvalidOptionException(int optNumber, String msg){
-        super(msg);
-        this.critical = OptionRegistry.isCritical(optNumber);
+        this.optionNumber = optionNumber;
     }
 
     /**
@@ -44,7 +37,15 @@ public class InvalidOptionException extends Exception{
      * @return whether the Exception was caused by a critical option
      */
     public boolean isCritical(){
-       return critical;
+       return OptionRegistry.isCritical(optionNumber);
+    }
+
+    /**
+     * Returns the number of the option that caused the exception
+     * @return the number of the option that caused the exception
+     */
+    public int getOptionNumber() {
+        return optionNumber;
     }
 
     /**
@@ -52,7 +53,7 @@ public class InvalidOptionException extends Exception{
      * @return the OptionName of the option that caused this exception
      */
     public OptionName getOptionName(){
-        return optionName;
+        return OptionRegistry.getOptionName(optionNumber);
     }
 
     /**

@@ -39,26 +39,19 @@ import java.util.concurrent.Executors;
  */
 public class CoapServerDatagramChannelFactory {
 
-    //public static int COAP_SERVER_PORT = Configuration.getInstance().getInt("server.port", 5683);
-    public static int COAP_SERVER_PORT = 5683;
-
-    //private static CoapServerDatagramChannelFactory instance = new CoapServerDatagramChannelFactory();
+    public static final int COAP_SERVER_PORT = 5683;
 
     private DatagramChannel channel;
 
     public CoapServerDatagramChannelFactory(CoapServerApplication serverApp){
         ChannelFactory channelFactory =
-                new OioDatagramChannelFactory(Executors.newCachedThreadPool());
+                new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapServerPipelineFactory(serverApp));
 
         channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(COAP_SERVER_PORT));
     }
-
-//    public static CoapServerDatagramChannelFactory getInstance(){
-//        return instance;
-//    }
 
     public DatagramChannel getChannel(){
         return channel;

@@ -57,15 +57,15 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> incomingMessagesToBeConfirmed
             = HashBasedTable.create();
 
-    private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
+//    private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
+//
+//    public static IncomingMessageReliabilityHandler getInstance(){
+//        return instance;
+//    }
 
-    public static IncomingMessageReliabilityHandler getInstance(){
-        return instance;
-    }
-
-    //Empty private constructor for singleton
-    private IncomingMessageReliabilityHandler(){
-    }
+//    //Empty private constructor for singleton
+//    private IncomingMessageReliabilityHandler(){
+//    }
 
     /**
      * If the incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty

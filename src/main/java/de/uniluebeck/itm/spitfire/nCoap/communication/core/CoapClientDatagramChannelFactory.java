@@ -23,17 +23,12 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
-//import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
 
 
 /**
@@ -41,15 +36,14 @@ import java.util.concurrent.Executors;
  */
 public class CoapClientDatagramChannelFactory {
 
-    private static Logger log = LoggerFactory.getLogger(CoapClientDatagramChannelFactory.class.getName());
-
-    public static int COAP_CLIENT_PORT = 5682;
+    public static final int COAP_CLIENT_PORT = 5682;
+    public static final int RECEIVE_BUFFER_SIZE = 65536;
 
     private DatagramChannel channel;
 
     private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
     static{
-        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(34000);
+        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
         instance.getChannel().getConfig().setReceiveBufferSizePredictor(predictor);
     }
 

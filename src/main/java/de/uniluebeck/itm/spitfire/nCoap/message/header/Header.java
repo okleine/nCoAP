@@ -58,30 +58,6 @@ public class Header {
         setMsgID(msgID);
     }
 
-    public static Header createHeader (ChannelBuffer buf) throws InvalidHeaderException{
-        //Header must have a length of exactly 4 bytes
-        if(buf.readableBytes() < 4){
-            String msg = "Buffer must contain at least readable 4 bytes (but has " + buf.readableBytes() + ")";
-            throw new InvalidHeaderException(msg);
-        }
-
-        //Decode the header values (version: 2 bits, msgType: 2 bits, optionCount: 4 bits, code: 4 bits, msgID: 8 bits)
-        int header = buf.readInt();
-        int msgTypeNumber = ((header << 2) >>> 30);
-        //int optionCount = ((header << 4) >>> 28);
-        int codeNumber = ((header << 8) >>> 24);
-        int msgID = ((header << 16) >>> 16);
-
-        Header result = new Header(MsgType.getMsgTypeFromNumber(msgTypeNumber), Code.getCodeFromNumber(codeNumber));
-        //result.setOptionCount(optionCount);
-        result.setMsgID(msgID);
-
-        log.debug("New Header created from ChannelBuffer (type: " + result.msgType +
-                ", code: " + result.code + ", msgID: " + result.msgID + ")");
-
-        return result;
-    }
-
     public int getVersion(){
         return 1;
     }
