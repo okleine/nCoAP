@@ -23,15 +23,25 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message.header;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
+
 /**
  *
  * @author Oliver Kleine
  */
-public class InvalidHeaderException extends Exception{
+public class InvalidHeaderException extends CoapException {
 
-    private static final long serialVersionUID = 1L;
+    private int messageID;
 
     public InvalidHeaderException(String msg){
         super(msg);
+    }
+
+    public int getMessageID() {
+        return messageID;
+    }
+
+    public void setMessageID(int messageID) {
+        this.messageID = messageID;
     }
 }

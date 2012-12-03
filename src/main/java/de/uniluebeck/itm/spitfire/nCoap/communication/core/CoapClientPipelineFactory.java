@@ -36,16 +36,27 @@ import org.jboss.netty.channel.Channels;
 
 public class CoapClientPipelineFactory implements ChannelPipelineFactory {
 
+    private CoapMessageEncoder encoder = new CoapMessageEncoder();
+    private CoapMessageDecoder decoder = new CoapMessageDecoder();
+
+    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler
+            = new OutgoingMessageReliabilityHandler();
+
+    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler
+            = new IncomingMessageReliabilityHandler();
+
+    private BlockwiseTransferHandler blockwiseTransferHandler = new BlockwiseTransferHandler();
+    private ResponseCallbackHandler responseCallbackHandler = new ResponseCallbackHandler();
     @Override
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
-        pipeline.addLast("CoAP Message Encoder", new CoapMessageEncoder());
-        pipeline.addLast("CoAP Message Decoder", new CoapMessageDecoder());
-        pipeline.addLast("OutgoingMessageReliabilityHandler", OutgoingMessageReliabilityHandler.getInstance());
-        pipeline.addLast("IncomingMessageReliabilityHandler", IncomingMessageReliabilityHandler.getInstance());
-        pipeline.addLast("BlockwiseTransferHandler", BlockwiseTransferHandler.getInstance());
-        pipeline.addLast("ResponseCallbackHandler", ResponseCallbackHandler.getInstance());
+        pipeline.addLast("CoAP Message Encoder", encoder);
+        pipeline.addLast("CoAP Message Decoder", decoder);
+        pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
+        pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
+        pipeline.addLast("BlockwiseTransferHandler", blockwiseTransferHandler);
+        pipeline.addLast("ResponseCallbackHandler", responseCallbackHandler);
 
         return pipeline;
     }

@@ -57,15 +57,15 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> incomingMessagesToBeConfirmed
             = HashBasedTable.create();
 
-    private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
+//    private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
+//
+//    public static IncomingMessageReliabilityHandler getInstance(){
+//        return instance;
+//    }
 
-    public static IncomingMessageReliabilityHandler getInstance(){
-        return instance;
-    }
-
-    //Empty private constructor for singleton
-    private IncomingMessageReliabilityHandler(){
-    }
+//    //Empty private constructor for singleton
+//    private IncomingMessageReliabilityHandler(){
+//    }
 
     /**
      * If the incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty
@@ -78,7 +78,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      * @throws Exception if an error occured
      */
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception {
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendUpstream(me);
             return;
@@ -148,9 +148,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        if(me.getMessage() instanceof CoapResponse) {   
+        if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
-            
+
             log.debug("Handle downstream event for message with ID " +
                     coapResponse.getMessageID() + " for " + me.getRemoteAddress() );
 
@@ -160,6 +160,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 alreadyConfirmed = incomingMessagesToBeConfirmed.remove(me.getRemoteAddress(),
                                                                  coapResponse.getMessageID());
             }
+
             
             if (!coapResponse.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
                 //CoAP Response is a notification, message type is already set
@@ -217,10 +218,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
                 try {
                     coapMessage = new CoapResponse(MsgType.ACK, Code.EMPTY, messageID);
-                }
-                catch (ToManyOptionsException e) {
-                    log.error("Exception while creating empty ACK. This should " +
-                            " never happen!", e);
                 }
                 catch (InvalidHeaderException e) {
                     log.error("Exception while creating empty ACK. This should " +

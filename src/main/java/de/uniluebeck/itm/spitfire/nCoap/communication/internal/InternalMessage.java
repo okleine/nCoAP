@@ -9,5 +9,6 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.internal;
  */
 public interface InternalMessage {
 
+
     public Object getContent();
 }

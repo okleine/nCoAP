@@ -24,7 +24,7 @@ public class StringOption extends Option{
         setValue(opt_name, value);
 
         try {
-            log.debug("New Option (" + opt_name + ") created (value: " + new String(this.value, charset) +
+            log.debug("New Option (" + opt_name + ") created (value: " + new String(this.value, CHARSET) +
                     ", encoded length: " + this.value.length + ")");
         } catch (UnsupportedEncodingException e) {
             log.debug("This should never happen:\n" + e);
@@ -60,21 +60,13 @@ public class StringOption extends Option{
         this.value = bytes;
     }
     
-//    /**
-//     * Returns the value of this StringOption as UTF-8 encoded String
-//     * @return The value of this StringOption as UTF-8 encoded String
-//     */
-//    public String getValue(){
-//        return new String(value, charset);
-//    }
-
     //Replaces percent-encoding from ASCII Strings with UTF-8 encoding
     private static byte[] convertToByteArrayWithoutPercentEncoding(OptionName optionName, String s)
             throws InvalidOptionException {
 
         ByteArrayInputStream in = null;
         try {
-            in = new ByteArrayInputStream(s.getBytes(charset));
+            in = new ByteArrayInputStream(s.getBytes(CHARSET));
         } catch (UnsupportedEncodingException e) {
             log.debug("This should never happen: \n", e);
         }
@@ -96,7 +88,8 @@ public class StringOption extends Option{
 
                 if(d1 == -1 || d2 == -1){
                     //Unexpected end of stream (at least one byte missing after '%')
-                    throw new InvalidOptionException(optionName, "[String Option] Invalid percent encoding in: " + s);
+                    throw new InvalidOptionException(optionName.number,
+                                                     "[String Option] Invalid percent encoding in: " + s);
                 }
 
                 //Write decoded value to Outputstream (e.g. sequence [0x02, 0x00] results into byte 0x20
@@ -129,7 +122,7 @@ public class StringOption extends Option{
     public String getDecodedValue() {
         String result = null;
         try {
-            result = new String(value, charset);
+            result = new String(value, CHARSET);
         } catch (UnsupportedEncodingException e) {
            log.debug("This should never happen:\n", e);
         }

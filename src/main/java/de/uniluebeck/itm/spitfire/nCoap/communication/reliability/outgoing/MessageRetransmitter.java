@@ -37,19 +37,16 @@ class MessageRetransmitter implements Runnable {
     @Override
     public void run() {
 
-        synchronized (OutgoingMessageReliabilityHandler.getInstance().getClass()){
+        ChannelFuture future = Channels.future(ctx.getChannel());
 
-            ChannelFuture future = Channels.future(ctx.getChannel());
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                log.info("Retransmition completed {}", MessageRetransmitter.this);
+            }
+        });
 
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    log.info("Retransmition completed {}", MessageRetransmitter.this);
-                }
-            });
-
-           Channels.write(ctx, future, coapMessage,rcptAddress);
-        }
+       Channels.write(ctx, future, coapMessage, rcptAddress);
     }
 
     @Override

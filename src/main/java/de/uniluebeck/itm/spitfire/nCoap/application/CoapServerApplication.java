@@ -25,6 +25,7 @@ package de.uniluebeck.itm.spitfire.nCoap.application;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -32,13 +33,10 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
-
 import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -52,12 +50,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author Oliver Kleine
  */
-public class CoapServerApplication extends SimpleChannelUpstreamHandler implements Observer {
+public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler implements RetransmissionTimeoutHandler, Observer {
 
     private static Logger log = LoggerFactory.getLogger(CoapServerApplication.class.getName());
 
-    protected final DatagramChannel channel = new CoapServerDatagramChannelFactory(this).getChannel();
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    protected final DatagramChannel channel;
+
+    protected CoapServerApplication(){
+        channel = new CoapServerDatagramChannelFactory(this).getChannel();
+    }
 
     //This map holds all registered services
     //[uri path] --> [Service]
@@ -75,14 +76,54 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler implemen
     @Override
     public final void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         if(me.getMessage() instanceof CoapRequest){
-            final CoapRequest coapRequest = (CoapRequest) me.getMessage();
+            try{
+                final CoapRequest coapRequest = (CoapRequest) me.getMessage();
+                final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 
-            executorService.execute(new CoapRequestExecutor(coapRequest, 
-                        (InetSocketAddress) me.getRemoteAddress()));
+                //Create the response
+                CoapResponse coapResponse = receiveCoapRequest(coapRequest, remoteAddress);
+
+                //Set message ID and token to match the request
+                log.debug("Message ID of incoming request: " + coapRequest.getMessageID());
+                coapResponse.setMessageID(coapRequest.getMessageID());
+
+                if(coapRequest.getToken().length > 0){
+                    coapResponse.setToken(coapRequest.getToken());
+                }
+
+                //Write response
+                ChannelFuture future = Channels.write(channel, coapResponse, remoteAddress);
+
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        log.debug("CoapRequestExecutor] Sending of response to recipient " +
+                                remoteAddress + " with message ID " + coapRequest.getMessageID() + " and " +
+                                "token " + Tools.toHexString(coapRequest.getToken()) + " completed.");
+                    }
+                });
+
                 return;
+            }
+            catch (InvalidOptionException e) {
+                log.error("This should never happen.", e);
+            }
+            catch (ToManyOptionsException e) {
+                log.error("This should never happen.", e);
+            }
+            catch (InvalidHeaderException e) {
+                log.error("This should never happen.", e);
+            }
         }
-        
         ctx.sendUpstream(me);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
+        if(e.getCause() instanceof RetransmissionTimeoutHandler)
+            handleRetransmissionTimout();
+        else
+            log.info("Exception while processing I/O task.", e);
     }
 
     /**
@@ -97,16 +138,18 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler implemen
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("[ServerApplication] Channel closed.");
+                log.info("Channel closed.");
 
                 channel.getFactory().releaseExternalResources();
-                log.info("[ServerApplication] Externeal resources released. Shutdown completed.");
+                log.info("External resources released. Shutdown completed.");
             }
         });
+
+        future.awaitUninterruptibly();
     }
     
     /**
-     * Searches for a service to respons to the passed request.
+     * Searches for a service to respond to the passed request.
      * If no matching service was found a 404 Not Found response will be returned.
      * 
      * @param coapRequest request
@@ -122,56 +165,6 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler implemen
         } else {
             return new CoapResponse(Code.NOT_FOUND_404);
         }     
-    }
-
-    private class CoapRequestExecutor implements Runnable {
-
-        private CoapRequest coapRequest;
-        private InetSocketAddress remoteAddress;
-
-        public CoapRequestExecutor(CoapRequest coapRequest, InetSocketAddress remoteAddress){
-            this.coapRequest = coapRequest;
-            this.remoteAddress = remoteAddress;
-        }
-
-        @Override
-        public void run() {
-            try {
-                //Create the response
-                CoapResponse coapResponse = receiveCoapRequest(coapRequest, remoteAddress);
-
-                //Set message ID and token to match the request
-                log.debug("Message ID of incoming request: " + coapRequest.getMessageID());
-                coapResponse.setMessageID(coapRequest.getMessageID());
-
-
-                if(coapRequest.getToken().length > 0){
-                    coapResponse.setToken(coapRequest.getToken());
-                }
-
-                //Write response
-                ChannelFuture future = Channels.write(channel, coapResponse, remoteAddress);
-
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        log.debug("CoapRequestExecutor] Sending of response to recipient " +
-                            remoteAddress + " with message ID " + coapRequest.getMessageID() + " and " +
-                            "token " + Tools.toHexString(coapRequest.getToken()) + " completed.");
-                    }
-                });
-
-            } catch (InvalidHeaderException e) {
-                log.error("Error while setting message ID or token for " +
-                    " response.", e);
-            } catch (ToManyOptionsException e){
-                log.error("Error while setting message ID or token for " +
-                    " response.", e);
-            } catch (InvalidOptionException e){
-                log.error("Error while setting message ID or token for " +
-                    " response.", e);
-            }
-        }
     }
     
     /**

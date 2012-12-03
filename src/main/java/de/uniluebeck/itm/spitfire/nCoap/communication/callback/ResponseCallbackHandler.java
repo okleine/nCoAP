@@ -23,30 +23,19 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
-import java.net.InetSocketAddress;
-
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.UpstreamMessageEvent;
+import com.google.common.collect.HashBasedTable;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowledgementMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutException;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.HashBasedTable;
-
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowledgementMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalErrorMessage;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
-import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
-import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import java.net.InetSocketAddress;
 
 /**
  * @author Oliver Kleine
@@ -54,26 +43,27 @@ import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 public class ResponseCallbackHandler extends SimpleChannelHandler {
 
     private static Logger log = LoggerFactory.getLogger(ResponseCallbackHandler.class.getName());
-    private static ResponseCallbackHandler instance = new ResponseCallbackHandler();
 
-    HashBasedTable<ByteArrayWrapper, InetSocketAddress, ResponseCallback> callbacks = HashBasedTable.create();
+    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, ResponseCallback> callbacks = HashBasedTable.create();
 
-    private ResponseCallbackHandler(){}
-
-    public static ResponseCallbackHandler getInstance(){
-        return instance;
-    }
+//    private static ResponseCallbackHandler instance = new ResponseCallbackHandler();
+//
+//    private ResponseCallbackHandler(){}
+//
+//    public static ResponseCallbackHandler getInstance(){
+//        return instance;
+//    }
 
     /**
      * This method handles downstream message events. It adds a token to outgoing requests to enable the method
      * <code>messageReceived</code> to relate incoming responses to requests.
      *
      * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
-     * {@link org.jboss.netty.channel.Channel}
+     * {@link Channel}
      * @param me The {@link MessageEvent} containing the {@link de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage}
      */
     @Override
-    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me){
+    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
         if(me.getMessage() instanceof CoapRequest){
             log.debug("CoapRequest received on downstream");
@@ -81,27 +71,8 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             CoapRequest coapRequest = (CoapRequest) me.getMessage();
 
             if(coapRequest.getResponseCallback() != null){
-                try {
-                    coapRequest.setToken(TokenFactory.getInstance().getNextToken());
-                }
-                catch (InvalidOptionException e) {
-                    String errorMessage = "Internal CoAP error while setting token: " + e.getCause();
-                    log.error(errorMessage);
 
-                    UpstreamMessageEvent ume = new UpstreamMessageEvent(ctx.getChannel(),
-                            new InternalErrorMessage(errorMessage, coapRequest.getToken()), me.getRemoteAddress());
-                    ctx.sendUpstream(ume);
-                    return;
-                }
-                catch (ToManyOptionsException e) {
-                    String errorMessage = "Internal CoAP error while setting token: " + e.getCause();
-                    log.error(errorMessage);
-
-                    UpstreamMessageEvent ume = new UpstreamMessageEvent(ctx.getChannel(),
-                            new InternalErrorMessage(errorMessage, coapRequest.getToken()), me.getRemoteAddress());
-                    ctx.sendUpstream(ume);
-                    return;
-                }
+                coapRequest.setToken(TokenFactory.getNextToken());
 
                 callbacks.put(new ByteArrayWrapper(coapRequest.getToken()),
                         (InetSocketAddress) me.getRemoteAddress(),
@@ -127,26 +98,23 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
      */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
+
         if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
-            log.debug(" Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
+            log.debug("Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
                         ") is a response (Remote Address: " + me.getRemoteAddress() +
                         ", Token: " + Tools.toHexString(coapResponse.getToken()));
 
-            ResponseCallback callback;
-            if (!coapResponse.getOption(OptionName.OBSERVE_RESPONSE).isEmpty()) {
-                //notification for observe request - do not remove callback
-                callback = callbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
-                                                             me.getRemoteAddress());
-            } else {
-                callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
-                                                             me.getRemoteAddress());
-            }
+
+            ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
+                                                         me.getRemoteAddress());
+
             if(callback != null){
-                log.debug(" Received response for request with token " + Tools.toHexString(coapResponse.getToken()));
+                log.debug("Received response for request with token " + Tools.toHexString(coapResponse.getToken()));
                 callback.receiveResponse(coapResponse);
             }
+            me.getFuture().setSuccess();
         }
         else if (me.getMessage() instanceof InternalAcknowledgementMessage){
 
@@ -158,36 +126,30 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
                 log.debug("Received empty acknowledgement for request with token " + token.toHexString());
                 callback.receiveEmptyACK();
             }
-        }
-        else if (me.getMessage() instanceof InternalErrorMessage){
-            InternalErrorMessage errorMessage = (InternalErrorMessage) me.getMessage();
-            ByteArrayWrapper token = new ByteArrayWrapper(errorMessage.getToken());
-            ResponseCallback callback = callbacks.get(token, me.getRemoteAddress());
-
-            if(callback != null){
-                String error = "Received internal error message for request with token " + token.toHexString() +
-                        ":\n" + errorMessage.getContent();
-                log.debug(error);
-                callback.receiveInternalError(error);
-            }
-
+            me.getFuture().setSuccess();
         }
         else{
-            ctx.sendUpstream(me);
-        }
-        
-        //forward InternalErrorMessages and reset messages
-        if (me.getMessage() instanceof InternalErrorMessage 
-                || (me.getMessage() instanceof CoapMessage 
-                && ((CoapMessage)me.getMessage()).getMessageType() == MsgType.RST)) {
             ctx.sendUpstream(me);
         }
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception{
-        log.debug(" Exception caught:", e.getCause());
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
+        Throwable cause = e.getCause();
+        if(cause instanceof RetransmissionTimeoutException){
+            RetransmissionTimeoutException ex = (RetransmissionTimeoutException) e.getCause();
+            ByteArrayWrapper token = new ByteArrayWrapper(ex.getToken());
+            InetSocketAddress remoteAddress = (ex.getRcptAddress());
+
+            //Find proper callback
+            ResponseCallback callback = callbacks.get(token, remoteAddress);
+
+            //Invoke method of callback instance
+            log.debug("Invoke retransmission timeout notification");
+            callback.handleRetransmissionTimout();
+        }
+        else{
+            log.error("Unexpected exception caught!", e);
+        }
     }
-
-
 }

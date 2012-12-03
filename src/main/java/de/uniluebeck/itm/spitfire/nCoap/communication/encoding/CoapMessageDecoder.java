@@ -34,15 +34,14 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-
-import static org.jboss.netty.channel.Channels.fireMessageReceived;
 
 /**
  *
@@ -52,52 +51,6 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
     private static Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class.getName());
 
-    @Override
-    public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
-        try{
-            super.handleUpstream(ctx, evt);
-        }
-        catch(InvalidOptionException e){
-            handleInvalidOptionException(ctx, (MessageEvent) evt, e);
-        }
-    }
-
-    private void handleInvalidOptionException(ChannelHandlerContext ctx, final MessageEvent me, InvalidOptionException e){
-        log.debug("Invalid option in received message.", e);
-
-        Header header = e.getMessageHeader();
-        if(header == null){
-            log.error("This should never happen.", e);
-            return;
-        }
-
-        if(header.getMsgType() == MsgType.CON){
-            try {
-                CoapResponse response = new CoapResponse(MsgType.RST, Code.EMPTY, header.getMsgID());
-                ChannelFuture future = Channels.future(ctx.getChannel());
-                DownstreamMessageEvent dme = new DownstreamMessageEvent(ctx.getChannel(),
-                                                                        future,
-                                                                        response,
-                                                                        me.getRemoteAddress());
-
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        log.info("RST message succesfully sent to " + me.getRemoteAddress());
-                    }
-                });
-
-                ctx.sendDownstream(dme);
-
-            }
-            catch (ToManyOptionsException e1) {
-                log.error("This should never happen.", e);
-            }
-            catch (InvalidHeaderException e1) {
-                log.error("This should never happen.", e);
-            }
-        }
-    }
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
@@ -253,7 +206,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         int maxLength = OptionRegistry.getMaxLength(optionName);
 
         if(valueLength < minLength || valueLength > maxLength){
-            throw new InvalidOptionException(optionName, "[Option] " + optionName + " options must have a value length"
+            throw new InvalidOptionException(optionNumber, optionName + " option must have a value length"
                     + " between " + minLength + " and " + maxLength + " (both including) but has " +  valueLength);
         }
 

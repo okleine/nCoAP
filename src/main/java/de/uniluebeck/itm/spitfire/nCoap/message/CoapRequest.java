@@ -122,7 +122,7 @@ public class CoapRequest extends CoapMessage {
 
         try {
             String uri = "coap://";
-            
+
             //add host
             List<Option> list = getOption(OptionRegistry.OptionName.URI_HOST);
 
@@ -160,7 +160,7 @@ public class CoapRequest extends CoapMessage {
             return null;
         }
     }
-    
+
     /**
      * This method sets all necessary target URI related options. This causes eventually already contained
      * target URI related options to be removed from the list even in case of an exception.

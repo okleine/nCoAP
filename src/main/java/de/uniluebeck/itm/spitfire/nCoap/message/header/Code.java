@@ -212,7 +212,7 @@ public enum Code {
      * The corresponding numerical CoAP message code
      */
     public final int number;
-    private final List<OptionRegistry.OptionName> allowedOptions;
+    private final List allowedOptions;
 
     Code(int number, OptionRegistry.OptionName[] allowedOptions){
         this.number = number;
@@ -246,13 +246,13 @@ public enum Code {
         return !(number == Code.GET.number || number == Code.DELETE.number);
     }
 
-    public static Code getCodeFromNumber(int number){
+    public static Code getCodeFromNumber(int number) throws InvalidHeaderException {
         for(Code c : Code.values()){
             if(c.number == number){
                 return c;
             }
         }
-        return null;
+        throw new InvalidHeaderException("Unknown code (no. " + number + ")");
     }
 }
 

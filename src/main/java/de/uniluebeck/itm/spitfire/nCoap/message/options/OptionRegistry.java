@@ -19,6 +19,7 @@ public class OptionRegistry {
     public static enum OptionOccurence{NONE, ONCE, MULTIPLE}
 
     public static enum OptionName{
+        UNKNOWN(-1),
         CONTENT_TYPE(1),
         MAX_AGE(2),
         PROXY_URI(3),
@@ -40,7 +41,7 @@ public class OptionRegistry {
         IF_NONE_MATCH(21);
 
         public final int number;
-
+        
         OptionName(int number){
             this.number = number;
         }
@@ -76,7 +77,7 @@ public class OptionRegistry {
                     return mediaType;
                 }
             }
-
+            
             return null;
         }
     }
@@ -90,7 +91,7 @@ public class OptionRegistry {
      * The default max age option value is 60
      */
     public static int MAX_AGE_DEFAULT = 60;
-
+    
     private static final HashMap<OptionName, OptionSyntaxConstraints> syntaxConstraints
             = new HashMap<OptionName, OptionSyntaxConstraints>();
     static{
@@ -236,18 +237,18 @@ public class OptionRegistry {
         allowedOptions.put(Code.PROXYING_NOT_SUPPORTED_505, constraints4x5x);
     }
 
-    public static int getMaxLength(OptionName opt_name){
-        return syntaxConstraints.get(opt_name).max_length;
+    public static int getMaxLength(OptionName optionName){
+        return syntaxConstraints.get(optionName).max_length;
     }
 
-    public static int getMinLength(OptionName opt_name){
-        return syntaxConstraints.get(opt_name).min_length;
+    public static int getMinLength(OptionName optionName){
+        return syntaxConstraints.get(optionName).min_length;
     }
 
-    public static OptionOccurence getAllowedOccurence(Code code, OptionName opt_name){
+    public static OptionOccurence getAllowedOccurence(Code code, OptionName optionName){
         try{
-            OptionOccurence result = allowedOptions.get(code).get(opt_name);
-            log.debug("Occurence constraint for option " + opt_name + " with code " + code + " is: "
+            OptionOccurence result = allowedOptions.get(code).get(optionName);
+            log.debug("Occurence constraint for option " + optionName + " with code " + code + " is: "
                         + result.toString());
             return result != null ? result : OptionOccurence.NONE;
         }
@@ -256,26 +257,20 @@ public class OptionRegistry {
         }
     }
 
-    public static OptionType getOptionType(OptionName opt_name){
-        OptionSyntaxConstraints osc = syntaxConstraints.get(opt_name);
-        if(osc == null) {
-            throw new NullPointerException("OptionSyntaxConstraints does not exists!");
-        }
-        return osc.opt_type;
+    public static OptionType getOptionType(OptionName optionName){
+        return syntaxConstraints.get(optionName).opt_type;
     }
 
-    // TODO: zwei mal 10?
-    public static OptionName getOptionName(int number) throws InvalidOptionException{
+    public static OptionName getOptionName(int number){
         for(OptionName o :OptionName.values()){
             if(o.number == number){
                 return o;
             }
         }
-        String msg = "[OptionRegistry] Option number " + number + " is not registered in the OptionRegistry";
-        throw new InvalidOptionException(number, msg);
+        return OptionName.UNKNOWN;
     }
 
-    public static boolean isCritial(OptionName opt_name){
+    public static boolean isCritical(OptionName opt_name){
         return isCritical(opt_name.number);
     }
 

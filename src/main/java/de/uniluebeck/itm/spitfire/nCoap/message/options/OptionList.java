@@ -164,22 +164,22 @@ public class OptionList {
         if(!(obj instanceof OptionList)){
             return false;
         }
-
+        
         OptionList optionList = (OptionList) obj;
-
+        
         if(options.size() != optionList.options.size()){
             return false;
         }
-
+        
         for(OptionName optionName : OptionName.values()){
             List<Option> list1 = options.get(optionName);
             List<Option> list2 = optionList.options.get(optionName);
-
+            
             if(list1.size() != list2.size()){
                 log.info("Option count does not match.");
                 return false;
             }
-
+            
             for(int i = 0; i < list1.size(); i++ ){
                 if(!list1.get(i).equals(list2.get(i))){
                     log.info("Elements do not match (" + list1.get(i) + " vs. " + list2.get(i));

@@ -25,7 +25,10 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
 import com.google.common.primitives.Longs;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -36,24 +39,26 @@ import java.util.Random;
  *
  * @author Oliver Kleine
  */
-public class TokenFactory {
+public abstract class TokenFactory {
 
-    private static TokenFactory instance = new TokenFactory();
-    private Random random;
+    private static Logger log = LoggerFactory.getLogger(TokenFactory.class.getName());
 
-    private TokenFactory(){
-        random = new Random(System.currentTimeMillis());
-    }
+    //private static TokenFactory instance = new TokenFactory();
+    private static Random random = new Random(System.currentTimeMillis());
 
-    public static TokenFactory getInstance(){
-        return instance;
-    }
+//    private TokenFactory(){
+//        random = new Random(System.currentTimeMillis());
+//    }
+//
+//    public static TokenFactory getInstance(){
+//        return instance;
+//    }
 
     /**
      * Returns the next token to be used
      * @return the next token to be used
      */
-    public byte[] getNextToken(){
+    public static byte[] getNextToken(){
         byte[] tmp = Longs.toByteArray(random.nextLong());
 
         for(int i = 0; i < 8; i++){

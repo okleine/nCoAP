@@ -23,14 +23,15 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
+
 /**
  * @author Oliver Kleine
  */
-public class EncodingFailedException extends Exception{
-
-    private static final long serialVersionUID = 1L;
+public class EncodingFailedException extends CoapException {
 
     public EncodingFailedException(String msg) {
         super(msg);
     }
+
 }

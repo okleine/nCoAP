@@ -11,14 +11,14 @@ import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
  */
 public class InternalAcknowledgementMessage implements InternalMessage {
 
-    private ByteArrayWrapper content;
+    private ByteArrayWrapper token;
 
     public InternalAcknowledgementMessage(ByteArrayWrapper token){
-        this.content = token;
+        this.token = token;
     }
 
     @Override
     public ByteArrayWrapper getContent(){
-        return (ByteArrayWrapper) content;
+        return token;
     }
 }

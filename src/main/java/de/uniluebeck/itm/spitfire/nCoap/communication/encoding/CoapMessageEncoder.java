@@ -23,7 +23,6 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.Option;
@@ -41,23 +40,16 @@ import org.slf4j.LoggerFactory;
  *
  * @author Oliver Kleine
  */
-public class CoapMessageEncoder extends OneToOneEncoder{
+public class CoapMessageEncoder extends OneToOneEncoder {
 
-    public static int MAX_OPTION_DELTA = 14;
-    private static Logger log = LoggerFactory.getLogger(CoapMessageEncoder.class.getName());
+    public static final int MAX_OPTION_DELTA = 14;
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
-    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception {
-        
-        //prevents netty from trying to write an InternalMessage to a Socket
-        if(object instanceof InternalMessage) {
-            log.debug(" InternalMessage received.");
-            return null;
-        }
-        
+    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception{
+
         if(!(object instanceof CoapMessage)){
-            log.debug(" No Message object!");
-            return object;
+            return object instanceof ChannelBuffer ? object : null;
         }
 
         CoapMessage msg = (CoapMessage) object;
@@ -66,7 +58,7 @@ public class CoapMessageEncoder extends OneToOneEncoder{
         encodeOptions(buffer, msg.getOptionList());
 
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, msg.getPayload());
-        log.debug(" Length of encoded message: " + buf.readableBytes());
+        log.debug("Encoded message length: " + buf.readableBytes());
 
         return buf;
     }

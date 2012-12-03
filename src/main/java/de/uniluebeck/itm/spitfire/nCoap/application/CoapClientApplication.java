@@ -42,7 +42,7 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public abstract class CoapClientApplication extends ResponseCallback {
+public abstract class CoapClientApplication implements ResponseCallback{
 
     private final DatagramChannel channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
 
@@ -68,5 +68,27 @@ public abstract class CoapClientApplication extends ResponseCallback {
                         + ":" + rcptSocketAddress.getPort());
             }
         });
+    }
+
+    /**
+     * Shuts the client down by closing the channel which includes to unbind the channel from a listening port and
+     * by this means free the port. All blocked or bound external resources are released.
+     */
+    public void shutdown(){
+        //Close the datagram channel (includes unbind)
+        ChannelFuture future = channel.close();
+
+        //Await the closure and let the factory release its external resource to finalize the shutdown
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                log.info("Channel closed.");
+
+                channel.getFactory().releaseExternalResources();
+                log.info("External resources released. Shutdown completed.");
+            }
+        });
+
+        future.awaitUninterruptibly();
     }
 }

@@ -23,6 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransferHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
@@ -33,30 +34,52 @@ import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 /**
  * @author Oliver Kleine
  */
 public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
-    ChannelHandler serverApp;
+    public static final int NUMBER_OF_EXECUTION_THREADS = 50;
+
+    private CoapMessageEncoder encoder = new CoapMessageEncoder();
+    private CoapMessageDecoder decoder = new CoapMessageDecoder();
+
+    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler
+            = new OutgoingMessageReliabilityHandler();
+
+    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler
+            = new IncomingMessageReliabilityHandler();
+
+    private BlockwiseTransferHandler blockwiseTransferHandler = new BlockwiseTransferHandler();
+
+    private ExecutionHandler executionHandler =
+            new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(NUMBER_OF_EXECUTION_THREADS, 0, 0));
+
+    private ChannelHandler serverApp;
 
     public CoapServerPipelineFactory(ChannelHandler serverApp){
         this.serverApp = serverApp;
     }
 
+
     @Override
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
-        pipeline.addLast("CoAP Message Encoder", new CoapMessageEncoder());
-        pipeline.addLast("CoAP Message Decoder", new CoapMessageDecoder());
-        pipeline.addLast("OutgoingMessageReliabilityHandler", OutgoingMessageReliabilityHandler.getInstance());
-        pipeline.addLast("IncomingMessageReliabilityHandler", IncomingMessageReliabilityHandler.getInstance());
-        pipeline.addLast("ResponseCallbackHandler", ResponseCallbackHandler.getInstance());
+        pipeline.addLast("CoAP Message Encoder", encoder);
+        pipeline.addLast("CoAP Message Decoder", decoder);
+        pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
+        pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
+        pipeline.addLast("BlockwiseTransferHander", blockwiseTransferHandler);
+        pipeline.addLast("ExecutionHandler", executionHandler);
         pipeline.addLast("ObservableHandler", ObservableHandler.getInstance());
         pipeline.addLast("ServerApplication", serverApp);
-
+        
         return pipeline;
     }
+
+
 }

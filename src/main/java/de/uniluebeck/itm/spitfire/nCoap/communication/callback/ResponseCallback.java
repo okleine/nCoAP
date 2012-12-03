@@ -23,51 +23,34 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Interface to be implemented by client applications to handle responses
  *
  * @author Oliver Kleine
  */
-public abstract class ResponseCallback {
-
-    private Logger log = LoggerFactory.getLogger(ResponseCallback.class.getName());
+public interface ResponseCallback extends RetransmissionTimeoutHandler {
 
     /**
      * Method to be called by the {@link ResponseCallbackHandler} for an incoming response (which is of any type but
-     * empty acknowledgement).
+     * empty acknowledgement). For empty ACK messages the {@link ResponseCallbackHandler} invokes the receiveEmptyACK()
+     * method.
      *
-     * The implementation of this method in the abstract class ResponseCallback does nothing but producing
-     * a logging entry. CoAP clients implementations extending this class should override this method.
      * @param coapResponse the response message
      */
-    public void receiveResponse (CoapResponse coapResponse){
-        log.info("Received response with code " + coapResponse.getCode() + ".");
-    };
+    public void receiveResponse (CoapResponse coapResponse);
 
     /**
-     * Method to be called by the {@link ResponseCallbackHandler for an incoming empty acknowledgement.
-     *
-     * The implementation of this method in the abstract class ResponseCallback does nothing but producing
-     * a logging entry. CoAP clients implementations extending this class should override this method.
+     * This method is invoked by the {@link ResponseCallbackHandler} (automatically) for an incoming empty
+     * acknowledgement. If the client application is e.g. a browser, one could e.g. display a message in the
+     * browser windows telling the user that the server has received the request but needs some time to
+     * process it.
      */
-    public void receiveEmptyACK(){
-        log.info("Received empty acknowledgement.");
-    }
+    public void receiveEmptyACK();
 
     /**
-     * Method to be called by the {@link ResponseCallbackHandler} if an external error occured (e.g. during encoding
-     * or decoding process).
-     *
-     * The implementation of this method in the abstract class ResponseCallback does nothing but producing
-     * a logging entry. CoAP clients implementations extending this class should override this method.
-     * @param errorMessage String describing the error
+     * This method is invoked by the {@link ResponseCallbackHandler} (automatically) if a for an incoming empty acknowledgement.
      */
-    public void receiveInternalError(String errorMessage){
-        log.info("Internal error message received:\n" + errorMessage);
-    }
 }

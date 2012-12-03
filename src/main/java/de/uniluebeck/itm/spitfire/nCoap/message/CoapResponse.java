@@ -51,8 +51,7 @@ public class CoapResponse extends CoapMessage {
         super(msgType, code);
     }
 
-    public CoapResponse(MsgType msgType, Code code, int messageID)
-            throws ToManyOptionsException, InvalidHeaderException {
+    public CoapResponse(MsgType msgType, Code code, int messageID) throws InvalidHeaderException {
 
         this(msgType, code);
         setMessageID(messageID);
@@ -174,7 +173,6 @@ public class CoapResponse extends CoapMessage {
 
         return new URI(result);
     }
-
     /**
      * Set the observe option. This causes eventually already contained observe options to be removed from
      * the list even in case of an exception.

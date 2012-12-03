@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Oliver Kleine
  */
-public class UintOption extends Option {
+public class UintOption extends Option{
 
     private static Logger log = LoggerFactory.getLogger(UintOption.class.getName());
 
@@ -48,7 +48,7 @@ public class UintOption extends Option {
         //Check value constraints
         int max_length = OptionRegistry.getMaxLength(optionName);
         long max_value = (long)Math.pow(2, max_length * 8) - 1;
-
+        
         if(value < 0 || value > max_value){
             String msg = "[UintOption] Value for " + optionName +
                      " option must not be negative or greater than " + max_value + " but is " + value + ".";

@@ -57,12 +57,12 @@ public enum MsgType {
         this.number = number;
     }
 
-    public static MsgType getMsgTypeFromNumber(int number){
+    public static MsgType getMsgTypeFromNumber(int number) throws InvalidHeaderException{
         for(MsgType t : MsgType.values()){
             if(t.number == number){
                 return t;
             }
         }
-        return null;
+        throw new InvalidHeaderException("Unknown message type (no. " + number + ")");
     }
 }

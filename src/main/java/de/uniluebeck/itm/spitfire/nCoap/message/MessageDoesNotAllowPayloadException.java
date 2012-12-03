@@ -28,8 +28,6 @@ package de.uniluebeck.itm.spitfire.nCoap.message;
  */
 public class MessageDoesNotAllowPayloadException extends Exception{
 
-    private static final long serialVersionUID = 1L;
-
     public MessageDoesNotAllowPayloadException(String msg){
         super(msg);
     }
