@@ -1,0 +1,63 @@
+package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
+
+import de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: olli
+ * Date: 30.11.12
+ * Time: 17:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class CoapTestClient extends CoapClientApplication {
+
+    private static CoapTestClient instance = new CoapTestClient();
+
+    private SortedMap<Long, CoapResponse> receivedResponses = new TreeMap<Long, CoapResponse>();
+    private long emptyAckNotificationTime;
+    private long timeoutNotificationTime;
+
+    public static CoapTestClient getInstance(){
+        return instance;
+    }
+
+    private CoapTestClient(){}
+
+    @Override
+    public void receiveResponse(CoapResponse coapResponse) {
+        receivedResponses.put(System.currentTimeMillis(), coapResponse);
+    }
+
+    @Override
+    public void receiveEmptyACK() {
+        emptyAckNotificationTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public void handleRetransmissionTimout() {
+        timeoutNotificationTime = System.currentTimeMillis();
+    }
+
+    public long getEmptyAckNotificationTime() {
+        return emptyAckNotificationTime;
+    }
+
+    public long getTimeoutNotificationTime() {
+        return timeoutNotificationTime;
+    }
+
+    public void shutdown(){
+
+    }
+    public void reset() {
+        receivedResponses.clear();
+    }
+}
