@@ -1,7 +1,6 @@
 /nb-configuration.xml
 doc
 target
-src/test
 .idea
 .project
 .classpath

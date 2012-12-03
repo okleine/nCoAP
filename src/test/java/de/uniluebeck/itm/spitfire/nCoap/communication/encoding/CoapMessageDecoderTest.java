@@ -13,10 +13,14 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.StringOption;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
 import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.getByteArrayFromString;
 import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.getBytesAsString;
+
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.apache.log4j.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
@@ -36,6 +40,18 @@ public class CoapMessageDecoderTest {
     InetSocketAddress testRcptAdress = new InetSocketAddress(33210);
     TestChannel testChannel = new TestChannel(testRcptAdress);
     
+    static{
+        //String pattern = "%r ms: [%C{1}] %m %n";
+        //String pattern = "[%t] %d{ABSOLUTE}: [%C{1}] %m %n";
+        String pattern = "%-23d{yyyy-MM-dd HH:mm:ss,SSS} | %-32.32t | %-30.30c{1} | %-5p | %m%n";
+        PatternLayout patternLayout = new PatternLayout(pattern);
+
+        ConsoleAppender consoleAppender = new ConsoleAppender(patternLayout);
+        Logger.getRootLogger().addAppender(consoleAppender);
+
+        Logger.getRootLogger().setLevel(Level.DEBUG);
+    }
+
     /**
      * Fills the testMessages list with test messages.
      */
