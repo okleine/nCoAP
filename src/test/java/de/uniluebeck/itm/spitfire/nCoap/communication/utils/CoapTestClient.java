@@ -54,6 +54,10 @@ public class CoapTestClient extends CoapClientApplication {
         return timeoutNotificationTime;
     }
 
+    public SortedMap<Long, CoapResponse> getReceivedResponses() {
+        return receivedResponses;
+    }
+    
     public void shutdown(){
 
     }

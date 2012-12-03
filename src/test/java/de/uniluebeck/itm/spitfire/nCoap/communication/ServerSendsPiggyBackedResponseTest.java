@@ -1,11 +1,14 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapMessageReceiver;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import java.net.InetSocketAddress;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -22,55 +25,71 @@ import static junit.framework.Assert.assertEquals;
  * Time: 22:55
  * To change this template use File | Settings | File Templates.
  */
-public class ServerSendsPiggyBackedResponse {
+public class ServerSendsPiggyBackedResponseTest {
 
     private static CoapTestClient testClient= CoapTestClient.getInstance();
     private static CoapMessageReceiver testReceiver = CoapMessageReceiver.getInstance();
 
+    //request
     private static URI targetUri;
     private static CoapRequest coapRequest;
-
+    
+    //response
+    private static CoapResponse coapResponse;
+    private static String responsePayload;
+    
     @BeforeClass
-    public static void init() throws Exception{
+    public static void init() throws Exception {
+        //init
         testClient.reset();
         testReceiver.reset();
         testReceiver.setReceiveEnabled(true);
         testReceiver.setWriteEnabled(true);
 
+        //create request
         targetUri = new URI("coap://localhost:" + CoapMessageReceiver.RECEIVER_PORT + "/testpath");
         coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri, testClient);
 
+        //create response
+        responsePayload = "testpayload";
+        coapResponse = new CoapResponse(Code.CONTENT_205);
+        coapResponse.setPayload(responsePayload.getBytes("UTF-8"));
+        coapResponse.getHeader().setMsgType(MsgType.ACK);
+        
+        //register respone, allow to set msg id and token
+        testReceiver.addResponse(new CoapMessageReceiver.MsgReceiverResponse(coapResponse, true, true));
+        
+        //write request, disable receiving after 500ms
         testClient.writeCoapRequest(coapRequest);
-        Thread.sleep(1000);
-
-        //testReceiver.setReceiveEnabled(false);
+        
+        Thread.sleep(300);
+        
+        //send message again to see if callback was removed
+        testReceiver.writeMessage(coapResponse, new InetSocketAddress("localhost", 
+                CoapClientDatagramChannelFactory.COAP_CLIENT_PORT));
+        
+        Thread.sleep(300);
+        
+        testReceiver.setReceiveEnabled(false);
     }
 
     @Test
-    public void testReceivedRequestEqualsSentRequest(){
+    public void testReceivedRequestEqualsSentRequest() {
         SortedMap<Long, CoapMessage> receivedRequests = testReceiver.getReceivedMessages();
         String message = "Sent request and received request dont equal";
         assertEquals(message, coapRequest, receivedRequests.get(receivedRequests.firstKey()));
     }
 
     @Test
-    public void testReceiverReceivedOnlyOneRequest(){
-        //TODO
+    public void testReceiverReceivedOnlyOneRequest() {
+        String message = "Receiver received more than one message";
+        assertEquals(message, 1, testReceiver.getReceivedMessages().values().size());
     }
 
     @Test
-    public void testClientDoesNotSendAnotherRequestAfterACKReception(){
-        //TODO
-    }
-
-    @Test
-    public void ResponseCallbackHandlerDeletedOpenRequestAfterACKReception(){
-        //TODO
-    }
-
-    @Test
-    public void TestServerDoesNotSendEmptyACKAfterPiggyBackedResponse(){
-        //TODO
+    public void testClientCallbackInvokedOnce() {
+        String message = "Client callback was invoked less or more than once";
+        assertEquals(message, 1, testClient.getReceivedResponses().values().size());
     }
 
 

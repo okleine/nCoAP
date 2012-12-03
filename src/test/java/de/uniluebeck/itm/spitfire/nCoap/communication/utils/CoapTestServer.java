@@ -66,8 +66,8 @@ public class CoapTestServer extends CoapServerApplication {
             Thread.sleep(50);
         }
     }
-
-    @Override
+    
+    //TODO modify to match service infrastructure!
     public CoapResponse receiveCoapRequest(CoapRequest coapRequest,
             InetSocketAddress senderAddress) {
         if (receivingEnabled) {

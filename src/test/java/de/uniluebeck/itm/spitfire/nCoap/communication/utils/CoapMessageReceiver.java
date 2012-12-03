@@ -1,6 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
+import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -17,6 +18,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
@@ -37,14 +41,17 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     //Received messages are ignored when set to false
-    private boolean receiveEnabled = false;
-    private boolean writeEnabled = false;
+    private boolean receiveEnabled = true;
+    private boolean writeEnabled = true;
     private SortedMap<Long, CoapMessage> receivedMessages = new TreeMap<Long, CoapMessage>();
-
+    
+    //list of responses
+    private LinkedList<MsgReceiverResponse> responsesToSend = new LinkedList<MsgReceiverResponse>();
+    
     public static CoapMessageReceiver getInstance(){
         return instance;
     }
-
+    
     private CoapMessageReceiver() {
         //Create datagram channel to receive messages
         ChannelFactory channelFactory =
@@ -56,7 +63,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
             @Override
             public ChannelPipeline getPipeline() throws Exception {
                 ChannelPipeline pipeline = Channels.pipeline();
-                //pipeline.addLast("Encoder", new CoapMessageEncoder());
+                pipeline.addLast("Encoder", new CoapMessageEncoder());
                 pipeline.addLast("Decoder", new CoapMessageDecoder());
                 pipeline.addLast("CoAP Message Receiver", CoapMessageReceiver.this );
                 return pipeline;
@@ -68,39 +75,28 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        if (e.getMessage() instanceof CoapMessage) {
+        if ((e.getMessage() instanceof CoapMessage) && receiveEnabled) {
             CoapMessage coapMessage = (CoapMessage) e.getMessage();
             log.info("CoAP message received.");
             receivedMessages.put(System.currentTimeMillis(), coapMessage);
 
-            if(writeEnabled){
-                CoapMessage messageToSend = null;
-                if(coapMessage instanceof CoapRequest){
-                    CoapRequest coapRequest = (CoapRequest) coapMessage;
-                    if("/testpath".equals(coapRequest.getTargetUri().getPath())){
-                        int msgID = coapRequest.getMessageID();
-                        byte[] token = coapRequest.getToken();
-
-                        messageToSend = createPiggyBackedResponseForTestResource(msgID, token);
-                    }
+            if(writeEnabled && (coapMessage instanceof CoapRequest)){
+                MsgReceiverResponse responseToSend = responsesToSend.size() == 0 ? 
+                        null : responsesToSend.removeFirst();
+                
+                if (responseToSend == null) {
+                    throw new InternalError("Unexpected request received. No response for: " + coapMessage);
                 }
-
-                channel.write(messageToSend);
+                CoapResponse coapResponse = responseToSend.getCoapResponse();
+                if (responseToSend.isLetReceiverSetMessageID()) {
+                    coapResponse.setMessageID(coapMessage.getMessageID());
+                }
+                if (responseToSend.isLetReceiverSetToken()) {
+                    coapResponse.setToken(coapMessage.getToken());
+                }
+                Channels.write(channel, coapResponse, e.getRemoteAddress());
             }
         }
-    }
-
-    private CoapResponse createPiggyBackedResponseForTestResource(int msgID, byte[] token) throws Exception{
-
-        CoapResponse coapResponse = new CoapResponse(MsgType.ACK, Code.CONTENT_205, msgID);
-
-        String payload = "Response of test response!";
-        coapResponse.setPayload(payload.getBytes(Charset.forName("UTF-8")));
-        coapResponse.setContentType(OptionRegistry.MediaType.TEXT_PLAIN_UTF8);
-
-        coapResponse.setToken(token);
-
-        return coapResponse;
     }
 
     public SortedMap<Long, CoapMessage> getReceivedMessages() {
@@ -115,18 +111,20 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
         this.writeEnabled = writeEnabled;
     }
 
-
-
     public synchronized void reset() {
         receivedMessages.clear();
         setReceiveEnabled(true);
+        setWriteEnabled(true);
     }
 
-    public void writeMessage(CoapMessage coapMessage){
-        if(writeEnabled)
-            channel.write(coapMessage);
+    public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress){
+        Channels.write(channel, coapMessage, remoteAddress);
     }
 
+    public void addResponse(MsgReceiverResponse response) {
+        responsesToSend.add(response);
+    }
+    
     /**
      * Shuts the client down by closing the channel which includes to unbind the channel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
@@ -163,4 +161,29 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 //            Thread.sleep(50);
 //        }
 //    }
+    
+    public static class MsgReceiverResponse {
+        private CoapResponse coapResponse;
+        private boolean letReceiverSetMessageID;
+        private boolean letReceiverSetToken;
+
+        public MsgReceiverResponse(CoapResponse coapResponse, boolean letReceiverSetMessageID, boolean letReceiverSetToken) {
+            this.coapResponse = coapResponse;
+            this.letReceiverSetMessageID = letReceiverSetMessageID;
+            this.letReceiverSetToken = letReceiverSetToken;
+        }
+
+        public CoapResponse getCoapResponse() {
+            return coapResponse;
+        }
+
+        public boolean isLetReceiverSetMessageID() {
+            return letReceiverSetMessageID;
+        }
+
+        public boolean isLetReceiverSetToken() {
+            return letReceiverSetToken;
+        }
+    }   
 }
+

@@ -27,10 +27,10 @@ import static org.junit.Assert.*;
  * 
  * @author Oliver Kleine, Stefan Hüske
  */
-public class ClientGetsNoAckForConRequest {
+public class ClientGetsNoAckForConRequestTest {
 
     private static final int TIMEOUT_MILLIS = 2000;
-    private static Logger log = Logger.getLogger(ClientGetsNoAckForConRequest.class.getName());
+    private static Logger log = Logger.getLogger(ClientGetsNoAckForConRequestTest.class.getName());
 
     private static CoapTestClient testClient = CoapTestClient.getInstance();
     private static CoapMessageReceiver testMessageReceiver = CoapMessageReceiver.getInstance();
@@ -58,7 +58,8 @@ public class ClientGetsNoAckForConRequest {
         testClient.reset();
         testMessageReceiver.reset();
         testMessageReceiver.setReceiveEnabled(true);
-
+        testMessageReceiver.setWriteEnabled(false);
+        
         URI targetUri = new URI("coap://localhost:" + CoapMessageReceiver.RECEIVER_PORT + "/testpath");
         CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri, testClient);
 
