@@ -193,6 +193,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                     String message = "Could not deliver message dispite " + MAX_RETRANSMITS + " retransmitions.";
                     Throwable cause = new RetransmissionTimeoutException(coapMessage.getToken(), rcptAddress, message);
                     ExceptionEvent event = new DefaultExceptionEvent(ctx.getChannel(), cause);
+
                     log.info("Retransmission timed out. Send timeout message to client.");
                     ctx.sendUpstream(event);
                 }
