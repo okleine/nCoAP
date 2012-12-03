@@ -7,7 +7,6 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.spitfire.nCoap.application.Service;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalErrorMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
@@ -55,10 +54,10 @@ public class ObservableHandler extends SimpleChannelHandler {
     //[Notification message id] --> [Observer]
     Cache<Integer, ObservableRequest> responseMessageIdCache;
     
-    private static ObservableHandler instance;
+    private static ObservableHandler instance = new ObservableHandler();
     
     public static ObservableHandler getInstance() {
-        return instance == null ? instance = new ObservableHandler() : instance;
+        return instance;
     }
 
     private ObservableHandler() {
@@ -128,13 +127,13 @@ public class ObservableHandler extends SimpleChannelHandler {
             int rstMessageId = ((CoapMessage)e.getMessage()).getMessageID();
             removeObservableRequest(responseMessageIdCache.getIfPresent(rstMessageId));
         }
-        if (e.getMessage() instanceof InternalErrorMessage) {
-            //CON msg Timeout received, remove observer if the CON msg was a notification
-            InternalErrorMessage conTimeoutMsg = (InternalErrorMessage) e.getMessage();
-            ObservableRequest observableRequest = addressTokenMappedToObservableRequests.get(conTimeoutMsg.getToken(), 
-                    e.getRemoteAddress());
-            removeObservableRequest(observableRequest);
-        }
+//        if (e.getMessage() instanceof InternalErrorMessage) {
+//            //CON msg Timeout received, remove observer if the CON msg was a notification
+//            InternalErrorMessage conTimeoutMsg = (InternalErrorMessage) e.getMessage();
+//            ObservableRequest observableRequest = addressTokenMappedToObservableRequests.get(conTimeoutMsg.getToken(), 
+//                    e.getRemoteAddress());
+//            removeObservableRequest(observableRequest);
+//        }
         if (e.getMessage() instanceof CoapRequest) {
             CoapRequest coapRequest = (CoapRequest) e.getMessage();
             if (!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty()) {
@@ -143,6 +142,17 @@ public class ObservableHandler extends SimpleChannelHandler {
                 addressTokenMappedToObservableRequests.put(coapRequest.getToken(), e.getRemoteAddress(), 
                         observableRequest);
                 pathMappedToObservableRequests.put(coapRequest.getTargetUri().getPath(), observableRequest);
+            } else {
+                //request without observe option received
+                String requestPath = coapRequest.getTargetUri().getPath();
+                for (ObservableRequest observer : addressTokenMappedToObservableRequests
+                        .column(e.getRemoteAddress()).values()) {
+                    //iterate over all observers from e.getRemoteAddress()
+                    if (requestPath.equals(observer.getRequest().getTargetUri().getPath())) {
+                        //remove observer if new request targets same path
+                        removeObservableRequest(observer);
+                    }
+                }
             }
         }
         ctx.sendUpstream(e);
@@ -163,11 +173,11 @@ public class ObservableHandler extends SimpleChannelHandler {
         int responseCount = observableRequest.updateResponseCount();
         if (responseCount == 1) {
             //first response
-            coapResponse.setMessageID(observableRequest.getRequest().getMessageID());
+//            coapResponse.setMessageID(observableRequest.getRequest().getMessageID());
             coapResponse.getHeader().setMsgType(MsgType.ACK);
         } else {
             //second or later
-            coapResponse.setMessageID(MessageIDFactory.nextMessageID());
+//            coapResponse.setMessageID(MessageIDFactory.nextMessageID());
             coapResponse.getHeader().setMsgType(MsgType.CON);
             responseMessageIdCache.put(coapResponse.getMessageID(), observableRequest);
         }

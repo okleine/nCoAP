@@ -24,12 +24,11 @@ public abstract class Service extends Observable {
     public abstract CoapResponse getStatus(CoapRequest request);
     
     /**
-     * Notify observers.
+     * Notify all observers.
      */
-    @Override
-    public void notifyObservers() {
+    protected void notifyCoapObservers() {
         setChanged();
-        super.notifyObservers();
+        notifyObservers();
     }
     
     /**
