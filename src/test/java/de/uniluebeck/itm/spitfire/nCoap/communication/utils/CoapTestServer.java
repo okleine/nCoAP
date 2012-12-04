@@ -1,6 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.Service;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -14,30 +15,47 @@ import java.util.TreeMap;
 import static org.junit.Assert.fail;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 30.11.12
- * Time: 17:34
- * To change this template use File | Settings | File Templates.
+ * A CoapServerApplication for testing purposes.
+ * To add a prepared response use the addResponse() method.
+ * In addition a path (or multiple) must be registered on which the resource (response) will be available.
+ * (Use the registerDummyService() method.)
+ * Received requests can be retrieved using getReceivedRequests().
+ * 
+ * @author Oliver Kleine, Stefan Hueske
  */
 public class CoapTestServer extends CoapServerApplication {
 
     private static CoapTestServer instance = new CoapTestServer();
 
     //if false receivedRequests will not be modified
-    boolean receivingEnabled = true;
-    public SortedMap<Long, CoapRequest> receivedRequests = new TreeMap<Long, CoapRequest>();
+    private boolean receivingEnabled = true;
+    private  SortedMap<Long, CoapRequest> receivedRequests = new TreeMap<Long, CoapRequest>();
 
-    public List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
+    private List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
 
+    private Service dummyService;
+    
+    //time to block thread in receiveCoapRequest() to force a separate response
+    private long waitBeforeSendingResponse = 0;
+    
     public static CoapTestServer getInstance(){
         return instance;
     }
 
-    private CoapTestServer(){}
+    private CoapTestServer(){
+        dummyService = new Service() {
 
-    //time to block thread in receiveCoapRequest() to force a separate response
-    public long waitBeforeSendingResponse = 0;
+            @Override
+            public CoapResponse getStatus(CoapRequest request) {
+                return receiveRequest(request);
+            }
+        };
+    }
+
+    public void registerDummyService(String path) {
+        registerService(path, dummyService);
+    }
+    
 
     public synchronized void enableReceiving() {
         receivingEnabled = true;
@@ -52,6 +70,7 @@ public class CoapTestServer extends CoapServerApplication {
         responsesToSend.clear();
         waitBeforeSendingResponse = 0;
         enableReceiving();
+        removeAllServices();
     }
 
     public void blockUntilMessagesReceivedOrTimeout(long timeout, int messagesCount)
@@ -67,9 +86,7 @@ public class CoapTestServer extends CoapServerApplication {
         }
     }
     
-    //TODO modify to match service infrastructure!
-    public CoapResponse receiveCoapRequest(CoapRequest coapRequest,
-            InetSocketAddress senderAddress) {
+    private CoapResponse receiveRequest(CoapRequest coapRequest) {
         if (receivingEnabled) {
             synchronized(this) {
                 receivedRequests.put(System.currentTimeMillis(), coapRequest);
@@ -86,8 +103,19 @@ public class CoapTestServer extends CoapServerApplication {
         return responsesToSend.remove(0);
     }
 
-    @Override
-    public void handleRetransmissionTimout() {
-        //To change body of implemented methods use File | Settings | File Templates.
+    public void addResponse(CoapResponse response) {
+        responsesToSend.add(response);
     }
+
+    public void setWaitBeforeSendingResponse(long waitBeforeSendingResponse) {
+        this.waitBeforeSendingResponse = waitBeforeSendingResponse;
+    }
+    
+    @Override
+    public void handleRetransmissionTimout() {}
+
+    public SortedMap<Long, CoapRequest> getReceivedRequests() {
+        return receivedRequests;
+    }
+    
 }

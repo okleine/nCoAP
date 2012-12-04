@@ -21,11 +21,11 @@ import static junit.framework.Assert.*;
 
 
 /**
- * Test to verify the client functionality related to piggy-backed responses.
+ * Tests to verify the client functionality related to separate responses.
  * 
- * @author Oliver Kleine, Stefan Hueske
+ * @author Stefan Hueske
  */
-public class ServerSendsPiggyBackedResponseTest {
+public class ServerSendsSeparateResponseTest {
 
     private static CoapTestClient testClient= CoapTestClient.getInstance();
     private static CoapMessageReceiver testReceiver = CoapMessageReceiver.getInstance();
@@ -34,12 +34,15 @@ public class ServerSendsPiggyBackedResponseTest {
     private static URI targetUri;
     private static CoapRequest coapRequest;
     private static String requestPath;
-    private static int requestMsgID;
-    private static byte[] requestToken;
+    
+    //empty ACK
+    private static CoapResponse emptyACK;
     
     //response
     private static CoapResponse coapResponse;
     private static String responsePayload;
+    private static int responseMsgID;
+    
     
     @BeforeClass
     public static void init() throws Exception {
@@ -47,37 +50,41 @@ public class ServerSendsPiggyBackedResponseTest {
         testClient.reset();
         testReceiver.reset();
         testReceiver.setReceiveEnabled(true);
-        testReceiver.setWriteEnabled(true);
+        testReceiver.setWriteEnabled(false);
 
         //create request
-        requestToken = new byte[]{0x12, 0x23, 0x34};
         requestPath = "/testpath";
-        requestMsgID = 3333;
         targetUri = new URI("coap://localhost:" + CoapMessageReceiver.RECEIVER_PORT + requestPath);
         coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri, testClient);
-        coapRequest.getHeader().setMsgID(requestMsgID);
-        coapRequest.setToken(requestToken);
+        
+        //create empy ack
+        emptyACK = new CoapResponse(Code.EMPTY);
+        emptyACK.getHeader().setMsgType(MsgType.ACK);
         
         //create response
         responsePayload = "testpayload";
         coapResponse = new CoapResponse(Code.CONTENT_205);
         coapResponse.setPayload(responsePayload.getBytes("UTF-8"));
-        coapResponse.getHeader().setMsgType(MsgType.ACK);
-        
-        //register respone, allow to set msg id and token
-        testReceiver.addResponse(new CoapMessageReceiver.MsgReceiverResponse(coapResponse, true, true));
+        coapResponse.getHeader().setMsgType(MsgType.CON);
         
         //write request, disable receiving after 500ms
         testClient.writeCoapRequest(coapRequest);
+        Thread.sleep(1000);
         
-        Thread.sleep(300);
+        //send empty ack
+        emptyACK.setMessageID(coapRequest.getMessageID());
+        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", 
+                CoapClientDatagramChannelFactory.COAP_CLIENT_PORT));
+        Thread.sleep(1000);
         
-        //send message again to see if callback was removed
+        //send separate response
+        responseMsgID = 3333;
+        coapResponse.setToken(coapRequest.getToken());
+        coapResponse.setMessageID(responseMsgID);
         testReceiver.writeMessage(coapResponse, new InetSocketAddress("localhost", 
                 CoapClientDatagramChannelFactory.COAP_CLIENT_PORT));
-        
+        //wait for ack
         Thread.sleep(300);
-        
         testReceiver.setReceiveEnabled(false);
     }
 
@@ -89,14 +96,23 @@ public class ServerSendsPiggyBackedResponseTest {
     }
     
     @Test
-    public void testReceiverReceivedOnlyOneRequest() {
+    public void testReceiverReceivedTwoMessages() {
         String message = "Receiver received more than one message";
-        assertEquals(message, 1, testReceiver.getReceivedMessages().values().size());
+        assertEquals(message, 2, testReceiver.getReceivedMessages().values().size());
     }
 
     @Test
     public void testClientCallbackInvokedOnce() {
         String message = "Client callback was invoked less or more than once";
         assertEquals(message, 1, testClient.getReceivedResponses().values().size());
+    }
+    
+    @Test
+    public void test2ndReceivedMessageIsEmpyACK() {
+        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
+        String message = "First received message is not an EMPTY ACK";
+        assertEquals(message, Code.EMPTY, receivedMessage.getCode());
+        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
     }
 }

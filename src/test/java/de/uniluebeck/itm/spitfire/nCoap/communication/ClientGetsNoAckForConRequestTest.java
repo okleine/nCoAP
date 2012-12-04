@@ -78,12 +78,12 @@ public class ClientGetsNoAckForConRequestTest {
         Thread.sleep(50000);
     }
 
-    @AfterClass
-    public static void shutdownEverything(){
-        testClient.shutdown();
-        testMessageReceiver.shutdown();
-        log.info("Shutdown of components completed.");
-    }
+//    @AfterClass
+//    public static void shutdownEverything(){
+//        testClient.shutdown();
+//        testMessageReceiver.shutdown();
+//        log.info("Shutdown of components completed.");
+//    }
 
     @Test
     public void testNumberOfRequests(){

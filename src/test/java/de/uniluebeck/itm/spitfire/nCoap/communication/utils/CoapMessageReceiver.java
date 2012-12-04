@@ -25,12 +25,16 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
 
+import static org.junit.Assert.fail;
+
+
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 30.11.12
- * Time: 17:18
- * To change this template use File | Settings | File Templates.
+ * Receives and sends CoAP Messages for testing purposes.
+ * Receiving and automatic response can be configured.
+ * To send a message either schedule a automatic response using addResponse (using setWriteEnabled(true))
+ * or send a message manually using writeMessage (which will send the message immediately regardless of writeEnabled).
+ * 
+ * @author Oliver Kleine, Stefan Hueske
  */
 public class CoapMessageReceiver extends SimpleChannelHandler {
     public static final int RECEIVER_PORT = 18954;
@@ -81,8 +85,10 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
             receivedMessages.put(System.currentTimeMillis(), coapMessage);
 
             if(writeEnabled && (coapMessage instanceof CoapRequest)){
-                MsgReceiverResponse responseToSend = responsesToSend.size() == 0 ? 
-                        null : responsesToSend.removeFirst();
+                if (responsesToSend.isEmpty()) {
+                    fail("responsesToSend is empty. This could be caused by an unexpected request.");
+                }
+                MsgReceiverResponse responseToSend = responsesToSend.remove(0);
                 
                 if (responseToSend == null) {
                     throw new InternalError("Unexpected request received. No response for: " + coapMessage);

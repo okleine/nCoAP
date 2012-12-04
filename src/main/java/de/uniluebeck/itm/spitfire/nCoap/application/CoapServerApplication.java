@@ -177,7 +177,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      */
     public void registerService(String uriPath, Service service) {
         if (registeredServices.containsKey(uriPath)) {
-            unsubscribeService(uriPath);
+            removeService(uriPath);
         }
         registeredServices.put(uriPath, service);
         service.addObserver(this);
@@ -190,7 +190,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * @param uriPath service path
      * @return true if a registered service was removed
      */
-    public boolean unsubscribeService(String uriPath) {
+    public boolean removeService(String uriPath) {
         Service service = registeredServices.remove(uriPath);
         if (service != null) {
             service.deleteObserver(this);
@@ -199,6 +199,19 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         } else {
             return false;
         }
+    }
+    
+    /**
+     * Removes all services. 
+     */
+    public void removeAllServices() {
+        for (String path : registeredServices.keySet()) {
+            //remove observer and path from service
+            Service service = registeredServices.get(path);
+            service.deleteObserver(this);
+            service.removePath(path);
+        }
+        registeredServices.clear();
     }
     
     @Override

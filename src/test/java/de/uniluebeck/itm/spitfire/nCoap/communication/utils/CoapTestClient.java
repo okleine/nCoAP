@@ -10,12 +10,15 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import static org.junit.Assert.fail;
+
+
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 30.11.12
- * Time: 17:33
- * To change this template use File | Settings | File Templates.
+ * A CoapClientApplication for testing purposes.
+ * To send a request use the inherited writeCoapRequest() method.
+ * Received responses are stored and can be accessed using getReceivedResponses().
+ * 
+ * @author Oliver Kleine, Stefan Hueske
  */
 public class CoapTestClient extends CoapClientApplication {
 
