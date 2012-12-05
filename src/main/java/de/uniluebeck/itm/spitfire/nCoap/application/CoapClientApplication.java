@@ -48,6 +48,8 @@ public abstract class CoapClientApplication implements ResponseCallback{
 
     private Logger log = LoggerFactory.getLogger(CoapClientApplication.class.getName());
 
+    private boolean isObserver = false;
+
     /**
      * This method should be used by extending client implementation to send a CoAP request to a remote recipient. All
      * necessary information to send the message (like the recipient IP address or port) is automatically extracted
@@ -55,6 +57,7 @@ public abstract class CoapClientApplication implements ResponseCallback{
      * @param coapRequest The {@link CoapRequest} object to be sent
      */
     public final void writeCoapRequest(CoapRequest coapRequest){
+
         final InetSocketAddress rcptSocketAddress = new InetSocketAddress(coapRequest.getTargetUri().getHost(),
                 coapRequest.getTargetUri().getPort());
 
@@ -68,6 +71,19 @@ public abstract class CoapClientApplication implements ResponseCallback{
                         + ":" + rcptSocketAddress.getPort());
             }
         });
+    }
+
+    @Override
+    public boolean isObserver(){
+        return isObserver();
+    }
+
+    /**
+     *
+     * @param isObserver
+     */
+    private void setObserver(boolean isObserver){
+        this.isObserver = isObserver;
     }
 
     /**

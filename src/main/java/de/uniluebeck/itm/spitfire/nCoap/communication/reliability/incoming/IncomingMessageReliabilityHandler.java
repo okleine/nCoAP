@@ -212,10 +212,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 try {
                     coapMessage = new CoapResponse(MsgType.ACK, Code.EMPTY, messageID);
                 }
-                catch (ToManyOptionsException e) {
-                    log.error("Exception while creating empty ACK. This should " +
-                            " never happen!", e);
-                }
                 catch (InvalidHeaderException e) {
                     log.error("Exception while creating empty ACK. This should " +
                             " never happen!", e);
