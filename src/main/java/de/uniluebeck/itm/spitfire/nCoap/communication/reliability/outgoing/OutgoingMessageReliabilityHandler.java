@@ -53,7 +53,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     //private static final int TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION = 5000;
 
     //Contains remote socket address and message ID of not yet confirmed messages
-    private final HashBasedTable<InetSocketAddress, Integer, LinkedList<ScheduledFuture>> waitingForACK
+    private final HashBasedTable<InetSocketAddress, Integer, SchedulesRetransmissions> waitingForACK
             = HashBasedTable.create();
 
 //    private static OutgoingMessageReliabilityHandler instance = new OutgoingMessageReliabilityHandler();
@@ -133,9 +133,11 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         if (coapMessage.getMessageType() == MsgType.ACK || coapMessage.getMessageType() == MsgType.RST) {
 
             //Look up remaining retransmissions
+            SchedulesRetransmissions retransmissions;
             LinkedList<ScheduledFuture> futures;
             synchronized(this){
-                futures =  waitingForACK.remove(me.getRemoteAddress(), coapMessage.getMessageID());
+                retransmissions = waitingForACK.remove(me.getRemoteAddress(), coapMessage.getMessageID());
+                futures = retransmissions == null ? null : retransmissions.getFutures();
             }
 
             //Cancel remaining retransmissions
@@ -152,6 +154,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
                 log.debug(canceledRetransmissions + " retransmissions canceled for MsgID " +
                         coapMessage.getMessageID() + ".");
+                
+                if (coapMessage.getMessageType() == MsgType.RST) {
+                    String message = "Reset message for open CON received.";
+                    Throwable cause = new ResetReceivedException(retransmissions.getToken(), 
+                            (InetSocketAddress) me.getRemoteAddress(), message);
+                    ExceptionEvent event = new DefaultExceptionEvent(ctx.getChannel(), cause);
+                    ctx.sendUpstream(event);
+                }
             }
             else{
                 log.debug("No open CON found (MsgID " + coapMessage.getMessageID() +
@@ -169,6 +179,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                                          final CoapMessage coapMessage){
 
         //Schedule retransmissions
+        SchedulesRetransmissions schedulesRetransmissions = new SchedulesRetransmissions();
         LinkedList<ScheduledFuture> futures = new LinkedList<ScheduledFuture>();
 
         int delay = 0;
@@ -202,7 +213,30 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             log.info("Timeout notification scheduled in {} millis.", delay);
         }
         synchronized (this){
-            waitingForACK.put(rcptAddress, coapMessage.getMessageID(), futures);
+            schedulesRetransmissions.setToken(coapMessage.getToken());
+            schedulesRetransmissions.setFutures(futures);
+            waitingForACK.put(rcptAddress, coapMessage.getMessageID(), schedulesRetransmissions);
+        }
+    }
+    
+    class SchedulesRetransmissions {
+        LinkedList<ScheduledFuture> futures = new LinkedList<ScheduledFuture>();
+        byte[] token;
+        
+        public byte[] getToken() {
+            return token;
+        }
+
+        public void setToken(byte[] token) {
+            this.token = token;
+        }
+
+        public void setFutures(LinkedList<ScheduledFuture> futures) {
+            this.futures = futures;
+        }
+        
+        public LinkedList<ScheduledFuture> getFutures() {
+            return futures;
         }
     }
 }
