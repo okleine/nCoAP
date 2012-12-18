@@ -42,17 +42,9 @@ import java.net.InetSocketAddress;
  */
 public class ResponseCallbackHandler extends SimpleChannelHandler {
 
-    private static Logger log = LoggerFactory.getLogger(ResponseCallbackHandler.class.getName());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private HashBasedTable<ByteArrayWrapper, InetSocketAddress, ResponseCallback> callbacks = HashBasedTable.create();
-
-//    private static ResponseCallbackHandler instance = new ResponseCallbackHandler();
-//
-//    private ResponseCallbackHandler(){}
-//
-//    public static ResponseCallbackHandler getInstance(){
-//        return instance;
-//    }
 
     /**
      * This method handles downstream message events. It adds a token to outgoing requests to enable the method

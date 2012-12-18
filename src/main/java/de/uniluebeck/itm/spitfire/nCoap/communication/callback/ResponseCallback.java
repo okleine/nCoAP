@@ -51,6 +51,8 @@ public interface ResponseCallback extends RetransmissionTimeoutHandler {
     public void receiveEmptyACK();
 
     /**
-     * This method is invoked by the {@link ResponseCallbackHandler} (automatically) if a for an incoming empty acknowledgement.
+     * Returns true is this {@link ResponseCallback} instance observes a resource, false otherwise
+     * @return true is this {@link ResponseCallback} instance observes a resource, false otherwise
      */
+    public boolean isObserver();
 }
