@@ -23,7 +23,7 @@ import static junit.framework.Assert.*;
 
 
 /**
- * Test to verify the server functionality related to piggy-backed responses.
+ * Tests to verify the server functionality related to piggy-backed responses.
  * 
  * @author Stefan Hueske
  */
@@ -90,7 +90,7 @@ public class ClientReceivesPiggyBackedResponseTest {
     public void testReceiverReceivedResponse() {
         SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
-        String message = "Receiver received more than one message";
+        String message = "Received message is not a CoapResponse";
         assertTrue(message, receivedMessage instanceof CoapResponse);
     }
     

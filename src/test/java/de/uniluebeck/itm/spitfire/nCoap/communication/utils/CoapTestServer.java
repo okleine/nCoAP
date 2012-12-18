@@ -7,6 +7,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedMap;
@@ -33,7 +34,7 @@ public class CoapTestServer extends CoapServerApplication {
 
     private List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
 
-    private Service dummyService;
+    private DummyService dummyService;
     
     //time to block thread in receiveCoapRequest() to force a separate response
     private long waitBeforeSendingResponse = 0;
@@ -43,19 +44,28 @@ public class CoapTestServer extends CoapServerApplication {
     }
 
     private CoapTestServer(){
-        dummyService = new Service() {
-
-            @Override
-            public CoapResponse getStatus(CoapRequest request) {
-                return receiveRequest(request);
-            }
-        };
+        dummyService = new DummyService();
+    }
+    
+    private class DummyService extends Service {
+        @Override
+        public CoapResponse getStatus(CoapRequest request) {
+            return receiveRequest(request);
+        }
+        
+        public void notifyObservers1() {
+            notifyCoapObservers();
+        }
+        
     }
 
     public void registerDummyService(String path) {
         registerService(path, dummyService);
     }
-    
+
+    public void notifyCoapObservers() {
+        dummyService.notifyObservers1();
+    }
 
     public synchronized void enableReceiving() {
         receivingEnabled = true;
@@ -103,8 +113,14 @@ public class CoapTestServer extends CoapServerApplication {
         return responsesToSend.remove(0);
     }
 
-    public void addResponse(CoapResponse response) {
-        responsesToSend.add(response);
+    public void addResponse(CoapResponse... responses) {
+        responsesToSend.addAll(Arrays.asList(responses));
+    }
+    
+    public void addResponse(int count, CoapResponse... responses) {
+        for (int i = 0; i < count; i++) {
+            addResponse(responses);
+        }
     }
 
     public void setWaitBeforeSendingResponse(long waitBeforeSendingResponse) {

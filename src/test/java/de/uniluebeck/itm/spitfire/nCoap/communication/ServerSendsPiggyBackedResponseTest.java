@@ -21,7 +21,7 @@ import static junit.framework.Assert.*;
 
 
 /**
- * Test to verify the client functionality related to piggy-backed responses.
+ * Tests to verify the client functionality related to piggy-backed responses.
  * 
  * @author Oliver Kleine, Stefan Hueske
  */

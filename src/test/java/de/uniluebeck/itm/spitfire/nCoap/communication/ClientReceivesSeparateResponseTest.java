@@ -23,7 +23,7 @@ import static junit.framework.Assert.*;
 
 
 /**
- * Test to verify the server functionality related to separate responses.
+ * Tests to verify the server functionality related to separate responses.
  * 
  * @author Stefan Hueske
  */
