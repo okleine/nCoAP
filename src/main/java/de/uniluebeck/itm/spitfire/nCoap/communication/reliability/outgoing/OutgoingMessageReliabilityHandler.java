@@ -29,12 +29,15 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.concurrent.ScheduledFuture;
@@ -53,7 +56,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     //private static final int TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION = 5000;
 
     //Contains remote socket address and message ID of not yet confirmed messages
-    private final HashBasedTable<InetSocketAddress, Integer, SchedulesRetransmissions> waitingForACK
+    private final HashBasedTable<InetSocketAddress, Integer, ScheduledRetransmission> waitingForACK
             = HashBasedTable.create();
 
 //    private static OutgoingMessageReliabilityHandler instance = new OutgoingMessageReliabilityHandler();
@@ -98,6 +101,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         }
 
         if(coapMessage.getMessageType() == MsgType.CON){
+            if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
+                //check all open CON messages to me.getRemoteAddress() for retransmission with same token
+                if (checkObserveUpdateWhileCONRetransmission(coapMessage, 
+                        (InetSocketAddress) me.getRemoteAddress())) {
+                    log.error("Existing retransmission updated (OBSERVE notification): {}.", coapMessage);
+                    return;
+                }
+            }
             if(!waitingForACK.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
                 scheduleRetransmissions(ctx, (InetSocketAddress) me.getRemoteAddress(), coapMessage);
             }
@@ -109,6 +120,25 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         ctx.sendDownstream(me);
     }
 
+    private boolean checkObserveUpdateWhileCONRetransmission(CoapMessage recentMessage, 
+            InetSocketAddress remoteAddress) {
+        synchronized (waitingForACK) {
+            Collection<ScheduledRetransmission> retransmissions = waitingForACK.row(remoteAddress).values();
+            for (ScheduledRetransmission retransmission : retransmissions) {
+                if (Arrays.equals(retransmission.getCoapMessage().getToken(), recentMessage.getToken())) {
+                    //update retransmission
+                    int previousMsgID = retransmission.getCoapMessage().getMessageID();
+                    retransmission.setCoapMessage(recentMessage);
+                    //update mapping in waitingForACK (message ID changed!)
+                    waitingForACK.remove(remoteAddress, previousMsgID);
+                    waitingForACK.put(remoteAddress, recentMessage.getMessageID(), retransmission);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
     /**
      * This method is invoked with an upstream message event. If the message has one of the codes ACK or RESET it is
      * a response for a request waiting for a response. Thus the corresponding request is removed from
@@ -133,11 +163,11 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         if (coapMessage.getMessageType() == MsgType.ACK || coapMessage.getMessageType() == MsgType.RST) {
 
             //Look up remaining retransmissions
-            SchedulesRetransmissions retransmissions;
+            ScheduledRetransmission retransmission;
             LinkedList<ScheduledFuture> futures;
-            synchronized(this){
-                retransmissions = waitingForACK.remove(me.getRemoteAddress(), coapMessage.getMessageID());
-                futures = retransmissions == null ? null : retransmissions.getFutures();
+            synchronized(waitingForACK){
+                retransmission = waitingForACK.remove(me.getRemoteAddress(), coapMessage.getMessageID());
+                futures = retransmission == null ? null : retransmission.getFutures();
             }
 
             //Cancel remaining retransmissions
@@ -157,7 +187,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 
                 if (coapMessage.getMessageType() == MsgType.RST) {
                     String message = "Reset message for open CON received.";
-                    Throwable cause = new ResetReceivedException(retransmissions.getToken(), 
+                    Throwable cause = new ResetReceivedException(retransmission.getToken(), 
                             (InetSocketAddress) me.getRemoteAddress(), message);
                     ExceptionEvent event = new DefaultExceptionEvent(ctx.getChannel(), cause);
                     ctx.sendUpstream(event);
@@ -179,7 +209,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                                          final CoapMessage coapMessage){
 
         //Schedule retransmissions
-        SchedulesRetransmissions schedulesRetransmissions = new SchedulesRetransmissions();
+        ScheduledRetransmission scheduledRetransmission = new ScheduledRetransmission();
         LinkedList<ScheduledFuture> futures = new LinkedList<ScheduledFuture>();
 
         int delay = 0;
@@ -188,7 +218,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             delay += (int)(Math.pow(2, counter) * INITIAL_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
 
             MessageRetransmitter messageRetransmitter
-                    = new MessageRetransmitter(ctx, rcptAddress, coapMessage, counter + 1);
+                    = new MessageRetransmitter(ctx, rcptAddress, scheduledRetransmission, counter + 1);
 
             futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
 
@@ -212,31 +242,35 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
             log.info("Timeout notification scheduled in {} millis.", delay);
         }
-        synchronized (this){
-            schedulesRetransmissions.setToken(coapMessage.getToken());
-            schedulesRetransmissions.setFutures(futures);
-            waitingForACK.put(rcptAddress, coapMessage.getMessageID(), schedulesRetransmissions);
+        synchronized (waitingForACK){
+            scheduledRetransmission.setCoapMessage(coapMessage);
+            scheduledRetransmission.setFutures(futures);
+            waitingForACK.put(rcptAddress, coapMessage.getMessageID(), scheduledRetransmission);
         }
     }
     
-    class SchedulesRetransmissions {
+    public static class ScheduledRetransmission {
         LinkedList<ScheduledFuture> futures = new LinkedList<ScheduledFuture>();
-        byte[] token;
-        
-        public byte[] getToken() {
-            return token;
-        }
+        CoapMessage coapMessage;
 
-        public void setToken(byte[] token) {
-            this.token = token;
+        public byte[] getToken() {
+            return coapMessage.getToken();
         }
 
         public void setFutures(LinkedList<ScheduledFuture> futures) {
             this.futures = futures;
         }
-        
+
         public LinkedList<ScheduledFuture> getFutures() {
             return futures;
+        }
+
+        public CoapMessage getCoapMessage() {
+            return coapMessage;
+        }
+
+        public void setCoapMessage(CoapMessage coapMessage) {
+            this.coapMessage = coapMessage;
         }
     }
 }
