@@ -44,8 +44,7 @@ public class ObserveOptionNotificationTest {
     private static CoapResponse notification1;
     private static CoapResponse notification2;
     private static CoapResponse notification3;
-    
-    
+        
     @BeforeClass
     public static void init() throws Exception {
         //init
@@ -107,7 +106,7 @@ public class ObserveOptionNotificationTest {
     
     @Test
     public void testReceiverReceived3Messages() {
-        String message = "Receiver received more than one message";
+        String message = "Receiver did not receive 3 messages";
         assertEquals(message, 3, testReceiver.getReceivedMessages().values().size());
     }
     

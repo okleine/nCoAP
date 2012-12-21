@@ -52,9 +52,9 @@ public class ClientReceivesPiggyBackedResponseTest {
         testReceiver.setReceiveEnabled(true); 
         
         //create request
-        requestToken = new byte[]{0x12, 0x23, 0x34};
+        requestToken = new byte[]{0x12, 0x24, 0x36};
         requestPath = "/testpath";
-        requestMsgID = 3333;
+        requestMsgID = 3334;
         targetUri = new URI("coap://localhost:" + CoapServerDatagramChannelFactory.COAP_SERVER_PORT + requestPath);
         coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
         coapRequest.getHeader().setMsgID(requestMsgID);
