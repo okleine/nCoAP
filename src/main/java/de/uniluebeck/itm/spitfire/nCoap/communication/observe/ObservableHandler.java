@@ -20,12 +20,18 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.DefaultChannelFuture;
@@ -63,6 +69,9 @@ public class ObservableHandler extends SimpleChannelHandler {
     //[Notification message id] --> [Observer]
     Cache<Integer, ObservableRequest> responseMessageIdCache;
     
+    Map<ObservableRequest, ScheduledFuture> scheduledMaxAgeNotifications = 
+            new ConcurrentHashMap<ObservableRequest, ScheduledFuture>();
+
     private static ObservableHandler instance = new ObservableHandler();
     
     public static ObservableHandler getInstance() {
@@ -84,6 +93,11 @@ public class ObservableHandler extends SimpleChannelHandler {
             final Service service = ((InternalServiceUpdate) e.getMessage()).getService();
             for (String uriPath : service.getRegisteredPaths()) {
                 for (final ObservableRequest observableRequest : pathMappedToObservableRequests.get(uriPath)) {
+                    //remove scheduled Max-Age notification
+                    ScheduledFuture future = scheduledMaxAgeNotifications.remove(observableRequest);
+                    if (future != null) {
+                        future.cancel(false);
+                    }
                     CoapExecutorService.schedule(new Runnable() {
 
                         @Override
@@ -94,11 +108,13 @@ public class ObservableHandler extends SimpleChannelHandler {
                                 ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
                                 ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future, 
                                         coapResponse, observableRequest.getRemoteAddress()));
+                                scheduleMaxAgeNotification(observableRequest, coapResponse, service, ctx);                                
                             } catch (Exception ex) {
                                 log.error("Unexpected exception in scheduled notification! " + ex.getMessage());
                             }
                         }
                     }, 0, TimeUnit.SECONDS);
+                    
                 }
             }
             return;
@@ -108,9 +124,7 @@ public class ObservableHandler extends SimpleChannelHandler {
             CoapResponse coapResponse = (CoapResponse) e.getMessage();
             ObservableRequest observableRequest = addressTokenMappedToObservableRequests.get(coapResponse.getToken(), 
                     e.getRemoteAddress());
-            if (observableRequest != null) {
-                setupResponse(coapResponse, observableRequest);
-            } else {
+            if (observableRequest == null) {
                 //remove observe option
                 coapResponse.getOptionList().removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
             }
@@ -118,6 +132,33 @@ public class ObservableHandler extends SimpleChannelHandler {
         ctx.sendDownstream(e);
     }
 
+    private void scheduleMaxAgeNotification(final ObservableRequest observableRequest, 
+            final CoapResponse currentCoapResponse, final Service service, final ChannelHandlerContext ctx) {
+        //schedule Max-Age notification
+        int maxAge = 60; //dafault Max-Age value
+        if (!currentCoapResponse.getOption(OptionRegistry.OptionName.MAX_AGE).isEmpty()) {
+            maxAge = ((UintOption)currentCoapResponse.getOption(OptionRegistry.OptionName.MAX_AGE)
+                    .get(0)).getDecodedValue().intValue();
+        }
+        scheduledMaxAgeNotifications.put(observableRequest, 
+                CoapExecutorService.schedule(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    CoapResponse futureCoapResponse = service.getStatus(observableRequest.getRequest());
+                    setupResponse(futureCoapResponse, observableRequest);
+                    ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
+                    ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future, 
+                            futureCoapResponse, observableRequest.getRemoteAddress()));
+                    scheduleMaxAgeNotification(observableRequest, futureCoapResponse, service, ctx);
+                } catch (Exception ex) {
+                    log.error("Unexpected exception in scheduled notification! " + ex.getMessage());
+                }
+            }
+        }, maxAge, TimeUnit.SECONDS));
+    }
+    
     /**
      * Remove Observer.
      * @param observableRequest Observer to remove
@@ -215,7 +256,7 @@ public class ObservableHandler extends SimpleChannelHandler {
         int responseCount = observableRequest.updateResponseCount();
         if (responseCount == 1) {
             //first response
-//            coapResponse.setMessageID(observableRequest.getRequest().getMessageID());
+            coapResponse.setMessageID(observableRequest.getRequest().getMessageID());
             coapResponse.getHeader().setMsgType(MsgType.ACK);
         } else {
             //second or later

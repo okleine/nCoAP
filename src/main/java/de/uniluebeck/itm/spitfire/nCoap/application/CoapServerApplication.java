@@ -31,6 +31,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import java.net.InetSocketAddress;
@@ -80,6 +81,16 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 final CoapRequest coapRequest = (CoapRequest) me.getMessage();
                 final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 
+                if (!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty()) {
+                    //request has observe option, send InternalServiceUpdate instead of CoapResponse
+                    Service service = registeredServices.get(coapRequest.getTargetUri().getPath());
+                    if (service != null) {
+                        InternalServiceUpdate serviceUpdate = new InternalServiceUpdate(service);                    
+                        Channels.write(channel, serviceUpdate, remoteAddress);
+                        return;
+                    }
+                }
+                
                 //Create the response
                 CoapResponse coapResponse = receiveCoapRequest(coapRequest, remoteAddress);
 
