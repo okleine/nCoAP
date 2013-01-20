@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.SortedMap;
 
 import static junit.framework.Assert.*;
-
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 /**
  * Tests to verify the server functionality related to piggy-backed responses.

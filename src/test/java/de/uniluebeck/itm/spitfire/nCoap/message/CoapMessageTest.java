@@ -7,6 +7,10 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
 import org.junit.Test;
+
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
+
+
 /**
  * Test of CoapMessage class.
  * @author Stefan Hueske

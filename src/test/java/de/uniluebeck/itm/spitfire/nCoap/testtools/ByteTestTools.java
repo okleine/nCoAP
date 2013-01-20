@@ -1,8 +1,14 @@
 package de.uniluebeck.itm.spitfire.nCoap.testtools;
 
+import java.io.UnsupportedEncodingException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
+
 /**
  * This class offers tools to create, compare and print byte arrays.
  * @author Stefan Hueske
@@ -170,5 +176,21 @@ public class ByteTestTools {
         byteArray[1] = 0x43;
         byteArray[2] = 0x21;
         assertArrayEquals(byteArray, getByteArrayFromString("54321"));
+    }
+    
+    public static void assertEquals(String message, ChannelBuffer expected, ChannelBuffer actual) {
+        boolean equals = expected == null ? actual == null : expected.equals(actual);
+        if (!equals) {
+            try { 
+                String expectedAsString = expected == null ? "null" : 
+                        new String(getByteArrayFromChannelBuffer(expected), "UTF-8");
+                String actualAsString = actual == null ? "null" : 
+                        new String(getByteArrayFromChannelBuffer(actual), "UTF-8");
+                fail(String.format("'%s', UTF-8 decoded Channelbuffer: expected: '%s', actual: '%s'", 
+                        message, expectedAsString, actualAsString));                
+            } catch (UnsupportedEncodingException ex) {
+                throw new InternalError("This should never happen, UTF-8 encoding was not recognized");
+            }
+        }
     }
 }

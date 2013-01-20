@@ -21,6 +21,7 @@ import org.junit.Test;
 import static junit.framework.Assert.*;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
 import static de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory.*;
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 
 /**

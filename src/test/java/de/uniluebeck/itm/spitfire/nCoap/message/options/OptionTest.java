@@ -17,6 +17,9 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import static org.junit.Assert.fail;
 import org.junit.Test;
 
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
+
+
 /**
  * Test of Option class.
  * Tests for "URI" to "CoAP URI Options" and

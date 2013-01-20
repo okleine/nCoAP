@@ -103,9 +103,9 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         if(coapMessage.getMessageType() == MsgType.CON){
             if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
                 //check all open CON messages to me.getRemoteAddress() for retransmission with same token
-                if (checkObserveUpdateWhileCONRetransmission(coapMessage, 
+                if (updateCONRetransmission(coapMessage, 
                         (InetSocketAddress) me.getRemoteAddress())) {
-                    log.error("Existing retransmission updated (OBSERVE notification): {}.", coapMessage);
+                    log.debug("Existing retransmission updated (OBSERVE notification): {}.", coapMessage);
                     return;
                 }
             }
@@ -120,7 +120,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         ctx.sendDownstream(me);
     }
 
-    private boolean checkObserveUpdateWhileCONRetransmission(CoapMessage recentMessage, 
+    private boolean updateCONRetransmission(CoapMessage recentMessage, 
             InetSocketAddress remoteAddress) {
         synchronized (waitingForACK) {
             Collection<ScheduledRetransmission> retransmissions = waitingForACK.row(remoteAddress).values();
@@ -132,10 +132,12 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                     //update mapping in waitingForACK (message ID changed!)
                     waitingForACK.remove(remoteAddress, previousMsgID);
                     waitingForACK.put(remoteAddress, recentMessage.getMessageID(), retransmission);
+                    //running retransmission successfully updated
                     return true;
                 }
             }
         }
+        //token + remote address was not found in waitingForACK
         return false;
     }
     

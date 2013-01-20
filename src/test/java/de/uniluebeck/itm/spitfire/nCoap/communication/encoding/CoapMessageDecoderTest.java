@@ -11,10 +11,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionList;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.StringOption;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
-import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.getByteArrayFromString;
-import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.getBytesAsString;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.LinkedList;
@@ -27,6 +24,8 @@ import org.jboss.netty.channel.*;
 import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Test;
+
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 
 /**

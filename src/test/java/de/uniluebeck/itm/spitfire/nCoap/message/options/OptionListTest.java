@@ -9,6 +9,9 @@ import static org.junit.Assert.*;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
 import java.util.Arrays;
 
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
+
+
 /**
  * Test of OptionList class.
  * @author Stefan Hueske

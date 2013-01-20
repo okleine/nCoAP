@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.SortedMap;
 
 import static junit.framework.Assert.*;
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 
 /**

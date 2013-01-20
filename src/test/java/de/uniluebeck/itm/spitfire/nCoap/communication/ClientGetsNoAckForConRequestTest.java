@@ -19,6 +19,7 @@ import java.net.URI;
 import java.util.SortedMap;
 
 import static org.junit.Assert.*;
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 
 /**

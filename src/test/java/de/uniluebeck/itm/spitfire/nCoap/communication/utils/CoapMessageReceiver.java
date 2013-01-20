@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import java.util.concurrent.Executors;
 
 import static org.junit.Assert.fail;
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 
 /**

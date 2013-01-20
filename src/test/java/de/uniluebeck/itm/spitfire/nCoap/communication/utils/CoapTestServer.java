@@ -14,6 +14,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static org.junit.Assert.fail;
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 /**
  * A CoapServerApplication for testing purposes.

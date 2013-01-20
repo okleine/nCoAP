@@ -19,6 +19,8 @@ import java.util.SortedMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
+
 
 /**
  * Tests if the server sends a new notification when Max-Age ends.
