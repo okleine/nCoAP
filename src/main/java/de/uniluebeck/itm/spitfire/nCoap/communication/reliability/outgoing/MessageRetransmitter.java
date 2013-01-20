@@ -1,5 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler.ScheduledRetransmission;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.logging.Level;
+import org.jboss.netty.channel.UpstreamMessageEvent;
 
 /**
  * Created with IntelliJ IDEA.
@@ -50,6 +52,9 @@ class MessageRetransmitter implements Runnable {
             observeOption++;
             try {
                 ((CoapResponse)coapMessage).setObserveOptionResponse(observeOption);
+                UpstreamMessageEvent observeOptionUpdateEvent = new UpstreamMessageEvent(ctx.getChannel(), 
+                        new InternalObserveOptionUpdate(retransmission.getToken(), rcptAddress, observeOption), null);
+                ctx.sendUpstream(observeOptionUpdateEvent);
             } catch (ToManyOptionsException ex) {
                 log.error("Error while trying to update OBSERVE option in MessageRetransmitter!");
             }

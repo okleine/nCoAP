@@ -8,6 +8,7 @@ import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.spitfire.nCoap.application.Service;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.ResetReceivedException;
@@ -225,6 +226,16 @@ public class ObservableHandler extends SimpleChannelHandler {
                 removeObservableRequests(observableRequestsToRemove);
             }
         }
+        if (e.getMessage() instanceof InternalObserveOptionUpdate) {
+            InternalObserveOptionUpdate optionUpdate = (InternalObserveOptionUpdate) e.getMessage();
+            ObservableRequest observer = addressTokenMappedToObservableRequests
+                    .get(optionUpdate.getToken(), optionUpdate.getRemoteAddress());
+            if (observer != null) {
+                observer.setResponseCount(optionUpdate.getObserveOptionValue() + 1);
+            }
+            
+            return;
+        }
         ctx.sendUpstream(e);
     }
 
@@ -302,5 +313,9 @@ class ObservableRequest {
 
     public SocketAddress getRemoteAddress() {
         return remoteAddress;
+    }
+
+    public void setResponseCount(long observeOptionValue) {
+        responseCount = (int)observeOptionValue;
     }
 }
