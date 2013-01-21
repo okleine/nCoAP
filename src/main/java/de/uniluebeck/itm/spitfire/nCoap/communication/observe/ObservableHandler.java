@@ -9,6 +9,7 @@ import de.uniluebeck.itm.spitfire.nCoap.application.Service;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdate;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceRemovedFromPath;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.ResetReceivedException;
@@ -16,6 +17,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.Retra
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
@@ -129,6 +131,32 @@ public class ObservableHandler extends SimpleChannelHandler {
                 //remove observe option
                 coapResponse.getOptionList().removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
             }
+        }
+        if (e.getMessage() instanceof InternalServiceRemovedFromPath) {
+            String removedPath = ((InternalServiceRemovedFromPath)e.getMessage()).getServicePath();
+            for (final ObservableRequest observer : pathMappedToObservableRequests.get(removedPath)) {
+                CoapExecutorService.schedule(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            CoapResponse coapResponse = new CoapResponse(Code.NOT_FOUND_404);
+                            coapResponse.getHeader().setMsgType(MsgType.CON);
+                            coapResponse.setToken(observer.getRequest().getToken());
+                            coapResponse.getOptionList().removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+                            ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
+                            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future, 
+                                    coapResponse, observer.getRemoteAddress()));
+                        } catch (Exception ex) {
+                            log.error("Unexpected exception in scheduled notification! " + ex.getMessage());
+                        }
+                    }
+                }, 0, TimeUnit.SECONDS);
+                addressTokenMappedToObservableRequests
+                        .remove(observer.getRequest().getToken(), observer.getRemoteAddress());
+            }
+            pathMappedToObservableRequests.removeAll(removedPath);
+            return;
         }
         ctx.sendDownstream(e);
     }

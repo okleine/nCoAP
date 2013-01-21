@@ -24,6 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.application;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceRemovedFromPath;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -206,6 +207,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         if (service != null) {
             service.deleteObserver(this);
             service.removePath(uriPath);
+            channel.write(new InternalServiceRemovedFromPath(uriPath));
             return true;
         } else {
             return false;

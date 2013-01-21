@@ -94,12 +94,12 @@ public class ObserveOptionNotificationTest {
         testServer.notifyCoapObservers();
         //wait for 3rd response
         Thread.sleep(150);
-        //send empty ack
+        //send RST
         receivedMessages = testReceiver.getReceivedMessages();
         lastReceivedMessage = receivedMessages.get(receivedMessages.lastKey());
         emptyACK = new CoapResponse(Code.EMPTY);
         emptyACK.getHeader().setMsgID(lastReceivedMessage.getMessageID());
-        emptyACK.getHeader().setMsgType(MsgType.ACK);
+        emptyACK.getHeader().setMsgType(MsgType.RST);
         testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", COAP_SERVER_PORT));
                 
         testReceiver.setReceiveEnabled(false);
