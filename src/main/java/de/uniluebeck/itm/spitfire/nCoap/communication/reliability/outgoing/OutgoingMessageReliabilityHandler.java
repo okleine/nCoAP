@@ -30,6 +30,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -225,6 +226,23 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
 
             log.info("Scheduled in {} millis {}", delay, messageRetransmitter);
+        }
+        
+        //Adapt MAX_RETRANSMIT for Observe-Notifications
+        //Timeout notification should occur after MAX-AGE ends 
+        //http://tools.ietf.org/html/draft-ietf-core-observe-06#page-13
+        if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()
+                && !coapMessage.getOption(OptionRegistry.OptionName.MAX_AGE).isEmpty()) {
+            long maxAge = ((UintOption)coapMessage.getOption(OptionRegistry.OptionName.MAX_AGE)
+                    .get(0)).getDecodedValue();
+            int counter = MAX_RETRANSMITS + 1;
+            while(maxAge > delay / 1000) {
+                delay += (int)(Math.pow(2, counter) * INITIAL_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
+                MessageRetransmitter messageRetransmitter
+                        = new MessageRetransmitter(ctx, rcptAddress, scheduledRetransmission, counter++);
+                futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
+                log.info("Scheduled in {} millis {}", delay, messageRetransmitter);
+            }
         }
 
         //Schedule timeout notification
