@@ -51,7 +51,8 @@ public abstract class CoapClientApplication implements ResponseCallback{
     private boolean isObserver = false;
 
     /**
-     * This method should be used by extending client implementation to send a CoAP request to a remote recipient. All
+     * This method is supposed be used by the extending client implementation to send a CoAP request to a remote
+     * recipient. All
      * necessary information to send the message (like the recipient IP address or port) is automatically extracted
      * from the given {@link CoapRequest} object.
      * @param coapRequest The {@link CoapRequest} object to be sent
