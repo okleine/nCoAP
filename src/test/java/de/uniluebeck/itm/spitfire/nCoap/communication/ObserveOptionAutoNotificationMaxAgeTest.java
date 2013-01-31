@@ -75,11 +75,11 @@ public class ObserveOptionAutoNotificationMaxAgeTest {
         //wait for Max-Age to end and resulting notification
         Thread.sleep(5500);
         
-        //send EMPTY ACK
-        CoapResponse emptyACK = new CoapResponse(Code.EMPTY);
-        emptyACK.getHeader().setMsgType(MsgType.ACK);
-        emptyACK.setMessageID(notification2.getMessageID());
-        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", COAP_SERVER_PORT));
+        //send reset to remove observer
+        CoapResponse rstMsg = new CoapResponse(Code.EMPTY);
+        rstMsg.getHeader().setMsgType(MsgType.RST);
+        rstMsg.setMessageID(notification2.getMessageID());
+        testReceiver.writeMessage(rstMsg, new InetSocketAddress("localhost", COAP_SERVER_PORT));
         
         testReceiver.setReceiveEnabled(false);
     }
