@@ -44,6 +44,8 @@ import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
+
 /**
  * Abstract class to be extended by a CoAP server application. Even though the communication is based on the Netty
  * framework, a developer of such a server doesn't have to go into details regarding the architecture. The whole
@@ -82,7 +84,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 final CoapRequest coapRequest = (CoapRequest) me.getMessage();
                 final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 
-                if (!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty()) {
+                if (!coapRequest.getOption(OBSERVE_REQUEST).isEmpty()) {
                     //request has observe option, send InternalServiceUpdate instead of CoapResponse
                     Service service = registeredServices.get(coapRequest.getTargetUri().getPath());
                     if (service != null) {
