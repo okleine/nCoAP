@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.logging.Level;
 
 /**
  * This is the abstract class to be extended by a CoAP client.
@@ -44,12 +45,25 @@ import java.net.InetSocketAddress;
  */
 public abstract class CoapClientApplication implements ResponseCallback{
 
-    private final DatagramChannel channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
+    private DatagramChannel channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
 
     private Logger log = LoggerFactory.getLogger(CoapClientApplication.class.getName());
 
     private boolean isObserver = false;
 
+    /**
+     * Blocks until current channel is closed and binds the channel to a new ChannelFactory.
+     */
+    public void rebindChannel() {
+        ChannelFuture future = channel.close();
+        future.awaitUninterruptibly();
+        if (!future.isSuccess()) {
+            throw new InternalError("Failed to close channel!");
+        }
+        CoapClientDatagramChannelFactory.resetInstance();
+        channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
+    }
+    
     /**
      * This method should be used by extending client implementation to send a CoAP request to a remote recipient. All
      * necessary information to send the message (like the recipient IP address or port) is automatically extracted

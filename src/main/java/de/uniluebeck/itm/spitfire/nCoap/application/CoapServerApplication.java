@@ -39,6 +39,8 @@ import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -56,7 +58,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
     private static Logger log = LoggerFactory.getLogger(CoapServerApplication.class.getName());
 
-    protected final DatagramChannel channel;
+    protected DatagramChannel channel;
 
     protected CoapServerApplication(){
         channel = new CoapServerDatagramChannelFactory(this).getChannel();
@@ -65,6 +67,18 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     //This map holds all registered services
     //[uri path] --> [Service]
     ConcurrentHashMap<String, Service> registeredServices = new ConcurrentHashMap<String, Service>();
+    
+    /**
+     * Blocks until current channel is closed and binds the channel to a new ChannelFactory.
+     */
+    public void rebindChannel() {
+        ChannelFuture future = channel.close();
+        future.awaitUninterruptibly();
+        if (!future.isSuccess()) {
+            throw new InternalError("Failed to close channel!");
+        }
+        channel = new CoapServerDatagramChannelFactory(this).getChannel();
+    }
     
     /**
      * This method is called by the Netty framework whenever a new message is received to be processed by the server.

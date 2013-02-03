@@ -56,7 +56,7 @@ public class ObserveOptionNotificationTest {
         //create request
         requestToken = new byte[]{0x12, 0x23, 0x34};
         requestPath = "/testpath";
-        requestMsgID = 3333;
+        requestMsgID = 4567;
         targetUri = new URI("coap://localhost:" + CoapServerDatagramChannelFactory.COAP_SERVER_PORT + requestPath);
         coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
         coapRequest.getHeader().setMsgID(requestMsgID);
