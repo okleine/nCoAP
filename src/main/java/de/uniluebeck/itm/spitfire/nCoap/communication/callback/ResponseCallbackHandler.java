@@ -29,6 +29,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.Retra
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.jboss.netty.channel.*;
@@ -99,12 +100,22 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
                         ", Token: " + Tools.toHexString(coapResponse.getToken()));
 
 
-            ResponseCallback callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
+            ResponseCallback callback;
+            if(coapResponse.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).get(0) != null){
+                callback = callbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
+                        me.getRemoteAddress());
+            }
+            else{
+                callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
                                                          me.getRemoteAddress());
+            }
 
             if(callback != null){
                 log.debug("Received response for request with token " + Tools.toHexString(coapResponse.getToken()));
                 callback.receiveResponse(coapResponse);
+            }
+            else{
+                log.debug("No callback found for request with token " + Tools.toHexString(coapResponse.getToken()));
             }
             me.getFuture().setSuccess();
         }
