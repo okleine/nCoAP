@@ -82,6 +82,7 @@ public class CoapTestServer extends CoapServerApplication {
         waitBeforeSendingResponse = 0;
         enableReceiving();
         removeAllServices();
+        rebindChannel();
     }
 
     public void blockUntilMessagesReceivedOrTimeout(long timeout, int messagesCount)

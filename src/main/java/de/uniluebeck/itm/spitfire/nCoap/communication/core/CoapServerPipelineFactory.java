@@ -60,6 +60,8 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
     private ChannelHandler serverApp;
 
+    private ObservableHandler observableHandler = new ObservableHandler();
+    
     public CoapServerPipelineFactory(ChannelHandler serverApp){
         this.serverApp = serverApp;
     }
@@ -75,7 +77,7 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
         pipeline.addLast("BlockwiseTransferHander", blockwiseTransferHandler);
         pipeline.addLast("ExecutionHandler", executionHandler);
-        pipeline.addLast("ObservableHandler", ObservableHandler.getInstance());
+        pipeline.addLast("ObservableHandler", observableHandler);
         pipeline.addLast("ServerApplication", serverApp);
         
         return pipeline;

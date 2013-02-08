@@ -43,10 +43,14 @@ public class CoapClientDatagramChannelFactory {
 
     private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
     static{
+        initInstance();
+    }
+
+    private static void initInstance() {
         FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
         instance.getChannel().getConfig().setReceiveBufferSizePredictor(predictor);
     }
-
+    
     public static synchronized CoapClientDatagramChannelFactory getInstance(){
         return instance;
     }
@@ -60,6 +64,11 @@ public class CoapClientDatagramChannelFactory {
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory());
 
         channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(COAP_CLIENT_PORT));
+    }
+    
+    public static void resetInstance() {
+        instance = new CoapClientDatagramChannelFactory();
+        initInstance();
     }
 
     public DatagramChannel getChannel(){

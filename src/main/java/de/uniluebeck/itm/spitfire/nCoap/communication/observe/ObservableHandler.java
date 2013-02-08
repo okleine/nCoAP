@@ -75,13 +75,7 @@ public class ObservableHandler extends SimpleChannelHandler {
     Map<ObservableRequest, ScheduledFuture> scheduledMaxAgeNotifications = 
             new ConcurrentHashMap<ObservableRequest, ScheduledFuture>();
 
-    private static ObservableHandler instance = new ObservableHandler();
-    
-    public static ObservableHandler getInstance() {
-        return instance;
-    }
-
-    private ObservableHandler() {
+    public ObservableHandler() {
         responseMessageIdCache = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
             .weakKeys()

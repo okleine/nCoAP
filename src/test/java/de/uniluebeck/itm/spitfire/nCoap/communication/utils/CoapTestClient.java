@@ -67,5 +67,6 @@ public class CoapTestClient extends CoapClientApplication {
     }
     public void reset() {
         receivedResponses.clear();
+        rebindChannel();
     }
 }

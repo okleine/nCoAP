@@ -28,7 +28,6 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowled
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutException;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.jboss.netty.channel.*;
@@ -36,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
 
 /**
  * @author Oliver Kleine
@@ -100,7 +100,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
 
 
             ResponseCallback callback;
-            if(coapResponse.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).get(0) != null){
+            if(!coapResponse.getOption(OBSERVE_RESPONSE).isEmpty()){
                 callback = callbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
                         me.getRemoteAddress());
             }
