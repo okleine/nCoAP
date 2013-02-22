@@ -90,6 +90,10 @@ public class ObserveOptionNotificationTest {
         emptyACK.getHeader().setMsgID(lastReceivedMessage.getMessageID());
         emptyACK.getHeader().setMsgType(MsgType.ACK);
         testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", COAP_SERVER_PORT));
+        
+        //wait for empty ACK to arrive
+        Thread.sleep(300);
+        
         //notify
         testServer.notifyCoapObservers();
         //wait for 3rd response

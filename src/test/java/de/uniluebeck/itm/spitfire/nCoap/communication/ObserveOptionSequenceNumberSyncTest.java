@@ -105,6 +105,8 @@ public class ObserveOptionSequenceNumberSyncTest {
         emptyACK.getHeader().setMsgType(MsgType.ACK);
         testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", 
                 CoapServerDatagramChannelFactory.COAP_SERVER_PORT));
+        //wait for empty ACK to arrive
+        Thread.sleep(300);
         
         //second resource update
         testServer.notifyCoapObservers();
