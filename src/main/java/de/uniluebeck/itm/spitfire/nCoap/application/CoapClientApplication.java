@@ -25,6 +25,7 @@ package de.uniluebeck.itm.spitfire.nCoap.application;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -55,6 +56,7 @@ public abstract class CoapClientApplication implements ResponseCallback{
      * Blocks until current channel is closed and binds the channel to a new ChannelFactory.
      */
     public void rebindChannel() {
+        CoapExecutorService.restartNow();
         ChannelFuture future = channel.close();
         future.awaitUninterruptibly();
         if (!future.isSuccess()) {

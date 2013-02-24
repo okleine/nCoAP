@@ -23,6 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.application;
 
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceRemovedFromPath;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
@@ -74,6 +75,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * Blocks until current channel is closed and binds the channel to a new ChannelFactory.
      */
     public void rebindChannel() {
+        CoapExecutorService.restartNow();
         ChannelFuture future = channel.close();
         future.awaitUninterruptibly();
         if (!future.isSuccess()) {
