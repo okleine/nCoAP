@@ -151,7 +151,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             callback.handleRetransmissionTimout();
         }
         else{
-            log.error("Unexpected exception caught!", e);
+            log.error("Unexpected exception caught!", cause);
         }
     }
 }

@@ -88,7 +88,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
                 } else {
                     encodeOption(buffer, optionName, option, prevNumber);
                     prevNumber = optionName.number;
-                    log.debug(" Encoded option(No: " + optionName.number +
+                    log.debug("Encoded option(No: " + optionName.number +
                             ", Value: " + Option.getHexString(option.getValue()) + ")");
                 }
             }
@@ -100,7 +100,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
 
 
-        log.debug(" Start encoding option number " + optionName.number);
+        log.debug("Start encoding option number " + optionName.number);
 
         //The previous option number must be smaller or equal to the actual one
         if(prevNumber > optionName.number){
@@ -123,7 +123,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
                 //write an encoded fencepost option to OutputStream
                 buffer.writeByte((nextFencepost - prevNumber) << 4);
 
-                log.debug(" Encoded fencepost option added (with option number " +
+                log.debug("Encoded fencepost option added (with option number " +
                             nextFencepost + ")");
 
                 prevNumber = nextFencepost;

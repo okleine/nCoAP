@@ -9,6 +9,11 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import java.net.InetSocketAddress;
+
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

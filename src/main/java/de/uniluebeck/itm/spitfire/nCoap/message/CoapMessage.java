@@ -338,16 +338,17 @@ public abstract class CoapMessage implements Cloneable {
 
     public boolean isLastBlock(OptionName optionName) throws InvalidOptionException {
 
-        if(optionName != BLOCK_1 && optionName != BLOCK_2){
-            String msg = "Option " + optionName +
-                    " is not a block option and as such does not contain 'isLastBlock' field.";
-            InvalidOptionException e = new InvalidOptionException(optionName.number, msg);
-            log.error(msg, e);
-            throw e;
-        }
+            if(optionName != BLOCK_1 && optionName != BLOCK_2){
+                String msg = "Option " + optionName +
+                        " is not a block option and as such does not contain 'isLastBlock' field.";
+                InvalidOptionException e = new InvalidOptionException(optionName.number, msg);
+                log.error(msg, e);
+                throw e;
+            }
 
-        long value = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
-        return value == 0;
+            long value = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
+            return value == 0;
+
     }
 
     public long getBlockNumber(OptionName optionName) throws InvalidOptionException {
