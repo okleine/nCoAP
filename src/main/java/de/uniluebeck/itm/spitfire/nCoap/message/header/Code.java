@@ -239,6 +239,14 @@ public enum Code {
     }
 
     /**
+     * This method indicates wheter the message code refers to an error message
+     * @return <code>true</code> in case of an error <code>false</code> otherwise
+     */
+    public boolean isErrorMessage(){
+        return (number >= 128);
+    }
+
+    /**
      * This method indicates whether a message may contain payload
      * @return <code>true</code> if payload is allowed, <code>false</code> otherwise
      */

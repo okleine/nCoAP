@@ -28,13 +28,4 @@ public abstract class CoapExecutorService {
     public static ExecutorService getExecutorService(){
         return executorService;
     }
-
-    public static void restartNow() {
-        executorService.shutdownNow();
-        while (!executorService.isShutdown()) {
-            try {Thread.sleep(50);} catch (InterruptedException ex) {}
-        }
-        executorService = Executors.newScheduledThreadPool(NO_OF_THREADS, 
-                new ThreadFactoryBuilder().setNameFormat("nCoap-Thread %d").build());
-    }
 }

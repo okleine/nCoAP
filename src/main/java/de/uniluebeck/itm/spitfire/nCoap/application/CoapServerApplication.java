@@ -23,25 +23,25 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.application;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
+import de.uniluebeck.itm.spitfire.nCoap.application.webservice.ObservableWebService;
+import de.uniluebeck.itm.spitfire.nCoap.application.webservice.WebService;
+import de.uniluebeck.itm.spitfire.nCoap.application.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceRemovedFromPath;
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.ObservableWebServiceUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
+
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -57,32 +57,37 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Op
  *
  * @author Oliver Kleine
  */
-public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler implements RetransmissionTimeoutHandler, Observer {
+public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
+                                            implements RetransmissionTimeoutHandler, Observer {
 
     private static Logger log = LoggerFactory.getLogger(CoapServerApplication.class.getName());
 
     protected DatagramChannel channel;
 
+    //This map holds all registered services (key: URI path, value: WebService instance)
+    private ConcurrentHashMap<String, WebService> registeredServices = new ConcurrentHashMap<String, WebService>();
+
+    /**
+     * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port 5883
+     * and already provides the default .well-knoen/core resource
+     */
     protected CoapServerApplication(){
         channel = new CoapServerDatagramChannelFactory(this).getChannel();
+        registerService(new WellKnownCoreResource(null, registeredServices));
     }
 
-    //This map holds all registered services
-    //[uri path] --> [Service]
-    ConcurrentHashMap<String, Service> registeredServices = new ConcurrentHashMap<String, Service>();
-    
-    /**
-     * Blocks until current channel is closed and binds the channel to a new ChannelFactory.
-     */
-    public void rebindChannel() {
-        CoapExecutorService.restartNow();
-        ChannelFuture future = channel.close();
-        future.awaitUninterruptibly();
-        if (!future.isSuccess()) {
-            throw new InternalError("Failed to close channel!");
-        }
-        channel = new CoapServerDatagramChannelFactory(this).getChannel();
-    }
+
+//    /**
+//     * Blocks until current channel is closed and binds the channel to a new ChannelFactory.
+//     */
+//    public void rebindChannel() {
+//        ChannelFuture future = channel.close();
+//        future.awaitUninterruptibly();
+//        if (!future.isSuccess()) {
+//            throw new InternalError("Failed to close channel!");
+//        }
+//        channel = new CoapServerDatagramChannelFactory(this).getChannel();
+//    }
     
     /**
      * This method is called by the Netty framework whenever a new message is received to be processed by the server.
@@ -96,38 +101,46 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     @Override
     public final void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         if(me.getMessage() instanceof CoapRequest){
+            me.getFuture().setSuccess();
             try{
                 final CoapRequest coapRequest = (CoapRequest) me.getMessage();
                 final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 
-                if (!coapRequest.getOption(OBSERVE_REQUEST).isEmpty()) {
-                    //request has observe option, send InternalServiceUpdate instead of CoapResponse
-                    Service service = registeredServices.get(coapRequest.getTargetUri().getPath());
-                    if (service != null) {
-                        InternalServiceUpdate serviceUpdate = new InternalServiceUpdate(service);                    
-                        Channels.write(channel, serviceUpdate, remoteAddress);
-                        return;
+                WebService webService = registeredServices.get(coapRequest.getTargetUri().getPath());
+
+                Object response = null;
+
+
+                if(webService == null){
+                    //Error response if there is no such webservice instance registered at this server instance
+                    response = new CoapResponse(Code.NOT_FOUND_404);
+
+                }
+                else if (!coapRequest.getOption(OBSERVE_REQUEST).isEmpty()) {
+                    //Handle request with observe option
+                    if(webService instanceof ObservableWebService){
+                        response = new ObservableWebServiceUpdate((ObservableWebService) webService);
                     }
                 }
-                
-                //Create the response
-                CoapResponse coapResponse = receiveCoapRequest(coapRequest, remoteAddress);
+                else{
+                    //handle request without observe option
+                    response = webService.processMessage(coapRequest);
 
-                //Set message ID and token to match the request
-                log.debug("Message ID of incoming request: " + coapRequest.getMessageID());
-                coapResponse.setMessageID(coapRequest.getMessageID());
+                    //Set message ID and token to match the request
+                    log.debug("Message ID of incoming request: " + coapRequest.getMessageID());
+                    ((CoapResponse) response).setMessageID(coapRequest.getMessageID());
 
-                if(coapRequest.getToken().length > 0){
-                    coapResponse.setToken(coapRequest.getToken());
+                    if(coapRequest.getToken().length > 0){
+                        ((CoapResponse) response).setToken(coapRequest.getToken());
+                    }
                 }
 
                 //Write response
-                ChannelFuture future = Channels.write(channel, coapResponse, remoteAddress);
-
+                ChannelFuture future = Channels.write(channel, response, remoteAddress);
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        log.debug("CoapRequestExecutor] Sending of response to recipient " +
+                        log.debug("Sending of response to recipient " +
                                 remoteAddress + " with message ID " + coapRequest.getMessageID() + " and " +
                                 "token " + Tools.toHexString(coapRequest.getToken()) + " completed.");
                     }
@@ -178,78 +191,76 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         future.awaitUninterruptibly();
     }
     
-    /**
-     * Searches for a service to respond to the passed request.
-     * If no matching service was found a 404 Not Found response will be returned.
-     * 
-     * @param coapRequest request
-     * @param senderAddress requests remote address
-     * @return resource from service or 404 Not Found
-     */
-    private CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderAddress) {
-        String uriPath = coapRequest.getTargetUri().getPath();
-        //TODO .well-known/core        
-        Service service = registeredServices.get(uriPath);
-        if (service != null) {
-            return service.getStatus(coapRequest);
-        } else {
-            return new CoapResponse(Code.NOT_FOUND_404);
-        }     
-    }
+//    /**
+//     * Searches for a service to respond to the passed request.
+//     * If no matching service was found a 404 Not Found response will be returned.
+//     *
+//     * @param coapRequest request
+//     * @param senderAddress requests remote address
+//     * @return resource from service or 404 Not Found
+//     */
+//    private CoapResponse receiveCoapRequest(CoapRequest coapRequest, InetSocketAddress senderAddress) {
+//        String uriPath = coapRequest.getTargetUri().getPath();
+//        //TODO .well-known/core
+//        WebService service = registeredServices.get(uriPath);
+//        if (service != null) {
+//            return service.processMessage(coapRequest);
+//        } else {
+//            return new CoapResponse(Code.NOT_FOUND_404);
+//        }
+//    }
     
     /**
-     * Register a service to a path.
-     * It is not possible to register multiple services at a single path.
-     * However the same service can be registered multiple times at different paths.
-     * 
-     * @param uriPath uri path
-     * @param service resource providing service
+     * Registers a WebService instance at the server. After registration the service will be available at the path
+     * given using <code>service.getPath()</code>.
+     *
+     * It is not possible to register multiple services at a single path. If a new service is registered at the server
+     * with a path from another already registered service, then the new service replaces the old one.
+     *      *
+     * @param service A {@link WebService} instance to be registered at the server
      */
-    public void registerService(String uriPath, Service service) {
-        if (registeredServices.containsKey(uriPath)) {
-            removeService(uriPath);
+    public void registerService(WebService service) {
+        registeredServices.put(service.getPath(), service);
+
+        if(service instanceof ObservableWebService){
+            ((ObservableWebService) service).addObserver(this);
         }
-        registeredServices.put(uriPath, service);
-        service.addObserver(this);
-        service.addPath(uriPath);
     }
     
     /**
-     * Removes a service from a path.
+     * Removes a service from the server
      * 
      * @param uriPath service path
      * @return true if a registered service was removed
      */
     public boolean removeService(String uriPath) {
-        Service service = registeredServices.remove(uriPath);
-        if (service != null) {
-            service.deleteObserver(this);
-            service.removePath(uriPath);
-            channel.write(new InternalServiceRemovedFromPath(uriPath));
-            return true;
-        } else {
-            return false;
+        WebService removedService = registeredServices.remove(uriPath);
+
+        if(removedService != null && removedService instanceof ObservableWebService){
+                channel.write(new InternalServiceRemovedFromPath(uriPath));
         }
+
+        return removedService == null;
     }
     
     /**
-     * Removes all services. 
+     * Removes all services from server.
      */
     public void removeAllServices() {
         for (String path : registeredServices.keySet()) {
-            //remove observer and path from service
-            Service service = registeredServices.get(path);
-            service.deleteObserver(this);
-            service.removePath(path);
+            removeService(path);
         }
-        registeredServices.clear();
+        if(!registeredServices.isEmpty()){
+            log.error("All services should be removed but there are " + registeredServices.size() + " left.");
+        }
     }
     
     @Override
-    public void update(Observable o, Object arg) {
-        if (o instanceof Service) {
+    public void update(Observable observable, Object arg) {
+        if (observable instanceof ObservableWebService) {
             //write internal message on channel if service updates
-            channel.write(new InternalServiceUpdate((Service) o));
+            channel.write(new ObservableWebServiceUpdate((ObservableWebService) observable));
         }
     }
+
 }

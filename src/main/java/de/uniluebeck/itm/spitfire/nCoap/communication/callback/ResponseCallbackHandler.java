@@ -28,7 +28,6 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalAcknowled
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutException;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.jboss.netty.channel.*;
@@ -152,7 +151,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             callback.handleRetransmissionTimout();
         }
         else{
-            log.error("Unexpected exception caught!", e);
+            log.error("Unexpected exception caught!", cause);
         }
     }
 }
