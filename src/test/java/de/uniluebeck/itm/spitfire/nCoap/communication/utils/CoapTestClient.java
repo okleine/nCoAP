@@ -4,11 +4,9 @@ import de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import org.apache.log4j.Logger;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.junit.Assert.fail;
 import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
@@ -25,9 +23,11 @@ public class CoapTestClient extends CoapClientApplication {
 
     private static CoapTestClient instance = new CoapTestClient();
 
+    private Logger log = Logger.getLogger(this.getClass().getName());
+
     private SortedMap<Long, CoapResponse> receivedResponses = new TreeMap<Long, CoapResponse>();
-    private long emptyAckNotificationTime;
-    private long timeoutNotificationTime;
+    private SortedSet<Long> emptyAckNotificationTimes = new TreeSet<Long>();
+    private SortedSet<Long> timeoutNotificationTimes = new TreeSet<Long>();
 
     public static CoapTestClient getInstance(){
         return instance;
@@ -41,30 +41,32 @@ public class CoapTestClient extends CoapClientApplication {
     }
 
     @Override
-    public void receiveEmptyACK() {
-        emptyAckNotificationTime = System.currentTimeMillis();
+    public void receiveEmptyACK(){
+        if(!emptyAckNotificationTimes.add(System.currentTimeMillis())){
+            log.error("Could not add notification time for empty ACK.");
+        };
     }
 
     @Override
     public void handleRetransmissionTimout() {
-        timeoutNotificationTime = System.currentTimeMillis();
+        if(!timeoutNotificationTimes.add(System.currentTimeMillis())){
+            log.error("Could not add notification time for retransmission timeout.");
+        };
+
     }
 
-    public long getEmptyAckNotificationTime() {
-        return emptyAckNotificationTime;
+    public SortedSet<Long> getEmptyAckNotificationTimes() {
+        return emptyAckNotificationTimes;
     }
 
-    public long getTimeoutNotificationTime() {
-        return timeoutNotificationTime;
+    public SortedSet<Long> getTimeoutNotificationTimes() {
+        return timeoutNotificationTimes;
     }
 
     public SortedMap<Long, CoapResponse> getReceivedResponses() {
         return receivedResponses;
     }
     
-    public void shutdown(){
-
-    }
     public void reset() {
         receivedResponses.clear();
         rebindChannel();

@@ -1,20 +1,13 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
-import de.uniluebeck.itm.spitfire.nCoap.application.Service;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.testtools.Initialization;
 
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.junit.Assert.fail;
-import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 /**
  * A CoapServerApplication for testing purposes.
@@ -27,79 +20,47 @@ import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
  */
 public class CoapTestServer extends CoapServerApplication {
 
-    private static CoapTestServer instance = new CoapTestServer();
-
-    //if false receivedRequests will not be modified
-    private boolean receivingEnabled = true;
+    //if "false" incoming messages are ignored and thrown away
+    private boolean receiveEnabled = true;
     private  SortedMap<Long, CoapRequest> receivedRequests = new TreeMap<Long, CoapRequest>();
 
+    //if "false" responses are not actually sent but stored in an outgoing queue
+    private boolean writeEnabled = true;
     private List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
 
-    private DummyService dummyService;
-    
+
     //time to block thread in receiveCoapRequest() to force a separate response
     private long waitBeforeSendingResponse = 0;
-    
+
+    private static CoapTestServer instance = new CoapTestServer();
+
     public static CoapTestServer getInstance(){
         return instance;
     }
 
     private CoapTestServer(){
-        dummyService = new DummyService();
-    }
-    
-    private class DummyService extends Service {
-        @Override
-        public CoapResponse getStatus(CoapRequest request) {
-            return receiveRequest(request);
-        }
-        
-        public void notifyObservers1() {
-            notifyCoapObservers();
-        }
-        
+        registerService(new ObservableDummyWebService(2000, 0));
+        registerService(new NotObservableDummyWebService(0));
     }
 
-    public void registerDummyService(String path) {
-        registerService(path, dummyService);
+    public synchronized void setReceiveEnabled(boolean enabled){
+        this.receiveEnabled = enabled;
     }
 
-    public void notifyCoapObservers() {
-        dummyService.notifyObservers1();
-    }
-
-    public synchronized void enableReceiving() {
-        receivingEnabled = true;
-    }
-
-    public synchronized void disableReceiving() {
-        receivingEnabled = false;
+    public synchronized void setWriteEnabled(boolean enabled){
+        this.writeEnabled = enabled;
     }
 
     public synchronized void reset() {
         receivedRequests.clear();
         responsesToSend.clear();
         waitBeforeSendingResponse = 0;
-        enableReceiving();
+        setReceiveEnabled(true);
         removeAllServices();
-        rebindChannel();
     }
 
-    public void blockUntilMessagesReceivedOrTimeout(long timeout, int messagesCount)
-            throws InterruptedException {
-        long startTime = System.currentTimeMillis();
-        while(System.currentTimeMillis() - startTime < timeout) {
-            synchronized(this) {
-                if (receivedRequests.size() >= messagesCount) {
-                    return;
-                }
-            }
-            Thread.sleep(50);
-        }
-    }
-    
-    private CoapResponse receiveRequest(CoapRequest coapRequest) {
-        if (receivingEnabled) {
+    private CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
+        if (receiveEnabled) {
             synchronized(this) {
                 receivedRequests.put(System.currentTimeMillis(), coapRequest);
             }
@@ -135,5 +96,8 @@ public class CoapTestServer extends CoapServerApplication {
     public SortedMap<Long, CoapRequest> getReceivedRequests() {
         return receivedRequests;
     }
-    
+
+    public static void main(String[] args){
+        Initialization.init();
+    }
 }

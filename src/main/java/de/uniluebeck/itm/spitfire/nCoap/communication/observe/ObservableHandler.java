@@ -5,16 +5,13 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import de.uniluebeck.itm.spitfire.nCoap.application.Service;
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
+import de.uniluebeck.itm.spitfire.nCoap.application.webservice.ObservableWebService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceRemovedFromPath;
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceUpdate;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.ObservableWebServiceUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.ResetReceivedException;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutException;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -24,26 +21,17 @@ import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
-import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
-import java.net.InetSocketAddress;
+import org.jboss.netty.channel.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.SocketAddress;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.DefaultChannelFuture;
-import org.jboss.netty.channel.DownstreamMessageEvent;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 
@@ -51,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * This handler manages observable resources and observer.
  * Observers will be registered when receiving passing observable requests.
  * Observers will be removed when either a Reset-Message or a InternalErrorMessage is received.
- * In reaction to a received InternalServiceUpdate notifications will be send to all corresponding observers.
+ * In reaction to a received ObservableWebServiceUpdate notifications will be send to all corresponding observers.
  * 
  * @author Stefan Hueske
  */
@@ -85,37 +73,48 @@ public class ObservableHandler extends SimpleChannelHandler {
     
     @Override
     public void writeRequested(final ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        if (e.getMessage() instanceof InternalServiceUpdate) {
-            //a service has updated, notify all observers which observe the same uri path
-            final Service service = ((InternalServiceUpdate) e.getMessage()).getService();
-            for (String uriPath : service.getRegisteredPaths()) {
-                for (final ObservableRequest observableRequest : pathMappedToObservableRequests.get(uriPath)) {
-                    //remove scheduled Max-Age notification
-                    ScheduledFuture future = scheduledMaxAgeNotifications.remove(observableRequest);
-                    if (future != null) {
-                        future.cancel(false);
-                    }
-                    CoapExecutorService.schedule(new Runnable() {
 
-                        @Override
-                        public void run() {
-                            try {
-                                CoapResponse coapResponse = service.getStatus(observableRequest.getRequest());
-                                setupResponse(coapResponse, observableRequest);
-                                ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
-                                ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future, 
-                                        coapResponse, observableRequest.getRemoteAddress()));
-                                scheduleMaxAgeNotification(observableRequest, coapResponse, service, ctx);                                
-                            } catch (Exception ex) {
-                                log.error("Unexpected exception in scheduled notification! " + ex.getMessage());
-                            }
-                        }
-                    }, 0, TimeUnit.SECONDS);
-                    
+        if (e.getMessage() instanceof ObservableWebServiceUpdate) {
+            //a service has updated, notify all observers which observe the same uri path
+            final ObservableWebService service =
+                    (ObservableWebService) ((ObservableWebServiceUpdate) e.getMessage()).getContent();
+
+            log.debug("Updated observed service!");
+
+            String uriPath = service.getPath();
+
+            //Send notifications to all registered observing clients
+            for (final ObservableRequest observableRequest : pathMappedToObservableRequests.get(uriPath)) {
+
+                //remove scheduled Max-Age notification
+                ScheduledFuture future = scheduledMaxAgeNotifications.remove(observableRequest);
+                if (future != null) {
+                    future.cancel(false);
                 }
+
+                //Send notification to observer
+                CoapExecutorService.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            CoapResponse coapResponse = service.processMessage(observableRequest.getRequest());
+                            setupResponse(coapResponse, observableRequest);
+
+                            ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
+                            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future,
+                                               coapResponse, observableRequest.getRemoteAddress()));
+
+                            scheduleMaxAgeNotification(observableRequest, coapResponse, service, ctx);
+                        } catch (Exception ex) {
+                            log.error("Unexpected exception in scheduled notification! " + ex.getMessage());
+                        }
+                    }
+                }, 0, TimeUnit.SECONDS);
+
             }
             return;
         }
+
         if (e.getMessage() instanceof CoapResponse) {
             //CoapResponse received, check if it responds to a observable request
             CoapResponse coapResponse = (CoapResponse) e.getMessage();
@@ -156,20 +155,21 @@ public class ObservableHandler extends SimpleChannelHandler {
     }
 
     private void scheduleMaxAgeNotification(final ObservableRequest observableRequest, 
-            final CoapResponse currentCoapResponse, final Service service, final ChannelHandlerContext ctx) {
+            final CoapResponse currentCoapResponse, final ObservableWebService service,
+            final ChannelHandlerContext ctx) {
+
         //schedule Max-Age notification
         int maxAge = 60; //dafault Max-Age value
         if (!currentCoapResponse.getOption(OptionRegistry.OptionName.MAX_AGE).isEmpty()) {
             maxAge = ((UintOption)currentCoapResponse.getOption(OptionRegistry.OptionName.MAX_AGE)
                     .get(0)).getDecodedValue().intValue();
         }
-        scheduledMaxAgeNotifications.put(observableRequest, 
-                CoapExecutorService.schedule(new Runnable() {
+        scheduledMaxAgeNotifications.put(observableRequest, CoapExecutorService.schedule(new Runnable() {
 
             @Override
             public void run() {
                 try {
-                    CoapResponse futureCoapResponse = service.getStatus(observableRequest.getRequest());
+                    CoapResponse futureCoapResponse = service.processMessage(observableRequest.getRequest());
                     setupResponse(futureCoapResponse, observableRequest);
                     ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
                     ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future, 

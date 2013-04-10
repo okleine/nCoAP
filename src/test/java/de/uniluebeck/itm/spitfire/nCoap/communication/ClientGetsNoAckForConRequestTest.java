@@ -142,11 +142,12 @@ public class ClientGetsNoAckForConRequestTest {
     public void testClientReceivesTimeoutNotification(){
         //Test if the client received a timeout notifiaction
         assertFalse("Client did not receive a timeout notification at all.",
-                    testClient.getTimeoutNotificationTime() == 0);
+                    testClient.getTimeoutNotificationTimes().isEmpty());
 
         long minDelay = 62000;
         long maxDelay = 95000;
-        long actualDelay = testClient.getTimeoutNotificationTime() - timeRequestSent;
+
+        long actualDelay = testClient.getTimeoutNotificationTimes().first() - timeRequestSent;
 
         String message = "Retransmition timeout notification"
                 + " (expected delay between " + minDelay + " and " + maxDelay + "ms,"
