@@ -34,11 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.logging.Level;
-
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 /**
- * This is the abstract class to be extended by a CoAP client.
- * By {@link #writeCoapRequest(de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest)}it provides an
+ * This is the abstract class to be extended by a CoAP client. By {@link #writeCoapRequest(CoapRequest)} it provides an
  * easy-to-use method to write CoAP requests to a server.
  *
  * @author Oliver Kleine
@@ -94,7 +92,6 @@ public abstract class CoapClientApplication implements ResponseCallback{
     }
 
     /**
-     *
      * @param isObserver
      */
     private void setObserver(boolean isObserver){

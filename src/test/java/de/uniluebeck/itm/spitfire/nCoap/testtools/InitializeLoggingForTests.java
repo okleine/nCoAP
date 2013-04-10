@@ -12,7 +12,7 @@ import org.apache.log4j.PatternLayout;
  * Time: 14:42
  * To change this template use File | Settings | File Templates.
  */
-public class Initialization {
+public class InitializeLoggingForTests {
     public static boolean initialized = false;
 
     public static void init(){

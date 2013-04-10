@@ -9,7 +9,7 @@
 //import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 //import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 //import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-//import de.uniluebeck.itm.spitfire.nCoap.testtools.Initialization;
+//import de.uniluebeck.itm.spitfire.nCoap.testtools.InitializeLoggingForTests;
 //import org.junit.BeforeClass;
 //import org.junit.Test;
 //
@@ -43,7 +43,7 @@
 //
 //    @BeforeClass
 //    public static void init() throws Exception {
-//        Initialization.init();
+//        InitializeLoggingForTests.init();
 //        testServer.reset();
 //        testClient.reset();
 //

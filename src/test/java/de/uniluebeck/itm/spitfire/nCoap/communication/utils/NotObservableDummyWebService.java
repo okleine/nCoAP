@@ -26,8 +26,8 @@ public class NotObservableDummyWebService extends NotObservableWebService<String
 
     private long pretendedProcessingTimeForRequests;
 
-    public NotObservableDummyWebService(long pretendedProcessingTimeForRequests){
-        super("/notObservable", "testpayload");
+    public NotObservableDummyWebService(String path, String initialStatus, long pretendedProcessingTimeForRequests){
+        super(path, initialStatus);
         this.pretendedProcessingTimeForRequests = pretendedProcessingTimeForRequests;
     }
 

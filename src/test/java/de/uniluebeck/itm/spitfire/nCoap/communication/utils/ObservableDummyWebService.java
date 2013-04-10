@@ -18,6 +18,8 @@ import static org.junit.Assert.fail;
 
 /**
  * This observable resource changes its status periodically with a delay given as argument for the constructor.
+ * If the actual status (return value of method <code>getResourceStatus()</code>) is <code>true</code>, the payload
+ * of a response is <code>testpayload1</code>, otherwise the payload is <code>testpayload2</code>.
  */
 public class ObservableDummyWebService extends ObservableWebService<Boolean>{
 
@@ -25,8 +27,10 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
 
     private long pretendedProcessingTimeForRequests;
 
-    public ObservableDummyWebService(final long updateIntervalMillis, long pretendedProcessingTimeForRequests){
-        super("/observable", false);
+    public ObservableDummyWebService(String path, Boolean initialStatus, long pretendedProcessingTimeForRequests,
+                                     final long updateIntervalMillis){
+
+        super(path, initialStatus);
         this.pretendedProcessingTimeForRequests = pretendedProcessingTimeForRequests;
 
         if(updateIntervalMillis > 0){

@@ -3,7 +3,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.testtools.Initialization;
+import de.uniluebeck.itm.spitfire.nCoap.testtools.InitializeLoggingForTests;
 
 import java.util.*;
 
@@ -39,8 +39,8 @@ public class CoapTestServer extends CoapServerApplication {
     }
 
     private CoapTestServer(){
-        registerService(new ObservableDummyWebService(2000, 0));
-        registerService(new NotObservableDummyWebService(0));
+        //registerService(new ObservableDummyWebService(2000, 0));
+        //registerService(new NotObservableDummyWebService(0));
     }
 
     public synchronized void setReceiveEnabled(boolean enabled){
@@ -98,6 +98,6 @@ public class CoapTestServer extends CoapServerApplication {
     }
 
     public static void main(String[] args){
-        Initialization.init();
+        InitializeLoggingForTests.init();
     }
 }

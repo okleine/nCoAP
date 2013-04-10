@@ -16,7 +16,7 @@
 //import java.util.Iterator;
 //import java.util.SortedMap;
 //
-//import de.uniluebeck.itm.spitfire.nCoap.testtools.Initialization;
+//import de.uniluebeck.itm.spitfire.nCoap.testtools.InitializeLoggingForTests;
 //import org.junit.BeforeClass;
 //import org.junit.Test;
 //
@@ -50,7 +50,7 @@
 //
 //    @BeforeClass
 //    public static void init() throws Exception {
-//        Initialization.init();
+//        InitializeLoggingForTests.init();
 //
 //        //init
 //        testReceiver.reset();
