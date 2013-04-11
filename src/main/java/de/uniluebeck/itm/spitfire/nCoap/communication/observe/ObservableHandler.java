@@ -145,10 +145,8 @@ public class ObservableHandler extends SimpleChannelHandler {
                         }
                     }
                 }, 0, TimeUnit.SECONDS);
-                addressTokenMappedToObservableRequests
-                        .remove(observer.getRequest().getToken(), observer.getRemoteAddress());
+                removeObservableRequest(observer);
             }
-            pathMappedToObservableRequests.removeAll(removedPath);
             return;
         }
         ctx.sendDownstream(e);
@@ -194,6 +192,11 @@ public class ObservableHandler extends SimpleChannelHandler {
                 observableRequest.getRemoteAddress());
         pathMappedToObservableRequests.remove(observableRequest.getRequest().getTargetUri().getPath(), 
                 observableRequest);
+        //cancel scheduled MaxAge Auto-Notification
+        ScheduledFuture maxAgeNotificationFuture = scheduledMaxAgeNotifications.remove(observableRequest);
+        if (maxAgeNotificationFuture != null) {
+            maxAgeNotificationFuture.cancel(true);
+        }
         log.info(String.format("Observer for path %s from %s removed! ", 
                 observableRequest.getRequest().getTargetUri().getPath(), observableRequest.getRemoteAddress()));
     }

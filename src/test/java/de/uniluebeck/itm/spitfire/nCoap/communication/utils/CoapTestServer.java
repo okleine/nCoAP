@@ -1,6 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.testtools.InitializeLoggingForTests;
@@ -57,6 +59,12 @@ public class CoapTestServer extends CoapServerApplication {
         waitBeforeSendingResponse = 0;
         setReceiveEnabled(true);
         removeAllServices();
+        
+        CoapExecutorService.cancelAll();
+        channel.close().awaitUninterruptibly();
+        channel.getFactory().releaseExternalResources();
+        channel = new CoapServerDatagramChannelFactory(this).getChannel();
+        
     }
 
     private CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
