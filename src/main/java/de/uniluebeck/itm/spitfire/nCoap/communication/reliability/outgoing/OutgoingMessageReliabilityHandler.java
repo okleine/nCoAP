@@ -270,8 +270,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     }
     
     public static class ScheduledRetransmission {
-        LinkedList<ScheduledFuture> futures = new LinkedList<ScheduledFuture>();
-        CoapMessage coapMessage;
+        private LinkedList<ScheduledFuture> futures = new LinkedList<ScheduledFuture>();
+        private CoapMessage coapMessage;
 
         public byte[] getToken() {
             return coapMessage.getToken();

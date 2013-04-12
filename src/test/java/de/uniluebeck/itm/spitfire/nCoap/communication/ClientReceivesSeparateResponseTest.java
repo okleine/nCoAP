@@ -75,9 +75,9 @@ public class ClientReceivesSeparateResponseTest {
         coapResponse.getHeader().setMsgType(MsgType.ACK);
 
         //setup testServer
-        testServer.registerService(new NotObservableDummyWebService(uriPath, responsePayload, 0));
+        testServer.registerService(new NotObservableDummyWebService(uriPath, responsePayload, 2000));
         testServer.addResponse(coapResponse);
-        testServer.setWaitBeforeSendingResponse(2000);
+//        testServer.setWaitBeforeSendingResponse(2000);
 
         //setup testReceiver
         CoapResponse emptyACK = new CoapResponse(Code.EMPTY);
@@ -93,7 +93,7 @@ public class ClientReceivesSeparateResponseTest {
 
         long responseProcessing = 300; //time in ms
         Thread.sleep(2000 + responseProcessing);
-        emptyACK.setMessageID(coapResponse.getMessageID());
+        emptyACK.setMessageID(3333);
         emptyACK.getHeader().setMsgType(MsgType.ACK);
         testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost",
                 CoapServerDatagramChannelFactory.COAP_SERVER_PORT));

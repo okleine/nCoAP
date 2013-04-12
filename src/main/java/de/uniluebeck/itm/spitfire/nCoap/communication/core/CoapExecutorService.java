@@ -1,6 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.LinkedList;
+import java.util.List;
 
 import java.util.concurrent.*;
 
@@ -27,5 +29,12 @@ public abstract class CoapExecutorService {
 
     public static ExecutorService getExecutorService(){
         return executorService;
+    }
+    
+    public static void cancelAll() {
+        executorService.shutdownNow();
+        executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
+                                             new ThreadFactoryBuilder().setNameFormat("nCoap-Thread %d")
+                                                                       .build());
     }
 }
