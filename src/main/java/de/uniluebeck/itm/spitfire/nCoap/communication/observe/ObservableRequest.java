@@ -10,6 +10,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.observe;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 /**
@@ -18,7 +19,7 @@ import java.net.SocketAddress;
  */
 class ObservableRequest {
     private CoapRequest request;
-    private SocketAddress remoteAddress;
+    private InetSocketAddress remoteAddress;
     private int responseCount = 1;
 
     /**
@@ -26,7 +27,7 @@ class ObservableRequest {
      * @param request observable request
      * @param remoteAddress observer remote address
      */
-    public ObservableRequest(CoapRequest request, SocketAddress remoteAddress) {
+    public ObservableRequest(CoapRequest request, InetSocketAddress remoteAddress) {
         this.request = request;
         this.remoteAddress = remoteAddress;
     }
@@ -43,7 +44,7 @@ class ObservableRequest {
         return request;
     }
 
-    public SocketAddress getRemoteAddress() {
+    public InetSocketAddress getRemoteAddress() {
         return remoteAddress;
     }
 

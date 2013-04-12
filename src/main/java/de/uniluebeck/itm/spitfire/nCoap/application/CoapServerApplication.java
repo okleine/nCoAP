@@ -106,10 +106,8 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 final CoapRequest coapRequest = (CoapRequest) me.getMessage();
                 final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 
-                WebService webService = registeredServices.get(coapRequest.getTargetUri().getPath());
-
                 Object response = null;
-
+                WebService webService = registeredServices.get(coapRequest.getTargetUri().getPath());
 
                 if(webService == null){
                     //Error response if there is no such webservice instance registered at this server instance
@@ -124,7 +122,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 }
                 else{
                     //handle request without observe option
-                    response = webService.processMessage(coapRequest);
+                    response = webService.processMessage(coapRequest, remoteAddress);
 
                     //Set message ID and token to match the request
                     log.debug("Message ID of incoming request: " + coapRequest.getMessageID());

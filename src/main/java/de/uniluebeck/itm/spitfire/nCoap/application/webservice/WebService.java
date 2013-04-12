@@ -5,6 +5,8 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
 
+import java.net.InetSocketAddress;
+
 /**
  * This is the interface to be implemented to realize a CoAP webservice. The generic type T means, that the object
  * that holds the status of the resource is of type T.
@@ -64,8 +66,9 @@ public interface WebService<T> {
      * complete resource, resp. the webservice instance.
      *
      * @param request The {@link CoapRequest} to be processed by the {@link WebService} instance
+     * @param remoteAddress The address of the sender of the request
      * @return a proper {@link CoapResponse} instance. The returned response must contain a proper {@link Code} and (if
      * the response contains payload) a {@link MediaType}.
      */
-    public CoapResponse processMessage(CoapRequest request);
+    public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress);
 }

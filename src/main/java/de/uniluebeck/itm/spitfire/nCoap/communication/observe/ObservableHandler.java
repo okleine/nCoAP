@@ -25,6 +25,7 @@ import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.LinkedList;
 import java.util.List;
@@ -97,7 +98,8 @@ public class ObservableHandler extends SimpleChannelHandler {
                     @Override
                     public void run() {
                         try {
-                            CoapResponse coapResponse = service.processMessage(observableRequest.getRequest());
+                            CoapResponse coapResponse =
+                                    service.processMessage(observableRequest.getRequest(), observableRequest.getRemoteAddress());
                             setupResponse(coapResponse, observableRequest);
 
                             ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
@@ -167,7 +169,8 @@ public class ObservableHandler extends SimpleChannelHandler {
             @Override
             public void run() {
                 try {
-                    CoapResponse futureCoapResponse = service.processMessage(observableRequest.getRequest());
+                    CoapResponse futureCoapResponse =
+                            service.processMessage(observableRequest.getRequest(), observableRequest.getRemoteAddress());
                     setupResponse(futureCoapResponse, observableRequest);
                     ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
                     ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future, 
@@ -230,7 +233,8 @@ public class ObservableHandler extends SimpleChannelHandler {
             CoapRequest coapRequest = (CoapRequest) e.getMessage();
             if (!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty()) {
                 //Observable request received, register new observer
-                ObservableRequest observableRequest = new ObservableRequest(coapRequest, e.getRemoteAddress());
+                ObservableRequest observableRequest
+                        = new ObservableRequest(coapRequest, (InetSocketAddress) e.getRemoteAddress());
                 addressTokenMappedToObservableRequests.put(coapRequest.getToken(), e.getRemoteAddress(), 
                         observableRequest);
                 pathMappedToObservableRequests.put(coapRequest.getTargetUri().getPath(), observableRequest);

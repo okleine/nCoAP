@@ -11,6 +11,7 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class WellKnownCoreResource extends NotObservableWebService<Map<String, W
     }
 
     @Override
-    public CoapResponse processMessage(CoapRequest request) {
+    public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress) {
         if(request.getCode() != Code.GET){
             return new CoapResponse(Code.METHOD_NOT_ALLOWED_405);
         }
