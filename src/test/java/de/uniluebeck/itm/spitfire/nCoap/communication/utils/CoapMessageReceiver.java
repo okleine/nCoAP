@@ -30,13 +30,13 @@ import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 
 /**
- * Receives and sends CoAP Messages for testing purposes.
- * Receiving and automatic response can be configured.
- * To send a message either schedule a automatic response using addResponse (using setWriteEnabled(true))
- * or send a message manually using writeMessage (which will send the message immediately regardless of writeEnabled).
- * 
- * @author Oliver Kleine, Stefan Hueske
- */
+* Receives and sends CoAP Messages for testing purposes.
+* Receiving and automatic response can be configured.
+* To send a message either schedule a automatic response using addResponse (using setWriteEnabled(true))
+* or send a message manually using writeMessage (which will send the message immediately regardless of writeEnabled).
+*
+* @author Oliver Kleine, Stefan Hueske
+*/
 public class CoapMessageReceiver extends SimpleChannelHandler {
     public static final int RECEIVER_PORT = 18954;
     private DatagramChannel channel;
@@ -49,14 +49,14 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     private boolean receiveEnabled = true;
     private boolean writeEnabled = true;
     private SortedMap<Long, CoapMessage> receivedMessages = new TreeMap<Long, CoapMessage>();
-    
+
     //list of responses
     private LinkedList<MsgReceiverResponse> responsesToSend = new LinkedList<MsgReceiverResponse>();
-    
+
     public static CoapMessageReceiver getInstance(){
         return instance;
     }
-    
+
     private CoapMessageReceiver() {
         //Create datagram channel to receive messages
         ChannelFactory channelFactory =
@@ -90,7 +90,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
                     fail("responsesToSend is empty. This could be caused by an unexpected request.");
                 }
                 MsgReceiverResponse responseToSend = responsesToSend.remove(0);
-                
+
                 if (responseToSend == null) {
                     throw new InternalError("Unexpected request received. No response for: " + coapMessage);
                 }
@@ -131,7 +131,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     public void addResponse(MsgReceiverResponse response) {
         responsesToSend.add(response);
     }
-    
+
     /**
      * Shuts the client down by closing the channel which includes to unbind the channel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
@@ -168,7 +168,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 //            Thread.sleep(50);
 //        }
 //    }
-    
+
     public static class MsgReceiverResponse {
         private CoapResponse coapResponse;
         private boolean letReceiverSetMessageID;
@@ -191,6 +191,6 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
         public boolean isLetReceiverSetToken() {
             return letReceiverSetToken;
         }
-    }   
+    }
 }
 

@@ -137,20 +137,25 @@ public class ObserveOptionSequenceNumberSyncTest {
 
     @Test
     public void sequenceNumbersAreSynchronized() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
-        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
-        timeKeys.next();
-        timeKeys.next();
-        CoapMessage receivedMessage3 = receivedMessages.get(timeKeys.next());
-        CoapMessage receivedMessage4 = receivedMessages.get(timeKeys.next());
+        try{
+            SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+            Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
+            timeKeys.next();
+            timeKeys.next();
+            CoapMessage receivedMessage3 = receivedMessages.get(timeKeys.next());
+            CoapMessage receivedMessage4 = receivedMessages.get(timeKeys.next());
 
-        Long observe3 = ((UintOption)receivedMessage3.getOption(OBSERVE_RESPONSE).get(0)).getDecodedValue();
-        Long observe4 = ((UintOption)receivedMessage4.getOption(OBSERVE_RESPONSE).get(0)).getDecodedValue();
+            Long observe3 = ((UintOption)receivedMessage3.getOption(OBSERVE_RESPONSE).get(0)).getDecodedValue();
+            Long observe4 = ((UintOption)receivedMessage4.getOption(OBSERVE_RESPONSE).get(0)).getDecodedValue();
 
-        String message = String.format("Observe Option sequence number of the last notification must be "
-                + "greater than the number of the ealier CON retransmission. observe4: %d, observe3: %d",
-                observe4, observe3);
-        assertTrue(message, observe4 > observe3);
+            String message = String.format("Observe Option sequence number of the last notification must be "
+                    + "greater than the number of the ealier CON retransmission. observe4: %d, observe3: %d",
+                    observe4, observe3);
+            assertTrue(message, observe4 > observe3);
+        }
+        catch(Exception e){
+            fail(e.getStackTrace().toString());
+        }
     }
 
 }
