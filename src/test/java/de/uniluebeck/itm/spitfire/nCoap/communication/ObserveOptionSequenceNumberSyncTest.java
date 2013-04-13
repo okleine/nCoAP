@@ -47,14 +47,15 @@ public class ObserveOptionSequenceNumberSyncTest {
 
     @BeforeClass
     public static void init() throws Exception {
-
         InitializeLoggingForTests.init();
-
+        
         //init
-        testReceiver.reset();
         testServer.reset();
+        //wait for possible 404 NOT FOUND messages when removing all services
+        Thread.sleep(150);
+        testReceiver.reset();
         testReceiver.setReceiveEnabled(true);
-
+        
         /*
             testReceiver               Server               Service
                  |                        |                    |
@@ -87,7 +88,7 @@ public class ObserveOptionSequenceNumberSyncTest {
         (notification1 = new CoapResponse(Code.CONTENT_205)).setPayload("testpayload1".getBytes("UTF-8"));
         (notification2 = new CoapResponse(Code.CONTENT_205)).setPayload("testpayload2".getBytes("UTF-8"));
         (notification3 = new CoapResponse(Code.CONTENT_205)).setPayload("testpayload3".getBytes("UTF-8"));
-
+        
         //setup testServer / 
         ObservableDummyWebService observableDummyWebService = new ObservableDummyWebService(requestPath, true, 0, 0);
         testServer.registerService(observableDummyWebService);
@@ -117,6 +118,7 @@ public class ObserveOptionSequenceNumberSyncTest {
                 CoapServerDatagramChannelFactory.COAP_SERVER_PORT));
 
         //second resource update
+        Thread.sleep(150);
         observableDummyWebService.setResourceStatus(true);
 //        testServer.notifyCoapObservers();
         Thread.sleep(150);

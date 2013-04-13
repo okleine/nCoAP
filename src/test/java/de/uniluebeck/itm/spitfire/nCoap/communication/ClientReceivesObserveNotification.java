@@ -45,6 +45,8 @@ public class ClientReceivesObserveNotification {
     public static void init() throws Exception {
         InitializeLoggingForTests.init();
         testServer.reset();
+        //wait for possible 404 NOT FOUND messages when removing all services
+        Thread.sleep(150);
         testClient.reset();
 
         //Wireshark: https://dl.dropbox.com/u/10179177/Screenshot_2013.04.11-21.17.56.png

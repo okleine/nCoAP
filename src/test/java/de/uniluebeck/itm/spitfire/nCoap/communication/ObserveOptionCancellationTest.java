@@ -48,8 +48,10 @@ public class ObserveOptionCancellationTest {
     @BeforeClass
     public static void init() throws Exception {
         //init
-        testReceiver.reset();
         testServer.reset();
+        //wait for possible 404 NOT FOUND messages when removing all services
+        Thread.sleep(150);
+        testReceiver.reset();
         testReceiver.setReceiveEnabled(true);
 
         //create registration requests

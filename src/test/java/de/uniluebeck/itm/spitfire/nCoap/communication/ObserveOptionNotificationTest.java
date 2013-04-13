@@ -56,8 +56,10 @@ public class ObserveOptionNotificationTest {
         //Wireshark: https://dl.dropbox.com/u/10179177/Screenshot_2013.04.11-19.41.51.png
                 
         //init
-        testReceiver.reset();
         testServer.reset();
+        //wait for possible 404 NOT FOUND messages when removing all services
+        Thread.sleep(150);
+        testReceiver.reset();
         testReceiver.setReceiveEnabled(true);
 
         //create request
