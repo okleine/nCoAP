@@ -1,9 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapMessageReceiver;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableDummyWebService;
+import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
+import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.MessageReceiverResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -11,8 +9,6 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import java.net.InetSocketAddress;
 
-import de.uniluebeck.itm.spitfire.nCoap.testtools.InitializeLoggingForTests;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
@@ -28,76 +24,54 @@ import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 *
 * @author Stefan Hueske
 */
-public class ClientReceivesSeparateResponseTest {
+public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicationTest{
 
-    private static CoapTestServer testServer = CoapTestServer.getInstance();
+    //private static CoapTestServer testServer = new CoapTestServer(0);
     private static CoapMessageReceiver testReceiver = CoapMessageReceiver.getInstance();
 
     //request
-    private static URI targetUri;
     private static CoapRequest coapRequest;
-    private static String uriPath;
     private static int requestMsgID;
     private static byte[] requestToken;
 
     //response
-    private static CoapResponse coapResponse;
-    private static String responsePayload;
+    private static CoapResponse expectedCoapResponse;
 
     //time
     private static long sendingTime;
 
-    @BeforeClass
-    public static void init() throws Exception {
+    @Override
+    public void createTestScenario() throws Exception{
+        log.info("******* Starting tests in " + this.getClass().getName() + " **********");
 
-        InitializeLoggingForTests.init();
+        //define expected response
+        expectedCoapResponse = new CoapResponse(Code.CONTENT_205);
+        expectedCoapResponse.setPayload(NOT_OBSERVABLE_RESOURCE_CONTENT.getBytes("UTF-8"));
+        expectedCoapResponse.getHeader().setMsgType(MsgType.ACK);
 
-        //init
-        testReceiver.reset();
-        testServer.reset();
-        testReceiver.setReceiveEnabled(true);
-
-        //define parameters for webservice
-        uriPath = "/testpath";
-        responsePayload = "testpayload";
+        //setup test server
+        registerNotObservableDummyService(2500);
 
         //create request
         requestToken = new byte[]{0x12, 0x23, 0x34};
         requestMsgID = 3333;
-        targetUri = new URI("coap://localhost:" + CoapServerDatagramChannelFactory.COAP_SERVER_PORT + uriPath);
-        coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        URI serviceURI = new URI("coap://localhost:" + testServer.getServerPort() + NOT_OBSERVABLE_SERVICE_PATH);
+        coapRequest = new CoapRequest(MsgType.CON, Code.GET, serviceURI);
         coapRequest.getHeader().setMsgID(requestMsgID);
         coapRequest.setToken(requestToken);
 
-        //create response
-        coapResponse = new CoapResponse(Code.CONTENT_205);
-        coapResponse.setPayload(responsePayload.getBytes("UTF-8"));
-        coapResponse.getHeader().setMsgType(MsgType.ACK);
-
-        //setup testServer
-        testServer.registerService(new NotObservableDummyWebService(uriPath, responsePayload, 2000));
-        testServer.addResponse(coapResponse);
-//        testServer.setWaitBeforeSendingResponse(2000);
-
-        //setup testReceiver
-        CoapResponse emptyACK = new CoapResponse(Code.EMPTY);
-//        testReceiver.addResponse(new CoapMessageReceiver.MsgReceiverResponse(coapResponse, true, false));
-
         //send request to testServer
-        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost",
-                CoapServerDatagramChannelFactory.COAP_SERVER_PORT));
-        sendingTime = System.currentTimeMillis();
+        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 
-        //wait for response
-        //TODO list time intervals (wait for CON response ACK)
+        //wait for response (processing time on server to create seperate response is 2500ms)
+        Thread.sleep(3000);
 
-        long responseProcessing = 300; //time in ms
-        Thread.sleep(2000 + responseProcessing);
-        emptyACK.setMessageID(3333);
+        //let testReceiver write empty ACK to acknowledge seperate response
+        CoapResponse emptyACK = new CoapResponse(Code.EMPTY);
+        emptyACK.setMessageID(testReceiver.getReceivedMessages().get(testReceiver.getReceivedMessages().lastKey()).getMessageID());
         emptyACK.getHeader().setMsgType(MsgType.ACK);
-        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost",
-                CoapServerDatagramChannelFactory.COAP_SERVER_PORT));
-        Thread.sleep(3000 - responseProcessing);
+        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
+        Thread.sleep(3000);
         testReceiver.setReceiveEnabled(false);
     }
 
@@ -152,7 +126,7 @@ public class ClientReceivesSeparateResponseTest {
         SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response payload was modified by testServer";
-        assertEquals(message, coapResponse.getPayload(), receivedMessage.getPayload());
+        assertEquals(message, expectedCoapResponse.getPayload(), receivedMessage.getPayload());
     }
 
     @Test

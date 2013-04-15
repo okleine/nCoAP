@@ -23,35 +23,46 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
-//import de.uniluebeck.itm.spitfire.nCoap.configuration.Configuration;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author Oliver Kleine
  */
 public class CoapServerDatagramChannelFactory {
 
-    public static final int COAP_SERVER_PORT = 5683;
-
+    private static final int NO_OF_THREADS = 20;
     private DatagramChannel channel;
 
-    public CoapServerDatagramChannelFactory(CoapServerApplication serverApp){
+    public CoapServerDatagramChannelFactory(CoapServerApplication serverApp, int coapServerPort){
+
+        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
+                new ThreadFactoryBuilder().setNameFormat("nCoap-Server-Thread %d")
+                        .build());
+
         ChannelFactory channelFactory =
-                new NioDatagramChannelFactory(Executors.newCachedThreadPool());
+                new NioDatagramChannelFactory(executorService);
+
+//        ChannelFactory channelFactory =
+//                new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(new CoapServerPipelineFactory(serverApp));
+        bootstrap.setPipelineFactory(new CoapServerPipelineFactory(serverApp, executorService));
 
-        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(COAP_SERVER_PORT));
+        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(coapServerPort));
     }
+
+//    public CoapServerDatagramChannelFactory(CoapServerApplication serverApp){
+//        this(serverApp, DEFAULT_COAP_SERVER_PORT);
+//    }
 
     public DatagramChannel getChannel(){
         return channel;

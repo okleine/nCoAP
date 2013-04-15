@@ -60,20 +60,30 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Op
 public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                                             implements RetransmissionTimeoutHandler, Observer {
 
+    public static final int DEFAULT_COAP_SERVER_PORT = 5683;
+
     private static Logger log = LoggerFactory.getLogger(CoapServerApplication.class.getName());
 
-    protected DatagramChannel channel;
+    private DatagramChannel channel;
 
     //This map holds all registered services (key: URI path, value: WebService instance)
     private ConcurrentHashMap<String, WebService> registeredServices = new ConcurrentHashMap<String, WebService>();
 
     /**
-     * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port 5883
-     * and already provides the default .well-knoen/core resource
+     * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on the given port
+     * and already provides the default /.well-known/core resource
+     */
+    protected CoapServerApplication(int serverPort){
+        channel = new CoapServerDatagramChannelFactory(this, serverPort).getChannel();
+        log.info("New server created. Listening on port " + this.getServerPort() + ".");
+        registerService(new WellKnownCoreResource(null, registeredServices));
+    }
+    /**
+     * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port 5683
+     * and already provides the default /.well-known/core resource
      */
     protected CoapServerApplication(){
-        channel = new CoapServerDatagramChannelFactory(this).getChannel();
-        registerService(new WellKnownCoreResource(null, registeredServices));
+        this(DEFAULT_COAP_SERVER_PORT);
     }
 
 
@@ -164,7 +174,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         if(e.getCause() instanceof RetransmissionTimeoutHandler)
             handleRetransmissionTimout();
         else
-            log.info("Exception while processing I/O task.", e);
+            log.info("Exception while processing I/O task.", e.getCause());
     }
 
     /**
@@ -219,7 +229,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      */
     public void registerService(WebService service) {
         registeredServices.put(service.getPath(), service);
-
+        log.info("Registered new service at " + service.getPath());
         if(service instanceof ObservableWebService){
             ((ObservableWebService) service).addObserver(this);
         }
@@ -252,7 +262,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
             log.error("All services should be removed but there are " + registeredServices.size() + " left.");
         }
     }
-    
+
+    public int getServerPort(){
+        return channel.getLocalAddress().getPort();
+    }
+
     @Override
     public void update(Observable observable, Object arg) {
         if (observable instanceof ObservableWebService) {

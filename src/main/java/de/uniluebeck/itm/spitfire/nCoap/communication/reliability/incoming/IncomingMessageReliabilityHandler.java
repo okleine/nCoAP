@@ -24,7 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
+//import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -39,6 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -57,6 +59,11 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> incomingMessagesToBeConfirmed
             = HashBasedTable.create();
 
+    private ScheduledExecutorService executorService;
+
+    public IncomingMessageReliabilityHandler(ScheduledExecutorService executorService){
+        this.executorService = executorService;
+    }
 //    private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
 //
 //    public static IncomingMessageReliabilityHandler getInstance(){
@@ -119,14 +126,16 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 //The value of "inserted" is true if the incoming message was no duplicate
                 if(inserted){
                     //Schedule empty ACK if there was no piggy backed ACK within 2 seconds
-                    CoapExecutorService.schedule(emptyACKSender, 2000, TimeUnit.MILLISECONDS);
+                    //CoapExecutorService.schedule(emptyACKSender, 2000, TimeUnit.MILLISECONDS);
+                    executorService.schedule(emptyACKSender, 2000, TimeUnit.MILLISECONDS);
                 }
             }
             else {
                 log.debug("New confirmable response with message ID " + coapMessage.getMessageID() + " from "
                         + me.getRemoteAddress() + " received. Send empty ACK immediately.");
                 //Schedule to send an empty ACK asap
-                CoapExecutorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
+                //CoapExecutorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
+                executorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
             }
         }
 

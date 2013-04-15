@@ -1,11 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.testtools.InitializeLoggingForTests;
 
 import java.util.*;
 
@@ -32,72 +29,68 @@ public class CoapTestServer extends CoapServerApplication {
 
 
     //time to block thread in receiveCoapRequest() to force a separate response
-    private long waitBeforeSendingResponse = 0;
+    //private long waitBeforeSendingResponse = 0;
 
-    private static CoapTestServer instance = new CoapTestServer();
+    //private static CoapTestServer instance = new CoapTestServer();
 
-    public static CoapTestServer getInstance(){
-        return instance;
+//    public static CoapTestServer getInstance(){
+//        return instance;
+//    }
+
+    public CoapTestServer(int serverPort){
+        super(serverPort);
     }
 
-    private CoapTestServer(){
-        //registerService(new ObservableDummyWebService(2000, 0));
-        //registerService(new NotObservableDummyWebService(0));
-    }
+//    public synchronized void setReceiveEnabled(boolean enabled){
+//        this.receiveEnabled = enabled;
+//    }
+//
+//    public synchronized void setWriteEnabled(boolean enabled){
+//        this.writeEnabled = enabled;
+//    }
 
-    public synchronized void setReceiveEnabled(boolean enabled){
-        this.receiveEnabled = enabled;
-    }
+//    public synchronized void reset() {
+//        receivedRequests.clear();
+//        responsesToSend.clear();
+//        waitBeforeSendingResponse = 0;
+//        setReceiveEnabled(true);
+//        removeAllServices();
+//
+//        CoapExecutorService.cancelAll();
+//        channel.close().awaitUninterruptibly();
+//        channel.getFactory().releaseExternalResources();
+//        channel = new CoapServerDatagramChannelFactory(this).getChannel();
+//
+//    }
 
-    public synchronized void setWriteEnabled(boolean enabled){
-        this.writeEnabled = enabled;
-    }
+//    private CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
+//        if (receiveEnabled) {
+//            synchronized(this) {
+//                receivedRequests.put(System.currentTimeMillis(), coapRequest);
+//            }
+//        }
+//        try {
+//            Thread.sleep(waitBeforeSendingResponse);
+//        } catch (InterruptedException ex) {
+//            fail(ex.toString());
+//        }
+//        if(responsesToSend.isEmpty()) {
+//            fail("responsesToSend is empty. This could be caused by an unexpected request.");
+//        }
+//        return responsesToSend.remove(0);
+//    }
+//
+//    public void addResponse(CoapResponse... responses) {
+//        responsesToSend.addAll(Arrays.asList(responses));
+//    }
+//
+//    public void addResponse(int count, CoapResponse... responses) {
+//        for (int i = 0; i < count; i++) {
+//            addResponse(responses);
+//        }
+//    }
 
-    public synchronized void reset() {
-        receivedRequests.clear();
-        responsesToSend.clear();
-        waitBeforeSendingResponse = 0;
-        setReceiveEnabled(true);
-        removeAllServices();
-        
-        CoapExecutorService.cancelAll();
-        channel.close().awaitUninterruptibly();
-        channel.getFactory().releaseExternalResources();
-        channel = new CoapServerDatagramChannelFactory(this).getChannel();
-        
-    }
 
-    private CoapResponse receiveCoapRequest(CoapRequest coapRequest) {
-        if (receiveEnabled) {
-            synchronized(this) {
-                receivedRequests.put(System.currentTimeMillis(), coapRequest);
-            }
-        }
-        try {
-            Thread.sleep(waitBeforeSendingResponse);
-        } catch (InterruptedException ex) {
-            fail(ex.toString());
-        }
-        if(responsesToSend.isEmpty()) {
-            fail("responsesToSend is empty. This could be caused by an unexpected request.");
-        }
-        return responsesToSend.remove(0);
-    }
-
-    public void addResponse(CoapResponse... responses) {
-        responsesToSend.addAll(Arrays.asList(responses));
-    }
-    
-    public void addResponse(int count, CoapResponse... responses) {
-        for (int i = 0; i < count; i++) {
-            addResponse(responses);
-        }
-    }
-
-    public void setWaitBeforeSendingResponse(long waitBeforeSendingResponse) {
-        this.waitBeforeSendingResponse = waitBeforeSendingResponse;
-    }
-    
     @Override
     public void handleRetransmissionTimout() {}
 
@@ -106,6 +99,8 @@ public class CoapTestServer extends CoapServerApplication {
     }
 
     public static void main(String[] args){
-        InitializeLoggingForTests.init();
+        CoapTestServer server = new CoapTestServer(0);
+        server.registerService(new ObservableDummyWebService("/obs", true, 0, 2000));
+        System.out.println("Port: " + server.getServerPort());
     }
 }

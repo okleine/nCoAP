@@ -37,6 +37,8 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.handler.execution.ExecutionHandler;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 /**
  * @author Oliver Kleine
  */
@@ -47,23 +49,24 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
     private CoapMessageEncoder encoder = new CoapMessageEncoder();
     private CoapMessageDecoder decoder = new CoapMessageDecoder();
 
-    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler
-            = new OutgoingMessageReliabilityHandler();
+    private ExecutionHandler executionHandler =
+            new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(NUMBER_OF_EXECUTION_THREADS, 0, 0));
 
-    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler
-            = new IncomingMessageReliabilityHandler();
+    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
+    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
 
     private BlockwiseTransferHandler blockwiseTransferHandler = new BlockwiseTransferHandler();
 
-    private ExecutionHandler executionHandler =
-            new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(NUMBER_OF_EXECUTION_THREADS, 0, 0));
+
 
     private ChannelHandler serverApp;
 
     private ObservableHandler observableHandler = new ObservableHandler();
     
-    public CoapServerPipelineFactory(ChannelHandler serverApp){
+    public CoapServerPipelineFactory(ChannelHandler serverApp, ScheduledExecutorService executorService){
         this.serverApp = serverApp;
+        outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
+        incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
     }
 
 

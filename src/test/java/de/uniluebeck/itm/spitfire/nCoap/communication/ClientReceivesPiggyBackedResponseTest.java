@@ -1,9 +1,5 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapMessageReceiver;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableDummyWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -11,8 +7,6 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import java.net.InetSocketAddress;
 
-import de.uniluebeck.itm.spitfire.nCoap.testtools.InitializeLoggingForTests;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
@@ -27,54 +21,38 @@ import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 *
 * @author Stefan Hueske
 */
-public class ClientReceivesPiggyBackedResponseTest {
-
-    private static CoapTestServer testServer = CoapTestServer.getInstance();
-    private static CoapMessageReceiver testReceiver = CoapMessageReceiver.getInstance();
+public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunicationTest{
 
     //request
-    private static URI targetUri;
     private static CoapRequest coapRequest;
-    private static String uriPath;
     private static int requestMsgID;
     private static byte[] requestToken;
 
     //response
-    private static CoapResponse coapResponse;
-    private static String responsePayload;
+    private static CoapResponse expectedCoapResponse;
 
 
-    @BeforeClass
-    public static void init() throws Exception {
-        InitializeLoggingForTests.init();
+    @Override
+    public void createTestScenario() throws Exception{
+        //define expected response
+        expectedCoapResponse = new CoapResponse(Code.CONTENT_205);
+        expectedCoapResponse.setPayload(NOT_OBSERVABLE_RESOURCE_CONTENT.getBytes("UTF-8"));
+        expectedCoapResponse.getHeader().setMsgType(MsgType.ACK);
 
-        //init
-        testReceiver.reset();
-        testServer.reset();
-        testReceiver.setReceiveEnabled(true);
+        //register webservice
+        registerNotObservableDummyService(0);
 
         //create request
         requestToken = new byte[]{0x12, 0x24, 0x36};
-        uriPath = "/testpath";
         requestMsgID = 3334;
-        targetUri = new URI("coap://localhost:" + CoapServerDatagramChannelFactory.COAP_SERVER_PORT + uriPath);
+        URI targetUri = new URI("coap://localhost:" + testServer.getServerPort() + NOT_OBSERVABLE_SERVICE_PATH);
         coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
         coapRequest.getHeader().setMsgID(requestMsgID);
         coapRequest.setToken(requestToken);
 
-        //create response
-        responsePayload = "testpayload";
-        coapResponse = new CoapResponse(Code.CONTENT_205);
-        coapResponse.setPayload(responsePayload.getBytes("UTF-8"));
-        coapResponse.getHeader().setMsgType(MsgType.ACK);
-
-        //setup testServer
-        testServer.registerService(new NotObservableDummyWebService(uriPath, responsePayload, 0));
-        testServer.addResponse(coapResponse);
 
         //send request to testServer
-        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost",
-                CoapServerDatagramChannelFactory.COAP_SERVER_PORT));
+        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 
         //wait for response
         Thread.sleep(300);
@@ -84,7 +62,7 @@ public class ClientReceivesPiggyBackedResponseTest {
 
     @Test
     public void testReceiverReceivedOnlyOneMessage() {
-        String message = "Receiver received more than one message";
+        String message = "Receiver received unexpected number of messages.";
         assertEquals(message, 1, testReceiver.getReceivedMessages().values().size());
     }
 
@@ -125,7 +103,7 @@ public class ClientReceivesPiggyBackedResponseTest {
         SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response payload was modified by testServer";
-        assertEquals(message, coapResponse.getPayload(), receivedMessage.getPayload());
+        assertEquals(message, expectedCoapResponse.getPayload(), receivedMessage.getPayload());
     }
 
     @Test
