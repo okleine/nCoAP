@@ -9,6 +9,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.observe;
  */
 
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -17,8 +18,7 @@ import java.net.SocketAddress;
  * Represents a observer.
  * Holds the original request, remote address and a notification counter.
  */
-class ObservableRequest {
-    private CoapRequest request;
+class CoapRequestForObservableResource extends CoapRequest{
     private InetSocketAddress remoteAddress;
     private int responseCount = 1;
 
@@ -27,8 +27,8 @@ class ObservableRequest {
      * @param request observable request
      * @param remoteAddress observer remote address
      */
-    public ObservableRequest(CoapRequest request, InetSocketAddress remoteAddress) {
-        this.request = request;
+    public CoapRequestForObservableResource(CoapRequest request, InetSocketAddress remoteAddress) throws InvalidHeaderException {
+        super(request);
         this.remoteAddress = remoteAddress;
     }
 
@@ -38,10 +38,6 @@ class ObservableRequest {
 
     public int getResponseCount() {
         return responseCount;
-    }
-
-    public CoapRequest getRequest() {
-        return request;
     }
 
     public InetSocketAddress getRemoteAddress() {

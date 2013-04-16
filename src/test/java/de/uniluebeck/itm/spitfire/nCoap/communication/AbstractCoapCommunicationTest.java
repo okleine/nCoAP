@@ -84,10 +84,10 @@ public abstract class AbstractCoapCommunicationTest {
         }
     }
 
-    private static void initializeLogging(){
+    public static void initializeLogging(){
         if(!loggingInitialized){
             //Output pattern
-            String pattern = "%-23d{yyyy-MM-dd HH:mm:ss,SSS} | %-32.32t | %-30.30c{1} | %-5p | %m%n";
+            String pattern = "%-23d{yyyy-MM-dd HH:mm:ss,SSS} | %-32.32t | %-35.35c{1} | %-5p | %m%n";
             PatternLayout patternLayout = new PatternLayout(pattern);
 
             //Appenders
@@ -98,6 +98,7 @@ public abstract class AbstractCoapCommunicationTest {
             Logger.getRootLogger().setLevel(Level.INFO);
             Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application").setLevel(Level.DEBUG);
             Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication").setLevel(Level.DEBUG);
+            Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.encoding").setLevel(Level.INFO);
 
             loggingInitialized = true;
         }
@@ -106,6 +107,12 @@ public abstract class AbstractCoapCommunicationTest {
     public void registerObservableDummyService(long pretendedProcessingMillisForRequests, long updateIntervalMinis){
         testServer.registerService(new ObservableDummyWebService(OBSERVABLE_SERVICE_PATH, true,
                 pretendedProcessingMillisForRequests, updateIntervalMinis));
+    }
+
+    public void registerObservableDummyService(long pretendedProcessingMillisForRequests, long updateIntervalMinis, int
+                                               maxAge){
+        testServer.registerService(new ObservableDummyWebService(OBSERVABLE_SERVICE_PATH, true,
+                pretendedProcessingMillisForRequests, updateIntervalMinis, maxAge));
     }
 
     public void registerNotObservableDummyService(long pretendedProcessingMillisForRequests){

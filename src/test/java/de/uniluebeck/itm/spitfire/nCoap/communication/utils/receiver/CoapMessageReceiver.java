@@ -5,6 +5,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncode
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -78,7 +79,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         if ((e.getMessage() instanceof CoapMessage) && receiveEnabled) {
             CoapMessage coapMessage = (CoapMessage) e.getMessage();
-            log.info("CoAP message received.");
+            log.info("CoAP message received: " + coapMessage);
             receivedMessages.put(System.currentTimeMillis(), coapMessage);
 
             if(writeEnabled && (coapMessage instanceof CoapRequest)){
@@ -126,7 +127,8 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
         setWriteEnabled(true);
     }
 
-    public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress){
+    public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
+        log.debug("Write message: " + coapMessage);
         Channels.write(channel, coapMessage, remoteAddress);
     }
 

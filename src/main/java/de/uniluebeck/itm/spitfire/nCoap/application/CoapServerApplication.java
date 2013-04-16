@@ -76,7 +76,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     protected CoapServerApplication(int serverPort){
         channel = new CoapServerDatagramChannelFactory(this, serverPort).getChannel();
         log.info("New server created. Listening on port " + this.getServerPort() + ".");
-        registerService(new WellKnownCoreResource(null, registeredServices));
+        registerService(new WellKnownCoreResource(registeredServices));
     }
     /**
      * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port 5683

@@ -15,6 +15,7 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public abstract class CoapMessage implements Cloneable {
         this(new Header(coapMessage.getHeader()),
              new OptionList(coapMessage.getOptionList()),
              coapMessage.getPayload());
+        this.rcptAddress = coapMessage.rcptAddress;
     }
 
     /**
@@ -443,9 +445,9 @@ public abstract class CoapMessage implements Cloneable {
                         if(InetAddresses.forString(targetIP) instanceof Inet6Address){
                            targetIP = "[" + targetIP + "]";
                         }
-                    }
+                     }
                     catch (IllegalArgumentException e){
-                        log.debug("No IPv6 address: " + targetIP, e);
+                        log.debug("No IP address: " + targetIP, e);
                     }
                     result.add(Option.createStringOption(URI_HOST, targetIP));
                     break;

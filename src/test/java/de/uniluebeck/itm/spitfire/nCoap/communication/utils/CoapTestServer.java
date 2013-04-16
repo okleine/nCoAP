@@ -1,6 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.communication.AbstractCoapCommunicationTest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 
@@ -39,9 +40,10 @@ public class CoapTestServer extends CoapServerApplication {
     }
 
     public static void main(String[] args){
+        AbstractCoapCommunicationTest.initializeLogging();
         CoapTestServer server = new CoapTestServer(5683);
 
         server.registerService(new ObservableDummyWebService("/obs", true, 0, 2000));
-//        System.out.println("Port: " + server.getServerPort());
+
     }
 }
