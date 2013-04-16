@@ -107,6 +107,10 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
         return receivedMessages;
     }
 
+    public LinkedList<MessageReceiverResponse> getResponsesToSend(){
+        return responsesToSend;
+    }
+
     public synchronized void setReceiveEnabled(boolean receiveEnabled) {
         this.receiveEnabled = receiveEnabled;
     }

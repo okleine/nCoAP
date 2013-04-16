@@ -71,4 +71,5 @@ public interface WebService<T> {
      * the response contains payload) a {@link MediaType}.
      */
     public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress);
+
 }

@@ -6,7 +6,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.spitfire.nCoap.application.webservice.ObservableWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceRemovedFromPath;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.ObservableWebServiceUpdate;
@@ -31,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -51,25 +51,28 @@ public class ObservableHandler extends SimpleChannelHandler {
     //each observer is represented by its initial observable request --> ObservableRequest object
     //both data structures hold the same set of observable requests
     //[Token, RemoteAddress] --> [Observer]
-    HashBasedTable<byte[], SocketAddress, ObservableRequest> addressTokenMappedToObservableRequests 
+    private HashBasedTable<byte[], SocketAddress, ObservableRequest> addressTokenMappedToObservableRequests
             = HashBasedTable.create();
     //[UriPath] --> [List of Observers]
-    Multimap<String, ObservableRequest> pathMappedToObservableRequests = LinkedListMultimap.create();
+    private Multimap<String, ObservableRequest> pathMappedToObservableRequests = LinkedListMultimap.create();
         
     //this cache maps the last used notification message id to an observer, which is needed to match a reset message
     //each cache entry has a lifetime of 2 minutes
     //[Notification message id] --> [Observer]
-    Cache<Integer, ObservableRequest> responseMessageIdCache;
+    private Cache<Integer, ObservableRequest> responseMessageIdCache;
+
+    private ScheduledExecutorService executorService;
     
-    Map<ObservableRequest, ScheduledFuture> scheduledMaxAgeNotifications = 
+    private Map<ObservableRequest, ScheduledFuture> scheduledMaxAgeNotifications =
             new ConcurrentHashMap<ObservableRequest, ScheduledFuture>();
 
-    public ObservableHandler() {
+    public ObservableHandler(ScheduledExecutorService executorService) {
         responseMessageIdCache = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
             .weakKeys()
             .expireAfterWrite(2, TimeUnit.MINUTES)
             .build();
+        this.executorService = executorService;
     }
     
     @Override
@@ -94,7 +97,7 @@ public class ObservableHandler extends SimpleChannelHandler {
                 }
 
                 //Send notification to observer
-                CoapExecutorService.schedule(new Runnable() {
+                executorService.schedule(new Runnable() {
                     @Override
                     public void run() {
                         try {
@@ -130,7 +133,7 @@ public class ObservableHandler extends SimpleChannelHandler {
         if (e.getMessage() instanceof InternalServiceRemovedFromPath) {
             String removedPath = ((InternalServiceRemovedFromPath)e.getMessage()).getServicePath();
             for (final ObservableRequest observer : pathMappedToObservableRequests.get(removedPath)) {
-                CoapExecutorService.schedule(new Runnable() {
+                executorService.schedule(new Runnable() {
 
                     @Override
                     public void run() {
@@ -164,7 +167,7 @@ public class ObservableHandler extends SimpleChannelHandler {
             maxAge = ((UintOption)currentCoapResponse.getOption(OptionRegistry.OptionName.MAX_AGE)
                     .get(0)).getDecodedValue().intValue();
         }
-        scheduledMaxAgeNotifications.put(observableRequest, CoapExecutorService.schedule(new Runnable() {
+        scheduledMaxAgeNotifications.put(observableRequest, executorService.schedule(new Runnable() {
 
             @Override
             public void run() {

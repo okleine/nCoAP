@@ -185,6 +185,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         //Close the datagram channel (includes unbind)
         ChannelFuture future = channel.close();
 
+        //remove all services
+        for(WebService service : registeredServices.values()){
+            removeService(service.getPath());
+        }
+
         //Await the closure and let the factory release its external resource to finalize the shutdown
         future.addListener(new ChannelFutureListener() {
             @Override
@@ -246,6 +251,13 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
         if(removedService != null && removedService instanceof ObservableWebService){
                 channel.write(new InternalServiceRemovedFromPath(uriPath));
+        }
+
+        if(removedService != null){
+            log.info("Service " + uriPath + " removed from server (port: " + this.getServerPort() + ").");
+        }
+        else{
+            log.info("Service " + uriPath + " does not exist and thus could not be removed.");
         }
 
         return removedService == null;

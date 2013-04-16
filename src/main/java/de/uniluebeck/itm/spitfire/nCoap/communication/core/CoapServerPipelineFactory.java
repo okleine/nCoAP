@@ -61,12 +61,13 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
     private ChannelHandler serverApp;
 
-    private ObservableHandler observableHandler = new ObservableHandler();
+    private ObservableHandler observableHandler;
     
     public CoapServerPipelineFactory(ChannelHandler serverApp, ScheduledExecutorService executorService){
         this.serverApp = serverApp;
         outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
         incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
+        observableHandler = new ObservableHandler(executorService);
     }
 
 

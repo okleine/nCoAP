@@ -60,6 +60,7 @@ public abstract class AbstractCoapCommunicationTest {
         initializeLogging();
         initializeComponents();
         testReceiver.getReceivedMessages().clear();
+        testReceiver.getResponsesToSend().clear();
 
     }
 
