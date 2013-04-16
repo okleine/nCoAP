@@ -60,37 +60,6 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
         testServer.removeService(OBSERVABLE_SERVICE_PATH);
     }
 
-//    @BeforeClass
-//    public static void init() throws Exception {
-//
-//        //Wireshark: https://dl.dropbox.com/u/10179177/Screenshot_2013.04.11-21.17.56.png
-//
-//        String requestPath = "/observable";
-//        URI targetUri = new URI("coap://localhost:" + DEFAULT_COAP_SERVER_PORT + requestPath);
-//        request = new CoapRequest(CON, GET, targetUri, testClient);
-//        request.setObserveOptionRequest();
-//
-//        (expectedNotification1 = new CoapResponse(CONTENT_205)).setPayload("testpayload1".getBytes("UTF-8"));
-//        (expectedNotification2 = new CoapResponse(CONTENT_205)).setPayload("testpayload1".getBytes("UTF-8"));
-//
-//        ObservableDummyWebService observableDummyWebService = new ObservableDummyWebService(requestPath, true, 0, 0);
-//        testServer.registerService(observableDummyWebService);
-//        testServer.addResponse(expectedNotification1, expectedNotification2);
-//
-//        //run test sequence
-//        testClient.writeCoapRequest(request);
-//        //wait for first notification
-//        Thread.sleep(150);
-//        //invoke resource update on server
-//        observableDummyWebService.setResourceStatus(true);
-//        //wait for second notification
-//        Thread.sleep(150);
-//        testClient.setReceiveEnabled(false);
-//        //remove observer
-//        testServer.removeService(requestPath);
-//        Thread.sleep(50);
-//    }
-
     @Test
     public void testReceiverReceived2Messages() {
         String message = "Receiver did not receive 2 messages";
