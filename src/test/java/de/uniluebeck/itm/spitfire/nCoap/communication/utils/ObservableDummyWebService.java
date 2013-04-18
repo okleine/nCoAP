@@ -13,6 +13,7 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -30,10 +31,17 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
     private static Logger log = LoggerFactory.getLogger(ObservableDummyWebService.class.getName());
 
     private long pretendedProcessingTimeForRequests;
+    private int maxAge = OptionRegistry.MAX_AGE_DEFAULT;
     private Thread statusUpdateThread;
 
-    private List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
-    
+    //private List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
+
+    public ObservableDummyWebService(String path, Boolean initialStatus, long pretendedProcessingTimeForRequests,
+                                     final long updateIntervalMillis, int maxAge){
+        this(path, initialStatus, pretendedProcessingTimeForRequests, updateIntervalMillis);
+        this.maxAge = maxAge;
+    }
+
     public ObservableDummyWebService(String path, Boolean initialStatus, long pretendedProcessingTimeForRequests,
                                      final long updateIntervalMillis){
 
@@ -71,10 +79,10 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
 
 
     @Override
-    public CoapResponse processMessage(CoapRequest request) {
-        if (!responsesToSend.isEmpty()) {
-            return responsesToSend.remove(0);
-        }
+    public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress) {
+//        if (!responsesToSend.isEmpty()) {
+//            return responsesToSend.remove(0);
+//        }
         
         //Simulate a potentially long processing time
         try {
@@ -86,6 +94,8 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
         //Create response 
         CoapResponse response = new CoapResponse(Code.CONTENT_205);
         try {
+            response.setMaxAge(maxAge);
+
             String payload = getResourceStatus() ? "testpayload1" : "testpayload2";
             response.setPayload(ChannelBuffers.wrappedBuffer(payload.getBytes(Charset.forName("UTF-8"))));
 
@@ -102,13 +112,13 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
         return response;
     }
     
-    public void addPreparedResponses(CoapResponse... responses) {
-        responsesToSend.addAll(Arrays.asList(responses));
-    }
-
-    public void addPreparedResponses(int multiplier, CoapResponse response) {
-        for (int i = 0; i < multiplier; i++) {
-            addPreparedResponses(response);
-        }
-    }
+//    public void addPreparedResponses(CoapResponse... responses) {
+//        responsesToSend.addAll(Arrays.asList(responses));
+//    }
+//
+//    public void addPreparedResponses(int multiplier, CoapResponse response) {
+//        for (int i = 0; i < multiplier; i++) {
+//            addPreparedResponses(response);
+//        }
+//    }
 }

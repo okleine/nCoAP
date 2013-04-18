@@ -9,6 +9,7 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 
 import static org.junit.Assert.fail;
@@ -32,8 +33,8 @@ public class NotObservableDummyWebService extends NotObservableWebService<String
     }
 
     @Override
-    public CoapResponse processMessage(CoapRequest request) {
-
+    public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress) {
+        log.debug("Incoming request for resource " + getPath());
         //Simulate a potentially long processing time
         try {
             Thread.sleep(pretendedProcessingTimeForRequests);
@@ -50,7 +51,7 @@ public class NotObservableDummyWebService extends NotObservableWebService<String
         } catch (MessageDoesNotAllowPayloadException e) {
             log.error("This should never happen.", e);
         }
-
+        log.debug("Response for resource " + getPath() + ": " + response);
         return response;
     }
 

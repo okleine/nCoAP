@@ -1,17 +1,15 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import org.apache.log4j.Logger;
 
-import java.util.*;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
-import static org.junit.Assert.fail;
-import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
-import org.jboss.netty.channel.ChannelFuture;
+//import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 
 
 /**
@@ -23,7 +21,7 @@ import org.jboss.netty.channel.ChannelFuture;
  */
 public class CoapTestClient extends CoapClientApplication {
 
-    private static CoapTestClient instance = new CoapTestClient();
+    //private static CoapTestClient instance = new CoapTestClient();
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -33,11 +31,11 @@ public class CoapTestClient extends CoapClientApplication {
 
     private boolean receiveEnabled = true;
     
-    public static CoapTestClient getInstance(){
-        return instance;
-    }
-
-    private CoapTestClient(){}
+//    public static CoapTestClient getInstance(){
+//        return instance;
+//    }
+//
+//    private CoapTestClient(){}
 
     @Override
     public void receiveResponse(CoapResponse coapResponse) {
@@ -72,18 +70,18 @@ public class CoapTestClient extends CoapClientApplication {
         return receivedResponses;
     }
     
-    public void reset() {
-        receivedResponses.clear();
-        setReceiveEnabled(true);
-        
-        CoapExecutorService.cancelAll();
-        
-        channel.close().awaitUninterruptibly();
-//        channel.getFactory().releaseExternalResources();
-        CoapClientDatagramChannelFactory.resetInstance();
-        channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
-        
-    }
+//    public void reset() {
+//        receivedResponses.clear();
+//        setReceiveEnabled(true);
+//
+//        //CoapExecutorService.cancelAll();
+//
+//        channel.close().awaitUninterruptibly();
+////        channel.getFactory().releaseExternalResources();
+//        CoapClientDatagramChannelFactory.resetInstance();
+//        channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
+//
+//    }
     
     public synchronized void setReceiveEnabled(boolean receiveEnabled) {
         this.receiveEnabled = receiveEnabled;

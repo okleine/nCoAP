@@ -52,13 +52,14 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             return object instanceof ChannelBuffer ? object : null;
         }
 
-        CoapMessage msg = (CoapMessage) object;
+        CoapMessage coapMessage = (CoapMessage) object;
         ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
-        encodeHeader(buffer, msg.getHeader(), msg.getOptionCount());
-        encodeOptions(buffer, msg.getOptionList());
+        encodeHeader(buffer, coapMessage.getHeader(), coapMessage.getOptionCount());
+        encodeOptions(buffer, coapMessage.getOptionList());
 
-        ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, msg.getPayload());
+        ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, coapMessage.getPayload());
         log.debug("Encoded message length: " + buf.readableBytes());
+        log.info("Encoded: " + coapMessage);
 
         return buf;
     }

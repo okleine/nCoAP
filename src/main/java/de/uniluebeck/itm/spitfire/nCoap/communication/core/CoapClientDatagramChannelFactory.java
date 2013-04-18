@@ -23,12 +23,15 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 
 /**
@@ -36,39 +39,42 @@ import java.net.InetSocketAddress;
  */
 public class CoapClientDatagramChannelFactory {
 
-    public static final int COAP_CLIENT_PORT = 5682;
+    //public final int COAP_CLIENT_PORT = 5682;
     public static final int RECEIVE_BUFFER_SIZE = 65536;
-
+    private static final int NO_OF_THREADS = 20;
+    
     private DatagramChannel channel;
 
     private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
-    static{
-        initInstance();
-    }
-
-    private static void initInstance() {
-        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
-        instance.getChannel().getConfig().setReceiveBufferSizePredictor(predictor);
-    }
-    
-    public static synchronized CoapClientDatagramChannelFactory getInstance(){
-        return instance;
-    }
 
     private CoapClientDatagramChannelFactory(){
         //Create Datagram Channel
+//        ChannelFactory channelFactory =
+//                new NioDatagramChannelFactory(CoapExecutorService.getExecutorService());
+
+        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
+                new ThreadFactoryBuilder().setNameFormat("nCoap-Client-Thread %d")
+                        .build());
+
         ChannelFactory channelFactory =
-                new NioDatagramChannelFactory(CoapExecutorService.getExecutorService());
+                new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(new CoapClientPipelineFactory());
+        bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
 
-        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(COAP_CLIENT_PORT));
+        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+
+        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
+        channel.getConfig().setReceiveBufferSizePredictor(predictor);
     }
     
-    public static void resetInstance() {
-        instance = new CoapClientDatagramChannelFactory();
-        initInstance();
+//    public static void resetInstance() {
+//        instance = new CoapClientDatagramChannelFactory();
+//        initInstance();
+//    }
+
+    public static CoapClientDatagramChannelFactory getInstance(){
+        return instance;
     }
 
     public DatagramChannel getChannel(){

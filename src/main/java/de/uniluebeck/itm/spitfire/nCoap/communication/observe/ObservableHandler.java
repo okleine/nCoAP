@@ -6,7 +6,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.spitfire.nCoap.application.webservice.ObservableWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdate;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceRemovedFromPath;
 import de.uniluebeck.itm.spitfire.nCoap.communication.internal.ObservableWebServiceUpdate;
@@ -25,11 +24,13 @@ import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -47,44 +48,47 @@ public class ObservableHandler extends SimpleChannelHandler {
 
     private static Logger log = LoggerFactory.getLogger(ObservableHandler.class.getName());
 
-    //each observer is represented by its initial observable request --> ObservableRequest object
+    //each observer is represented by its initial observable request --> CoapRequestForObservableResource object
     //both data structures hold the same set of observable requests
     //[Token, RemoteAddress] --> [Observer]
-    HashBasedTable<byte[], SocketAddress, ObservableRequest> addressTokenMappedToObservableRequests 
+    private HashBasedTable<byte[], SocketAddress, CoapRequestForObservableResource> addressTokenMappedToObservableRequests
             = HashBasedTable.create();
     //[UriPath] --> [List of Observers]
-    Multimap<String, ObservableRequest> pathMappedToObservableRequests = LinkedListMultimap.create();
+    private Multimap<String, CoapRequestForObservableResource> pathMappedToObservableRequests = LinkedListMultimap.create();
         
     //this cache maps the last used notification message id to an observer, which is needed to match a reset message
     //each cache entry has a lifetime of 2 minutes
     //[Notification message id] --> [Observer]
-    Cache<Integer, ObservableRequest> responseMessageIdCache;
-    
-    Map<ObservableRequest, ScheduledFuture> scheduledMaxAgeNotifications = 
-            new ConcurrentHashMap<ObservableRequest, ScheduledFuture>();
+    private Cache<Integer, CoapRequestForObservableResource> responseMessageIdCache;
 
-    public ObservableHandler() {
+    private ScheduledExecutorService executorService;
+    
+    private Map<CoapRequestForObservableResource, ScheduledFuture> scheduledMaxAgeNotifications =
+            new ConcurrentHashMap<CoapRequestForObservableResource, ScheduledFuture>();
+
+    public ObservableHandler(ScheduledExecutorService executorService) {
         responseMessageIdCache = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
             .weakKeys()
             .expireAfterWrite(2, TimeUnit.MINUTES)
             .build();
+        this.executorService = executorService;
     }
     
     @Override
-    public void writeRequested(final ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+    public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
 
         if (e.getMessage() instanceof ObservableWebServiceUpdate) {
             //a service has updated, notify all observers which observe the same uri path
             final ObservableWebService service =
                     (ObservableWebService) ((ObservableWebServiceUpdate) e.getMessage()).getContent();
 
-            log.debug("Updated observed service!");
+            log.debug("Updated observed service: " + service.getPath());
 
             String uriPath = service.getPath();
 
             //Send notifications to all registered observing clients
-            for (final ObservableRequest observableRequest : pathMappedToObservableRequests.get(uriPath)) {
+            for (final CoapRequestForObservableResource observableRequest : pathMappedToObservableRequests.get(uriPath)) {
 
                 //remove scheduled Max-Age notification
                 ScheduledFuture future = scheduledMaxAgeNotifications.remove(observableRequest);
@@ -93,16 +97,20 @@ public class ObservableHandler extends SimpleChannelHandler {
                 }
 
                 //Send notification to observer
-                CoapExecutorService.schedule(new Runnable() {
+                executorService.schedule(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            CoapResponse coapResponse = service.processMessage(observableRequest.getRequest());
+                            CoapResponse coapResponse =
+                                    service.processMessage(observableRequest, observableRequest.getRemoteAddress());
                             setupResponse(coapResponse, observableRequest);
 
-                            ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
-                            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future,
-                                               coapResponse, observableRequest.getRemoteAddress()));
+//                            ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
+//                            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future,
+//                                               coapResponse, observableRequest.getRemoteAddress()));
+
+                            log.debug("Try to send " + coapResponse + " to " + observableRequest.getRemoteAddress());
+                            Channels.write(ctx.getChannel(), coapResponse, observableRequest.getRemoteAddress());
 
                             scheduleMaxAgeNotification(observableRequest, coapResponse, service, ctx);
                         } catch (Exception ex) {
@@ -118,7 +126,7 @@ public class ObservableHandler extends SimpleChannelHandler {
         if (e.getMessage() instanceof CoapResponse) {
             //CoapResponse received, check if it responds to a observable request
             CoapResponse coapResponse = (CoapResponse) e.getMessage();
-            ObservableRequest observableRequest = addressTokenMappedToObservableRequests.get(coapResponse.getToken(), 
+            CoapRequestForObservableResource observableRequest = addressTokenMappedToObservableRequests.get(coapResponse.getToken(),
                     e.getRemoteAddress());
             if (observableRequest == null) {
                 //remove observe option
@@ -127,52 +135,69 @@ public class ObservableHandler extends SimpleChannelHandler {
         }
         if (e.getMessage() instanceof InternalServiceRemovedFromPath) {
             String removedPath = ((InternalServiceRemovedFromPath)e.getMessage()).getServicePath();
-            for (final ObservableRequest observer : pathMappedToObservableRequests.get(removedPath)) {
-                CoapExecutorService.schedule(new Runnable() {
+            for (final CoapRequestForObservableResource observableRequest : pathMappedToObservableRequests.get(removedPath)) {
+                executorService.schedule(new Runnable() {
 
                     @Override
                     public void run() {
                         try {
                             CoapResponse coapResponse = new CoapResponse(Code.NOT_FOUND_404);
                             coapResponse.getHeader().setMsgType(MsgType.CON);
-                            coapResponse.setToken(observer.getRequest().getToken());
+                            coapResponse.setToken(observableRequest.getToken());
                             coapResponse.getOptionList().removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
-                            ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
-                            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future, 
-                                    coapResponse, observer.getRemoteAddress()));
+
+//                            ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
+//                            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future,
+//                                    coapResponse, observableRequest.getRemoteAddress()));
+
+                            log.debug("Try to send " + coapResponse + " to " + observableRequest.getRemoteAddress());
+                            if(ctx.getChannel().isBound()){
+                                Channels.write(ctx.getChannel(), coapResponse, observableRequest.getRemoteAddress());
+                            }
+                            else{
+                                log.info("Could not write " + coapResponse + ". Channel is closed.");
+                            }
+
                         } catch (Exception ex) {
                             log.error("Unexpected exception in scheduled notification! " + ex.getMessage());
                         }
                     }
                 }, 0, TimeUnit.SECONDS);
-                removeObservableRequest(observer);
+                removeObservableRequest(observableRequest);
             }
             return;
         }
         ctx.sendDownstream(e);
     }
 
-    private void scheduleMaxAgeNotification(final ObservableRequest observableRequest, 
+    private void scheduleMaxAgeNotification(final CoapRequestForObservableResource observableRequest,
             final CoapResponse currentCoapResponse, final ObservableWebService service,
             final ChannelHandlerContext ctx) {
 
         //schedule Max-Age notification
-        int maxAge = 60; //dafault Max-Age value
+        int maxAge = OptionRegistry.MAX_AGE_DEFAULT; //dafault Max-Age value
         if (!currentCoapResponse.getOption(OptionRegistry.OptionName.MAX_AGE).isEmpty()) {
             maxAge = ((UintOption)currentCoapResponse.getOption(OptionRegistry.OptionName.MAX_AGE)
                     .get(0)).getDecodedValue().intValue();
         }
-        scheduledMaxAgeNotifications.put(observableRequest, CoapExecutorService.schedule(new Runnable() {
+        scheduledMaxAgeNotifications.put(observableRequest, executorService.schedule(new Runnable() {
 
             @Override
             public void run() {
                 try {
-                    CoapResponse futureCoapResponse = service.processMessage(observableRequest.getRequest());
-                    setupResponse(futureCoapResponse, observableRequest);
-                    ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
-                    ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future, 
-                            futureCoapResponse, observableRequest.getRemoteAddress()));
-                    scheduleMaxAgeNotification(observableRequest, futureCoapResponse, service, ctx);
+                    CoapResponse coapResponse =
+                            service.processMessage(observableRequest, observableRequest.getRemoteAddress());
+
+                    setupResponse(coapResponse, observableRequest);
+
+//                    ChannelFuture future = new DefaultChannelFuture(ctx.getChannel(), false);
+//                    ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), future,
+//                            coapResponse, observableRequest.getRemoteAddress()));
+
+                    log.debug("Try to send " + coapResponse + " to " + observableRequest.getRemoteAddress());
+                    Channels.write(ctx.getChannel(), coapResponse, observableRequest.getRemoteAddress());
+
+                    scheduleMaxAgeNotification(observableRequest, coapResponse, service, ctx);
                 } catch (Exception ex) {
                     log.error("Unexpected exception in scheduled notification! " + ex.getMessage());
                 }
@@ -184,13 +209,13 @@ public class ObservableHandler extends SimpleChannelHandler {
      * Remove Observer.
      * @param observableRequest Observer to remove
      */
-    private void removeObservableRequest(ObservableRequest observableRequest) {
+    private void removeObservableRequest(CoapRequestForObservableResource observableRequest) {
         if (observableRequest == null) {
             return;
         }
-        addressTokenMappedToObservableRequests.remove(observableRequest.getRequest().getToken(), 
+        addressTokenMappedToObservableRequests.remove(observableRequest.getToken(),
                 observableRequest.getRemoteAddress());
-        pathMappedToObservableRequests.remove(observableRequest.getRequest().getTargetUri().getPath(), 
+        pathMappedToObservableRequests.remove(observableRequest.getTargetUri().getPath(),
                 observableRequest);
         //cancel scheduled MaxAge Auto-Notification
         ScheduledFuture maxAgeNotificationFuture = scheduledMaxAgeNotifications.remove(observableRequest);
@@ -198,15 +223,15 @@ public class ObservableHandler extends SimpleChannelHandler {
             maxAgeNotificationFuture.cancel(true);
         }
         log.info(String.format("Observer for path %s from %s removed! ", 
-                observableRequest.getRequest().getTargetUri().getPath(), observableRequest.getRemoteAddress()));
+                observableRequest.getTargetUri().getPath(), observableRequest.getRemoteAddress()));
     }
     
     /**
      * Remove Observers.
      * @param observableRequests Observers to remove
      */
-    private void removeObservableRequests(List<ObservableRequest> observableRequests) {
-        for (ObservableRequest request : observableRequests) {
+    private void removeObservableRequests(List<CoapRequestForObservableResource> observableRequests) {
+        for (CoapRequestForObservableResource request : observableRequests) {
             removeObservableRequest(request);
         }
     }
@@ -222,7 +247,7 @@ public class ObservableHandler extends SimpleChannelHandler {
 //        if (e.getMessage() instanceof InternalErrorMessage) {
 //            //CON msg Timeout received, remove observer if the CON msg was a notification
 //            InternalErrorMessage conTimeoutMsg = (InternalErrorMessage) e.getMessage();
-//            ObservableRequest observableRequest = addressTokenMappedToObservableRequests.get(conTimeoutMsg.getToken(), 
+//            CoapRequestForObservableResource observableRequest = addressTokenMappedToObservableRequests.get(conTimeoutMsg.getToken(),
 //                    e.getRemoteAddress());
 //            removeObservableRequest(observableRequest);
 //        }
@@ -230,22 +255,23 @@ public class ObservableHandler extends SimpleChannelHandler {
             CoapRequest coapRequest = (CoapRequest) e.getMessage();
             if (!coapRequest.getOption(OptionRegistry.OptionName.OBSERVE_REQUEST).isEmpty()) {
                 //Observable request received, register new observer
-                ObservableRequest observableRequest = new ObservableRequest(coapRequest, e.getRemoteAddress());
+                CoapRequestForObservableResource observableRequest
+                        = new CoapRequestForObservableResource(coapRequest, (InetSocketAddress) e.getRemoteAddress());
                 addressTokenMappedToObservableRequests.put(coapRequest.getToken(), e.getRemoteAddress(), 
                         observableRequest);
                 pathMappedToObservableRequests.put(coapRequest.getTargetUri().getPath(), observableRequest);
-                log.info(String.format("Observer for path %s from %s registered! ", 
-                observableRequest.getRequest().getTargetUri().getPath(), observableRequest.getRemoteAddress()));
+                log.info("%s is now observer for service %s.", observableRequest.getRemoteAddress(),
+                        observableRequest.getTargetUri().getPath());
             } else {
                 //request without observe option received
                 String requestPath = coapRequest.getTargetUri().getPath();
-                List<ObservableRequest> observableRequestsToRemove = new LinkedList<ObservableRequest>();
-                for (ObservableRequest observer : addressTokenMappedToObservableRequests
+                List<CoapRequestForObservableResource> observableRequestsToRemove = new LinkedList<CoapRequestForObservableResource>();
+                for (CoapRequestForObservableResource observableRequest : addressTokenMappedToObservableRequests
                         .column(e.getRemoteAddress()).values()) {
                     //iterate over all observers from e.getRemoteAddress()
-                    if (requestPath.equals(observer.getRequest().getTargetUri().getPath())) {
+                    if (requestPath.equals(observableRequest.getTargetUri().getPath())) {
                         //remove observer if new request targets same path
-                        observableRequestsToRemove.add(observer);
+                        observableRequestsToRemove.add(observableRequest);
                     }
                 }
                 removeObservableRequests(observableRequestsToRemove);
@@ -253,7 +279,7 @@ public class ObservableHandler extends SimpleChannelHandler {
         }
         if (e.getMessage() instanceof InternalObserveOptionUpdate) {
             InternalObserveOptionUpdate optionUpdate = (InternalObserveOptionUpdate) e.getMessage();
-            ObservableRequest observer = addressTokenMappedToObservableRequests
+            CoapRequestForObservableResource observer = addressTokenMappedToObservableRequests
                     .get(optionUpdate.getToken(), optionUpdate.getRemoteAddress());
             if (observer != null) {
                 observer.setResponseCount(optionUpdate.getObserveOptionValue() + 1);
@@ -286,21 +312,21 @@ public class ObservableHandler extends SimpleChannelHandler {
      * @throws ToManyOptionsException
      * @throws InvalidOptionException 
      */
-    private void setupResponse(CoapResponse coapResponse, ObservableRequest observableRequest) 
+    private void setupResponse(CoapResponse coapResponse, CoapRequestForObservableResource observableRequest)
             throws InvalidHeaderException, ToManyOptionsException, InvalidOptionException {
         
         int responseCount = observableRequest.updateResponseCount();
         if (responseCount == 1) {
             //first response
-            coapResponse.setMessageID(observableRequest.getRequest().getMessageID());
+            coapResponse.setMessageID(observableRequest.getMessageID());
             coapResponse.getHeader().setMsgType(MsgType.ACK);
         } else {
             //second or later
-//            coapResponse.setMessageID(MessageIDFactory.nextMessageID());
+            //coapResponse.setMessageID(MessageIDFactory.nextMessageID());
             coapResponse.getHeader().setMsgType(MsgType.CON);
             responseMessageIdCache.put(coapResponse.getMessageID(), observableRequest);
         }
-        coapResponse.setToken(observableRequest.getRequest().getToken());
+        coapResponse.setToken(observableRequest.getToken());
         coapResponse.setObserveOptionResponse(responseCount);
     }
     

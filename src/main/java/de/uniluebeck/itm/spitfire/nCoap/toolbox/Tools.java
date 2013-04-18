@@ -23,14 +23,10 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.toolbox;
 
-import java.util.Random;
-
 /**
  * @author Oliver Kleine
  */
 public class Tools {
-
-    public static Random random = new Random(System.currentTimeMillis());
 
     public static String toHexString(byte[] b){
       String result = "";

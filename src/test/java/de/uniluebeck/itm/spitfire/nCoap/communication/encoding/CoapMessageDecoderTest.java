@@ -217,7 +217,7 @@ class DecodeTestMessage {
     
     /**
      * Tests if the passed byte array is correct encoded. JUnit test will fail if not.
-     * @param encodedMsgToTest Encoded message to test
+     * @param decodedMsgToTest Encoded message to test
      */
     void test(CoapMessage decodedMsgToTest) {
         if (!decodedMsgToTest.equals(correctDecodedCoAPMessage)) {

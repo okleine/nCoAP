@@ -33,20 +33,25 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 
 public class CoapClientPipelineFactory implements ChannelPipelineFactory {
 
     private CoapMessageEncoder encoder = new CoapMessageEncoder();
     private CoapMessageDecoder decoder = new CoapMessageDecoder();
 
-    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler
-            = new OutgoingMessageReliabilityHandler();
-
-    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler
-            = new IncomingMessageReliabilityHandler();
+    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
+    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
 
     private BlockwiseTransferHandler blockwiseTransferHandler = new BlockwiseTransferHandler();
     private ResponseCallbackHandler responseCallbackHandler = new ResponseCallbackHandler();
+
+    public CoapClientPipelineFactory(ScheduledExecutorService executorService){
+        outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
+        incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
+    }
+
     @Override
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();

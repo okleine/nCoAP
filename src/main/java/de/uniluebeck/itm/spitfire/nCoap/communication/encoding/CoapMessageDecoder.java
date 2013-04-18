@@ -104,6 +104,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         log.debug("Set receipient address to: " + rcptAddress);
 
+        log.info("Decoded: " + result);
         return result;
     }
 

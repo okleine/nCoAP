@@ -1,15 +1,12 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
+package de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
@@ -17,28 +14,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
 
 import static org.junit.Assert.fail;
-import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
 
 /**
- * Receives and sends CoAP Messages for testing purposes.
- * Receiving and automatic response can be configured.
- * To send a message either schedule a automatic response using addResponse (using setWriteEnabled(true))
- * or send a message manually using writeMessage (which will send the message immediately regardless of writeEnabled).
- * 
- * @author Oliver Kleine, Stefan Hueske
- */
+* Receives and sends CoAP Messages for testing purposes.
+* Receiving and automatic response can be configured.
+* To send a message either schedule a automatic response using addResponse (using setWriteEnabled(true))
+* or send a message manually using writeMessage (which will send the message immediately regardless of writeEnabled).
+*
+* @author Oliver Kleine, Stefan Hueske
+*/
 public class CoapMessageReceiver extends SimpleChannelHandler {
-    public static final int RECEIVER_PORT = 18954;
+
     private DatagramChannel channel;
 
     private static CoapMessageReceiver instance = new CoapMessageReceiver();
@@ -49,14 +42,14 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     private boolean receiveEnabled = true;
     private boolean writeEnabled = true;
     private SortedMap<Long, CoapMessage> receivedMessages = new TreeMap<Long, CoapMessage>();
-    
-    //list of responses
-    private LinkedList<MsgReceiverResponse> responsesToSend = new LinkedList<MsgReceiverResponse>();
-    
+
+    //contains a list of test specific responses
+    private LinkedList<MessageReceiverResponse> responsesToSend = new LinkedList<MessageReceiverResponse>();
+
     public static CoapMessageReceiver getInstance(){
         return instance;
     }
-    
+
     private CoapMessageReceiver() {
         //Create datagram channel to receive messages
         ChannelFactory channelFactory =
@@ -75,30 +68,35 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
             }
         });
 
-        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(RECEIVER_PORT));
+        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+    }
+
+    public int getReceiverPort(){
+        return channel.getLocalAddress().getPort();
     }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         if ((e.getMessage() instanceof CoapMessage) && receiveEnabled) {
             CoapMessage coapMessage = (CoapMessage) e.getMessage();
-            log.info("CoAP message received.");
+            log.info("CoAP message received: " + coapMessage);
             receivedMessages.put(System.currentTimeMillis(), coapMessage);
 
             if(writeEnabled && (coapMessage instanceof CoapRequest)){
                 if (responsesToSend.isEmpty()) {
                     fail("responsesToSend is empty. This could be caused by an unexpected request.");
                 }
-                MsgReceiverResponse responseToSend = responsesToSend.remove(0);
-                
+                MessageReceiverResponse responseToSend = responsesToSend.remove(0);
+
                 if (responseToSend == null) {
                     throw new InternalError("Unexpected request received. No response for: " + coapMessage);
                 }
-                CoapResponse coapResponse = responseToSend.getCoapResponse();
-                if (responseToSend.isLetReceiverSetMessageID()) {
+
+                CoapResponse coapResponse = responseToSend;
+                if (responseToSend.getReceiverSetsMsgID()) {
                     coapResponse.setMessageID(coapMessage.getMessageID());
                 }
-                if (responseToSend.isLetReceiverSetToken()) {
+                if (responseToSend.getReceiverSetsToken()) {
                     coapResponse.setToken(coapMessage.getToken());
                 }
                 Channels.write(channel, coapResponse, e.getRemoteAddress());
@@ -108,6 +106,10 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 
     public SortedMap<Long, CoapMessage> getReceivedMessages() {
         return receivedMessages;
+    }
+
+    public LinkedList<MessageReceiverResponse> getResponsesToSend(){
+        return responsesToSend;
     }
 
     public synchronized void setReceiveEnabled(boolean receiveEnabled) {
@@ -120,18 +122,20 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 
     public synchronized void reset() {
         receivedMessages.clear();
+        responsesToSend.clear();
         setReceiveEnabled(true);
         setWriteEnabled(true);
     }
 
-    public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress){
+    public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
+        log.debug("Write message: " + coapMessage);
         Channels.write(channel, coapMessage, remoteAddress);
     }
 
-    public void addResponse(MsgReceiverResponse response) {
+    public void addResponse(MessageReceiverResponse response) {
         responsesToSend.add(response);
     }
-    
+
     /**
      * Shuts the client down by closing the channel which includes to unbind the channel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
@@ -168,29 +172,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 //            Thread.sleep(50);
 //        }
 //    }
-    
-    public static class MsgReceiverResponse {
-        private CoapResponse coapResponse;
-        private boolean letReceiverSetMessageID;
-        private boolean letReceiverSetToken;
 
-        public MsgReceiverResponse(CoapResponse coapResponse, boolean letReceiverSetMessageID, boolean letReceiverSetToken) {
-            this.coapResponse = coapResponse;
-            this.letReceiverSetMessageID = letReceiverSetMessageID;
-            this.letReceiverSetToken = letReceiverSetToken;
-        }
 
-        public CoapResponse getCoapResponse() {
-            return coapResponse;
-        }
-
-        public boolean isLetReceiverSetMessageID() {
-            return letReceiverSetMessageID;
-        }
-
-        public boolean isLetReceiverSetToken() {
-            return letReceiverSetToken;
-        }
-    }   
 }
 

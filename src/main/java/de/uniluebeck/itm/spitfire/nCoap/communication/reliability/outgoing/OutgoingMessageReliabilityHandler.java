@@ -24,7 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
+//import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -55,6 +56,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     private static final int MAX_RETRANSMITS = 4;
     private static final int INITIAL_TIMEOUT_MILLIS = 2000;
     //private static final int TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION = 5000;
+
+    private ScheduledExecutorService executorService;
 
     //Contains remote socket address and message ID of not yet confirmed messages
     private final HashBasedTable<InetSocketAddress, Integer, ScheduledRetransmission> waitingForACK
@@ -73,6 +76,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 //    private OutgoingMessageReliabilityHandler(){
 //        //private constructor to make it singleton
 //    }
+
+    public OutgoingMessageReliabilityHandler(ScheduledExecutorService executorService){
+        this.executorService = executorService;
+    }
 
     /**
      * This method is invoked with a downstream message event. If it is a new message (i.e. to be
@@ -223,7 +230,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             MessageRetransmitter messageRetransmitter
                     = new MessageRetransmitter(ctx, rcptAddress, scheduledRetransmission, counter + 1);
 
-            futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
+            //futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
+            futures.add(executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
 
             log.info("Scheduled in {} millis {}", delay, messageRetransmitter);
         }
@@ -240,7 +248,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 delay += (int)(Math.pow(2, counter) * INITIAL_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
                 MessageRetransmitter messageRetransmitter
                         = new MessageRetransmitter(ctx, rcptAddress, scheduledRetransmission, counter++);
-                futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
+                //futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
+                futures.add(executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
                 log.info("Scheduled in {} millis {}", delay, messageRetransmitter);
             }
         }
@@ -248,7 +257,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         //Schedule timeout notification
         if(coapMessage.getToken().length > 0){
             delay += (int)(Math.pow(2, MAX_RETRANSMITS) * INITIAL_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() * 0.3));
-            futures.add(CoapExecutorService.schedule(new Runnable() {
+            futures.add(executorService.schedule(new Runnable() {
                 @Override
                 public void run(){
                     String message = "Could not deliver message dispite " + MAX_RETRANSMITS + " retransmitions.";

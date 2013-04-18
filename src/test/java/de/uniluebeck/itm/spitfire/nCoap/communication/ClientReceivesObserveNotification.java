@@ -1,23 +1,17 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.webservice.WebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableDummyWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import de.uniluebeck.itm.spitfire.nCoap.testtools.InitializeLoggingForTests;
-import org.junit.BeforeClass;
+
 import org.junit.Test;
 
 import java.net.URI;
 import java.util.Iterator;
 import java.util.SortedMap;
 
-import static de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory.COAP_SERVER_PORT;
 import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.CONTENT_205;
 import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.GET;
 import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.CON;
@@ -25,56 +19,45 @@ import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.assertEqu
 import static junit.framework.Assert.assertEquals;
 
 /**
- * Tests if a client receives notifications.
- * @author Stefan Hueske
- */
-public class ClientReceivesObserveNotification {
-
-    private static CoapTestServer testServer = CoapTestServer.getInstance();
-    private static CoapTestClient testClient = CoapTestClient.getInstance();
+* Tests if a client receives notifications.
+* @author Stefan Hueske
+*/
+public class ClientReceivesObserveNotification extends AbstractCoapCommunicationTest{
 
     //observable request
     private static CoapRequest request;
 
     //notifications
-    private static CoapResponse notification1;
-    private static CoapResponse notification2;
+    private static CoapResponse expectedNotification1;
+    private static CoapResponse expectedNotification2;
 
+    @Override
+    public void createTestScenario() throws Exception {
+        //define expected responses
+        expectedNotification1 = new CoapResponse(CONTENT_205);
+        expectedNotification1.setPayload("testpayload1".getBytes("UTF-8"));
 
-    @BeforeClass
-    public static void init() throws Exception {
-        InitializeLoggingForTests.init();
-        testServer.reset();
-        //wait for possible 404 NOT FOUND messages when removing all services
-        Thread.sleep(150);
-        testClient.reset();
+        expectedNotification2 = new CoapResponse(CONTENT_205);
+        expectedNotification2.setPayload("testpayload2".getBytes("UTF-8"));
 
-        //Wireshark: https://dl.dropbox.com/u/10179177/Screenshot_2013.04.11-21.17.56.png
-        
-        String requestPath = "/observable";
-        URI targetUri = new URI("coap://localhost:" + COAP_SERVER_PORT + requestPath);
-        request = new CoapRequest(CON, GET, targetUri, testClient);
+        //setup testserver
+        registerObservableDummyService(0, 3000);
+
+        //create CoAP request
+        URI serviceUri = new URI("coap://localhost:" + testServer.getServerPort() + OBSERVABLE_SERVICE_PATH);
+        request = new CoapRequest(CON, GET, serviceUri, testClient);
         request.setObserveOptionRequest();
-
-        (notification1 = new CoapResponse(CONTENT_205)).setPayload("testpayload1".getBytes("UTF-8"));
-        (notification2 = new CoapResponse(CONTENT_205)).setPayload("testpayload1".getBytes("UTF-8"));
-
-        ObservableDummyWebService observableDummyWebService = new ObservableDummyWebService(requestPath, true, 0, 0);
-        testServer.registerService(observableDummyWebService);
-        testServer.addResponse(notification1, notification2);
 
         //run test sequence
         testClient.writeCoapRequest(request);
-        //wait for first notification
-        Thread.sleep(150);
-        //invoke resource update on server
-        observableDummyWebService.setResourceStatus(true);
-        //wait for second notification
-        Thread.sleep(150);
+
+        //wait for 2 notifications (first immediate, second after 3 seconds)
+        Thread.sleep(4000);
+
         testClient.setReceiveEnabled(false);
-        //remove observer
-        testServer.removeService(requestPath);
-        Thread.sleep(50);
+
+        //delete service from server to stop observability
+        testServer.removeService(OBSERVABLE_SERVICE_PATH);
     }
 
     @Test
@@ -92,7 +75,7 @@ public class ClientReceivesObserveNotification {
         message = "1st notification: Code is not 2.05 (Content)";
         assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
         message = "1st notification: Payload does not match";
-        assertEquals(message, notification1.getPayload(), receivedMessage.getPayload());
+        assertEquals(message, expectedNotification1.getPayload(), receivedMessage.getPayload());
     }
 
     @Test
@@ -101,11 +84,13 @@ public class ClientReceivesObserveNotification {
         Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
         timeKeys.next();
         CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
-        String message = "1st notification: MsgType is not ACK";
+        String message = "2nd notification: MsgType is not ACK";
         assertEquals(message, MsgType.CON, receivedMessage.getMessageType());
-        message = "1st notification: Code is not 2.05 (Content)";
+        message = "2nd notification: Code is not 2.05 (Content)";
         assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
-        message = "1st notification: Payload does not match";
-        assertEquals(message, notification2.getPayload(), receivedMessage.getPayload());
+        message = "2nd notification: Payload does not match";
+        assertEquals(message, expectedNotification2.getPayload(), receivedMessage.getPayload());
     }
+
+
 }

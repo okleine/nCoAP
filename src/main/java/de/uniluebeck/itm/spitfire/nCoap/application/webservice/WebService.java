@@ -3,7 +3,11 @@ package de.uniluebeck.itm.spitfire.nCoap.application.webservice;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.Option;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
+
+import java.net.InetSocketAddress;
 
 /**
  * This is the interface to be implemented to realize a CoAP webservice. The generic type T means, that the object
@@ -63,9 +67,14 @@ public interface WebService<T> {
      * concrete webservice. Processing a message might cause a new status of the resource or even the deletion of the
      * complete resource, resp. the webservice instance.
      *
+     * The way to process the incoming request is basically to be implemented based on the {@link Code},
+     * the {@link MsgType}, the contained {@link Option}s and (if any) the payload of the request.
+     *
      * @param request The {@link CoapRequest} to be processed by the {@link WebService} instance
+     * @param remoteAddress The address of the sender of the request
      * @return a proper {@link CoapResponse} instance. The returned response must contain a proper {@link Code} and (if
      * the response contains payload) a {@link MediaType}.
      */
-    public CoapResponse processMessage(CoapRequest request);
+    public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress);
+
 }
