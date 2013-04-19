@@ -86,4 +86,8 @@ public class CoapTestClient extends CoapClientApplication {
     public synchronized void setReceiveEnabled(boolean receiveEnabled) {
         this.receiveEnabled = receiveEnabled;
     }
+
+    public int getClientPort() {
+        return channel.getLocalAddress().getPort();
+    }
 }

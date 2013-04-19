@@ -34,7 +34,7 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
     private int maxAge = OptionRegistry.MAX_AGE_DEFAULT;
     private Thread statusUpdateThread;
 
-    //private List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
+    private List<CoapResponse> responsesToSend = new LinkedList<CoapResponse>();
 
     public ObservableDummyWebService(String path, Boolean initialStatus, long pretendedProcessingTimeForRequests,
                                      final long updateIntervalMillis, int maxAge){
@@ -80,9 +80,9 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
 
     @Override
     public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress) {
-//        if (!responsesToSend.isEmpty()) {
-//            return responsesToSend.remove(0);
-//        }
+        if (!responsesToSend.isEmpty()) {
+            return responsesToSend.remove(0);
+        }
         
         //Simulate a potentially long processing time
         try {
@@ -96,7 +96,7 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
         try {
             response.setMaxAge(maxAge);
 
-            String payload = getResourceStatus() ? "testpayload1" : "testpayload2";
+            String payload = getResourceStatus() ? "default response, status is true" : "default response, status is false";
             response.setPayload(ChannelBuffers.wrappedBuffer(payload.getBytes(Charset.forName("UTF-8"))));
 
             response.setContentType(OptionRegistry.MediaType.TEXT_PLAIN_UTF8);
@@ -112,13 +112,13 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
         return response;
     }
     
-//    public void addPreparedResponses(CoapResponse... responses) {
-//        responsesToSend.addAll(Arrays.asList(responses));
-//    }
-//
-//    public void addPreparedResponses(int multiplier, CoapResponse response) {
-//        for (int i = 0; i < multiplier; i++) {
-//            addPreparedResponses(response);
-//        }
-//    }
+    public void addPreparedResponses(CoapResponse... responses) {
+        responsesToSend.addAll(Arrays.asList(responses));
+    }
+
+    public void addPreparedResponses(int multiplier, CoapResponse response) {
+        for (int i = 0; i < multiplier; i++) {
+            addPreparedResponses(response);
+        }
+    }
 }
