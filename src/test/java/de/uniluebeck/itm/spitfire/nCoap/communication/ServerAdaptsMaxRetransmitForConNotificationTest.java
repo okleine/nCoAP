@@ -28,7 +28,7 @@ import static junit.framework.Assert.assertEquals;
 *
 * @author Stefan Hueske
 */
-public class ServerAdaptsMaxRetransmitForConNotification extends AbstractCoapCommunicationTest {
+public class ServerAdaptsMaxRetransmitForConNotificationTest extends AbstractCoapCommunicationTest {
     
     //registration requests
     private static CoapRequest regRequest;
