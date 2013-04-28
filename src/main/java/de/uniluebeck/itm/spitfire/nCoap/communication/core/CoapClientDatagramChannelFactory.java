@@ -45,9 +45,9 @@ public class CoapClientDatagramChannelFactory {
     
     private DatagramChannel channel;
 
-    private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
+//    private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
 
-    private CoapClientDatagramChannelFactory(){
+    public CoapClientDatagramChannelFactory(){
         //Create Datagram Channel
 //        ChannelFactory channelFactory =
 //                new NioDatagramChannelFactory(CoapExecutorService.getExecutorService());
@@ -73,9 +73,9 @@ public class CoapClientDatagramChannelFactory {
 //        initInstance();
 //    }
 
-    public static CoapClientDatagramChannelFactory getInstance(){
-        return instance;
-    }
+//    public static CoapClientDatagramChannelFactory getInstance(){
+//        return instance;
+//    }
 
     public DatagramChannel getChannel(){
         return channel;

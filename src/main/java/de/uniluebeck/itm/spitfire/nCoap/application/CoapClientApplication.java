@@ -43,7 +43,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
  */
 public abstract class CoapClientApplication implements ResponseCallback{
 
-    protected DatagramChannel channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
+    protected DatagramChannel channel = new CoapClientDatagramChannelFactory().getChannel();
 
     private Logger log = LoggerFactory.getLogger(CoapClientApplication.class.getName());
 
