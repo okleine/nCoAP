@@ -26,9 +26,6 @@ import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 */
 public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicationTest{
 
-    //private static CoapTestServer testServer = new CoapTestServer(0);
-    private static CoapMessageReceiver testReceiver = CoapMessageReceiver.getInstance();
-
     //request
     private static CoapRequest coapRequest;
     private static int requestMsgID;
@@ -37,13 +34,25 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
     //response
     private static CoapResponse expectedCoapResponse;
 
-    //time
-    private static long sendingTime;
-
     @Override
     public void createTestScenario() throws Exception{
-        log.info("******* Starting tests in " + this.getClass().getName() + " **********");
 
+        /*
+             testReceiver                    Server      DESCRIPTION
+                  |                             |
+              (1) |--------GET----------------->|        send GET-Request to server
+                  |                             |
+              (2) |<-------EMPTY-ACK------------|        server responds with empty ack to indicate a separate response
+                  |                             | |
+                  |                             | | 2,5 seconds until message is processed
+                  |                             | | 
+              (3) |<-------CON-RESPONSE---------|        server sends separate response
+                  |                             |        
+              (4) |--------EMPTY-ACK----------->|        client confirms arrival
+                  |                             |
+                  |                             | 
+        */    
+        
         //define expected response
         expectedCoapResponse = new CoapResponse(Code.CONTENT_205);
         expectedCoapResponse.setPayload(NOT_OBSERVABLE_RESOURCE_CONTENT.getBytes("UTF-8"));

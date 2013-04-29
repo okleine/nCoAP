@@ -47,7 +47,9 @@ public abstract class AbstractCoapCommunicationTest {
     public AbstractCoapCommunicationTest(){
         if(!scenarioCreated){
             try {
+                log.info("******* Starting tests in " + this.getClass().getName() + " **********");
                 createTestScenario();
+                log.info("******* Test scenario finished: " + this.getClass().getName() + " **********");
                 scenarioCreated = true;
             } catch (Exception e) {
                 throw new RuntimeException("Could not create test scenario. ", e);
@@ -61,13 +63,14 @@ public abstract class AbstractCoapCommunicationTest {
         initializeComponents();
         testReceiver.getReceivedMessages().clear();
         testReceiver.getResponsesToSend().clear();
-
     }
 
     @AfterClass
     public static void shutDownComponents(){
+        Logger.getLogger("JUnit").info("******* shutDownComponents() *******");
         testServer.shutdown();
         testClient.shutdown();
+        testReceiver.shutdown();
         componentsInitialized = false;
         scenarioCreated = false;
     }
@@ -76,10 +79,7 @@ public abstract class AbstractCoapCommunicationTest {
         if(!componentsInitialized){
             testClient = new CoapTestClient();
             testServer = new CoapTestServer(0);
-            testReceiver = CoapMessageReceiver.getInstance();
-            testReceiver.reset();
-            testReceiver.setReceiveEnabled(true);
-            testReceiver.setWriteEnabled(true);
+            testReceiver = new CoapMessageReceiver();
             componentsInitialized = true;
         }
     }
@@ -118,5 +118,9 @@ public abstract class AbstractCoapCommunicationTest {
     public void registerNotObservableDummyService(long pretendedProcessingMillisForRequests){
         testServer.registerService(new NotObservableDummyWebService(NOT_OBSERVABLE_SERVICE_PATH,
                 NOT_OBSERVABLE_RESOURCE_CONTENT, pretendedProcessingMillisForRequests));
+    }
+    
+    public void registerObservableDummyService(ObservableDummyWebService observableDummyWebService) {
+        testServer.registerService(observableDummyWebService);
     }
 }

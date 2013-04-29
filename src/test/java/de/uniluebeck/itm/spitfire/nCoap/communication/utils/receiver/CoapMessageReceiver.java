@@ -34,8 +34,6 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 
     private DatagramChannel channel;
 
-    private static CoapMessageReceiver instance = new CoapMessageReceiver();
-
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     //Received messages are ignored when set to false
@@ -46,11 +44,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     //contains a list of test specific responses
     private LinkedList<MessageReceiverResponse> responsesToSend = new LinkedList<MessageReceiverResponse>();
 
-    public static CoapMessageReceiver getInstance(){
-        return instance;
-    }
-
-    private CoapMessageReceiver() {
+    public CoapMessageReceiver() {
         //Create datagram channel to receive messages
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(Executors.newCachedThreadPool());

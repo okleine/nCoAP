@@ -21,7 +21,7 @@ import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 *
 * @author Stefan Hueske
 */
-public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunicationTest{
+public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunicationTest {
 
     //request
     private static CoapRequest coapRequest;
@@ -31,9 +31,19 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
     //response
     private static CoapResponse expectedCoapResponse;
 
-
     @Override
-    public void createTestScenario() throws Exception{
+    public void createTestScenario() throws Exception {
+        
+        /*
+             testReceiver                    Server      DESCRIPTION
+                  |                             |
+              (1) |--------GET----------------->|        send GET-Request to server
+                  |                             |
+              (2) |<-------ACK-RESPONSE---------|        server responds with piggy-backed response
+                  |                             |
+                  |                             | 
+        */    
+        
         //define expected response
         expectedCoapResponse = new CoapResponse(Code.CONTENT_205);
         expectedCoapResponse.setPayload(NOT_OBSERVABLE_RESOURCE_CONTENT.getBytes("UTF-8"));
@@ -55,7 +65,7 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
         testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 
         //wait for response
-        Thread.sleep(300);
+        Thread.sleep(150);
 
         testReceiver.setReceiveEnabled(false);
     }

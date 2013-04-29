@@ -33,21 +33,39 @@ public class ObserveOptionAutoNotificationMaxAgeTest extends AbstractCoapCommuni
     private static CoapRequest coapRequest;
 
     //notifications
-    private static CoapResponse expectedNotification1;
-    private static CoapResponse expectedNotification2;
+    private static CoapResponse preparedNotification1;
+    private static CoapResponse preparedNotification2;
 
     @Override
     public void createTestScenario() throws Exception {
-        //define expected notifications
-        expectedNotification1 = new CoapResponse(Code.CONTENT_205);
-        expectedNotification1.setPayload("testpayload1".getBytes("UTF-8"));
-        expectedNotification1.setMaxAge(5);
+        /*
+             testReceiver                    Server      DESCRIPTION
+                  |                             |
+              (1) |--------GET_OBSERVE--------->|        Register observer
+                  |                             |
+              (2) |<-------1st Notification-----|        Receive first notification
+                  |                             | |
+                  |                             | | 2 seconds until max-age ends
+                  |                             | | 
+              (3) |<-------2nd Notification-----|        Auto notification should be send by the server
+                  |                             |        before max-age ends
+              (4) |--------RST----------------->|
+                  |                             |
+                  |                             | 
+        */                
+        
+        //define notifications which the server will use to respond
+        preparedNotification1 = new CoapResponse(Code.CONTENT_205);
+        preparedNotification1.setPayload("testpayload1".getBytes("UTF-8"));
+        preparedNotification1.setMaxAge(2);
 
-        expectedNotification2 = new CoapResponse(Code.CONTENT_205);
-        expectedNotification2.setPayload("testpayload2".getBytes("UTF-8"));
+        preparedNotification2 = new CoapResponse(Code.CONTENT_205);
+        preparedNotification2.setPayload("testpayload2".getBytes("UTF-8"));
 
-        //register webservice on test server
-        registerObservableDummyService(0, 2000, 2000);
+        //create observable web service, add prepared responses and register web service
+        ObservableDummyWebService observableDummyWebService = new ObservableDummyWebService(OBSERVABLE_SERVICE_PATH, true, 0, 0);
+        observableDummyWebService.addPreparedResponses(preparedNotification1, preparedNotification2);
+        registerObservableDummyService(observableDummyWebService);
 
         //create registration request
         URI targetUri = new URI("coap://localhost:" + testServer.getServerPort() + OBSERVABLE_SERVICE_PATH);
@@ -65,63 +83,11 @@ public class ObserveOptionAutoNotificationMaxAgeTest extends AbstractCoapCommuni
         //send reset to remove observer
         CoapResponse resetMessage = new CoapResponse(Code.EMPTY);
         resetMessage.getHeader().setMsgType(MsgType.RST);
-        resetMessage.setMessageID(2222);
+        resetMessage.setMessageID(preparedNotification2.getMessageID());
         testReceiver.writeMessage(resetMessage, new InetSocketAddress("localhost", testServer.getServerPort()));
 
         testReceiver.setReceiveEnabled(false);
     }
-
-//    @BeforeClass
-//    public static void init() throws Exception {
-//        //init
-//        testReceiver.reset();
-//        testServer.reset();
-//        testReceiver.setReceiveEnabled(true);
-//
-//        //Wireshark: https://dl.dropbox.com/u/10179177/Screenshot_2013.04.11-21.53.31.png
-//
-//        //create registration request
-//        String requestPath = "/testpath";
-//        URI targetUri = new URI("coap://localhost:" +
-//                CoapServerApplication.DEFAULT_COAP_SERVER_PORT + requestPath);
-//        coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
-//        coapRequest.getHeader().setMsgID(1111);
-//        coapRequest.setToken(new byte[]{0x13, 0x53, 0x34});
-//        coapRequest.setObserveOptionRequest();
-//
-//        //create notifications
-//        (expectedNotification1 = new CoapResponse(Code.CONTENT_205)).setPayload("testpayload1tt".getBytes("UTF-8"));
-//        expectedNotification1.setMaxAge(5);
-//        (expectedNotification2 = new CoapResponse(Code.CONTENT_205)).setPayload("testpayload2".getBytes("UTF-8"));
-//
-//        ObservableDummyWebService observableDummyWebService = new ObservableDummyWebService(requestPath, true, 0, 0);
-//        observableDummyWebService.addPreparedResponses(expectedNotification1, expectedNotification2);
-//        testServer.registerService(observableDummyWebService);
-//
-//        //setup testServer
-////        testServer.registerDummyService(requestPath);
-//        //if both cancellations fail, the notification will be send six times
-////        testServer.addResponse(expectedNotification1, expectedNotification2);
-//
-//
-//        //run test sequence
-//
-//        //registration
-//        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost", DEFAULT_COAP_SERVER_PORT));
-//        //wait for response
-//        Thread.sleep(150);
-//
-//        //wait for Max-Age to end and resulting notification
-//        Thread.sleep(5500);
-//
-//        //send reset to remove observer
-//        CoapResponse rstMsg = new CoapResponse(Code.EMPTY);
-//        rstMsg.getHeader().setMsgType(MsgType.RST);
-//        rstMsg.setMessageID(expectedNotification2.getMessageID());
-//        testReceiver.writeMessage(rstMsg, new InetSocketAddress("localhost", DEFAULT_COAP_SERVER_PORT));
-//
-//        testReceiver.setReceiveEnabled(false);
-//    }
 
     @Test
     public void testReceiverReceived2Messages() {
@@ -177,8 +143,8 @@ public class ObserveOptionAutoNotificationMaxAgeTest extends AbstractCoapCommuni
         CoapMessage recNotification2 = receivedMessages.get(timeKeys.next());
 
         String message = "1st notifications payload does not match";
-        assertEquals(message, expectedNotification1.getPayload(), recNotification1.getPayload());
+        assertEquals(message, preparedNotification1.getPayload(), recNotification1.getPayload());
         message = "2nd notifications payload does not match";
-        assertEquals(message, expectedNotification2.getPayload(), recNotification2.getPayload());
+        assertEquals(message, preparedNotification2.getPayload(), recNotification2.getPayload());
     }
 }
