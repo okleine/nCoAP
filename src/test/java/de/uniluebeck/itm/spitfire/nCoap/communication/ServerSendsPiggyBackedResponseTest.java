@@ -36,16 +36,7 @@ import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
  */
 public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicationTest {
 
-    //request
-    private URI targetUri;
-    private CoapRequest coapRequest;
-    private String requestPath;
-    private int requestMsgID;
-    private byte[] requestToken;
-
-    //response
-    private CoapResponse coapResponse;
-    private String responsePayload;
+    private static CoapRequest coapRequest;
 
     @Override
     public void createTestScenario() throws Exception {
@@ -63,17 +54,17 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         */
         
         //create request
-        requestToken = new byte[]{0x12, 0x23, 0x34};
-        requestPath = "/testpathtttt";
-        requestMsgID = 3333;
-        targetUri = new URI("coap://localhost:" + testReceiver.getReceiverPort() + requestPath);
+        byte[] requestToken = new byte[]{0x12, 0x23, 0x34};
+        String requestPath = "/testpath";
+        int requestMsgID = 3333;
+        URI targetUri = new URI("coap://localhost:" + testReceiver.getReceiverPort() + requestPath);
         coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri, testClient);
         coapRequest.getHeader().setMsgID(requestMsgID);
         coapRequest.setToken(requestToken);
 
         //create response
-        responsePayload = "testpayload";
-        coapResponse = new CoapResponse(Code.CONTENT_205);
+        String responsePayload = "testpayload";
+        CoapResponse coapResponse = new CoapResponse(Code.CONTENT_205);
         coapResponse.setPayload(responsePayload.getBytes("UTF-8"));
         coapResponse.getHeader().setMsgType(MsgType.ACK);
 

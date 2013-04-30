@@ -41,9 +41,12 @@ public class CoapClientDatagramChannelFactory {
 
     //public final int COAP_CLIENT_PORT = 5682;
     public static final int RECEIVE_BUFFER_SIZE = 65536;
-    private static final int NO_OF_THREADS = 20;
+    private static final int NO_OF_THREADS = 5;
     
-    private DatagramChannel channel;
+    private ScheduledExecutorService executorService;
+    private ChannelFactory channelFactory;
+
+    private static int number = 0;
 
     private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
 
@@ -52,20 +55,8 @@ public class CoapClientDatagramChannelFactory {
 //        ChannelFactory channelFactory =
 //                new NioDatagramChannelFactory(CoapExecutorService.getExecutorService());
 
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
-                new ThreadFactoryBuilder().setNameFormat("nCoap-Client-Thread %d")
-                        .build());
 
-        ChannelFactory channelFactory =
-                new NioDatagramChannelFactory(executorService);
 
-        ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
-
-        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
-
-        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
-        channel.getConfig().setReceiveBufferSizePredictor(predictor);
     }
     
 //    public static void resetInstance() {
@@ -78,6 +69,24 @@ public class CoapClientDatagramChannelFactory {
     }
 
     public DatagramChannel getChannel(){
+
+        number = number + 1;
+
+        executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
+                new ThreadFactoryBuilder().setNameFormat("Pool " + number + ": nCoap-Client-Thread %d")
+                        .build());
+
+        channelFactory =
+                new NioDatagramChannelFactory(executorService);
+
+        ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
+        bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
+
+        DatagramChannel channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+
+        FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
+        channel.getConfig().setReceiveBufferSizePredictor(predictor);
+
         return channel;
     }
 }

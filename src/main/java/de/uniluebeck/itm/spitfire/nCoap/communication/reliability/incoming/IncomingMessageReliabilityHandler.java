@@ -212,6 +212,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         @Override
         public void run(){
+            log.debug("Start runnable");
             boolean confirmed = false;
             if(receivedMessageIsRequest){
                 synchronized (this){
@@ -255,6 +256,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                     }
                 });
             }
+            log.debug("Finished runnable()");
         }
     }
 }

@@ -96,7 +96,7 @@ public class ObservableDummyWebService extends ObservableWebService<Boolean>{
         try {
             response.setMaxAge(maxAge);
 
-            String payload = getResourceStatus() ? "default response, status is true" : "default response, status is false";
+            String payload = getResourceStatus() ? "testpayload1" : "testpayload2";
             response.setPayload(ChannelBuffers.wrappedBuffer(payload.getBytes(Charset.forName("UTF-8"))));
 
             response.setContentType(OptionRegistry.MediaType.TEXT_PLAIN_UTF8);

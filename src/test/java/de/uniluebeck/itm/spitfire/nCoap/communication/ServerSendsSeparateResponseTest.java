@@ -3,6 +3,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
+import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.MessageReceiverResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -69,8 +70,9 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         //create empy ack
         emptyACK = new CoapResponse(Code.EMPTY);
         emptyACK.getHeader().setMsgType(MsgType.ACK);
+        testReceiver.addResponse(new MessageReceiverResponse(emptyACK, true, false));
 
-        //create response
+        //create seperate response to be sent by the message receiver
         responsePayload = "testpayload";
         coapResponse = new CoapResponse(Code.CONTENT_205);
         coapResponse.setPayload(responsePayload.getBytes("UTF-8"));
@@ -81,8 +83,8 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         Thread.sleep(1000);
 
         //send empty ack
-        emptyACK.setMessageID(coapRequest.getMessageID());
-        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", testClient.getClientPort()));
+        //emptyACK.setMessageID(coapRequest.getMessageID());
+        //testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", testClient.getClientPort()));
         Thread.sleep(1000);
 
         //send separate response
@@ -92,7 +94,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         testReceiver.writeMessage(coapResponse, new InetSocketAddress("localhost", testClient.getClientPort()));
         
         //wait for ack
-        Thread.sleep(300);
+        Thread.sleep(1000);
         testReceiver.setReceiveEnabled(false);
     }
 
@@ -105,7 +107,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
 
     @Test
     public void testReceiverReceivedTwoMessages() {
-        String message = "Receiver received more than one message";
+        String message = "Receiver received wrong number of messages";
         assertEquals(message, 2, testReceiver.getReceivedMessages().values().size());
     }
 
@@ -116,10 +118,10 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
     }
 
     @Test
-    public void test2ndReceivedMessageIsEmpyACK() {
+    public void test2ndReceivedMessageIsEmptyACK() {
         SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
-        String message = "First received message is not an EMPTY ACK";
+        String message = "Second received message is not an EMPTY ACK";
         assertEquals(message, Code.EMPTY, receivedMessage.getCode());
         assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
     }

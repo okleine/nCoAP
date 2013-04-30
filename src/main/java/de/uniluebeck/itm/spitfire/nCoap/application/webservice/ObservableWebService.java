@@ -56,7 +56,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
      *                  {@link WebService} instance.
      */
     @Override
-    public final void setResourceStatus(T newStatus){
+    public synchronized final void setResourceStatus(T newStatus){
         this.resourceStatus = newStatus;
 
         //Notify observers (methods inherited from abstract class Observable)
