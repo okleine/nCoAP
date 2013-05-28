@@ -82,7 +82,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
     /**
      * This method relates incoming responses to open requests and invokes the method <code>reveiveCoapResponse</code>
      * of the client that sent the response. CoaP clients thus should implement the {@link ResponseCallback} interface
-     * by extending the abstract class {@link de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication}.
+     * by extending the abstract class {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication}.
      *
      * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
      * {@link org.jboss.netty.channel.Channel}
@@ -120,12 +120,12 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
         }
         else if (me.getMessage() instanceof InternalAcknowledgementMessage){
 
-            ByteArrayWrapper token = ((InternalAcknowledgementMessage) me.getMessage()).getContent();
+            ByteArrayWrapper token = ((InternalAcknowledgementMessage) me.getMessage()).getToken();
 
             ResponseCallback callback = callbacks.get(token, me.getRemoteAddress());
 
             if(callback != null){
-                log.debug("Received empty acknowledgement for request with token " + token.toHexString());
+                log.debug("Received empty acknowledgement for request with token " + token.toString());
                 callback.receiveEmptyACK();
             }
             me.getFuture().setSuccess();

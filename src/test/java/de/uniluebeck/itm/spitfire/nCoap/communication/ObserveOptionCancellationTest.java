@@ -1,10 +1,5 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
-
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -16,13 +11,12 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.SortedMap;
-import org.junit.BeforeClass;
+
 import org.junit.Test;
 
 import static junit.framework.Assert.*;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
-import static de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication.DEFAULT_COAP_SERVER_PORT;
-import static de.uniluebeck.itm.spitfire.nCoap.communication.AbstractCoapCommunicationTest.testServer;
+
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableDummyWebService;
 import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
@@ -39,7 +33,7 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
 
     //cancellation messages
     private static CoapRequest cancelGETrequest;
-    private static CoapResponse cancelRSTmsg;
+    private static CoapMessage cancelRSTmsg;
 
     //notifications
     private static CoapResponse notification;
@@ -66,7 +60,6 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         cancelGETrequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
         cancelGETrequest.getHeader().setMsgID(3333);
         cancelGETrequest.setToken(new byte[]{0x54, 0x43, 0x43});
-        cancelRSTmsg = new CoapResponse(MsgType.RST, Code.EMPTY);
 
         //setup testServer/Observable WebService
         ObservableDummyWebService observableDummyWebService = new ObservableDummyWebService(requestPath, true, 0, 0);
@@ -122,7 +115,7 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         //respond with RST message
         SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
         CoapMessage lastReceivedMessage = receivedMessages.get(receivedMessages.lastKey());
-        cancelRSTmsg.setMessageID(lastReceivedMessage.getMessageID());
+        cancelRSTmsg = CoapMessage.createEmptyReset(lastReceivedMessage.getMessageID());
   /*8*/ testReceiver.writeMessage(cancelRSTmsg, new InetSocketAddress("localhost", testServer.getServerPort()));
         Thread.sleep(150);
         //if cancellation was successful, nothing should happen here

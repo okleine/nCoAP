@@ -33,7 +33,7 @@ public class Tools {
       for (int i=0; i < b.length; i++) {
         result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1) + "-";
       }
-      return "["+ result.subSequence(0, Math.max(result.length() - 1, 0)) + "]";
+      return "" + result.subSequence(0, Math.max(result.length() - 1, 0));
     }
 
     public static byte[] getByteArrayRange(byte[] in, int firstIncl, int lastExcl)

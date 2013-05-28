@@ -1,7 +1,5 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableDummyWebService;
@@ -12,7 +10,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
@@ -96,8 +93,8 @@ public abstract class AbstractCoapCommunicationTest {
 
             //Define loglevel
             Logger.getRootLogger().setLevel(Level.INFO);
-            Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application").setLevel(Level.DEBUG);
-            Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication").setLevel(Level.DEBUG);
+            //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application").setLevel(Level.DEBUG);
+            //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication").setLevel(Level.DEBUG);
             Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.encoding").setLevel(Level.INFO);
 
             loggingInitialized = true;

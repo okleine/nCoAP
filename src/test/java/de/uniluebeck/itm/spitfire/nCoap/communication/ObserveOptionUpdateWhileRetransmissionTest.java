@@ -4,9 +4,6 @@
  */
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -15,17 +12,14 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.SortedMap;
-import org.junit.BeforeClass;
+
 import org.junit.Test;
 
 import static junit.framework.Assert.*;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
-import static de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication.DEFAULT_COAP_SERVER_PORT;
-import static de.uniluebeck.itm.spitfire.nCoap.communication.AbstractCoapCommunicationTest.testServer;
-import static de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory.*;
+
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableDummyWebService;
 import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
 
@@ -102,10 +96,10 @@ public class ObserveOptionUpdateWhileRetransmissionTest extends AbstractCoapComm
         Thread.sleep(2500);
 
         //send RST message
-        CoapResponse cancelRSTmsg = new CoapResponse(MsgType.RST, Code.EMPTY);
+
         SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
         CoapMessage lastReceivedMessage = receivedMessages.get(receivedMessages.lastKey());
-        cancelRSTmsg.setMessageID(lastReceivedMessage.getMessageID());
+        CoapMessage cancelRSTmsg = CoapMessage.createEmptyReset(lastReceivedMessage.getMessageID());
         testReceiver.writeMessage(cancelRSTmsg, new InetSocketAddress("localhost", testServer.getServerPort()));
 
         testReceiver.setReceiveEnabled(false);

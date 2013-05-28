@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.AbstractCoapCommunicationTest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;

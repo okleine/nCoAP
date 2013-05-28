@@ -229,7 +229,7 @@ public class CoapRequest extends CoapMessage {
      * @return <code>true</code> if accept options were succesfully set, <code>false</code> if accept option is not
      * meaningful with the message code and thus silently ignored
      */
-    public boolean setAccept(OptionRegistry.MediaType... mediaTypes) throws InvalidOptionException, ToManyOptionsException {
+    public boolean setAccept(OptionRegistry.MediaType... mediaTypes) {
         optionList.removeAllOptions(OptionRegistry.OptionName.ACCEPT);
         try{
             for(OptionRegistry.MediaType mediaType : mediaTypes){

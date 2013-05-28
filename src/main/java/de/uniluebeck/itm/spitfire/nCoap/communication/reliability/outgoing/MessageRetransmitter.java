@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdate;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdateMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler.ScheduledRetransmission;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.logging.Level;
+
 import org.jboss.netty.channel.UpstreamMessageEvent;
 
 /**
@@ -53,7 +53,7 @@ class MessageRetransmitter implements Runnable {
             try {
                 ((CoapResponse)coapMessage).setObserveOptionResponse(observeOption);
                 UpstreamMessageEvent observeOptionUpdateEvent = new UpstreamMessageEvent(ctx.getChannel(), 
-                        new InternalObserveOptionUpdate(retransmission.getToken(), rcptAddress, observeOption), null);
+                        new InternalObserveOptionUpdateMessage(retransmission.getToken(), rcptAddress, observeOption), null);
                 ctx.sendUpstream(observeOptionUpdateEvent);
             } catch (ToManyOptionsException ex) {
                 log.error("Error while trying to update OBSERVE option in MessageRetransmitter!");
@@ -75,8 +75,7 @@ class MessageRetransmitter implements Runnable {
     @Override
     public String toString() {
         CoapMessage coapMessage = retransmission.getCoapMessage();
-        return "{[" + this.getClass().getName() + "] " +
-                "RetransmitNo " + retransmitNo +
+        return  "RetransmitNo " + retransmitNo +
                 (coapMessage == null ? "" : (", MsgID " + coapMessage.getMessageID())) +
                 ", RcptAddress " + rcptAddress + "}";
     }

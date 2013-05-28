@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.application.webservice;
+package de.uniluebeck.itm.spitfire.nCoap.application.server.webservice;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -24,7 +25,7 @@ import java.util.Map;
  * Time: 15:47
  * To change this template use File | Settings | File Templates.
  */
-public class WellKnownCoreResource extends NotObservableWebService<Map<String, WebService>> {
+public final class WellKnownCoreResource extends NotObservableWebService<Map<String, WebService>> {
 
     private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
 
@@ -60,8 +61,8 @@ public class WellKnownCoreResource extends NotObservableWebService<Map<String, W
         StringBuffer buffer = new StringBuffer();
 
         //TODO make this CoRE link format
-        for(Map.Entry<String, WebService> entry : getResourceStatus().entrySet()){
-            buffer.append("<" + entry.getKey() + ">,\n");
+        for(String path : getResourceStatus().keySet()){
+            buffer.append("<" + path + ">,\n");
         }
         buffer.deleteCharAt(buffer.length()-2);
 

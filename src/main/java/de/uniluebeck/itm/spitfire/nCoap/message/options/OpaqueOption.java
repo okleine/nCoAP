@@ -26,8 +26,8 @@ public class OpaqueOption extends Option{
 
         setValue(optionName, value);
 
-        log.debug("New Option (" + optionName + ")" +
-                  " created (value: " + getHexString(value) + ", encoded length: " + value.length + ")");
+        log.debug("New " + optionName + " option created (value: " +
+                  getHexString(value) + ", encoded length: " + value.length + ")");
     }
 
     private void setValue(OptionName optionName, byte[] value) throws InvalidOptionException{
@@ -49,7 +49,7 @@ public class OpaqueOption extends Option{
     @Override
     public String getDecodedValue(){
         ByteArrayWrapper decodedValue = new ByteArrayWrapper(value);
-        return decodedValue.toHexString();
+        return decodedValue.toString();
     }
 
     @Override

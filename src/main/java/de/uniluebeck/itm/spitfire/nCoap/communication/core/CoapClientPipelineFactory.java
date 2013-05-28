@@ -28,6 +28,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackH
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -50,6 +51,8 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
     public CoapClientPipelineFactory(ScheduledExecutorService executorService){
         outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
         incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
+
+        //MessageIDFactory.setExecutorService(executorService);
     }
 
     @Override

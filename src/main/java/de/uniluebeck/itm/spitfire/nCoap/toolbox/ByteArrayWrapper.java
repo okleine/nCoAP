@@ -29,7 +29,8 @@ public class ByteArrayWrapper{
         return Arrays.hashCode(data);
     }
 
-    public String toHexString(){
+    @Override
+    public String toString(){
         return Tools.toHexString(data);
     }
 }

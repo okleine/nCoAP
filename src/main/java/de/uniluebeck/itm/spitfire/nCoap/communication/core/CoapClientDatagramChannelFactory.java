@@ -29,6 +29,9 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,45 +42,21 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class CoapClientDatagramChannelFactory {
 
-    //public final int COAP_CLIENT_PORT = 5682;
+    private static Logger log = LoggerFactory.getLogger(CoapClientDatagramChannelFactory.class.getName());
+
     public static final int RECEIVE_BUFFER_SIZE = 65536;
-    private static final int NO_OF_THREADS = 5;
-    
-    private ScheduledExecutorService executorService;
-    private ChannelFactory channelFactory;
+    private static final int NO_OF_THREADS = 10;
 
-    private static int number = 0;
+    private static int clientNumber = 0;
+    private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
+            new ThreadFactoryBuilder().setNameFormat("nCoapClientThread " + clientNumber + "-%d")
+                    .build());
 
-    private static CoapClientDatagramChannelFactory instance = new CoapClientDatagramChannelFactory();
+    public static DatagramChannel getChannel(){
 
-    private CoapClientDatagramChannelFactory(){
-        //Create Datagram Channel
-//        ChannelFactory channelFactory =
-//                new NioDatagramChannelFactory(CoapExecutorService.getExecutorService());
+        clientNumber = clientNumber + 1;
 
-
-
-    }
-    
-//    public static void resetInstance() {
-//        instance = new CoapClientDatagramChannelFactory();
-//        initInstance();
-//    }
-
-    public static CoapClientDatagramChannelFactory getInstance(){
-        return instance;
-    }
-
-    public DatagramChannel getChannel(){
-
-        number = number + 1;
-
-        executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
-                new ThreadFactoryBuilder().setNameFormat("Pool " + number + ": nCoap-Client-Thread %d")
-                        .build());
-
-        channelFactory =
-                new NioDatagramChannelFactory(executorService);
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
@@ -86,6 +65,8 @@ public class CoapClientDatagramChannelFactory {
 
         FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
         channel.getConfig().setReceiveBufferSizePredictor(predictor);
+
+        log.info("New client channel created for port " + channel.getLocalAddress().getPort());
 
         return channel;
     }

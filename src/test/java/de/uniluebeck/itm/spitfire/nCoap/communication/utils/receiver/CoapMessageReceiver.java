@@ -39,13 +39,15 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     //Received messages are ignored when set to false
     private boolean receiveEnabled = true;
     private boolean writeEnabled = true;
+
+    //map to save received messages
     private SortedMap<Long, CoapMessage> receivedMessages = new TreeMap<Long, CoapMessage>();
 
     //contains a list of test specific responses
     private LinkedList<MessageReceiverResponse> responsesToSend = new LinkedList<MessageReceiverResponse>();
 
     public CoapMessageReceiver() {
-        //Create datagram channel to receive messages
+        //Create datagram datagramChannel to receive messages
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 
@@ -63,6 +65,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
         });
 
         channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+        log.info("New message receiver channel created for port " + channel.getLocalAddress().getPort());
     }
 
     public int getReceiverPort(){
@@ -73,8 +76,10 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         if ((e.getMessage() instanceof CoapMessage) && receiveEnabled) {
             CoapMessage coapMessage = (CoapMessage) e.getMessage();
-            log.info("CoAP message received: " + coapMessage);
+
             receivedMessages.put(System.currentTimeMillis(), coapMessage);
+            log.info("Incoming (from " + e.getRemoteAddress() + ") # " +  getReceivedMessages().size() + ": "
+                    + coapMessage);
 
             if(writeEnabled && (coapMessage instanceof CoapRequest)){
                 if (responsesToSend.isEmpty()) {
@@ -114,12 +119,12 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
         this.writeEnabled = writeEnabled;
     }
 
-    public synchronized void reset() {
-        receivedMessages.clear();
-        responsesToSend.clear();
-        setReceiveEnabled(true);
-        setWriteEnabled(true);
-    }
+//    public synchronized void reset() {
+//        receivedMessages.clear();
+//        responsesToSend.clear();
+//        setReceiveEnabled(true);
+//        setWriteEnabled(true);
+//    }
 
     public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
         log.debug("Write message: " + coapMessage);
@@ -131,19 +136,19 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     }
 
     /**
-     * Shuts the client down by closing the channel which includes to unbind the channel from a listening port and
+     * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
      */
     public void shutdown(){
-        //Close the datagram channel (includes unbind)
+        //Close the datagram datagramChannel (includes unbind)
         ChannelFuture future = channel.close();
 
         //Await the closure and let the factory release its external resource to finalize the shutdown
-
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Channel closed.");
+                DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
+                log.info("Message receiver channel closed (port: " + closedChannel.getLocalAddress().getPort() + ").");
 
                 channel.getFactory().releaseExternalResources();
                 log.info("External resources released. Shutdown completed.");

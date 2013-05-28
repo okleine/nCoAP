@@ -95,6 +95,8 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
             return;
         }
 
+        log.info("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
+
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
         if(coapMessage.getCode().isErrorMessage() || coapMessage.getMessageType().equals(MsgType.RST)){
             errorMessageReceived(ctx, me);
@@ -119,7 +121,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                 if(transfer != null){
                     try {
                         if(response.getBlockNumber(BLOCK_2) == transfer.getNextBlockNumber()){
-                            log.debug("Received response (Token: " + (new ByteArrayWrapper(token).toHexString()) +
+                            log.debug("Received response (Token: " + (new ByteArrayWrapper(token).toString()) +
                                     " , Block: " + response.getBlockNumber(BLOCK_2) + "), ");
 
                             if (log.isDebugEnabled()){
@@ -127,7 +129,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                                 ChannelBuffer payloadCopy = ChannelBuffers.copiedBuffer(response.getPayload());
                                 byte[] bytes = new byte[payloadCopy.readableBytes()];
                                 payloadCopy.getBytes(0, bytes);
-                                log.debug("Payload Hex: " + new ByteArrayWrapper(bytes).toHexString());
+                                log.debug("Payload Hex: " + new ByteArrayWrapper(bytes).toString());
                             }
 
                             transfer.getPartialPayload()
@@ -135,7 +137,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                             transfer.setNextBlockNumber(transfer.getNextBlockNumber() + 1);
                         }
                         else{
-                            log.debug("Received unexpected response (Token: " + (new ByteArrayWrapper(token).toHexString()) +
+                            log.debug("Received unexpected response (Token: " + (new ByteArrayWrapper(token).toString()) +
                                     " , Block: " + response.getBlockNumber(BLOCK_2) + "). IGNORE!");
                             me.getFuture().setSuccess();
                             return;
@@ -154,7 +156,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
 
                         //Send response with complete payload to application
                         log.debug("Block " + response.getBlockNumber(BLOCK_2) + " for response with token " +
-                                new ByteArrayWrapper(token).toHexString() +
+                                new ByteArrayWrapper(token).toString() +
                                 "  received. Payload complete. Forward to client application.");
 
                         response.getOptionList().removeAllOptions(BLOCK_2);
@@ -166,11 +168,11 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                         synchronized (incompleteResponseMonitor){
                             if(incompleteResponsePayload.remove(new ByteArrayWrapper(token)) == null){
                                 log.error("This should never happen! No incomplete payload found for token " +
-                                        new ByteArrayWrapper(token).toHexString());
+                                        new ByteArrayWrapper(token).toString());
                             }
                             else{
                                 log.debug("Deleted not anymore incomplete payload for token " +
-                                        new ByteArrayWrapper(token).toHexString() + " from list");
+                                        new ByteArrayWrapper(token).toString() + " from list");
                             }
                         }
                         return;
@@ -180,7 +182,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                         final long receivedBlockNumber = response.getBlockNumber(BLOCK_2);
 
                         log.debug("Block " + receivedBlockNumber + " for response with token " +
-                                new ByteArrayWrapper(token).toHexString() +
+                                new ByteArrayWrapper(token).toString() +
                                 "  received. Payload (still) incomplete.");
 
                         CoapRequest nextCoapRequest = (CoapRequest) transfer.getCoapMessage();
@@ -195,7 +197,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                             @Override
                             public void operationComplete(ChannelFuture future) throws Exception {
                                 log.debug("Request for block " + (receivedBlockNumber + 1) + " for token " +
-                                        new ByteArrayWrapper(token).toHexString() + " sent succesfully.");
+                                        new ByteArrayWrapper(token).toString() + " sent succesfully.");
 
                             }
                         });
@@ -203,7 +205,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
                                 future, nextCoapRequest, me.getRemoteAddress());
 
                         log.debug("Send request for block " + (receivedBlockNumber + 1) + " for token " +
-                                new ByteArrayWrapper(token).toHexString() + ".");
+                                new ByteArrayWrapper(token).toString() + ".");
 
                         ctx.sendDownstream(event);
                         return;
@@ -224,14 +226,18 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
             }
         }
 
+        log.info("Incoming 2(from {}): {}.", me.getRemoteAddress(), me.getMessage());
         ctx.sendUpstream(me);
     }
 
     private void errorMessageReceived(ChannelHandlerContext ctx, MessageEvent me){
+        log.info("11111111111");
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
         synchronized (incompleteResponseMonitor){
             incompleteResponsePayload.remove(coapMessage.getToken());
         }
+
+        log.info("2222222222");
         ctx.sendUpstream(me);
     }
 

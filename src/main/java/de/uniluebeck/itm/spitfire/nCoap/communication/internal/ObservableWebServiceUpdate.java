@@ -1,17 +1,23 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.internal;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.webservice.ObservableWebService;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This message will be passed down the pipeline if a registered service updates.
  * 
  * @author Stefan Hueske, Oliver Kleine
  */
-public class ObservableWebServiceUpdate implements InternalMessage {
+public class ObservableWebServiceUpdate{
+
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     private ObservableWebService service;
 
     public ObservableWebServiceUpdate(ObservableWebService service) {
         this.service = service;
+        log.info("Internal observable service update created for service " + service.getPath());
     }
 
     /**
@@ -19,8 +25,12 @@ public class ObservableWebServiceUpdate implements InternalMessage {
      * itself.
      * @return the updated {@link ObservableWebService} instance (may be cast from Object)
      */
-    @Override
-    public Object getContent() {
+    public ObservableWebService getWebService() {
         return service;
+    }
+
+    @Override
+    public String toString(){
+        return "Observable status update: New status of " + service.getPath() + ": " + service.getResourceStatus();
     }
 }

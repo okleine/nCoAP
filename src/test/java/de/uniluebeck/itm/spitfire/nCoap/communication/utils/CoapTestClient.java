@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapClientApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import org.apache.log4j.Logger;
 
@@ -76,18 +76,14 @@ public class CoapTestClient extends CoapClientApplication {
 //
 //        //CoapExecutorService.cancelAll();
 //
-//        channel.close().awaitUninterruptibly();
-////        channel.getFactory().releaseExternalResources();
+//        datagramChannel.close().awaitUninterruptibly();
+////        datagramChannel.getFactory().releaseExternalResources();
 //        CoapClientDatagramChannelFactory.resetInstance();
-//        channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
+//        datagramChannel = CoapClientDatagramChannelFactory.getInstance().getChannel();
 //
 //    }
     
     public synchronized void setReceiveEnabled(boolean receiveEnabled) {
         this.receiveEnabled = receiveEnabled;
-    }
-
-    public int getClientPort() {
-        return channel.getLocalAddress().getPort();
     }
 }

@@ -15,7 +15,6 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -31,9 +30,6 @@ public abstract class CoapMessage implements Cloneable {
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
     protected InetAddress rcptAddress;
-
-    //protected Blocksize maxBlocksizeForRequest;
-    //protected Blocksize maxBlocksizeForResponse;
 
     protected Header header;
     protected OptionList optionList;
@@ -66,6 +62,30 @@ public abstract class CoapMessage implements Cloneable {
              new OptionList(coapMessage.getOptionList()),
              coapMessage.getPayload());
         this.rcptAddress = coapMessage.rcptAddress;
+    }
+
+    public static CoapMessage createEmptyReset(int messageID){
+        CoapMessage emptyRST = new CoapMessage(){};
+
+        try {
+            emptyRST.header = new Header(MsgType.RST, Code.EMPTY, messageID);
+        } catch (InvalidHeaderException e) {
+            log.error("This should never happen.", e);
+        }
+
+        return emptyRST;
+    }
+
+    public static CoapMessage createEmptyAcknowledgement(int messageID){
+        CoapMessage emptyACK = new CoapMessage(){};
+
+        try {
+            emptyACK.header = new Header(MsgType.ACK, Code.EMPTY, messageID);
+        } catch (InvalidHeaderException e) {
+            log.error("This should never happen.", e);
+        }
+
+        return emptyACK;
     }
 
     /**
@@ -149,6 +169,17 @@ public abstract class CoapMessage implements Cloneable {
      */
     public void setMessageID(int messageId) throws InvalidHeaderException {
         this.getHeader().setMsgID(messageId);
+    }
+
+    /**
+     * Returns the {@link MediaType} contained as {@link OptionName#CONTENT_TYPE} option in this {@link CoapMessage} instance.
+     * @return the {@link MediaType} contained as {@link OptionName#CONTENT_TYPE} option or null if the option is not set.
+     */
+    public MediaType getContentType(){
+        if(!optionList.getOption(CONTENT_TYPE).isEmpty()){
+            return MediaType.getByNumber((Long) optionList.getOption(CONTENT_TYPE).get(0).getDecodedValue());
+        }
+        return null;
     }
 
     /**
@@ -502,12 +533,7 @@ public abstract class CoapMessage implements Cloneable {
 
     @Override
     public String toString(){
-        return this.getClass().getName() + ":" +
-                " MsgID " + getMessageID() +
-                ", MygType " + getMessageType() +
-                ", Code " + getCode() +
-                ", Token " + new ByteArrayWrapper(getToken()).toHexString() +
-                ", Block_2 " + getMaxBlocksizeForResponse();
+        return "CoapMessage: " + getHeader() + ", [TOKEN] " + new ByteArrayWrapper(getToken());
     }
 
 }

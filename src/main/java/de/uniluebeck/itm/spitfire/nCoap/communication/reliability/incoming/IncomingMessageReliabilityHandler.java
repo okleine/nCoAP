@@ -24,24 +24,22 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-//import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
+import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalNullResponseFromWebserviceMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
+
 
 /**
  * This class is the first {@link ChannelUpstreamHandler} to deal with incoming decoded {@link CoapMessage}s. If the
@@ -55,8 +53,8 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     private static Logger log = LoggerFactory.getLogger(IncomingMessageReliabilityHandler.class.getName());
 
-    //Remote socket address, message ID, already confirmed
-    private final HashBasedTable<InetSocketAddress, Integer, Boolean> incomingMessagesToBeConfirmed
+    //Remote socket address, message ID, acknowledgement status, incoming is confirmable request
+    private final HashBasedTable<InetSocketAddress, Integer, Boolean> acknowledgementStates
             = HashBasedTable.create();
 
     private ScheduledExecutorService executorService;
@@ -64,15 +62,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public IncomingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
     }
-//    private static IncomingMessageReliabilityHandler instance = new IncomingMessageReliabilityHandler();
-//
-//    public static IncomingMessageReliabilityHandler getInstance(){
-//        return instance;
-//    }
-
-//    //Empty private constructor for singleton
-//    private IncomingMessageReliabilityHandler(){
-//    }
 
     /**
      * If the incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty
@@ -80,7 +69,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      * If the incoming message is a confirmable {@link CoapResponse} it immediately sends a proper acknowledgement.
      *
      * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
-     * {@link ChannelUpstreamHandler} interface) to the channel that received the message.
+     * {@link ChannelUpstreamHandler} interface) to the datagramChannel that received the message.
      * @param me the {@link MessageEvent} containing the actual message
      * @throws Exception if an error occured
      */
@@ -92,51 +81,19 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         }
 
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
+        log.info("Incoming (from " + me.getRemoteAddress() + "): " + coapMessage);
 
-        log.debug("Incoming " + coapMessage.getMessageType() +
-                " (MsgID " + coapMessage.getMessageID() +
-                ", MsgHash " + coapMessage.hashCode() +
-                ", Block " + coapMessage.getBlockNumber(OptionRegistry.OptionName.BLOCK_2) + ").");
+        InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 
         if(coapMessage.getMessageType() == MsgType.CON){
-
-            DatagramChannel datagramChannel = (DatagramChannel) ctx.getChannel();
-
-            EmptyACKSender emptyACKSender = new EmptyACKSender((InetSocketAddress) me.getRemoteAddress(),
-                    coapMessage.getMessageID(), datagramChannel, coapMessage.isRequest());
-
-            if(coapMessage.isRequest()){
-                boolean inserted = false;
-
-                synchronized (this){
-                    if(!incomingMessagesToBeConfirmed.contains(me.getRemoteAddress(), coapMessage.getMessageID())){
-
-                        incomingMessagesToBeConfirmed.put((InetSocketAddress) me.getRemoteAddress(),
-                                                       coapMessage.getMessageID(), false);
-
-                        inserted = true;
-                        this.notifyAll();
-                    }
-                }
-
-                log.debug("New confirmable request with message ID " +
-                            coapMessage.getMessageID() + " from " + me.getRemoteAddress() + " received (duplicate = " +
-                            !inserted + ")");
-
-                //The value of "inserted" is true if the incoming message was no duplicate
-                if(inserted){
-                    //Schedule empty ACK if there was no piggy backed ACK within 2 seconds
-                    //CoapExecutorService.schedule(emptyACKSender, 2000, TimeUnit.MILLISECONDS);
-                    executorService.schedule(emptyACKSender, 2000, TimeUnit.MILLISECONDS);
-                }
+            if(coapMessage instanceof CoapRequest){
+                if(!addAcknowledgementStatus(remoteAddress, coapMessage)){
+                    me.getFuture().setSuccess();
+                    return;
+                };
             }
-            else {
-                log.debug("New confirmable response with message ID " + coapMessage.getMessageID() + " from "
-                        + me.getRemoteAddress() + " received. Send empty ACK immediately.");
-                //Schedule to send an empty ACK asap
-                //CoapExecutorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
-                executorService.schedule(emptyACKSender, 0, TimeUnit.MILLISECONDS);
-            }
+
+            scheduleEmptyAcknowledgement(ctx, (InetSocketAddress) me.getRemoteAddress(), coapMessage);
         }
 
         ctx.sendUpstream(me);
@@ -150,113 +107,171 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      * was received).
      *
      * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
-     * {@link ChannelUpstreamHandler} interface) to the channel that received the message.
+     * {@link ChannelUpstreamHandler} interface) to the datagramChannel that received the message.
      * @param me the {@link MessageEvent} containing the actual message
      * @throws Exception if an error occured
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        if(me.getMessage() instanceof CoapResponse){
-            CoapResponse coapResponse = (CoapResponse) me.getMessage();
+        if(me.getMessage() instanceof InternalNullResponseFromWebserviceMessage){
+            InternalNullResponseFromWebserviceMessage nullResponse =
+                    (InternalNullResponseFromWebserviceMessage) me.getMessage();
 
-            log.debug("Handle downstream event for message with ID " +
-                    coapResponse.getMessageID() + " for " + me.getRemoteAddress() );
-
-            Boolean alreadyConfirmed;
-
-            synchronized(this){
-                alreadyConfirmed = incomingMessagesToBeConfirmed.remove(me.getRemoteAddress(),
-                                                                 coapResponse.getMessageID());
-            }
-
-            
-            if (!coapResponse.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
-                //CoAP Response is a notification, message type is already set
-                ctx.sendDownstream(me);
-                return;
-            }
-            
-            if (alreadyConfirmed == null){
-                coapResponse.getHeader().setMsgType(MsgType.NON);
+            if(removeAcknowledgementStatus(nullResponse.getRemoteAddress(), nullResponse.getMessageID()) == null){
+                log.info("No ACK status for message ID " + nullResponse.getMessageID() + " from " +
+                        nullResponse.getRemoteAddress() + " available.");
             }
             else{
-
-                if(alreadyConfirmed){
-                    coapResponse.getHeader().setMsgType(MsgType.CON);
-                }
-                else{
-                    coapResponse.getHeader().setMsgType(MsgType.ACK);
-                }
+                log.info("Removed ACK status for message ID " + nullResponse.getMessageID() + " from " +
+                        nullResponse.getRemoteAddress());
             }
+            return;
         }
 
+
+        if(!(me.getMessage() instanceof CoapResponse)){
+            log.info("Outgoing (to " + me.getRemoteAddress() + "): " + me.getMessage());
+            ctx.sendDownstream(me);
+            return;
+        }
+
+        CoapResponse coapResponse = (CoapResponse) me.getMessage();
+
+        log.debug("Handle downstream event for message with ID " +
+                coapResponse.getMessageID() + " for " + me.getRemoteAddress() );
+
+        //Check if this is a response on a confirmable request and set the message type properly (CON or ACK)
+        updateResponse(coapResponse,
+                 removeAcknowledgementStatus((InetSocketAddress) me.getRemoteAddress(), coapResponse.getMessageID()));
+
+        log.info("Outgoing (to " + me.getRemoteAddress() + "): " + me.getMessage());
         ctx.sendDownstream(me);
     }
 
-    private class EmptyACKSender implements Runnable{
+    private void updateResponse(CoapResponse coapResponse, Boolean acknowledgementSent) throws Exception{
 
-        private InetSocketAddress rcptAddress;
+        //the response is either on a NON request or is an update notification for observers
+        if(acknowledgementSent == null){
+            return;
+        }
+
+        //the response is on a CON request
+        if (acknowledgementSent){
+            if(coapResponse.getOption(OBSERVE_RESPONSE).isEmpty()){
+                //remove message ID to make the OutgoingMessageReliabilityHandler set a new one
+                coapResponse.getHeader().setMsgID(Header.MESSAGE_ID_UNDEFINED);
+            }
+            coapResponse.getHeader().setMsgType(MsgType.CON);
+        }
+        else{
+            coapResponse.getHeader().setMsgType(MsgType.ACK);
+        }
+    }
+
+    /**
+     * Checks whether there is an empty acknowledgement to be sent for the given combination of remote address
+     * and message ID and sets its status according to "sent".
+     *
+     * @param remoteAddress the {@link InetSocketAddress} of the recipient
+     * @param messageID the message ID of the empty acknowledgement
+     * @return <code>true</code> if the previous status was <code>false</code>, <code>false</code> if the
+     * previous state was <code>true</code> or if there is or was no such empty acknowledgement to be sent
+     */
+    private synchronized boolean setAcknowledgementSent(InetSocketAddress remoteAddress, int messageID){
+        if(acknowledgementStates.contains(remoteAddress, messageID)){
+            boolean acknowledgementSent = acknowledgementStates.put(remoteAddress, messageID, true);
+            if(acknowledgementSent){
+                log.info("Empty ACK already sent for message ID " + messageID + " to " + remoteAddress + "!");
+                return false;
+            }
+            else{
+                log.info("ACK status for message ID " + messageID + " to " + remoteAddress + " changed to true.");
+                return true;
+            }
+        }
+        else{
+            log.info("No response status found for message ID " + messageID + " to " + remoteAddress + "!");
+            return false;
+        }
+    }
+
+
+    private synchronized boolean addAcknowledgementStatus(InetSocketAddress remoteAddress, CoapMessage coapMessage){
+        //Ignore duplicates
+        if(acknowledgementStates.contains(remoteAddress, coapMessage.getMessageID())){
+            log.info("Received duplicate (" + coapMessage + "). IGNORE!");
+            return false;
+        }
+
+        acknowledgementStates.put(remoteAddress, coapMessage.getMessageID(), false);
+        log.debug("Added response status for " + coapMessage);
+        return true;
+    }
+
+
+    private synchronized Boolean removeAcknowledgementStatus(InetSocketAddress remoteAddress, int messageID){
+        return acknowledgementStates.remove(remoteAddress, messageID);
+    }
+
+
+    private synchronized void scheduleEmptyAcknowledgement(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
+                                                           CoapMessage coapMessage){
+        if(coapMessage instanceof CoapResponse){
+            //schedule transmission of empty ACK for asap
+            EmptyAcknowledgementSender emptyAcknowledgementSender =
+                    new EmptyAcknowledgementSender(ctx, remoteAddress, coapMessage.getMessageID());
+
+            executorService.schedule(emptyAcknowledgementSender, 0, TimeUnit.MILLISECONDS);
+            log.debug("Transmission of empty ACK (for " + coapMessage + ") scheduled for asap!");
+        }
+        else{
+            //schedule transmission of empty ACK for in 1.9 seconds
+            EmptyAcknowledgementSender emptyAcknowledgementSender =
+                    new EmptyAcknowledgementSender(ctx, remoteAddress, coapMessage.getMessageID());
+
+            executorService.schedule(emptyAcknowledgementSender, 1900, TimeUnit.MILLISECONDS);
+            log.debug("Transmission of empty ACK (for " + coapMessage + ") scheduled for in 1.9 seconds.!");
+        }
+    }
+
+
+    private class EmptyAcknowledgementSender implements Runnable{
+
+        private Logger log = LoggerFactory.getLogger(EmptyAcknowledgementSender.class.getName());
+
+        private ChannelHandlerContext ctx;
+        private InetSocketAddress remoteAddress;
         private int messageID;
-        private boolean receivedMessageIsRequest;
 
-        private DatagramChannel datagramChannel;
-
-        public EmptyACKSender(InetSocketAddress rcptAddress, int messageID, DatagramChannel datagramChannel,
-                              boolean receivedMessageIsRequest){
-            this.rcptAddress = rcptAddress;
+        public EmptyAcknowledgementSender(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
+                                          int messageID){
+            this.ctx = ctx;
+            this.remoteAddress = remoteAddress;
             this.messageID = messageID;
-            this.datagramChannel = datagramChannel;
-            this.receivedMessageIsRequest = receivedMessageIsRequest;
         }
 
         @Override
         public void run(){
-            log.debug("Start runnable");
-            boolean confirmed = false;
-            if(receivedMessageIsRequest){
-                synchronized (this){
-                    if(incomingMessagesToBeConfirmed.contains(rcptAddress, messageID)){
-                        confirmed = true;
-                        incomingMessagesToBeConfirmed.put(rcptAddress, messageID, true);
-                    }
-                }
-            }
+            log.info("Start to send empty ACK for message ID {} to {}.", messageID, remoteAddress);
+            if(setAcknowledgementSent(remoteAddress, messageID)){
 
-            if(confirmed || !receivedMessageIsRequest){
-                CoapMessage coapMessage = null;
+                CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
 
-                try {
-                    coapMessage = new CoapResponse(MsgType.ACK, Code.EMPTY, messageID);
-                }
-                catch (InvalidHeaderException e) {
-                    log.error("Exception while creating empty ACK. This should " +
-                            " never happen!", e);
-                }
-
-                try {
-                    coapMessage.setMessageID(messageID);
-                }
-                catch (InvalidHeaderException e) {
-                    log.error("Exception while setting message ID for " +
-                            "empty ACK. This should never happen!", e);
-                }
-
-                ChannelFuture future = Channels.future(datagramChannel);
-                Channels.write(datagramChannel.getPipeline().getContext("OutgoingMessageReliabilityHandler"),
-                        future,
-                        coapMessage,
-                        rcptAddress);
+                ChannelFuture future = Channels.future(ctx.getChannel());
+                Channels.write(ctx, future, emptyACK, remoteAddress);
 
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        log.debug("Sent empty ACK for message with ID " + messageID +
-                                " to recipient " + rcptAddress);
+                        log.info("Empty ACK for message ID {} succesfully sent to {}.", messageID, remoteAddress);
                     }
                 });
             }
-            log.debug("Finished runnable()");
+            else{
+                log.info("ACK for message ID {} to {} was already sent as piggy-backed response.", messageID, remoteAddress);
+            }
         }
     }
+
 }

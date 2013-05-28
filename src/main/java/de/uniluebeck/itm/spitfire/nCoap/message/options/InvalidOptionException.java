@@ -9,7 +9,6 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 
-import javax.annotation.Nullable;
 
 /**
  *
@@ -17,8 +16,7 @@ import javax.annotation.Nullable;
  */
 public class InvalidOptionException extends CoapException {
 
-
-    @Nullable private Header messageHeader;
+    private Header messageHeader;
     private int optionNumber;
 
     public InvalidOptionException(Header header, int optionNumber, String msg){
@@ -60,7 +58,6 @@ public class InvalidOptionException extends CoapException {
      * Returns the {@link Header} instance that caused this exception (if available) or null otherwise
      * @return the {@link Header} instance that caused this exception (if available) or null otherwise
      */
-    @Nullable
     public Header getMessageHeader() {
         return messageHeader;
     }

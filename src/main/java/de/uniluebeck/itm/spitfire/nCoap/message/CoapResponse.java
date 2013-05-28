@@ -26,7 +26,6 @@ package de.uniluebeck.itm.spitfire.nCoap.message;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
@@ -43,33 +42,20 @@ public class CoapResponse extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
+    private String servicePath;
+
     public CoapResponse(Code code){
         super(code);
     }
 
-    public CoapResponse(MsgType msgType, Code code){
-        super(msgType, code);
-    }
-
-    public CoapResponse(MsgType msgType, Code code, int messageID) throws InvalidHeaderException {
-
-        this(msgType, code);
-        setMessageID(messageID);
-    }
+//    public CoapResponse(Code code, int messageID) throws InvalidHeaderException {
+//        this(code);
+//        this.setMessageID(messageID);
+//    }
 
     public CoapResponse(CoapResponse coapResponse) throws InvalidHeaderException {
         super(coapResponse);
     }
-//    public CoapResponse(MsgType msgType, Code code, int messageID, byte[] token)
-//            throws InvalidHeaderException,ToManyOptionsException, InvalidOptionException {
-//
-//        this(msgType, code, messageID);
-//
-//        //Only add token option if it not the default value (default = new byte[0])
-//        if(token.length > 0){
-//            setToken(token);
-//        }
-//    }
 
     public CoapResponse(Header header, OptionList optionList, ChannelBuffer payload){
         super(header, optionList, payload);
@@ -177,7 +163,7 @@ public class CoapResponse extends CoapMessage {
      * Set the observe option. This causes eventually already contained observe options to be removed from
      * the list even in case of an exception.
      *
-     * @param Sets the sequence number for the observe option
+     * @param sequenceNumber the sequence number for the observe option
      *
      * @throws ToManyOptionsException if adding an observe options would exceed the maximum number of
      * options per message.
@@ -197,4 +183,11 @@ public class CoapResponse extends CoapMessage {
         }
     }
 
+    public String getServicePath() {
+        return servicePath;
+    }
+
+    public void setServicePath(String servicePath) {
+        this.servicePath = servicePath;
+    }
 }

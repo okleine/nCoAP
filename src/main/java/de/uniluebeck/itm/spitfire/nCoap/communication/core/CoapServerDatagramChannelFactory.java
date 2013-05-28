@@ -23,48 +23,74 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * @author Oliver Kleine
  */
-public class CoapServerDatagramChannelFactory {
+public abstract class CoapServerDatagramChannelFactory {
 
-    private static final int NO_OF_THREADS = 20;
-    private DatagramChannel channel;
+    private static Logger log = LoggerFactory.getLogger(CoapServerDatagramChannelFactory.class.getName());
+    private static final int NO_OF_THREADS = 10;
 
-    public CoapServerDatagramChannelFactory(CoapServerApplication serverApp, int coapServerPort){
+    private static HashMap<Integer, DatagramChannel> channels = new HashMap<Integer, DatagramChannel>(1);
 
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
-                new ThreadFactoryBuilder().setNameFormat("nCoap-Server-Thread %d")
-                        .build());
+    /**
+     * Creates a new {@link DatagramChannel} instance associated with the given local server port. Upon creation the
+     * channel is bound to the given local server port and listens for incoming messages.
+     *
+     * @param serverApp the instance of {@link CoapServerApplication} to handle incoming {@link CoapRequest}s.
+     * @param coapServerPort the local port the server is supposed to listen at
+     * @return the newly created {@link DatagramChannel} instance
+     * @throws ChannelException if the channel could not be created for any reason.
+     */
+    public static DatagramChannel createChannel(CoapServerApplication serverApp, int coapServerPort)
+            throws ChannelException {
+
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP server #%d").build();
+        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS, (threadFactory));
+
+        serverApp.setExecutorService(executorService);
 
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(executorService);
 
-//        ChannelFactory channelFactory =
-//                new NioDatagramChannelFactory(Executors.newCachedThreadPool());
-
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapServerPipelineFactory(serverApp, executorService));
 
-        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(coapServerPort));
+        DatagramChannel channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(coapServerPort));
+        channels.put(channel.getLocalAddress().getPort(), channel);
+
+        log.info("New server channel created for port " + channel.getLocalAddress().getPort());
+        return channel;
     }
 
-//    public CoapServerDatagramChannelFactory(CoapServerApplication serverApp){
-//        this(serverApp, DEFAULT_COAP_SERVER_PORT);
-//    }
-
-    public DatagramChannel getChannel(){
-        return channel;
+    /**
+     * Returns the {@link DatagramChannel} instance associated with the given local server port. If there is no such
+     * instance, it returns null.
+     *
+     * @param coapServerPort the local server port
+     * @return the {@link DatagramChannel} instance associated with the given local server port. If there is no such
+     * instance, it returns {@code null}.
+     */
+    public static DatagramChannel getChannel(int coapServerPort){
+        return channels.get(coapServerPort);
     }
 }

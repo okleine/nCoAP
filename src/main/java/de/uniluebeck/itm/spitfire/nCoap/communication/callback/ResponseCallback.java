@@ -49,10 +49,10 @@ public interface ResponseCallback extends RetransmissionTimeoutHandler {
      * process it.
      */
     public void receiveEmptyACK();
-
-    /**
-     * Returns true is this {@link ResponseCallback} instance observes a resource, false otherwise
-     * @return true is this {@link ResponseCallback} instance observes a resource, false otherwise
-     */
-    public boolean isObserver();
+//
+//    /**
+//     * Returns true is this {@link ResponseCallback} instance observes a resource, false otherwise
+//     * @return true is this {@link ResponseCallback} instance observes a resource, false otherwise
+//     */
+//    public boolean isObserver();
 }

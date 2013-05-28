@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.application.webservice;
+package de.uniluebeck.itm.spitfire.nCoap.application.server.webservice;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -19,20 +19,38 @@ import java.net.InetSocketAddress;
 public interface WebService<T> {
 
     /**
-     * Set the URI path (relative) this service should listen at
-     * @param path relative path of the service (e.g. /path/to/service)
-     */
-    public void setPath(String path);
-
-    /**
      * Returns the (relative) path this service is listening at
      * @return relative path of the service (e.g. /path/to/service)
      */
     public String getPath();
 
     /**
-     * Method to set the new status of the resource represented by this {@link WebService}.
-     * @param newStatus
+     * Returns the object of type T that holds the actual status of the resource represented by this
+     * {@link NotObservableWebService}.
+     *
+     * Note, that this status is internal and thus independent from the payload of the {@link CoapResponse} to be
+     * returned by the inherited method {@link #processMessage(CoapRequest, InetSocketAddress)}.
+     *
+     * Example: Assume this webservice represents a switch that has two states "on" and "off". The payload of the
+     * previously mentioned {@link CoapResponse} could then be either "on" or "off". But since there are only
+     * two possible states {@link T} could be of type {@link Boolean}.
+     *
+     * @return the object of type T that holds the actual resourceStatus of the resource
+     */
+    public T getResourceStatus();
+
+    /**
+     * Method to set the new status of the resource represented by this {@link WebService}. This method is the
+     * one and only recommended way to change the status.
+     *
+     * Note, that this status is internal and thus independent from the payload of the {@link CoapResponse} to be
+     * returned by the inherited method {@link #processMessage(CoapRequest, InetSocketAddress)}.
+     *
+     * Example: Assume this webservice represents a switch that has two states "on" and "off". The payload of the
+     * previously mentioned {@link CoapResponse} could then be either "on" or "off". But since there are only
+     * two possible states {@link T} could be of type {@link Boolean}.
+     *
+     * @param newStatus the object of type {@link T} representing the new status
      */
     public void setResourceStatus(T newStatus);
 
@@ -57,7 +75,7 @@ public interface WebService<T> {
 
     /**
      * This method must return a hash value for the WebService instance based on the URI path of the webservice. Same
-     * path must return the same hash value whereas different path should have hash values as distinct as possible.
+     * path must return the same hash value whereas different paths should have hash values as distinct as possible.
      */
     @Override
     public int hashCode();
@@ -73,7 +91,8 @@ public interface WebService<T> {
      * @param request The {@link CoapRequest} to be processed by the {@link WebService} instance
      * @param remoteAddress The address of the sender of the request
      * @return a proper {@link CoapResponse} instance. The returned response must contain a proper {@link Code} and (if
-     * the response contains payload) a {@link MediaType}.
+     * the response contains payload) a {@link MediaType}. If the service is not supposed to produce a response it must
+     * return null
      */
     public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress);
 

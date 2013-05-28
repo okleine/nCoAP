@@ -21,7 +21,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uniluebeck.itm.spitfire.nCoap.application;
+package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+
 /**
  * This is the abstract class to be extended by a CoAP client. By {@link #writeCoapRequest(CoapRequest)} it provides an
  * easy-to-use method to write CoAP requests to a server.
@@ -43,11 +43,15 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
  */
 public abstract class CoapClientApplication implements ResponseCallback{
 
-    protected DatagramChannel channel = CoapClientDatagramChannelFactory.getInstance().getChannel();
-
     private Logger log = LoggerFactory.getLogger(CoapClientApplication.class.getName());
+    private DatagramChannel datagramChannel;
 
-    private boolean isObserver = false;
+    //private boolean isObserver = false;
+
+    protected CoapClientApplication(){
+        datagramChannel =  CoapClientDatagramChannelFactory.getChannel();
+        log.info("New CoAP client on port " + datagramChannel.getLocalAddress().getPort());
+    }
 
     /**
      * This method is supposed be used by the extending client implementation to send a CoAP request to a remote
@@ -61,7 +65,7 @@ public abstract class CoapClientApplication implements ResponseCallback{
         final InetSocketAddress rcptSocketAddress = new InetSocketAddress(coapRequest.getTargetUri().getHost(),
                 coapRequest.getTargetUri().getPort());
 
-        ChannelFuture future = Channels.write(channel, coapRequest, rcptSocketAddress);
+        ChannelFuture future = Channels.write(datagramChannel, coapRequest, rcptSocketAddress);
 
         future.addListener(new ChannelFutureListener() {
             @Override
@@ -73,34 +77,39 @@ public abstract class CoapClientApplication implements ResponseCallback{
         });
     }
 
-    @Override
-    public boolean isObserver(){
-        return isObserver;
+//    @Override
+//    public boolean isObserver(){
+//        return isObserver;
+//    }
+//
+//    /**
+//     * @param isObserver
+//     */
+//    private void setObserver(boolean isObserver){
+//        this.isObserver = isObserver;
+//    }
+
+    public int getClientPort() {
+        return datagramChannel.getLocalAddress().getPort();
     }
 
     /**
-     * @param isObserver
-     */
-    private void setObserver(boolean isObserver){
-        this.isObserver = isObserver;
-    }
-
-    /**
-     * Shuts the client down by closing the channel which includes to unbind the channel from a listening port and
+     * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
      */
     public void shutdown(){
-        //Close the datagram channel (includes unbind)
-        ChannelFuture future = channel.close();
+        //Close the datagram datagramChannel (includes unbind)
+        ChannelFuture future = datagramChannel.close();
 
         //Await the closure and let the factory release its external resource to finalize the shutdown
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Channel closed.");
+                DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
+                log.info("Client channel closed (port: " + closedChannel.getLocalAddress().getPort() + ").");
 
-                channel.getFactory().releaseExternalResources();
-                log.info("External resources released. Shutdown completed.");
+                //datagramChannel.getFactory().releaseExternalResources();
+                //log.info("External resources released. Shutdown completed.");
             }
         });
 

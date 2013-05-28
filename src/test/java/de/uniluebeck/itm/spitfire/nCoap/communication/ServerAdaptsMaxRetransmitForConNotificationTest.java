@@ -1,15 +1,11 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableDummyWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -17,8 +13,6 @@ import java.net.URI;
 import java.util.Iterator;
 import java.util.SortedMap;
 
-import static de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication.DEFAULT_COAP_SERVER_PORT;
-import static de.uniluebeck.itm.spitfire.nCoap.communication.AbstractCoapCommunicationTest.testServer;
 import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.assertEquals;
 import static junit.framework.Assert.assertEquals;
 
@@ -94,8 +88,7 @@ public class ServerAdaptsMaxRetransmitForConNotificationTest extends AbstractCoa
         Thread.sleep(130*1000);
 
         //send RST message
-        CoapResponse cancelRSTmsg = new CoapResponse(MsgType.RST, Code.EMPTY);
-        cancelRSTmsg.setMessageID(notification2.getMessageID());
+        CoapMessage cancelRSTmsg = CoapMessage.createEmptyReset(notification2.getMessageID());
         testReceiver.writeMessage(cancelRSTmsg, new InetSocketAddress("localhost", testServer.getServerPort()));
 
         testReceiver.setReceiveEnabled(false);

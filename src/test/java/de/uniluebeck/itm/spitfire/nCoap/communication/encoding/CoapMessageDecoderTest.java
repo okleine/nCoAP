@@ -228,7 +228,7 @@ class DecodeTestMessage {
 }
 
 /**
- * This class fakes a channel to let CoAPMessageDecoder call the Channel.getLocalAddress()).getAddress()
+ * This class fakes a datagramChannel to let CoAPMessageDecoder call the Channel.getLocalAddress()).getAddress()
  * method. (Needed for CoAPMessage.rcptAddress)
  */
 class TestChannel implements Channel {

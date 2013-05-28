@@ -25,22 +25,24 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
 import com.google.common.collect.HashBasedTable;
 //import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
+import de.uniluebeck.itm.spitfire.nCoap.communication.observe.UpdateNotificationRejectedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.observe.UpdateNotification;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
-import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
+
+import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.*;
+
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Oliver Kleine
  */
-public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
+public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler implements Observer {
 
     private static Logger log = LoggerFactory.getLogger(OutgoingMessageReliabilityHandler.class.getName());
 
@@ -63,22 +65,12 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     private final HashBasedTable<InetSocketAddress, Integer, ScheduledRetransmission> waitingForACK
             = HashBasedTable.create();
 
-//    private static OutgoingMessageReliabilityHandler instance = new OutgoingMessageReliabilityHandler();
-//
-//    /**
-//     * Returns the one and only instance of class OutgoingMessageReliabilityHandler (Singleton)
-//     * @return the one and only instance of class OutgoingMessageReliabilityHandle
-//     */
-//    public static OutgoingMessageReliabilityHandler getInstance(){
-//        return instance;
-//    }
-
-//    private OutgoingMessageReliabilityHandler(){
-//        //private constructor to make it singleton
-//    }
+    private HashBasedTable<Integer, InetSocketAddress, String> updateNotifications
+            = HashBasedTable.create();
 
     public OutgoingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
+        MessageIDFactory.registerObserver(this);
     }
 
     /**
@@ -97,7 +89,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         }
 
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
-        log.debug("Outgoing: " + coapMessage);
 
         if(coapMessage.getMessageID() == Header.MESSAGE_ID_UNDEFINED){
             try {
@@ -105,15 +96,21 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             } catch (InvalidHeaderException e) {
                 log.error("This should never happen.", e);
             }
-            log.debug("Message ID set to " + coapMessage.getMessageID());
+            log.info("Message ID set to " + coapMessage.getMessageID());
+        }
+
+        if(coapMessage instanceof UpdateNotification){
+            UpdateNotification updateNotification = (UpdateNotification) coapMessage;
+            updateNotifications.put(updateNotification.getMessageID(), (InetSocketAddress) me.getRemoteAddress(),
+                    updateNotification.getServicePath());
         }
 
         if(coapMessage.getMessageType() == MsgType.CON){
             if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
                 //check all open CON messages to me.getRemoteAddress() for retransmission with same token
-                if (updateCONRetransmission(coapMessage, 
+                if (updateRetransmission(coapMessage,
                         (InetSocketAddress) me.getRemoteAddress())) {
-                    log.debug("Existing retransmission updated (OBSERVE notification): {}.", coapMessage);
+                    log.info("Existing retransmission updated (OBSERVE notification): {}.", coapMessage);
                     return;
                 }
             }
@@ -125,11 +122,12 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 return;
             }
         }
+
+        log.info("Outgoing (to " + me.getRemoteAddress() + "): " + coapMessage);
         ctx.sendDownstream(me);
     }
 
-    private boolean updateCONRetransmission(CoapMessage recentMessage, 
-            InetSocketAddress remoteAddress) {
+    private boolean updateRetransmission(CoapMessage recentMessage, InetSocketAddress remoteAddress) {
         synchronized (waitingForACK) {
             Collection<ScheduledRetransmission> retransmissions = waitingForACK.row(remoteAddress).values();
             for (ScheduledRetransmission retransmission : retransmissions) {
@@ -168,7 +166,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
         InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 
-        log.debug("Incoming: " + coapMessage);
+        log.info("Incoming (from " + me.getRemoteAddress() + "): " + me.getMessage());
 
         if (coapMessage.getMessageType() == MsgType.ACK || coapMessage.getMessageType() == MsgType.RST) {
 
@@ -182,7 +180,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
             //Cancel remaining retransmissions
             if(futures != null){
-                log.debug("Open CON found (MsgID " + coapMessage.getMessageID() +
+                log.info("Open CON found (MsgID " + coapMessage.getMessageID() +
                     ", Rcpt " + remoteAddress + "). CANCEL RETRANSMISSIONS!");
 
                 int canceledRetransmissions = 0;
@@ -194,19 +192,25 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
                 log.debug(canceledRetransmissions + " retransmissions canceled for MsgID " +
                         coapMessage.getMessageID() + ".");
-                
-                if (coapMessage.getMessageType() == MsgType.RST) {
-                    String message = "Reset message for open CON received.";
-                    Throwable cause = new ResetReceivedException(retransmission.getToken(), 
-                            (InetSocketAddress) me.getRemoteAddress(), message);
-                    ExceptionEvent event = new DefaultExceptionEvent(ctx.getChannel(), cause);
-                    ctx.sendUpstream(event);
-                }
             }
             else{
                 log.debug("No open CON found (MsgID " + coapMessage.getMessageID() +
                         ", Rcpt " + remoteAddress + "). IGNORE!");
                 me.getFuture().setSuccess();
+                if(coapMessage.getMessageType() == ACK)
+                    return;
+            }
+        }
+
+        if(coapMessage.getMessageType() == MsgType.RST){
+            if(updateNotifications.contains(coapMessage.getMessageID(), me.getRemoteAddress())){
+                String servicePath =
+                        updateNotifications.get(coapMessage.getMessageID(), me.getRemoteAddress());
+
+                UpdateNotificationRejectedMessage message =
+                        new UpdateNotificationRejectedMessage((InetSocketAddress) me.getRemoteAddress(), servicePath);
+
+                ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), message, new InetSocketAddress(0)));
                 return;
             }
         }
@@ -277,7 +281,24 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
             waitingForACK.put(rcptAddress, coapMessage.getMessageID(), scheduledRetransmission);
         }
     }
-    
+
+    @Override
+    public void update(Observable o, Object arg) {
+        if(!(o instanceof MessageIDFactory)){
+            return;
+        }
+
+        Integer messageID = (Integer) arg;
+        if(updateNotifications.rowKeySet().contains(messageID)){
+            Map<InetSocketAddress, String> observer = updateNotifications.row(messageID);
+            for(Map.Entry<InetSocketAddress, String> entry : observer.entrySet()){
+                log.info("Observation of {} by {} cannot be stopped with RST {} anymore.",
+                        new Object[]{entry.getValue(), entry.getKey(), messageID});
+
+            }
+        }
+    }
+
     public static class ScheduledRetransmission {
         private LinkedList<ScheduledFuture> futures = new LinkedList<ScheduledFuture>();
         private CoapMessage coapMessage;

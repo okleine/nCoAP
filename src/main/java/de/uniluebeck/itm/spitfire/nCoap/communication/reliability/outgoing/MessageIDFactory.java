@@ -26,18 +26,17 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.concurrent.Executors;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
  * This class is to create and manage message IDs for outgoing messages. The usage of this class to create
- * new message IDs ensures that a message ID is not used twice within 120 seconds.
+ * new message IDs ensures that a message ID is not used twice within {@link #ALLOCATION_TIMEOUT} seconds.
  *
  * @author Oliver Kleine
  */
-public class MessageIDFactory {
+public class MessageIDFactory extends Observable{
 
     private static Logger log = LoggerFactory.getLogger(MessageIDFactory.class.getName());
 
@@ -45,14 +44,12 @@ public class MessageIDFactory {
     public static int ALLOCATION_TIMEOUT = 120;
 
     //private static Random random = new Random(System.currentTimeMillis());
-    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
+    private ScheduledExecutorService executorService;
 
     //Allocated message IDs
-    private final HashSet<Integer> allocatedMessageIDs = new HashSet<Integer>();
+    private final Set<Integer> allocatedMessageIDs = Collections.synchronizedSet(new HashSet<Integer>());
 
     int nextMessageID = 0;
-
-    private static MessageIDFactory instance = new MessageIDFactory();
 
     /**
      * Returns the one and only instance of the message ID factory
@@ -62,8 +59,19 @@ public class MessageIDFactory {
         return instance;
     }
 
-    private MessageIDFactory(){
+    private MessageIDFactory(){}
+
+    private static MessageIDFactory instance = new MessageIDFactory();
+
+    public static void setExecutorService(ScheduledExecutorService executorService){
+        getInstance().executorService = executorService;
     }
+
+    public static void registerObserver(Observer observer){
+        instance.addObserver(observer);
+    }
+
+
 
     /**
      * Returns the next available message ID within range 1 to (2^16)-1 and allocates this message ID for
@@ -72,47 +80,33 @@ public class MessageIDFactory {
      *
      * @return the next available message ID within range 1 to (2^16)-1
      */
-
     public static int nextMessageID(){
-        return MessageIDFactory.getInstance().getNextMessageID();
+        instance.produceNextMessageID();
+
+        final int messageID = instance.nextMessageID;
+        instance.executorService.schedule(new Runnable(){
+
+            @Override
+            public void run() {
+                if(instance.allocatedMessageIDs.remove(messageID))
+                    log.debug("Deallocated message ID " + messageID);
+                else
+                    log.error("Message ID " + messageID + " could not be removed! This should never happen.");
+
+                instance.setChanged();
+                instance.notifyObservers(messageID);
+            }
+        }, ALLOCATION_TIMEOUT, TimeUnit.SECONDS);
+
+        return messageID;
     }
 
-    private synchronized int getNextMessageID(){
-
+    private synchronized void produceNextMessageID(){
         boolean created;
         do{
             nextMessageID = (nextMessageID + 1) & 0x0000FFF;
             created = allocatedMessageIDs.add(nextMessageID);
         }
         while(!created);
-
-        executorService.schedule(new MessageIDDeallocator(nextMessageID), ALLOCATION_TIMEOUT, TimeUnit.SECONDS);
-
-        return nextMessageID;
-    }
-
-    private class MessageIDDeallocator implements Runnable{
-
-        private int messageID;
-
-        public MessageIDDeallocator(int messageID){
-            this.messageID = messageID;
-        }
-
-        @Override
-        public void run() {
-
-            boolean removed;
-            synchronized (allocatedMessageIDs){
-                removed = allocatedMessageIDs.remove(messageID);
-            }
-
-            if(removed){
-                log.debug("Deallocated message ID " + messageID);
-            }
-            else{
-                log.error("Message ID " + messageID + " could not be removed! This should never happen.");
-            }
-        }
     }
 }

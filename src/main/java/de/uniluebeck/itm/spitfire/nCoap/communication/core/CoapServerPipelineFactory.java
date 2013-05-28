@@ -23,20 +23,21 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransferHandler;
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
-import de.uniluebeck.itm.spitfire.nCoap.communication.observe.ObservableHandler;
+import de.uniluebeck.itm.spitfire.nCoap.communication.observe.ObservableResourceHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
-import org.jboss.netty.handler.execution.ExecutionHandler;
-import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -44,30 +45,30 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
-    public static final int NUMBER_OF_EXECUTION_THREADS = 50;
+//    public static final int NUMBER_OF_EXECUTION_THREADS = 50;
 
     private CoapMessageEncoder encoder = new CoapMessageEncoder();
     private CoapMessageDecoder decoder = new CoapMessageDecoder();
 
-    private ExecutionHandler executionHandler =
-            new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(NUMBER_OF_EXECUTION_THREADS, 0, 0));
+//    private ExecutionHandler executionHandler =
+//            new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(NUMBER_OF_EXECUTION_THREADS, 0, 0));
 
     private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
     private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
 
     private BlockwiseTransferHandler blockwiseTransferHandler = new BlockwiseTransferHandler();
 
-
-
     private ChannelHandler serverApp;
 
-    private ObservableHandler observableHandler;
+    private ObservableResourceHandler observableResourceHandler;
     
     public CoapServerPipelineFactory(ChannelHandler serverApp, ScheduledExecutorService executorService){
         this.serverApp = serverApp;
-        outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
-        incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
-        observableHandler = new ObservableHandler(executorService);
+        this.outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
+        this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
+        observableResourceHandler = new ObservableResourceHandler(executorService);
+
+        MessageIDFactory.setExecutorService(executorService);
     }
 
 
@@ -79,9 +80,9 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         pipeline.addLast("CoAP Message Decoder", decoder);
         pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
         pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
-        pipeline.addLast("BlockwiseTransferHander", blockwiseTransferHandler);
-        pipeline.addLast("ExecutionHandler", executionHandler);
-        pipeline.addLast("ObservableHandler", observableHandler);
+        //pipeline.addLast("BlockwiseTransferHander", blockwiseTransferHandler);
+        //pipeline.addLast("ExecutionHandler", executionHandler);
+        pipeline.addLast("ObservableResourceHandler", observableResourceHandler);
         pipeline.addLast("ServerApplication", serverApp);
         
         return pipeline;

@@ -42,8 +42,8 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
               (2) |<-------ACK-RESPONSE---------|        server responds with piggy-backed response
                   |                             |
                   |                             | 
-        */    
-        
+        */
+
         //define expected response
         expectedCoapResponse = new CoapResponse(Code.CONTENT_205);
         expectedCoapResponse.setPayload(NOT_OBSERVABLE_RESOURCE_CONTENT.getBytes("UTF-8"));

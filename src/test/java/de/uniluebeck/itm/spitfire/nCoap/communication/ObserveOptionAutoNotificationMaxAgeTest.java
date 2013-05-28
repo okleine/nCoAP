@@ -1,9 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication;
 import static junit.framework.Assert.*;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
-import static de.uniluebeck.itm.spitfire.nCoap.application.CoapServerApplication.DEFAULT_COAP_SERVER_PORT;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableDummyWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
@@ -16,7 +14,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.SortedMap;
-import org.junit.BeforeClass;
+
 import org.junit.Test;
 
 import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
@@ -81,9 +79,8 @@ public class ObserveOptionAutoNotificationMaxAgeTest extends AbstractCoapCommuni
         Thread.sleep(2500);
 
         //send reset to remove observer
-        CoapResponse resetMessage = new CoapResponse(Code.EMPTY);
+        CoapMessage resetMessage = CoapMessage.createEmptyReset(preparedNotification2.getMessageID());
         resetMessage.getHeader().setMsgType(MsgType.RST);
-        resetMessage.setMessageID(preparedNotification2.getMessageID());
         testReceiver.writeMessage(resetMessage, new InetSocketAddress("localhost", testServer.getServerPort()));
 
         testReceiver.setReceiveEnabled(false);
