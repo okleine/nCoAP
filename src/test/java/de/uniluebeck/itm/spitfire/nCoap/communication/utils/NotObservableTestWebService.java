@@ -15,21 +15,27 @@ import java.nio.charset.Charset;
 import static org.junit.Assert.fail;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 09.04.13
- * Time: 15:50
- * To change this template use File | Settings | File Templates.
- */
-public class NotObservableDummyWebService extends NotObservableWebService<String>{
+* Created with IntelliJ IDEA.
+* User: olli
+* Date: 09.04.13
+* Time: 15:50
+* To change this template use File | Settings | File Templates.
+*/
+public class NotObservableTestWebService extends NotObservableWebService<String>{
 
-    private static Logger log = LoggerFactory.getLogger(NotObservableDummyWebService.class.getName());
+    private static Logger log = LoggerFactory.getLogger(NotObservableTestWebService.class.getName());
 
     private long pretendedProcessingTimeForRequests;
 
-    public NotObservableDummyWebService(String path, String initialStatus, long pretendedProcessingTimeForRequests){
+    public NotObservableTestWebService(String path, String initialStatus, long pretendedProcessingTimeForRequests){
         super(path, initialStatus);
         this.pretendedProcessingTimeForRequests = pretendedProcessingTimeForRequests;
+    }
+
+
+    @Override
+    public void shutdown() {
+        //Nothing to do here...
     }
 
     @Override

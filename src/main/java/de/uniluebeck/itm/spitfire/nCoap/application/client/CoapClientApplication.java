@@ -23,7 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import org.jboss.netty.channel.ChannelFuture;

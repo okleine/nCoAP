@@ -2,8 +2,8 @@ package de.uniluebeck.itm.spitfire.nCoap.communication;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableDummyWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableDummyWebService;
+import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableTestWebService;
+import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
@@ -101,23 +101,19 @@ public abstract class AbstractCoapCommunicationTest {
         }
     }
 
-    public void registerObservableDummyService(long pretendedProcessingMillisForRequests, long updateIntervalMinis){
-        testServer.registerService(new ObservableDummyWebService(OBSERVABLE_SERVICE_PATH, true,
-                pretendedProcessingMillisForRequests, updateIntervalMinis));
+    public void registerObservableTestService(long artificialDelay, long updateInterval){
+        testServer.registerService(new ObservableTestWebService(OBSERVABLE_SERVICE_PATH, 0,
+                artificialDelay, updateInterval));
     }
 
-    public void registerObservableDummyService(long pretendedProcessingMillisForRequests, long updateIntervalMinis, int
-                                               maxAge){
-        testServer.registerService(new ObservableDummyWebService(OBSERVABLE_SERVICE_PATH, true,
-                pretendedProcessingMillisForRequests, updateIntervalMinis, maxAge));
+    public void registerObservableTestService(ObservableTestWebService observableTestWebService) {
+        testServer.registerService(observableTestWebService);
     }
 
-    public void registerNotObservableDummyService(long pretendedProcessingMillisForRequests){
-        testServer.registerService(new NotObservableDummyWebService(NOT_OBSERVABLE_SERVICE_PATH,
-                NOT_OBSERVABLE_RESOURCE_CONTENT, pretendedProcessingMillisForRequests));
+    public void registerNotObservableTestService(long artificialDelay){
+        testServer.registerService(new NotObservableTestWebService(NOT_OBSERVABLE_SERVICE_PATH,
+                NOT_OBSERVABLE_RESOURCE_CONTENT, artificialDelay));
     }
     
-    public void registerObservableDummyService(ObservableDummyWebService observableDummyWebService) {
-        testServer.registerService(observableDummyWebService);
-    }
+
 }

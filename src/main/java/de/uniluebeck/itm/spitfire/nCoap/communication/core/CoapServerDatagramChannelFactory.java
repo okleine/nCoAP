@@ -50,7 +50,7 @@ public abstract class CoapServerDatagramChannelFactory {
     private static Logger log = LoggerFactory.getLogger(CoapServerDatagramChannelFactory.class.getName());
     private static final int NO_OF_THREADS = 10;
 
-    private static HashMap<Integer, DatagramChannel> channels = new HashMap<Integer, DatagramChannel>(1);
+    //private static HashMap<Integer, DatagramChannel> channels = new HashMap<Integer, DatagramChannel>();
 
     /**
      * Creates a new {@link DatagramChannel} instance associated with the given local server port. Upon creation the
@@ -73,24 +73,29 @@ public abstract class CoapServerDatagramChannelFactory {
                 new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(new CoapServerPipelineFactory(serverApp, executorService));
+        CoapServerPipelineFactory pipelineFactory =
+                new CoapServerPipelineFactory(serverApp, coapServerPort, executorService);
+        bootstrap.setPipelineFactory(pipelineFactory);
 
         DatagramChannel channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(coapServerPort));
-        channels.put(channel.getLocalAddress().getPort(), channel);
+
+        pipelineFactory.getObservableResourceHandler().setChannel(channel);
+
+        //channels.put(channel.getLocalAddress().getPort(), channel);
 
         log.info("New server channel created for port " + channel.getLocalAddress().getPort());
         return channel;
     }
 
-    /**
-     * Returns the {@link DatagramChannel} instance associated with the given local server port. If there is no such
-     * instance, it returns null.
-     *
-     * @param coapServerPort the local server port
-     * @return the {@link DatagramChannel} instance associated with the given local server port. If there is no such
-     * instance, it returns {@code null}.
-     */
-    public static DatagramChannel getChannel(int coapServerPort){
-        return channels.get(coapServerPort);
-    }
+//    /**
+//     * Returns the {@link DatagramChannel} instance associated with the given local server port. If there is no such
+//     * instance, it returns null.
+//     *
+//     * @param coapServerPort the local server port
+//     * @return the {@link DatagramChannel} instance associated with the given local server port. If there is no such
+//     * instance, it returns {@code null}.
+//     */
+//    public static DatagramChannel getChannel(int coapServerPort){
+//        return channels.get(coapServerPort);
+//    }
 }

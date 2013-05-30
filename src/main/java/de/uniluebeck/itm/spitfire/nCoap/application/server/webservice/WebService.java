@@ -1,13 +1,18 @@
 package de.uniluebeck.itm.spitfire.nCoap.application.server.webservice;
 
+import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.Option;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.*;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 /**
  * This is the interface to be implemented to realize a CoAP webservice. The generic type T means, that the object
@@ -55,6 +60,46 @@ public interface WebService<T> {
     public void setResourceStatus(T newStatus);
 
     /**
+     * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
+     * {@link CoapServerApplication} instance. So, there is no need to set another {@link ScheduledExecutorService}
+     * instance manually.
+     *
+     * @param executorService a {@link ScheduledExecutorService} instance.
+     */
+    public void setExecutorService(ScheduledExecutorService executorService);
+
+    /**
+     * Returns the {@link ScheduledExecutorService} instance which is used to schedule and execute any
+     * web service related tasks.
+     *
+     * @return the {@link ScheduledExecutorService} instance which is used to schedule and execute any
+     * web service related tasks.
+     */
+    public ScheduledExecutorService getExecutorService();
+
+    /**
+     * The max-age value represents the validity period (in seconds) of the actual status. The nCoap framework uses this
+     * value to set the {@link OptionName#MAX_AGE} wherever necessary or useful. The framework does not change or remove
+     * manually set max-age options in {@link CoapResponse} instances, i.e. using {@code response.setMaxAge(int)}.
+     *
+     * @return the max-age value of this {@link WebService} instance. If not set to another value implementing classes must
+     * return {@link OptionRegistry#MAX_AGE_DEFAULT} as default value.
+     */
+    public long getMaxAge();
+
+
+    /**
+     * This method is called by the nCoAP framework when this {@link WebService} is removed from the
+     * {@link CoapServerApplication} instance. If any one could e.g. try to cancel scheduled tasks. There might even
+     * be no need to do anything at all, i.e. implement the method with empty body.
+     *
+     * If this {@link WebService} uses the default {@link ScheduledExecutorService} to execute tasks one MUST NOT
+     * terminate this {@link ScheduledExecutorService} but only cancel scheduled tasks using there
+     * {@link ScheduledFuture}.
+     */
+    public void shutdown();
+
+    /**
      * Implementing classes must provide this method such that it returns <code>true</code> if
      * <ul>
      *  <li>
@@ -83,16 +128,18 @@ public interface WebService<T> {
     /**
      * Method to process an incoming {@link CoapRequest}. The implementation of this method is dependant on the
      * concrete webservice. Processing a message might cause a new status of the resource or even the deletion of the
-     * complete resource, resp. the webservice instance.
+     * complete resource, i.e. this {@link WebService} instance.
      *
      * The way to process the incoming request is basically to be implemented based on the {@link Code},
      * the {@link MsgType}, the contained {@link Option}s and (if any) the payload of the request.
      *
      * @param request The {@link CoapRequest} to be processed by the {@link WebService} instance
      * @param remoteAddress The address of the sender of the request
-     * @return a proper {@link CoapResponse} instance. The returned response must contain a proper {@link Code} and (if
-     * the response contains payload) a {@link MediaType}. If the service is not supposed to produce a response it must
-     * return null
+     * @return a proper {@link CoapResponse} instance. The returned response must contain a {@link Code} and should (if
+     * the response contains payload) a {@link MediaType}. If there is payload but no {@link MediaType} set, the
+     * nCoAP framework will automatically set it to {@link MediaType#TEXT_PLAIN_UTF8}.
+     *
+     * If the service is not supposed to produce a response it must return {@code null}
      */
     public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress);
 

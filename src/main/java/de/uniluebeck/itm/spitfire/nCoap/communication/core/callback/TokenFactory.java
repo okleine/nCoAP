@@ -21,14 +21,13 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
+package de.uniluebeck.itm.spitfire.nCoap.communication.core.callback;
 
 import com.google.common.primitives.Longs;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.Random;
 
 /**

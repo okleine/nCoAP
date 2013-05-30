@@ -50,7 +50,7 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
         expectedCoapResponse.getHeader().setMsgType(MsgType.ACK);
 
         //register webservice
-        registerNotObservableDummyService(0);
+        registerNotObservableTestService(0);
 
         //create request
         requestToken = new byte[]{0x12, 0x24, 0x36};

@@ -24,19 +24,14 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
 import com.google.common.collect.HashBasedTable;
-//import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
-import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.observe.UpdateNotificationRejectedMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.UpdateNotificationRejectedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.observe.UpdateNotification;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
-
-import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.*;
-
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +41,10 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.ACK;
+
+//import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
 
 /**
  * @author Oliver Kleine
@@ -99,15 +98,16 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             log.info("Message ID set to " + coapMessage.getMessageID());
         }
 
-        if(coapMessage instanceof UpdateNotification){
-            UpdateNotification updateNotification = (UpdateNotification) coapMessage;
-            updateNotifications.put(updateNotification.getMessageID(), (InetSocketAddress) me.getRemoteAddress(),
-                    updateNotification.getServicePath());
+        if(coapMessage instanceof CoapResponse){
+            if(!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()){
+                updateNotifications.put(coapMessage.getMessageID(), (InetSocketAddress) me.getRemoteAddress(),
+                        ((CoapResponse) coapMessage).getServicePath());
+            }
         }
 
         if(coapMessage.getMessageType() == MsgType.CON){
             if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
-                //check all open CON messages to me.getRemoteAddress() for retransmission with same token
+                //check all open CON messages to me.getObserverAddress() for retransmission with same token
                 if (updateRetransmission(coapMessage,
                         (InetSocketAddress) me.getRemoteAddress())) {
                     log.info("Existing retransmission updated (OBSERVE notification): {}.", coapMessage);
@@ -146,7 +146,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         //token + remote address was not found in waitingForACK
         return false;
     }
-    
+
     /**
      * This method is invoked with an upstream message event. If the message has one of the codes ACK or RESET it is
      * a response for a request waiting for a response. Thus the corresponding request is removed from
@@ -237,11 +237,11 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             //futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
             futures.add(executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
 
-            log.info("Scheduled in {} millis {}", delay, messageRetransmitter);
+            log.debug("Scheduled in {} millis {}", delay, messageRetransmitter);
         }
-        
+
         //Adapt MAX_RETRANSMIT for Observe-Notifications
-        //Timeout notification should occur after MAX-AGE ends 
+        //Timeout notification should occur after MAX-AGE ends
         //http://tools.ietf.org/html/draft-ietf-core-observe-06#page-13
         if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()
                 && !coapMessage.getOption(OptionRegistry.OptionName.MAX_AGE).isEmpty()) {
@@ -254,7 +254,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                         = new MessageRetransmitter(ctx, rcptAddress, scheduledRetransmission, counter++);
                 //futures.add(CoapExecutorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
                 futures.add(executorService.schedule(messageRetransmitter, delay, TimeUnit.MILLISECONDS));
-                log.info("Scheduled in {} millis {}", delay, messageRetransmitter);
+                log.debug("Scheduled in {} millis: {}", delay, messageRetransmitter);
             }
         }
 
@@ -273,7 +273,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                 }
             }, delay, TimeUnit.MILLISECONDS));
 
-            log.info("Timeout notification scheduled in {} millis.", delay);
+            log.debug("Timeout notification scheduled in {} millis.", delay);
         }
         synchronized (waitingForACK){
             scheduledRetransmission.setCoapMessage(coapMessage);

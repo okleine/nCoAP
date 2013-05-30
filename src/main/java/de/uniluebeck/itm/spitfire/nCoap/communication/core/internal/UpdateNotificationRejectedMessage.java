@@ -1,6 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.observe;
-
-import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
+package de.uniluebeck.itm.spitfire.nCoap.communication.core.internal;
 
 import java.net.InetSocketAddress;
 

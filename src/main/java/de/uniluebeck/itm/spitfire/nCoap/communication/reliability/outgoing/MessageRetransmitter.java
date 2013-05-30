@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalObserveOptionUpdateMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalUpdateNotificationRetransmissionMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler.ScheduledRetransmission;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -46,17 +46,23 @@ class MessageRetransmitter implements Runnable {
     public void run() {
         CoapMessage coapMessage = retransmission.getCoapMessage();
         if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
-            //increment OBSERVE option (see http://tools.ietf.org/html/draft-ietf-core-observe-06#page-13)
-            long observeOption = ((UintOption)coapMessage.getOption(OptionRegistry
-                    .OptionName.OBSERVE_RESPONSE).get(0)).getDecodedValue();
-            observeOption++;
+
+            CoapResponse coapResponse = (CoapResponse) coapMessage;
+
+            //increment OBSERVE notification count before retransmission
+            long observeOption = ((UintOption)coapResponse.getOption(OptionRegistry
+                    .OptionName.OBSERVE_RESPONSE).get(0)).getDecodedValue() + 1;
+
             try {
-                ((CoapResponse)coapMessage).setObserveOptionResponse(observeOption);
-                UpstreamMessageEvent observeOptionUpdateEvent = new UpstreamMessageEvent(ctx.getChannel(), 
-                        new InternalObserveOptionUpdateMessage(retransmission.getToken(), rcptAddress, observeOption), null);
-                ctx.sendUpstream(observeOptionUpdateEvent);
-            } catch (ToManyOptionsException ex) {
-                log.error("Error while trying to update OBSERVE option in MessageRetransmitter!");
+                coapResponse.setObserveOptionResponse(observeOption);
+                UpstreamMessageEvent upstreamEvent = new UpstreamMessageEvent(ctx.getChannel(),
+                        new InternalUpdateNotificationRetransmissionMessage(rcptAddress,
+                                coapResponse.getServicePath()), null);
+
+                ctx.sendUpstream(upstreamEvent);
+            }
+            catch (ToManyOptionsException ex) {
+                log.error("This should never happen.", ex);
             }
         }
         
@@ -79,6 +85,5 @@ class MessageRetransmitter implements Runnable {
                 (coapMessage == null ? "" : (", MsgID " + coapMessage.getMessageID())) +
                 ", RcptAddress " + rcptAddress + "}";
     }
-    
-    
+
 }

@@ -23,8 +23,6 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.application.server;
 
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.HashMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -32,24 +30,15 @@ import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.Observable
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WebService;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalNullResponseFromWebserviceMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.internal.InternalServiceRemovedFromPathMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.observe.ObservableResourceRegistrationMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalNullResponseFromWebserviceMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalServiceRemovedFromPathMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.ObservableResourceRegistrationMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.MessageDoesNotAllowPayloadException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -58,16 +47,11 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.GET;
-import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.RST;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
 
@@ -100,6 +84,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      */
     protected CoapServerApplication(int serverPort){
         channel = CoapServerDatagramChannelFactory.createChannel(this, serverPort);
+
         log.info("New server created. Listening on port " + this.getServerPort() + ".");
         registerService(new WellKnownCoreResource(registeredServices));
     }
@@ -114,6 +99,10 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     public void setExecutorService(ScheduledExecutorService executorService){
         this.executorService = MoreExecutors.listeningDecorator(executorService);
         this.scheduledExecutorService = executorService;
+    }
+
+    public DatagramChannel getChannel(){
+        return this.channel;
     }
 
     /**
@@ -181,6 +170,8 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                         handleNullResponse(coapRequest.getMessageID(), remoteAddress);
                         return;
                     }
+
+                    coapResponse.setMaxAge(webService.getMaxAge());
                 }
                 catch (Exception ex) {
                     coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);
@@ -202,6 +193,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                     if(coapRequest.getToken().length > 0){
                         coapResponse.setToken(coapRequest.getToken());
                     }
+
+                    //Set content type if there is payload but no content type
+                    if(coapResponse.getPayload().readableBytes() > 0 && coapResponse.getContentType() == null)
+                        coapResponse.setContentType(MediaType.TEXT_PLAIN_UTF8);
+
 
                     //Set observe response option if requested
                     if(webService instanceof ObservableWebService && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
@@ -258,7 +254,13 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         ChannelFuture future = channel.close();
 
         //remove all webServices
-        for(WebService service : registeredServices.values()){
+        WebService[] services;
+        synchronized (this){
+            services = new WebService[registeredServices.values().size()];
+            registeredServices.values().toArray(services);
+        }
+
+        for(WebService service : services){
             removeService(service.getPath());
         }
 
@@ -303,9 +305,9 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                     log.info("Registered {} at observable resource handler.", webService.getPath());
                 }
             });
-
-            ((ObservableWebService) webService).setExecutorService(scheduledExecutorService);
         }
+
+        webService.setExecutorService(scheduledExecutorService);
     }
     
     /**
@@ -318,15 +320,14 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         WebService removedService = registeredServices.remove(uriPath);
 
         if(removedService != null && removedService instanceof ObservableWebService){
-                channel.write(new InternalServiceRemovedFromPathMessage(uriPath));
+            channel.write(new InternalServiceRemovedFromPathMessage(uriPath));
+            removedService.shutdown();
         }
 
-        if(removedService != null){
-            log.info("Service " + uriPath + " removed from server (port: " + this.getServerPort() + ").");
-        }
-        else{
-            log.info("Service " + uriPath + " does not exist and thus could not be removed.");
-        }
+        if(removedService != null)
+            log.info("Service {} removed from server with port {}.", uriPath, getServerPort());
+        else
+            log.info("Service {} could not be removed. Does not exist on port {}.", uriPath, getServerPort());
 
         return removedService == null;
     }
@@ -334,10 +335,18 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     /**
      * Removes all webServices from server.
      */
-    public synchronized void removeAllServices() {
+    public void removeAllServices() {
+
+        WebService[] services;
+        synchronized (this){
+            services = new WebService[registeredServices.values().size()];
+            registeredServices.values().toArray(services);
+        }
+
         for (String path : registeredServices.keySet()) {
             removeService(path);
         }
+
         if(!registeredServices.isEmpty()){
             log.error("All webServices should be removed but there are " + registeredServices.size() + " left.");
         }

@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.internal;
+package de.uniluebeck.itm.spitfire.nCoap.communication.core.internal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

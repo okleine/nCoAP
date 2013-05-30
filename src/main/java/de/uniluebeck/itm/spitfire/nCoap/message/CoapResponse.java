@@ -74,7 +74,7 @@ public class CoapResponse extends CoapMessage {
      * meaningful with the message code and thus silently ignored or if max age is equal to
      * OptionRegistry.MAX_AGE_DEFAULT
      */
-    public boolean setMaxAge(int maxAge) throws InvalidOptionException, ToManyOptionsException {
+    public boolean setMaxAge(long maxAge) throws InvalidOptionException, ToManyOptionsException {
         optionList.removeAllOptions(OptionRegistry.OptionName.MAX_AGE);
 
         if(maxAge == OptionRegistry.MAX_AGE_DEFAULT){

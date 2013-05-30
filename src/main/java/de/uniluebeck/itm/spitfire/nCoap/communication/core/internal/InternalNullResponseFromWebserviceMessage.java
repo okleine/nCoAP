@@ -1,11 +1,9 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.internal;
+package de.uniluebeck.itm.spitfire.nCoap.communication.core.internal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created with IntelliJ IDEA.

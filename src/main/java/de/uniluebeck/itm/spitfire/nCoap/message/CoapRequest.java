@@ -23,23 +23,26 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
 /**
  * @author Oliver Kleine
  */
@@ -248,6 +251,16 @@ public class CoapRequest extends CoapMessage {
             log.debug("Elective option (" + OptionRegistry.OptionName.ACCEPT + ") could not be added.", e);
             return false;
         }
+    }
+
+    public Set<MediaType> getAccept(){
+        EnumSet<MediaType> result = EnumSet.noneOf(MediaType.class);
+
+        for(Option option : optionList.getOption(ACCEPT)){
+            result.add(MediaType.getByNumber(((UintOption) option) .getDecodedValue()));
+        }
+
+        return result;
     }
 
     /**

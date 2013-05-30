@@ -80,4 +80,9 @@ public final class WellKnownCoreResource extends NotObservableWebService<Map<Str
 
         return response;
     }
+
+    @Override
+    public void shutdown() {
+        //nothing to do here...
+    }
 }

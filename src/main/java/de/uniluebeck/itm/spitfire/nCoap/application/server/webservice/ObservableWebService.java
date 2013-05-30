@@ -2,18 +2,17 @@ package de.uniluebeck.itm.spitfire.nCoap.application.server.webservice;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.Observable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 
 
 /**
@@ -34,18 +33,24 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
     private boolean isUpdateNotificationConfirmable = true;
 
     private ScheduledExecutorService executorService;
-    private ScheduledFuture maxAgeFuture;
+    private long maxAge = OptionRegistry.MAX_AGE_DEFAULT;
 
-    private int maxAge = OptionRegistry.MAX_AGE_DEFAULT;
+    private ScheduledFuture maxAgeFuture;
 
     protected ObservableWebService(String path, T initialStatus){
         this.path = path;
         this.resourceStatus = initialStatus;
     }
 
+    @Override
     public final void setExecutorService(ScheduledExecutorService executorService){
         this.executorService = executorService;
-        scheduleMaxAgeNotifications();
+        //scheduleMaxAgeNotifications();
+    }
+
+    @Override
+    public ScheduledExecutorService getExecutorService(){
+        return this.executorService;
     }
 
     @Override
@@ -71,7 +76,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
     }
 
     @Override
-    public final synchronized String getPath() {
+    public final String getPath() {
        return this.path;
     }
 
@@ -84,8 +89,12 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
     public synchronized final void setResourceStatus(T newStatus){
         this.resourceStatus = newStatus;
 
-        if(maxAgeFuture.cancel(false)){
-            log.info("Update of {} before max age.", getPath());
+        try{
+            if(maxAgeFuture.cancel(false))
+                log.info("Max-age notification cancelled for {}.", getPath());
+        }
+        catch(NullPointerException ex){
+            log.info("Max-age notifiation for {} not yet scheduled. This should only happen once!", getPath());
         }
 
         //Notify observers (methods inherited from abstract class Observable)
@@ -95,37 +104,73 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
         scheduleMaxAgeNotifications();
     }
 
-    public void scheduleMaxAgeNotifications(){
+    /**
+     * The max age value represents the validity period (in seconds) of the actual status. With
+     * {@link ObservableWebService} instances the nCoAP framework uses this value
+     * <ul>
+     *     <li>
+     *          to set the {@link OptionName#MAX_AGE} option in every {@link CoapResponse} that was returned by
+     *          {@link #processMessage(CoapRequest, InetSocketAddress)} (if not set set to another value manually) and
+     *     </li>
+     *     <li>
+     *         to send update notifications to all observers of this service every {@link #maxAge} seconds.
+     *     </li>
+     * </ul>
+     *
+     * The default (if not set otherwise) is {@link OptionRegistry#MAX_AGE_DEFAULT}
+     *
+     * @return the current value of {@link #maxAge}
+     */
+    public long getMaxAge() {
+        return maxAge;
+    }
+
+    /**
+     * The max age value represents the validity period (in seconds) of the actual status. With
+     * {@link ObservableWebService} instances the nCoAP framework uses this value
+     * <ul>
+     *     <li>
+     *          to set the {@link OptionName#MAX_AGE} option in every {@link CoapResponse} that was returned by
+     *          {@link #processMessage(CoapRequest, InetSocketAddress)} (if not set set to another value manually) and
+     *     </li>
+     *     <li>
+     *         to send update notifications to all observers of this service every {@link #maxAge} seconds.
+     *     </li>
+     * </ul>
+     *
+     * @param maxAge  the new max age value
+     */
+    public void setMaxAge(long maxAge) {
+        this.maxAge = maxAge;
+    }
+
+    private void scheduleMaxAgeNotifications(){
         maxAgeFuture = executorService.schedule(new Runnable() {
             @Override
             public void run() {
-                log.info("Send max age notifications for {}.", getPath());
-
                 synchronized (ObservableWebService.this){
+                    log.info("Send max-age notifications for {} with status {}.", getPath(), getResourceStatus());
+
                     setChanged();
                     notifyObservers();
-                }
 
-                scheduleMaxAgeNotifications();
+                    scheduleMaxAgeNotifications();
+                }
             }
         }, getMaxAge(), TimeUnit.SECONDS);
     }
 
-    public int getMaxAge() {
-        return maxAge;
-    }
-
-    public void setMaxAge(int maxAge) {
-        this.maxAge = maxAge;
-    }
-
+    /**
+     * The hash code of is {@link ObservableWebService} instance is produced as {@code this.getPath().hashCode()}.
+     * @return the hash code of this {@link ObservableWebService} instance
+     */
     @Override
     public int hashCode(){
         return this.getPath().hashCode();
     }
 
     @Override
-    public boolean equals(Object object){
+    public final boolean equals(Object object){
 
         if(object == null){
             return false;

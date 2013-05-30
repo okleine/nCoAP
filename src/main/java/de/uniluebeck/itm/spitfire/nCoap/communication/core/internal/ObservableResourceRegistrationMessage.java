@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.observe;
+package de.uniluebeck.itm.spitfire.nCoap.communication.core.internal;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
 

@@ -25,6 +25,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransferHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
@@ -62,11 +63,12 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
     private ObservableResourceHandler observableResourceHandler;
     
-    public CoapServerPipelineFactory(ChannelHandler serverApp, ScheduledExecutorService executorService){
+    public CoapServerPipelineFactory(CoapServerApplication serverApp, int serverPort,
+                                     ScheduledExecutorService executorService){
         this.serverApp = serverApp;
         this.outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
         this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
-        observableResourceHandler = new ObservableResourceHandler(executorService);
+        this.observableResourceHandler = new ObservableResourceHandler(executorService);
 
         MessageIDFactory.setExecutorService(executorService);
     }
@@ -88,5 +90,8 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         return pipeline;
     }
 
+    public ObservableResourceHandler getObservableResourceHandler(){
+        return this.observableResourceHandler;
+    }
 
 }

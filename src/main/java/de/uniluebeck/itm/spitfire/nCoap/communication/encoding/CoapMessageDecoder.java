@@ -70,6 +70,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         //Decode the header values (version: 2 bits, msgType: 2 bits, optionCount: 4 bits, code: 4 bits, msgID: 8 bits)
         int encHeader = buffer.readInt();
+        log.info("Binary Header: " + Integer.toBinaryString(encHeader));
         int msgTypeNumber = ((encHeader << 2) >>> 30);
         int optionCount = ((encHeader << 4) >>> 28);
         int codeNumber = ((encHeader << 8) >>> 24);

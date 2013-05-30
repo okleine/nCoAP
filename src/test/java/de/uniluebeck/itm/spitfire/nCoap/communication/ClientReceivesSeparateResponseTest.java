@@ -1,7 +1,5 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.MessageReceiverResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -59,7 +57,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         expectedCoapResponse.getHeader().setMsgType(MsgType.ACK);
 
         //setup test server
-        registerNotObservableDummyService(2500);
+        registerNotObservableTestService(2500);
 
         //create request
         requestToken = new byte[]{0x12, 0x23, 0x34};
@@ -106,13 +104,13 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         assertTrue(message, receivedMessage instanceof CoapResponse);
     }
 
-    @Test
-    public void test2ndReceivedMessageHasSameMsgID() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
-        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
-        String message = "Response Msg ID does not match with request Msg ID";
-        assertEquals(message, coapRequest.getMessageID(), receivedMessage.getMessageID());
-    }
+//    @Test
+//    public void test2ndReceivedMessageHasSameMsgID() {
+//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
+//        String message = "Response Msg ID does not match with request Msg ID";
+//        assertEquals(message, coapRequest.getMessageID(), receivedMessage.getMessageID());
+//    }
 
     @Test
     public void test2ndReceivedMessageHasSameToken() {
