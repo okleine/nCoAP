@@ -54,7 +54,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
     }
 
     @Override
-    public abstract CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress);
+    public abstract CoapResponse processMessage(CoapRequest coapRequest, InetSocketAddress remoteAddress);
 
     /**
      * Returns whether update notifications should be sent with {@link MsgType#CON} or {@link MsgType#NON}

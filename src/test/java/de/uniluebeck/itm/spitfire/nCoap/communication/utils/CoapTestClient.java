@@ -21,7 +21,6 @@ import java.util.TreeSet;
  */
 public class CoapTestClient extends CoapClientApplication {
 
-    //private static CoapTestClient instance = new CoapTestClient();
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -29,31 +28,23 @@ public class CoapTestClient extends CoapClientApplication {
     private SortedSet<Long> emptyAckNotificationTimes = new TreeSet<Long>();
     private SortedSet<Long> timeoutNotificationTimes = new TreeSet<Long>();
 
-    private boolean receiveEnabled = true;
+//    private boolean receiveEnabled = true;
     
-//    public static CoapTestClient getInstance(){
-//        return instance;
-//    }
-//
-//    private CoapTestClient(){}
-
     @Override
     public void receiveResponse(CoapResponse coapResponse) {
-        if (receiveEnabled)  {
-            receivedResponses.put(System.currentTimeMillis(), coapResponse);
-        }
+        receivedResponses.put(System.currentTimeMillis(), coapResponse);
     }
 
     @Override
     public void receiveEmptyACK(){
-        if(receiveEnabled && !emptyAckNotificationTimes.add(System.currentTimeMillis())){
+        if(!emptyAckNotificationTimes.add(System.currentTimeMillis())){
             log.error("Could not add notification time for empty ACK.");
         }
     }
 
     @Override
     public void handleRetransmissionTimout() {
-        if(receiveEnabled && !timeoutNotificationTimes.add(System.currentTimeMillis())){
+        if(!timeoutNotificationTimes.add(System.currentTimeMillis())){
             log.error("Could not add notification time for retransmission timeout.");
         }
     }
@@ -70,20 +61,8 @@ public class CoapTestClient extends CoapClientApplication {
         return receivedResponses;
     }
     
-//    public void reset() {
-//        receivedResponses.clear();
-//        setReceiveEnabled(true);
-//
-//        //CoapExecutorService.cancelAll();
-//
-//        datagramChannel.close().awaitUninterruptibly();
-////        datagramChannel.getFactory().releaseExternalResources();
-//        CoapClientDatagramChannelFactory.resetInstance();
-//        datagramChannel = CoapClientDatagramChannelFactory.getInstance().getChannel();
-//
+
+//    public synchronized void setReceiveEnabled(boolean receiveEnabled) {
+//        this.receiveEnabled = receiveEnabled;
 //    }
-    
-    public synchronized void setReceiveEnabled(boolean receiveEnabled) {
-        this.receiveEnabled = receiveEnabled;
-    }
 }

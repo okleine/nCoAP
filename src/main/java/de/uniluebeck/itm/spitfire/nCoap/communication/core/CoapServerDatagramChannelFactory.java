@@ -50,8 +50,6 @@ public abstract class CoapServerDatagramChannelFactory {
     private static Logger log = LoggerFactory.getLogger(CoapServerDatagramChannelFactory.class.getName());
     private static final int NO_OF_THREADS = 10;
 
-    //private static HashMap<Integer, DatagramChannel> channels = new HashMap<Integer, DatagramChannel>();
-
     /**
      * Creates a new {@link DatagramChannel} instance associated with the given local server port. Upon creation the
      * channel is bound to the given local server port and listens for incoming messages.
@@ -81,21 +79,7 @@ public abstract class CoapServerDatagramChannelFactory {
 
         pipelineFactory.getObservableResourceHandler().setChannel(channel);
 
-        //channels.put(channel.getLocalAddress().getPort(), channel);
-
         log.info("New server channel created for port " + channel.getLocalAddress().getPort());
         return channel;
     }
-
-//    /**
-//     * Returns the {@link DatagramChannel} instance associated with the given local server port. If there is no such
-//     * instance, it returns null.
-//     *
-//     * @param coapServerPort the local server port
-//     * @return the {@link DatagramChannel} instance associated with the given local server port. If there is no such
-//     * instance, it returns {@code null}.
-//     */
-//    public static DatagramChannel getChannel(int coapServerPort){
-//        return channels.get(coapServerPort);
-//    }
 }

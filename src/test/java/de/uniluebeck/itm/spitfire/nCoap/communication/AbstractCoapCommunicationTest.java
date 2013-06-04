@@ -55,11 +55,11 @@ public abstract class AbstractCoapCommunicationTest {
     }
 
     @BeforeClass
-    public static void runCommunication() throws Exception {
+    public static void setupComponents() throws Exception {
         initializeLogging();
         initializeComponents();
         testReceiver.getReceivedMessages().clear();
-        testReceiver.getResponsesToSend().clear();
+        //testReceiver.getOutgoingMessageQueue().clear();
     }
 
     @AfterClass

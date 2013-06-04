@@ -74,16 +74,17 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      * @throws Exception if an error occured
      */
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+    public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendUpstream(me);
             return;
         }
 
-        CoapMessage coapMessage = (CoapMessage) me.getMessage();
+        final CoapMessage coapMessage = (CoapMessage) me.getMessage();
         log.info("Incoming (from " + me.getRemoteAddress() + "): " + coapMessage);
 
-        InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
+        final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
+        final int messageID = coapMessage.getMessageID();
 
         if(coapMessage.getMessageType() == MsgType.CON){
             if(coapMessage instanceof CoapRequest){
@@ -91,9 +92,22 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                     me.getFuture().setSuccess();
                     return;
                 };
+
+                //Schedule empty ACK fo incoming request for in 1900ms
+                executorService.schedule(new Runnable(){
+
+                    @Override
+                    public void run() {
+                        if(setAcknowledgementSent(remoteAddress, messageID)){
+                            writeEmptyAcknowledgement(ctx, remoteAddress, messageID);
+                        }
+                    }
+                }, 1900, TimeUnit.MILLISECONDS);
             }
 
-            scheduleEmptyAcknowledgement(ctx, (InetSocketAddress) me.getRemoteAddress(), coapMessage);
+            if(coapMessage instanceof CoapResponse)
+                writeEmptyAcknowledgement(ctx, remoteAddress, coapMessage.getMessageID());
+
         }
 
         ctx.sendUpstream(me);
@@ -213,63 +227,47 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     }
 
 
-    private synchronized void scheduleEmptyAcknowledgement(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
-                                                           CoapMessage coapMessage){
-        if(coapMessage instanceof CoapResponse){
-            //schedule transmission of empty ACK for asap
-            EmptyAcknowledgementSender emptyAcknowledgementSender =
-                    new EmptyAcknowledgementSender(ctx, remoteAddress, coapMessage.getMessageID());
+    private void writeEmptyAcknowledgement(ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,
+                                           final int messageID){
+        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
 
-            executorService.schedule(emptyAcknowledgementSender, 0, TimeUnit.MILLISECONDS);
-            log.debug("Transmission of empty ACK (for " + coapMessage + ") scheduled for asap!");
-        }
-        else{
-            //schedule transmission of empty ACK for in 1.9 seconds
-            EmptyAcknowledgementSender emptyAcknowledgementSender =
-                    new EmptyAcknowledgementSender(ctx, remoteAddress, coapMessage.getMessageID());
+        ChannelFuture future = Channels.future(ctx.getChannel());
+        Channels.write(ctx, future, emptyACK, remoteAddress);
 
-            executorService.schedule(emptyAcknowledgementSender, 1900, TimeUnit.MILLISECONDS);
-            log.debug("Transmission of empty ACK (for " + coapMessage + ") scheduled for in 1.9 seconds.!");
-        }
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                log.info("Empty ACK for message ID {} succesfully sent to {}.", messageID, remoteAddress);
+            }
+        });
     }
 
-
-    private class EmptyAcknowledgementSender implements Runnable{
-
-        private Logger log = LoggerFactory.getLogger(EmptyAcknowledgementSender.class.getName());
-
-        private ChannelHandlerContext ctx;
-        private InetSocketAddress remoteAddress;
-        private int messageID;
-
-        public EmptyAcknowledgementSender(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
-                                          int messageID){
-            this.ctx = ctx;
-            this.remoteAddress = remoteAddress;
-            this.messageID = messageID;
-        }
-
-        @Override
-        public void run(){
-            log.debug("Start to send empty ACK for message ID {} to {}.", messageID, remoteAddress);
-            if(setAcknowledgementSent(remoteAddress, messageID)){
-
-                CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
-
-                ChannelFuture future = Channels.future(ctx.getChannel());
-                Channels.write(ctx, future, emptyACK, remoteAddress);
-
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        log.info("Empty ACK for message ID {} succesfully sent to {}.", messageID, remoteAddress);
-                    }
-                });
-            }
-            else{
-                log.debug("ACK for message ID {} to {} was already sent as piggy-backed response.", messageID, remoteAddress);
-            }
-        }
-    }
+//    private class EmptyAcknowledgementSender implements Runnable{
+//
+//        private Logger log = LoggerFactory.getLogger(EmptyAcknowledgementSender.class.getName());
+//
+//        private ChannelHandlerContext ctx;
+//        private InetSocketAddress remoteAddress;
+//        private int messageID;
+//
+//
+//        public EmptyAcknowledgementSender(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
+//                                          int messageID){
+//            this.ctx = ctx;
+//            this.remoteAddress = remoteAddress;
+//            this.messageID = messageID;
+//        }
+//
+//        @Override
+//        public void run(){
+//            log.debug("Start to send empty ACK for message ID {} to {}.", messageID, remoteAddress);
+//            if(setAcknowledgementSent(remoteAddress, messageID)){
+//
+//            }
+//            else{
+//                log.debug("ACK for message ID {} to {} was already sent as piggy-backed response.", messageID, remoteAddress);
+//            }
+//        }
+//    }
 
 }

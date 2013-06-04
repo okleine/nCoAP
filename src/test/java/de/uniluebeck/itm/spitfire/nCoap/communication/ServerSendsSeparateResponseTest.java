@@ -63,7 +63,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         //create empy ack
         emptyACK = new CoapResponse(Code.EMPTY);
         emptyACK.getHeader().setMsgType(MsgType.ACK);
-        testReceiver.addResponse(new MessageReceiverResponse(emptyACK, true, false));
+        //testReceiver.addMessageToOutgoingQueue(new MessageReceiverResponse(emptyACK, true, false));
 
         //create seperate response to be sent by the message receiver
         responsePayload = "testpayload";
@@ -87,7 +87,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         testReceiver.writeMessage(coapResponse, new InetSocketAddress("localhost", testClient.getClientPort()));
         
         //wait for ack
-        Thread.sleep(1000);
+        Thread.sleep(2500);
         testReceiver.setReceiveEnabled(false);
     }
 

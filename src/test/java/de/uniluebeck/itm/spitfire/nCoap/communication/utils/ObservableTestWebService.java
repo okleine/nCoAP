@@ -64,7 +64,8 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
     }
 
     @Override
-    public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress) {
+    public CoapResponse processMessage(CoapRequest coapRequest, InetSocketAddress remoteAddress) {
+         log.debug("Incoming from {}: {}.", coapRequest, remoteAddress);
 
         //Simulate a longer processing time using the given delay
         try {
@@ -76,7 +77,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
         //Create response 
         CoapResponse response = new CoapResponse(Code.CONTENT_205);
         try {
-            String payload = "Status " + (getResourceStatus() + 1);
+            String payload = "Status #" + (getResourceStatus() + 1);
             response.setPayload(ChannelBuffers.wrappedBuffer(payload.getBytes(Charset.forName("UTF-8"))));
         }
         catch (MessageDoesNotAllowPayloadException e) {

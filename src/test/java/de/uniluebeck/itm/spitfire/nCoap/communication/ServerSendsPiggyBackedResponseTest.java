@@ -41,7 +41,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         */
         
         //create request
-        byte[] requestToken = new byte[]{0x12, 0x23, 0x34};
+        byte[] requestToken = new byte[]{0x12, 0x34, 0x56};
         String requestPath = "/testpath";
         int requestMsgID = 3333;
         URI targetUri = new URI("coap://localhost:" + testReceiver.getReceiverPort() + requestPath);
@@ -56,7 +56,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         coapResponse.getHeader().setMsgType(MsgType.ACK);
 
         //register respone, allow to set msg id and token
-        testReceiver.addResponse(new MessageReceiverResponse(coapResponse, true, true));
+        //testReceiver.addMessageToOutgoingQueue(new MessageReceiverResponse(coapResponse, true, true));
 
         //write request, disable receiving after 500ms
         testClient.writeCoapRequest(coapRequest);

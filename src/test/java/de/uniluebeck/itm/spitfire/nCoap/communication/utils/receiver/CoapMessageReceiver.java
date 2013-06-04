@@ -5,7 +5,6 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncode
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -25,7 +24,7 @@ import static org.junit.Assert.fail;
 /**
 * Receives and sends CoAP Messages for testing purposes.
 * Receiving and automatic response can be configured.
-* To send a message either schedule a automatic response using addResponse (using setWriteEnabled(true))
+* To send a message either schedule a automatic response using addMessageToOutgoingQueue (using setWriteEnabled(true))
 * or send a message manually using writeMessage (which will send the message immediately regardless of writeEnabled).
 *
 * @author Oliver Kleine, Stefan Hueske
@@ -43,8 +42,8 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     //map to save received messages
     private SortedMap<Long, CoapMessage> receivedMessages = new TreeMap<Long, CoapMessage>();
 
-    //contains a list of test specific responses
-    private LinkedList<MessageReceiverResponse> responsesToSend = new LinkedList<MessageReceiverResponse>();
+    //contains a list of test specific messages to be sent
+    private LinkedList<MessageReceiverResponse> outgoingMessageQueue = new LinkedList<MessageReceiverResponse>();
 
     public CoapMessageReceiver() {
         //Create datagram datagramChannel to receive messages
@@ -76,30 +75,10 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         if ((e.getMessage() instanceof CoapMessage) && receiveEnabled) {
             CoapMessage coapMessage = (CoapMessage) e.getMessage();
-
             receivedMessages.put(System.currentTimeMillis(), coapMessage);
-            log.info("Incoming (from " + e.getRemoteAddress() + ") # " +  getReceivedMessages().size() + ": "
-                    + coapMessage);
 
-            if(writeEnabled && (coapMessage instanceof CoapRequest)){
-                if (responsesToSend.isEmpty()) {
-                    fail("responsesToSend is empty. This could be caused by an unexpected request.");
-                }
-                MessageReceiverResponse responseToSend = responsesToSend.remove(0);
-
-                if (responseToSend == null) {
-                    throw new InternalError("Unexpected request received. No response for: " + coapMessage);
-                }
-
-                CoapResponse coapResponse = responseToSend;
-                if (responseToSend.getReceiverSetsMsgID()) {
-                    coapResponse.setMessageID(coapMessage.getMessageID());
-                }
-                if (responseToSend.getReceiverSetsToken()) {
-                    coapResponse.setToken(coapMessage.getToken());
-                }
-                Channels.write(channel, coapResponse, e.getRemoteAddress());
-            }
+            log.info("Incoming #{} (from {}): {}.",
+                    new Object[]{getReceivedMessages().size(), e.getRemoteAddress(), coapMessage});
         }
     }
 
@@ -107,9 +86,9 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
         return receivedMessages;
     }
 
-    public LinkedList<MessageReceiverResponse> getResponsesToSend(){
-        return responsesToSend;
-    }
+//    public LinkedList<MessageReceiverResponse> getOutgoingMessageQueue(){
+//        return outgoingMessageQueue;
+//    }
 
     public synchronized void setReceiveEnabled(boolean receiveEnabled) {
         this.receiveEnabled = receiveEnabled;
@@ -121,19 +100,33 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 
 //    public synchronized void reset() {
 //        receivedMessages.clear();
-//        responsesToSend.clear();
+//        outgoingMessageQueue.clear();
 //        setReceiveEnabled(true);
 //        setWriteEnabled(true);
 //    }
 
     public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
-        log.debug("Write message: " + coapMessage);
+        if(!writeEnabled){
+            log.error("Write is disabled!");
+            return;
+        }
+
+        log.info("Write message: " + coapMessage);
         Channels.write(channel, coapMessage, remoteAddress);
     }
 
-    public void addResponse(MessageReceiverResponse response) {
-        responsesToSend.add(response);
-    }
+//    public void writeNextMessage(InetSocketAddress remoteAddress){
+//        if(!writeEnabled)
+//            fail("Write is disabled!");
+//        CoapMessage coapMessage = outgoingMessageQueue.poll();
+//        log.info("Write message: {}", coapMessage);
+//        Channels.write(channel, coapMessage, remoteAddress);
+//    }
+//
+//
+//    public void addMessageToOutgoingQueue(MessageReceiverResponse response) {
+//        outgoingMessageQueue.add(response);
+//    }
 
     /**
      * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
@@ -157,21 +150,5 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
 
         future.awaitUninterruptibly();
     }
-
-
-//    public void blockUntilMessagesReceivedOrTimeout(long timeout, int messagesCount)
-//            throws InterruptedException {
-//        long startTime = System.currentTimeMillis();
-//        while(System.currentTimeMillis() - startTime < timeout) {
-//            synchronized(this) {
-//                if (receivedMessages.size() >= messagesCount) {
-//                    return;
-//                }
-//            }
-//            Thread.sleep(50);
-//        }
-//    }
-
-
 }
 

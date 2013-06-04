@@ -24,8 +24,11 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
@@ -48,9 +51,7 @@ public class CoapClientDatagramChannelFactory {
     private static final int NO_OF_THREADS = 10;
 
     private static int clientNumber = 0;
-    private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS,
-            new ThreadFactoryBuilder().setNameFormat("nCoapClientThread " + clientNumber + "-%d")
-                    .build());
+    private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
 
     public static DatagramChannel getChannel(){
 
@@ -69,5 +70,9 @@ public class CoapClientDatagramChannelFactory {
         log.info("New client channel created for port " + channel.getLocalAddress().getPort());
 
         return channel;
+    }
+
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
+       log.info("Exception while processing I/O task.", e.getCause());
     }
 }
