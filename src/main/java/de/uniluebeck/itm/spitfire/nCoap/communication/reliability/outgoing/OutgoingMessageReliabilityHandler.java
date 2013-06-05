@@ -44,8 +44,6 @@ import java.util.concurrent.TimeUnit;
 
 import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.ACK;
 
-//import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapExecutorService;
-
 /**
  * @author Oliver Kleine
  */
@@ -127,21 +125,20 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         ctx.sendDownstream(me);
     }
 
-    private boolean updateRetransmission(CoapMessage recentMessage, InetSocketAddress remoteAddress) {
-        synchronized (waitingForACK) {
-            Collection<ScheduledRetransmission> retransmissions = waitingForACK.row(remoteAddress).values();
-            for (ScheduledRetransmission retransmission : retransmissions) {
-                if (Arrays.equals(retransmission.getCoapMessage().getToken(), recentMessage.getToken())) {
-                    //update retransmission
-                    int previousMsgID = retransmission.getCoapMessage().getMessageID();
-                    retransmission.setCoapMessage(recentMessage);
-                    //update mapping in waitingForACK (message ID changed!)
-                    waitingForACK.remove(remoteAddress, previousMsgID);
-                    waitingForACK.put(remoteAddress, recentMessage.getMessageID(), retransmission);
-                    //running retransmission successfully updated
-                    return true;
-                }
+    private synchronized boolean updateRetransmission(CoapMessage recentMessage, InetSocketAddress remoteAddress) {
+        Collection<ScheduledRetransmission> retransmissions = waitingForACK.row(remoteAddress).values();
+        for (ScheduledRetransmission retransmission : retransmissions) {
+            if (Arrays.equals(retransmission.getCoapMessage().getToken(), recentMessage.getToken())) {
+                //update retransmission
+                int previousMsgID = retransmission.getCoapMessage().getMessageID();
+                retransmission.setCoapMessage(recentMessage);
+                //update mapping in waitingForACK (message ID changed!)
+                waitingForACK.remove(remoteAddress, previousMsgID);
+                waitingForACK.put(remoteAddress, recentMessage.getMessageID(), retransmission);
+                //running retransmission successfully updated
+                return true;
             }
+
         }
         //token + remote address was not found in waitingForACK
         return false;
