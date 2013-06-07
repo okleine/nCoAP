@@ -1,7 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalUpdateNotificationRetransmissionMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler.ScheduledRetransmission;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
@@ -30,12 +29,12 @@ class MessageRetransmitter implements Runnable {
     private Logger log = LoggerFactory.getLogger(MessageRetransmitter.class.getName());
 
     private InetSocketAddress rcptAddress;
-    ScheduledRetransmission retransmission;
+    private RetransmissionSchedule retransmission;
     private int retransmitNo;
     private ChannelHandlerContext ctx;
 
     public MessageRetransmitter(ChannelHandlerContext ctx, InetSocketAddress rcptAddress,
-            ScheduledRetransmission retransmission, int retransmitNo){
+            RetransmissionSchedule retransmission, int retransmitNo){
         this.rcptAddress = rcptAddress;
         this.retransmitNo = retransmitNo;
         this.retransmission = retransmission;
