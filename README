@@ -1,1 +1,5 @@
-Java implementation of the CoAP protocol (draft 07) usable for both clients and servers
+Java implementation of the CoAP protocol (draft 08) (see: http://tools.ietf.org/html/draft-ietf-core-coap-08)
+usable for both clients and servers including extensions:
+
+- CoAP observe (draft 06) (see: http://tools.ietf.org/html/draft-ietf-core-observe-06)
+- CoAP block-transfer (draft 04, partially) (see: http://tools.ietf.org/html/draft-ietf-core-block-04)
