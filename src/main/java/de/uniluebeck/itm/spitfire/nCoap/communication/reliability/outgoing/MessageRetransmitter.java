@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalUpdateNotificationRetransmissionMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.observe.InternalUpdateNotificationRetransmissionMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
@@ -29,26 +29,26 @@ class MessageRetransmitter implements Runnable {
     private Logger log = LoggerFactory.getLogger(MessageRetransmitter.class.getName());
 
     private InetSocketAddress rcptAddress;
-    private RetransmissionSchedule retransmission;
+    private RetransmissionSchedule retransmissionSchedule;
     private int retransmitNo;
     private ChannelHandlerContext ctx;
 
     public MessageRetransmitter(ChannelHandlerContext ctx, InetSocketAddress rcptAddress,
-            RetransmissionSchedule retransmission, int retransmitNo){
+            RetransmissionSchedule retransmissionSchedule, int retransmitNo){
         this.rcptAddress = rcptAddress;
         this.retransmitNo = retransmitNo;
-        this.retransmission = retransmission;
+        this.retransmissionSchedule = retransmissionSchedule;
         this.ctx = ctx;
     }
 
     @Override
     public void run() {
-        CoapMessage coapMessage = retransmission.getCoapMessage();
+        CoapMessage coapMessage = retransmissionSchedule.getCoapMessage();
         if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
 
             CoapResponse coapResponse = (CoapResponse) coapMessage;
 
-            //increment OBSERVE notification count before retransmission
+            //increment OBSERVE notification count before retransmissionSchedule
             long observeOption = ((UintOption)coapResponse.getOption(OptionRegistry
                     .OptionName.OBSERVE_RESPONSE).get(0)).getDecodedValue() + 1;
 
@@ -79,7 +79,7 @@ class MessageRetransmitter implements Runnable {
 
     @Override
     public String toString() {
-        CoapMessage coapMessage = retransmission.getCoapMessage();
+        CoapMessage coapMessage = retransmissionSchedule.getCoapMessage();
         return  "RetransmitNo " + retransmitNo +
                 (coapMessage == null ? "" : (", MsgID " + coapMessage.getMessageID())) +
                 ", RcptAddress " + rcptAddress + "}";

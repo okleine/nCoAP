@@ -1,11 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.observe;
 
 import com.google.common.collect.HashBasedTable;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.InternalServiceRemovedFromServerMessage;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalServiceRemovedFromPathMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalUpdateNotificationRetransmissionMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.ObservableResourceRegistrationMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.UpdateNotificationRejectedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -75,12 +72,37 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         this.channel = channel;
     }
 
+    /**
+     * This method is automatically called by the Netty framework. It deals with the following types of messages
+     * possibly contained in the given {@link MessageEvent}:
+     * <ul>
+     *     <li>
+     *         {@link InternalUpdateNotificationRejectedMessage}: remove the observer
+     *         {@link InternalUpdateNotificationRejectedMessage#getObserverAddress()} from the list of observers for
+     *         {@link InternalUpdateNotificationRejectedMessage#getServicePath()}.
+     *     </li>
+     *     <li>
+     *         {@link InternalUpdateNotificationRetransmissionMessage}: Increase the notification count for
+     *         {@link InternalUpdateNotificationRetransmissionMessage#getObserverAddress()} observing
+     *         {@link InternalUpdateNotificationRetransmissionMessage#getServicePath()}.
+     *     </li>
+     *     <li>
+     *         {@link CoapRequest}: Add {@link MessageEvent#getRemoteAddress()} as observer for
+     *         {@link CoapRequest#getTargetUri()} if the request contains the option
+     *         {@link OptionRegistry.OptionName#OBSERVE_REQUEST}.
+     *     </li>
+     * </ul>
+     *
+     * @param ctx the {@link ChannelHandlerContext} of this {@link ObservableResourceHandler} instance
+     * @param me the {@link MessageEvent} containing the message and other event specific parameters
+     * @throws Exception
+     */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception {
         log.debug("Incoming (from {}): {}", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof UpdateNotificationRejectedMessage){
-            UpdateNotificationRejectedMessage message = (UpdateNotificationRejectedMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalUpdateNotificationRejectedMessage){
+            InternalUpdateNotificationRejectedMessage message = (InternalUpdateNotificationRejectedMessage) me.getMessage();
             removeObserver(message.getObserverAddress(), message.getServicePath());
 
             me.getFuture().setSuccess();
@@ -118,18 +140,24 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
     }
 
 
+    /**
+     *
+     * @param ctx
+     * @param me
+     * @throws Exception
+     */
     @Override
     public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent me) throws Exception {
         log.debug("Outgoing: {} to {}.", me.getMessage(), me.getRemoteAddress());
 
-        if(me.getMessage() instanceof ObservableResourceRegistrationMessage){
-            ((ObservableResourceRegistrationMessage) me.getMessage()).getWebService().addObserver(this);
+        if(me.getMessage() instanceof InternalObservableResourceRegistrationMessage){
+            ((InternalObservableResourceRegistrationMessage) me.getMessage()).getWebService().addObserver(this);
             me.getFuture().setSuccess();
             return;
         }
 
-        if(me.getMessage() instanceof InternalServiceRemovedFromPathMessage){
-            InternalServiceRemovedFromPathMessage message = (InternalServiceRemovedFromPathMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalServiceRemovedFromServerMessage){
+            InternalServiceRemovedFromServerMessage message = (InternalServiceRemovedFromServerMessage) me.getMessage();
 
             for(Object observerAddress : observations.column(message.getServicePath()).keySet().toArray()){
                 ObservationParameter parameter =
@@ -230,6 +258,13 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         });
     }
 
+    /**
+     * This method is automatically invoked by the framework if the status of an {@link ObservableWebService}
+     * instance changed. On invocation every observer gets an update notification.
+     *
+     * @param observable the {@link ObservableWebService} instance whose resource status changed
+     * @param arg null and thus ignored
+     */
     @Override
     public void update(final Observable observable, Object arg) {
         executorService.submit(new Runnable(){
@@ -247,9 +282,14 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                         ObservationParameter parameter = observations.get(observerAddress);
 
                         if(!payload.containsKey(parameter.getAcceptedMediaType())){
+
+                            log.debug("Create {} payload for update notifications of {}.",
+                                    parameter.getAcceptedMediaType(), webService.getPath());
+
                             //Create payload for updated resource
                             CoapRequest coapRequest =
                                     new CoapRequest(NON, Code.GET, new URI("coap://localhost" + webService.getPath()));
+                            coapRequest.setAccept(parameter.getAcceptedMediaType());
                             CoapResponse coapResponse = webService.processMessage(coapRequest, new InetSocketAddress(0));
 
                             if(coapResponse.getContentType() == null)
@@ -269,6 +309,8 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                             }
                             else{
                                 payload.put(coapResponse.getContentType(), coapResponse.getPayload());
+                                log.debug("Added {} payload for update notifications of {}.",
+                                        coapResponse.getContentType(), webService.getPath());
                             }
                         }
 

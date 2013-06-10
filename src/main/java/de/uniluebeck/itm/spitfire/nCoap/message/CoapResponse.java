@@ -190,4 +190,12 @@ public class CoapResponse extends CoapMessage {
     public void setServicePath(String servicePath) {
         this.servicePath = servicePath;
     }
+
+    public boolean isUpdateNotification(){
+        return !this.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty();
+    }
+
+    public long getMaxAge(){
+        return ((UintOption) this.getOption(OptionRegistry.OptionName.MAX_AGE).get(0)).getDecodedValue();
+    }
 }

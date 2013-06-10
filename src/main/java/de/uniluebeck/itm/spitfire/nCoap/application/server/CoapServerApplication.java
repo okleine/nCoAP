@@ -30,13 +30,10 @@ import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.Observable
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WebService;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalNullResponseFromWebserviceMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalServiceRemovedFromPathMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.ObservableResourceRegistrationMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.observe.InternalObservableResourceRegistrationMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.MessageDoesNotAllowPayloadException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
@@ -48,7 +45,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -165,28 +162,8 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 CoapResponse coapResponse;
                 try {
                     coapResponse = executionFuture.get();
-
-                    if(coapResponse == null){
-                        handleNullResponse(coapRequest.getMessageID(), remoteAddress);
-                        return;
-                    }
-
                     coapResponse.setMaxAge(webService.getMaxAge());
-                }
-                catch (Exception ex) {
-                    coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);
-                    coapResponse.setServicePath(coapRequest.getTargetUri().getPath());
-                    StringWriter errors = new StringWriter();
-                    ex.printStackTrace(new PrintWriter(errors));
-                    try {
-                        coapResponse.setPayload(errors.toString().getBytes(Charset.forName("UTF-8")));
-                    } catch (MessageDoesNotAllowPayloadException e) {
-                        log.error("This should never happen.", e);
-                    }
-                }
-
-                try{
-                    coapResponse.setServicePath(coapRequest.getTargetUri().getPath());
+                    coapResponse.setServicePath(webService.getPath());
 
                     //Set message ID and token to match the request
                     coapResponse.setMessageID(coapRequest.getMessageID());
@@ -198,31 +175,27 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                     if(coapResponse.getPayload().readableBytes() > 0 && coapResponse.getContentType() == null)
                         coapResponse.setContentType(MediaType.TEXT_PLAIN_UTF8);
 
-
                     //Set observe response option if requested
                     if(webService instanceof ObservableWebService && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
                         coapResponse.setObserveOptionResponse(0);
                 }
-                catch (Exception e) {
-                    log.error("This should never happen.", e);
+                catch (Exception ex) {
+                    coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);
+                    try {
+                        coapResponse.setMessageID(coapRequest.getMessageID());
+                        coapResponse.setServicePath(webService.getPath());
+                        StringWriter errors = new StringWriter();
+                        ex.printStackTrace(new PrintWriter(errors));
+                        coapResponse.setPayload(errors.toString().getBytes(Charset.forName("UTF-8")));
+                    } catch (Exception e) {
+                        log.error("This should never happen.", e);
+                    }
                 }
 
                 //Send the response
                 sendCoapResponse(coapResponse, remoteAddress);
             }
         }, executorService);
-    }
-
-
-    private void handleNullResponse(final int messageID, final InetSocketAddress remoteAddress){
-        ChannelFuture future =
-                channel.write(new InternalNullResponseFromWebserviceMessage(remoteAddress, messageID), remoteAddress);
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("NullResponse successfully processed for message ID {} from {}.", messageID, remoteAddress);
-            }
-        });
     }
 
     private void sendCoapResponse(final CoapResponse coapResponse, final InetSocketAddress remoteAddress){
@@ -295,8 +268,8 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         log.info("Registered new service at " + webService.getPath());
 
         if(webService instanceof ObservableWebService){
-            ObservableResourceRegistrationMessage message =
-                    new ObservableResourceRegistrationMessage((ObservableWebService) webService);
+            InternalObservableResourceRegistrationMessage message =
+                    new InternalObservableResourceRegistrationMessage((ObservableWebService) webService);
 
             ChannelFuture future = Channels.write(channel, message);
             future.addListener(new ChannelFutureListener() {
@@ -320,7 +293,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         WebService removedService = registeredServices.remove(uriPath);
 
         if(removedService != null && removedService instanceof ObservableWebService){
-            channel.write(new InternalServiceRemovedFromPathMessage(uriPath));
+            channel.write(new InternalServiceRemovedFromServerMessage(uriPath));
             removedService.shutdown();
         }
 

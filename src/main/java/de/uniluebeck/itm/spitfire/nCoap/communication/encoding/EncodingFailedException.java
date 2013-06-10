@@ -24,12 +24,17 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.encoding;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 
 /**
+ * Exception that is thrown when the encoding of a {@link CoapMessage} failed
  * @author Oliver Kleine
  */
 public class EncodingFailedException extends CoapException {
 
+    /**
+     * @param msg A string representation of the reason that caused the exception
+     */
     public EncodingFailedException(String msg) {
         super(msg);
     }

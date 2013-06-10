@@ -23,8 +23,6 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransferHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
@@ -38,7 +36,6 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**

@@ -139,7 +139,8 @@ public interface WebService<T> {
      * the response contains payload) a {@link MediaType}. If there is payload but no {@link MediaType} set, the
      * nCoAP framework will automatically set it to {@link MediaType#TEXT_PLAIN_UTF8}.
      *
-     * If the service is not supposed to produce a response it must return {@code null}
+     * If the returned value is null, the nCoAP framework sends a {@link CoapResponse} with
+     * {@link Code#INTERNAL_SERVER_ERROR_500}.
      */
     public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress);
 

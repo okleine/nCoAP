@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.core.internal;
+package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;

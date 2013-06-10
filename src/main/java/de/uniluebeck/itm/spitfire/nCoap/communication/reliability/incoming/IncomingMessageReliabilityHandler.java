@@ -24,7 +24,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalNullResponseFromWebserviceMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -53,7 +52,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     private static Logger log = LoggerFactory.getLogger(IncomingMessageReliabilityHandler.class.getName());
 
-    //Remote socket address, message ID, acknowledgement status, incoming is confirmable request
+    //Remote socket address, message ID, acknowledgement status for incoming confirmable requests
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> acknowledgementStates
             = HashBasedTable.create();
 
@@ -75,13 +74,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+        log.debug("Upstream from {}: {}.", me.getRemoteAddress(), me.getMessage());
+
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendUpstream(me);
             return;
         }
 
         final CoapMessage coapMessage = (CoapMessage) me.getMessage();
-        log.info("Incoming (from " + me.getRemoteAddress() + "): " + coapMessage);
 
         final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
         final int messageID = coapMessage.getMessageID();
@@ -98,9 +98,11 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
                     @Override
                     public void run() {
-                        if(setAcknowledgementSent(remoteAddress, messageID)){
+                        if(setAcknowledgementSent(remoteAddress, messageID))
                             writeEmptyAcknowledgement(ctx, remoteAddress, messageID);
-                        }
+                        else
+                            log.debug("ACK for {} from {} was already sent with piggy-backed response.",
+                                    messageID, remoteAddress);
                     }
                 }, 1900, TimeUnit.MILLISECONDS);
             }
@@ -129,21 +131,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof InternalNullResponseFromWebserviceMessage){
-            InternalNullResponseFromWebserviceMessage nullResponse =
-                    (InternalNullResponseFromWebserviceMessage) me.getMessage();
-
-            if(removeAcknowledgementStatus(nullResponse.getRemoteAddress(), nullResponse.getMessageID()) == null)
-                log.debug("No ACK status for message with ID {} from {} available.",
-                        nullResponse.getMessageID(), nullResponse.getRemoteAddress());
-            else
-                log.debug("Removed ACK status for message with ID {} from {}.",
-                        nullResponse.getMessageID(), nullResponse.getRemoteAddress());
-
-            return;
-        }
-
-
         if(!(me.getMessage() instanceof CoapResponse)){
             ctx.sendDownstream(me);
             return;
@@ -151,17 +138,15 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
         CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
-        log.debug("Handle downstream event for message with ID " +
-                coapResponse.getMessageID() + " for " + me.getRemoteAddress() );
-
         //Check if this is a response on a confirmable request and set the message type properly (CON or ACK)
-        updateResponse(coapResponse,
-                 removeAcknowledgementStatus((InetSocketAddress) me.getRemoteAddress(), coapResponse.getMessageID()));
+        setMessageType(coapResponse,
+                removeAcknowledgementStatus((InetSocketAddress) me.getRemoteAddress(), coapResponse.getMessageID()));
+
 
         ctx.sendDownstream(me);
     }
 
-    private void updateResponse(CoapResponse coapResponse, Boolean acknowledgementSent) throws Exception{
+    private void setMessageType(CoapResponse coapResponse, Boolean acknowledgementSent) throws Exception{
 
         //the response is either on a NON request or is an update notification for observers
         if(acknowledgementSent == null){
@@ -179,6 +164,8 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         else{
             coapResponse.getHeader().setMsgType(MsgType.ACK);
         }
+
+        log.debug("Test11");
     }
 
     /**
@@ -194,16 +181,16 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         if(acknowledgementStates.contains(remoteAddress, messageID)){
             boolean acknowledgementSent = acknowledgementStates.put(remoteAddress, messageID, true);
             if(acknowledgementSent){
-                log.debug("Empty ACK already sent for message ID " + messageID + " to " + remoteAddress + "!");
+                log.debug("Empty ACK already sent for message ID {} to {}.", messageID, remoteAddress);
                 return false;
             }
             else{
-                log.debug("ACK status for message ID " + messageID + " to " + remoteAddress + " changed to true.");
+                log.debug("ACK status for message ID {} to {} changed to true.", messageID, remoteAddress);
                 return true;
             }
         }
         else{
-            log.debug("No response status found for message ID " + messageID + " to " + remoteAddress + "!");
+            log.debug("No ACK status found for message ID {} to {}.", messageID, remoteAddress);
             return false;
         }
     }
@@ -217,13 +204,21 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         }
 
         acknowledgementStates.put(remoteAddress, coapMessage.getMessageID(), false);
-        log.debug("Added response status for " + coapMessage);
+        log.debug("Added ACK status for " + coapMessage);
         return true;
     }
 
 
-    private synchronized Boolean removeAcknowledgementStatus(InetSocketAddress remoteAddress, int messageID){
-        return acknowledgementStates.remove(remoteAddress, messageID);
+    private synchronized boolean removeAcknowledgementStatus(InetSocketAddress remoteAddress, int messageID){
+        Boolean removed = acknowledgementStates.remove(remoteAddress, messageID);
+
+        if(removed != null && removed)
+            log.debug("Removed ACK status for message ID {} to {}." , remoteAddress, messageID);
+
+        if(removed != null)
+            return removed;
+        else
+            return false;
     }
 
 

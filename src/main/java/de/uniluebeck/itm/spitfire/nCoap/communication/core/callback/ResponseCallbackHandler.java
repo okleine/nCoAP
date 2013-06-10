@@ -24,7 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core.callback;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.internal.InternalAcknowledgementMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.InternalAcknowledgementMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutException;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
