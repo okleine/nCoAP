@@ -4,6 +4,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionTest.UriToCoAPUriOptionsTest;
 import de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools;
 import java.net.InetAddress;
@@ -144,7 +145,7 @@ public class OptionTest {
                 Header header = new Header(Code.GET);
                 OptionList optionList = new OptionList();
                 for (Option option : input) {
-                    optionList.addOption(Code.GET, OptionRegistry.getOptionName(option.optionNumber), option);
+                    optionList.addOption(Code.GET, OptionName.getByNumber(option.optionNumber), option);
                 }
                 InetAddress inetAddress = InetAddress.getLocalHost();
                 CoapRequest coapRequest = new CoapRequest(header, optionList, ChannelBuffers.EMPTY_BUFFER);
@@ -208,8 +209,8 @@ public class OptionTest {
     public static String optionListToString(Collection<Option> list) throws InvalidOptionException {
         StringBuilder res = new StringBuilder();
         for (Option option : list) {
-            res.append(String.format("%-15s = %s\n", OptionRegistry
-                    .getOptionName(option.optionNumber).toString(), getOptionValueAsString(option)));
+            res.append(String.format("%-15s = %s\n",
+                    OptionName.getByNumber(option.optionNumber).toString(), getOptionValueAsString(option)));
         }
         return res.toString();
     }

@@ -212,10 +212,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
-        if(e.getCause() instanceof RetransmissionTimeoutHandler)
-            handleRetransmissionTimout();
-        else
-            log.info("Exception while processing I/O task.", e.getCause());
+        log.error("Exception while processing I/O task.", e.getCause());
     }
 
     /**

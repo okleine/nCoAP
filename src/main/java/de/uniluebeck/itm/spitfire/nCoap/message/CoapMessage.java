@@ -305,7 +305,7 @@ public abstract class CoapMessage implements Cloneable {
 
         if(optionName != BLOCK_1 && optionName != BLOCK_2){
             String msg = "Option " + optionName + " is not a block option and thus not set.";
-            InvalidOptionException e = new InvalidOptionException(optionName.number, msg);
+            InvalidOptionException e = new InvalidOptionException(optionName.getNumber(), msg);
             log.error(msg, e);
             throw e;
         }
@@ -344,7 +344,7 @@ public abstract class CoapMessage implements Cloneable {
 
         if(optionName != BLOCK_1 && optionName != BLOCK_2){
             String msg = "Option " + optionName + " is not a block option and as such does not contain a blocksize.";
-            InvalidOptionException e = new InvalidOptionException(optionName.number, msg);
+            InvalidOptionException e = new InvalidOptionException(optionName.getNumber(), msg);
             log.error(msg, e);
             throw e;
         }
@@ -352,7 +352,7 @@ public abstract class CoapMessage implements Cloneable {
         List<Option> tmp = optionList.getOption(optionName);
 
         if(tmp.size() > 0){
-            long exponent = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() & 7;
+            long exponent = (Long) optionList.getOption(optionName).get(0).getDecodedValue() & 7;
 
             Blocksize result = Blocksize.getByExponent(exponent);
 
@@ -361,7 +361,7 @@ public abstract class CoapMessage implements Cloneable {
             }
             else{
                 String msg = "SZX field with value " + exponent + " is not valid for Option " + optionName + ".";
-                InvalidOptionException e = new InvalidOptionException(optionName.number, msg);
+                InvalidOptionException e = new InvalidOptionException(optionName.getNumber(), msg);
                 log.error(msg, e);
                 throw e;
             }
@@ -374,12 +374,12 @@ public abstract class CoapMessage implements Cloneable {
             if(optionName != BLOCK_1 && optionName != BLOCK_2){
                 String msg = "Option " + optionName +
                         " is not a block option and as such does not contain 'isLastBlock' field.";
-                InvalidOptionException e = new InvalidOptionException(optionName.number, msg);
+                InvalidOptionException e = new InvalidOptionException(optionName.getNumber(), msg);
                 log.error(msg, e);
                 throw e;
             }
 
-            long value = ((UintOption) optionList.getOption(optionName).get(0)).getDecodedValue() >> 3 & 1;
+            long value = (Long) optionList.getOption(optionName).get(0).getDecodedValue() >> 3 & 1;
             return value == 0;
 
     }
@@ -389,16 +389,16 @@ public abstract class CoapMessage implements Cloneable {
         if(optionName != BLOCK_1 && optionName != BLOCK_2){
             String msg = "Option " + optionName +
                     " is not a block option and as such does not contain 'blocknumber' field.";
-            InvalidOptionException e = new InvalidOptionException(optionName.number, msg);
+            InvalidOptionException e = new InvalidOptionException(optionName.getNumber(), msg);
             log.error(msg, e);
             throw e;
         }
 
         try{
-            UintOption option = (UintOption) getOption(optionName).get(0);
+            Option option = getOption(optionName).get(0);
             log.debug("Option " + option.toString() + ", value: " + option.getDecodedValue());
 
-            return option.getDecodedValue() >>> 4;
+            return (Long) option.getDecodedValue() >>> 4;
         }
         catch (IndexOutOfBoundsException e){
             return 0;

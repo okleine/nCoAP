@@ -28,6 +28,7 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.Option;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionList;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -35,6 +36,9 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
 
 /**
  *
@@ -58,8 +62,8 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         encodeOptions(buffer, coapMessage.getOptionList());
 
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, coapMessage.getPayload());
-        log.debug("Encoded message length: " + buf.readableBytes());
-        log.info("Encoded: " + coapMessage);
+
+        log.debug("Encoded message {} (length: {} bytes).", coapMessage, buf.readableBytes());
 
         return buf;
     }
@@ -81,17 +85,16 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             for(Option option : optionList.getOption(optionName)){
 
                 // Small hack, due to two types of the observe option
-                if(optionName == OptionName.OBSERVE_RESPONSE) {
-                    encodeOption(buffer, OptionName.OBSERVE_REQUEST, option, prevNumber);
-                    prevNumber = OptionName.OBSERVE_REQUEST.number;
-                    log.debug(" Encoded option(No: " + OptionName.OBSERVE_REQUEST.number +
-                            ", Value: " + Option.getHexString(option.getValue()) + ")");
+                if(optionName == OBSERVE_RESPONSE) {
+                    encodeOption(buffer, OBSERVE_REQUEST, option, prevNumber);
+                    prevNumber = OBSERVE_REQUEST.getNumber();
+
                 } else {
                     encodeOption(buffer, optionName, option, prevNumber);
-                    prevNumber = optionName.number;
-                    log.debug("Encoded option(No: " + optionName.number +
-                            ", Value: " + Option.getHexString(option.getValue()) + ")");
+                    prevNumber = optionName.getNumber();
                 }
+
+                log.debug("Encoded {}: {}", option.getOptionNumber(), Tools.toHexString(option.getValue()));
             }
         }
     }
@@ -99,33 +102,25 @@ public class CoapMessageEncoder extends OneToOneEncoder {
     private void encodeOption(ChannelBuffer buffer, OptionName optionName, Option option, int prevNumber)
             throws Exception {
 
-
-
-        log.debug("Start encoding option number " + optionName.number);
-
         //The previous option number must be smaller or equal to the actual one
-        if(prevNumber > optionName.number){
-            String msg = "[CoapMessageEncoder] Parameter value prevNumber (" + prevNumber +
-                         ") for encoding must not be larger then current option number (" + optionName.number + ")";
+        if(prevNumber > optionName.getNumber()){
+            String msg = "Parameter value prevNumber (" + prevNumber + ") for encoding must not be larger then current " +
+                    "option number (" + optionName.getNumber() + ")";
             throw new EncodingFailedException(msg);
         }
 
         //The maximum option delta is 14. For larger deltas use all multiples of 14 between prevNumber and
         //optionName.number as fencepost options
-        else if(optionName.number - prevNumber > MAX_OPTION_DELTA){
+        else if(optionName.getNumber() - prevNumber > MAX_OPTION_DELTA){
             //smallest multiple of 14 greater than optionName.number is the first fencepost number
             int nextFencepost = prevNumber + (MAX_OPTION_DELTA - prevNumber % MAX_OPTION_DELTA);
 
-            while(optionName.number - prevNumber > MAX_OPTION_DELTA){
-
-                log.debug(" Option delta for encoding must not be greater than 14 " +
-                        "(but is " + (optionName.number - prevNumber) + ")");
+            while(optionName.getNumber() - prevNumber > MAX_OPTION_DELTA){
 
                 //write an encoded fencepost option to OutputStream
                 buffer.writeByte((nextFencepost - prevNumber) << 4);
 
-                log.debug("Encoded fencepost option added (with option number " +
-                            nextFencepost + ")");
+                log.debug("Encoded fencepost option added (no {}).", nextFencepost);
 
                 prevNumber = nextFencepost;
                 nextFencepost += MAX_OPTION_DELTA;
@@ -135,18 +130,16 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         //Write option delta and value length
         if(option.getValue().length <= MAX_OPTION_DELTA){
            //4 bits for the 'option delta' and 4 bits for the 'value length'
-           buffer.writeByte(((optionName.number - prevNumber) << 4) | option.getValue().length);
+           buffer.writeByte(((optionName.getNumber() - prevNumber) << 4) | option.getValue().length);
         }
         else{
            //4 bits for the 'option delta', 4 bits (1111) to indicate a 'value length'
            //more then 14 and 1 byte for the actual 'value length' - 15
-           buffer.writeByte(((optionName.number - prevNumber) << 4) | 15);
+           buffer.writeByte(((optionName.getNumber() - prevNumber) << 4) | 15);
            buffer.writeByte(option.getValue().length - 15);
         }
 
         //Write value
         buffer.writeBytes(option.getValue());
-
-        log.debug("Successfuly encoded option number " + optionName.number);
     }
 }

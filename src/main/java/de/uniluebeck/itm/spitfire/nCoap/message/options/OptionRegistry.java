@@ -1,10 +1,13 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -14,10 +17,19 @@ public class OptionRegistry {
 
     private static Logger log = LoggerFactory.getLogger(OptionRegistry.class.getName());
 
+    /**
+     * Enumeration containg the available option types according to the CoAP draft
+     */
     public static enum OptionType {UINT, STRING, OPAQUE, EMPTY}
 
+    /**
+     * Enumeration containing items to represent occurences (names are self-explanatory)
+     */
     public static enum OptionOccurence{NONE, ONCE, MULTIPLE}
 
+    /**
+     * Enumeration containing the available option names
+     */
     public static enum OptionName{
         UNKNOWN(-1),
         CONTENT_TYPE(1),
@@ -40,13 +52,32 @@ public class OptionRegistry {
         BLOCK_1(19),
         IF_NONE_MATCH(21);
 
-        public final int number;
+        private final int number;
         
         OptionName(int number){
             this.number = number;
         }
+
+        /**
+         * Returns the option number internally representing the {@link OptionName}
+         * @return the option number internally representing the {@link OptionName}
+         */
+        public int getNumber(){
+            return this.number;
+        }
+
+        public static OptionName getByNumber(int optionNumber){
+            for(OptionName optionName : OptionName.values()){
+                if(optionName.getNumber() == optionNumber)
+                    return optionName;
+            }
+            return OptionName.UNKNOWN;
+        }
     }
 
+    /**
+     * Enumeration containing the available media types
+     */
     public static enum MediaType {
         TEXT_PLAIN_UTF8(0),
         APP_LINK_FORMAT(40),
@@ -68,8 +99,8 @@ public class OptionRegistry {
         /**
          * Returns the corresonding {@link MediaType} for the given number
          *
-         * @param number the number to look up the corresponding {@link de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType}
-         * @return  the corresonding {@link MediaType} for the given number or null if there is no.
+         * @param number the number to look up the corresponding {@link MediaType}
+         * @return the corresonding {@link MediaType} for the given number or null if there is no.
          */
         public static MediaType getByNumber(Long number){
             for(MediaType mediaType : MediaType.values()){
@@ -83,15 +114,16 @@ public class OptionRegistry {
     }
 
     /**
-     * The default server port for CoAP messages is 5683
+     * The default server port for CoAP
      */
     public static int COAP_PORT_DEFAULT = 5683;
 
     /**
-     * The default max age option value is 60
+     * The default value of the {@link OptionName#MAX_AGE} option (if not set different in a {@link CoapResponse})
      */
     public static int MAX_AGE_DEFAULT = 60;
-    
+
+
     private static final HashMap<OptionName, OptionSyntaxConstraints> syntaxConstraints
             = new HashMap<OptionName, OptionSyntaxConstraints>();
     static{
@@ -237,14 +269,52 @@ public class OptionRegistry {
         allowedOptions.put(Code.PROXYING_NOT_SUPPORTED_505, constraints4x5x);
     }
 
+    /**
+     * Returns the maximum length (in bytes) for the given {@link OptionName}.
+     *
+     * @param optionName an {@link OptionName}
+     * @return  the maximum length (in bytes) for the given {@link OptionName}.
+     */
     public static int getMaxLength(OptionName optionName){
         return syntaxConstraints.get(optionName).max_length;
     }
 
+    /**
+     * Returns the minimum length (in bytes) for the given {@link OptionName}.
+     *
+     * @param optionName an {@link OptionName}
+     * @return  the minimum length (in bytes) for the given {@link OptionName}.
+     */
     public static int getMinLength(OptionName optionName){
         return syntaxConstraints.get(optionName).min_length;
     }
 
+    /**
+     * Returns a Map containing all available {@link OptionName}s as keys and the according allowed
+     * {@link OptionOccurence} as values.
+     *
+     * @param code the {@link Code} to get the allowed option occurences for
+     *
+     * @return a Map containing all available {@link OptionName}s as keys and the according allowed
+     * {@link OptionOccurence} as values
+     */
+    public static Map<OptionName, OptionOccurence> getAllowedOccurences(Code code){
+        EnumMap<OptionName, OptionOccurence> result = new EnumMap<OptionName, OptionOccurence>(OptionName.class);
+        for(OptionName optionName : OptionName.values()){
+            result.put(optionName, getAllowedOccurence(code, optionName));
+        }
+        return result;
+    }
+
+    /**
+     * Returns the allowed {@link OptionOccurence} for the combination of the given {@link Code} and
+     * {@link OptionName}.
+     *
+     * @param code a {@link Code}
+     * @param optionName an {@link OptionName}
+     *
+     * @return the allowed {@link OptionOccurence}
+     */
     public static OptionOccurence getAllowedOccurence(Code code, OptionName optionName){
         try{
             OptionOccurence result = allowedOptions.get(code).get(optionName);
@@ -257,26 +327,42 @@ public class OptionRegistry {
         }
     }
 
+    /**
+     * Returns the {@link OptionType} of the given {@link OptionName}.
+     *
+     * @param optionName an {@link OptionName}
+     * @return the {@link OptionType} of the given {@link OptionName}.
+     */
     public static OptionType getOptionType(OptionName optionName){
         return syntaxConstraints.get(optionName).opt_type;
     }
 
-    public static OptionName getOptionName(int number){
-        for(OptionName o :OptionName.values()){
-            if(o.number == number){
-                return o;
-            }
-        }
-        return OptionName.UNKNOWN;
-    }
+//    /**
+//     * Returns the {@link OptionName} represented by the given number (option names are serialized using numbers
+//     * as unique identifier).
+//     *
+//     * @param number a number
+//     * @return the {@link OptionName} of the given number
+//     */
+//    public static OptionName getOptionName(int number){
+//        for(OptionName o :OptionName.values()){
+//            if(o.number == number){
+//                return o;
+//            }
+//        }
+//        return OptionName.UNKNOWN;
+//    }
 
-    public static boolean isCritical(OptionName opt_name){
-        return isCritical(opt_name.number);
-    }
-
-    static boolean isCritical(int opt_number){
+    /**
+     * Returns whether the option represented by the given option number represents a critical or an elective
+     * option. Options with even numbers are critial, odd numbers refer to elective options.
+     *
+     * @param optionNumber a number representing an option
+     * @return <code>true</code> if the given number is even, <code>false</code> if the given number is odd
+     */
+    static boolean isCritical(int optionNumber){
         //Options with even numbers are critial, odd numbers refer to elective options
-        return (opt_number % 2 == 0);
+        return (optionNumber % 2 == 0);
     }
 
 
@@ -292,6 +378,4 @@ public class OptionRegistry {
             this.max_length = max_length;
         }
     }
-
-
 }

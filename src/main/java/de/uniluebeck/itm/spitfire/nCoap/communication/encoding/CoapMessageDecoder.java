@@ -43,8 +43,10 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
+
 /**
- *
  * @author Oliver Kleine
  */
 public class CoapMessageDecoder extends OneToOneDecoder{
@@ -147,7 +149,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             try{
                 Option newOption = decodeOption(buffer, prevOptionNumber, header);
                  //Add new Option to the list
-                OptionName optionName = OptionRegistry.getOptionName(newOption.getOptionNumber());
+                OptionName optionName = OptionName.getByNumber(newOption.getOptionNumber());
                 log.debug("Option " + optionName + " to be created.");
                 result.addOption(code, optionName, newOption);
                 prevOptionNumber = Math.abs(newOption.getOptionNumber()); //double datatype for observe option hack
@@ -181,14 +183,11 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         int optionNumber = (UnsignedBytes.toInt(firstByte) >>> 4) +  prevOptionNumber;
 
         // Small hack, due to two types of the observe option
-        if(!header.getCode().isRequest() && optionNumber == OptionName.OBSERVE_REQUEST.number) {
-            optionNumber = OptionName.OBSERVE_RESPONSE.number;
+        if(!header.getCode().isRequest() && optionNumber == OBSERVE_REQUEST.getNumber()) {
+            optionNumber = OBSERVE_RESPONSE.getNumber();
         }
 
-        log.debug("Actually decoded option has number: " + optionNumber);
-
-        OptionName optionName = OptionRegistry.getOptionName(optionNumber);
-        log.debug("Actually decoded option has name:" + optionName);
+        OptionName optionName = OptionName.getByNumber(optionNumber);
 
         //Option optionNumber 21 is "If-none-match" and must not contain any value. This is e.g. useful for
         //PUT requests not being supposed to overwrite existing resources
@@ -212,14 +211,15 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                     + " between " + minLength + " and " + maxLength + " (both including) but has " +  valueLength);
         }
 
-        log.debug("Creating " + optionName + " option with encoded value length of " + valueLength + " bytes");
-
         //Read encoded value from buffer
         byte[] encodedValue = new byte[valueLength];
         buf.readBytes(encodedValue);
 
         //Create appropriate Option
-        return Option.createOption(optionName, encodedValue);
+        Option result = Option.createOption(optionName, encodedValue);
+
+        log.debug("Decoded {} {}", optionName, result.getDecodedValue());
+        return result;
     }
 
 }

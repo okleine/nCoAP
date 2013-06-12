@@ -30,7 +30,9 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,30 +129,24 @@ public class CoapRequest extends CoapMessage {
             String uri = "coap://";
 
             //add host
-            List<Option> list = getOption(OptionRegistry.OptionName.URI_HOST);
-
-            StringOption uriHost = (StringOption) list.toArray()[0];
-            uri = uri + uriHost.getDecodedValue();
+            uri += getOption(URI_HOST).get(0).getDecodedValue();
 
             //add port
-            list = getOption(OptionRegistry.OptionName.URI_PORT);
-            UintOption uriPort = (UintOption) list.toArray()[0];
-            uri = uri + ":" + uriPort.getDecodedValue();
+            long port = (Long) getOption(URI_PORT).get(0).getDecodedValue();
+            if(port != OptionRegistry.COAP_PORT_DEFAULT)
+                uri += ":" + port;
 
             //add path
-            list = getOption(OptionRegistry.OptionName.URI_PATH);
-            for(Option option : list){
-                StringOption uriPath = (StringOption) option;
-                uri = uri + "/" + uriPath.getDecodedValue();
+            for(Option option : getOption(OptionRegistry.OptionName.URI_PATH)){
+                 uri += "/" + option.getDecodedValue();
             }
 
             //add query
-            list = getOption(OptionRegistry.OptionName.URI_QUERY);
+            List<Option> list = getOption(OptionRegistry.OptionName.URI_QUERY);
             if(!list.isEmpty()){
-                uri = uri + "?";
+                uri += "?";
                 for(Option option : list){
-                    StringOption uriQuery = (StringOption) option;
-                    uri = uri + uriQuery.getDecodedValue() + "&";
+                    uri = uri + option.getDecodedValue() + "&";
                 }
                 //remove the last "&"
                 uri = uri.substring(0, uri.length() - 1);
@@ -159,7 +155,7 @@ public class CoapRequest extends CoapMessage {
             return new URI(uri);
         }
         catch (URISyntaxException e) {
-            log.error("[Message] This should never happen!", e);
+            log.error("This should never happen!", e);
             return null;
         }
     }
@@ -190,11 +186,11 @@ public class CoapRequest extends CoapMessage {
             //Add options to the list
             for(Option option : targetUriOptions){
 
-                log.debug("Add " + OptionRegistry.getOptionName(option.getOptionNumber()) +
-                        " option with value: " + Option.getHexString(option.getValue()));
+                log.debug("Add {} option with value {}.", OptionName.getByNumber(option.getOptionNumber()),
+                        Tools.toHexString(option.getValue()));
 
 
-                OptionRegistry.OptionName optionName = OptionRegistry.getOptionName(option.getOptionNumber());
+                OptionRegistry.OptionName optionName = OptionName.getByNumber(option.getOptionNumber());
                 optionList.addOption(header.getCode(), optionName, option);
             }
 
@@ -203,7 +199,7 @@ public class CoapRequest extends CoapMessage {
                 try{
                     rcptAddress = InetAddress.getByName(targetUri.getHost());
                 } catch (UnknownHostException e) {
-                    log.debug("The target hostname " + targetUri.getHost() + " could not be resolved.");
+                    log.debug("The target hostname {} could not be resolved.", targetUri.getHost());
                 }
             }
         }
@@ -257,7 +253,7 @@ public class CoapRequest extends CoapMessage {
         EnumSet<MediaType> result = EnumSet.noneOf(MediaType.class);
 
         for(Option option : optionList.getOption(ACCEPT)){
-            result.add(MediaType.getByNumber(((UintOption) option) .getDecodedValue()));
+            result.add(MediaType.getByNumber((Long) option.getDecodedValue()));
         }
 
         return result;
@@ -277,7 +273,7 @@ public class CoapRequest extends CoapMessage {
 
         String result = "";
         for(Option option : options){
-            result += ((StringOption)option).getDecodedValue();
+            result += option.getDecodedValue();
         }
         return new URI(result);
 

@@ -27,13 +27,13 @@ public abstract class Option{
     protected byte[] value = new byte[0];
 
     protected Option(OptionName optionName){
-        optionNumber = optionName.number;
+        optionNumber = optionName.getNumber();
     }
 
-    protected Option(Option option) throws InvalidOptionException {
-        this(OptionRegistry.getOptionName(option.getOptionNumber()));
-        this.value = option.getValue();
-    }
+//    protected Option(Option option) throws InvalidOptionException {
+//        this(OptionName.getByNumber(option.getOptionNumber()));
+//        this.value = option.getValue();
+//    }
 
     /**
      * Creates all URI related options from the given URI
@@ -227,7 +227,7 @@ public abstract class Option{
         //Check whether current number is appropriate for a StringOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.STRING){
             String msg = "Cannot create option " + optionName + " with string value.";
-            throw new InvalidOptionException(optionName.number, msg);
+            throw new InvalidOptionException(optionName.getNumber(), msg);
         }
         return new StringOption(optionName, value);
     }
@@ -244,7 +244,7 @@ public abstract class Option{
         //Check whether current number is appropriate for a UintOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.UINT){
             String msg = "Cannot create option " + optionName + " with uint value.";
-            throw new InvalidOptionException(optionName.number, msg);
+            throw new InvalidOptionException(optionName.getNumber(), msg);
         }
         return new UintOption(optionName, value);
     }
@@ -261,12 +261,12 @@ public abstract class Option{
         //Check whether current number is appropriate for a OpaqueOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.OPAQUE){
             String msg = "[Option] Cannot create option " + optionName + " with opaque value.";
-            throw new InvalidOptionException(optionName.number, msg);
+            throw new InvalidOptionException(optionName.getNumber(), msg);
         }
         
         if(optionName == OptionName.TOKEN && value.length == 0){
             String msg = "[Option] Empty byte[] is the default value for option " + optionName + ". No option created.";
-            throw new InvalidOptionException(optionName.number, msg);
+            throw new InvalidOptionException(optionName.getNumber(), msg);
         }
 
         return new OpaqueOption(optionName, value);
@@ -276,7 +276,7 @@ public abstract class Option{
         //Check whether current number is appropriate for an EmptyOption
         if(OptionRegistry.getOptionType(optionName) != OptionRegistry.OptionType.EMPTY){
             String msg = "[Option] Cannot create option " + optionName + " as instance of EmptyOption.";
-            throw new InvalidOptionException(optionName.number, msg);
+            throw new InvalidOptionException(optionName.getNumber(), msg);
         }
         return new EmptyOption(optionName);
     }
@@ -306,8 +306,8 @@ public abstract class Option{
             case EMPTY:
                 return new EmptyOption(optionName);
             default:
-                throw new InvalidOptionException(optionName.number, "Type of option number " +  optionName.number +
-                        " is unknown.");
+                throw new InvalidOptionException(optionName.getNumber(), "Type of option number " +
+                        optionName.getNumber() + " is unknown.");
         }
     }
 
@@ -338,20 +338,34 @@ public abstract class Option{
         return options;
     }
 
-    //This method is just for logging purposes
-    public static String getHexString(byte[] b){
-      String result = "";
-      for (int i=0; i < b.length; i++) {
-        result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1) + "-";
-      }
-      return (String)result.subSequence(0, Math.max(result.length() - 1, 0));
-    }
+//    /**
+//     * Returns a hex string representation of the options value
+//     *
+//     * @param b
+//     * @return
+//     */
+//    public static String getHexString(byte[] b){
+//      String result = "";
+//      for (int i=0; i < b.length; i++) {
+//        result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1) + "-";
+//      }
+//      return (String)result.subSequence(0, Math.max(result.length() - 1, 0));
+//    }
 
+    /**
+     * Returns the option number internally representing this options {@link OptionName}
+     * @return the option number internally representing this options {@link OptionName}
+     */
     public int getOptionNumber(){
         return optionNumber;
     }
 
+    /**
+     * Returns the decoded, i.e. deserialized value of this option
+     * @return the decoded, i.e. deserialized value of this option
+     */
     public abstract Object getDecodedValue();
+
 
     @Override
     public abstract boolean equals(Object o);
@@ -363,9 +377,6 @@ public abstract class Option{
 
     @Override
     public String toString(){
-        return "{[" + this.getClass().getName() + "]"
-                + " " + OptionRegistry.getOptionName(optionNumber)
-                + ", " + getDecodedValue()
-                + "}";
+        return "(" + OptionName.getByNumber(optionNumber) + ") " + getDecodedValue();
     }
 }

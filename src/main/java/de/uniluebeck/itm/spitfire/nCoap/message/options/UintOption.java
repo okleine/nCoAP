@@ -3,11 +3,16 @@ package de.uniluebeck.itm.spitfire.nCoap.message.options;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionType;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * This class contains all specific functionality for {@link Option} instances of {@link OptionType#UINT}. If there is
+ * any need to access {@link Option} instances directly, e.g. to retrieve its value, one could either cast the option
+ * to {@link UintOption} and call {@link #getDecodedValue()} or one could all {@link Option#getDecodedValue()} and
+ * cast the return value to {@link Long}.
  *
  * @author Oliver Kleine
  */
@@ -20,7 +25,7 @@ public class UintOption extends Option{
         super(optionName);
         setValue(optionName, value);
 
-        log.debug("New Option (" + optionName + ")" + " created (Value: " + getHexString(value)+ ")");
+        log.debug("{} option with value {} created.", optionName, Tools.toHexString(value));
     }
 
     //constructor with decoded value should only be used for outgoing messages
@@ -28,7 +33,7 @@ public class UintOption extends Option{
         super(optionName);
         setValue(optionName, value);
 
-        log.debug("New Option (" + optionName + ")" + " created (Value: " + getHexString(this.value)+ ")");
+        log.debug("{} option with value {} created.", optionName, Tools.toHexString(this.value));
     }
 
     private void setValue(OptionName optionName, byte[] bytes) throws InvalidOptionException {
@@ -76,6 +81,11 @@ public class UintOption extends Option{
         return new byte[0];
     }
 
+    /**
+     * Returns the decoded value of this option ({@link OptionType#UINT}
+     * @return the decoded value of this option ({@link OptionType#UINT}
+     */
+    @Override
     public Long getDecodedValue(){
         return Longs.fromByteArray(Bytes.concat(new byte[8-value.length], value));
     }

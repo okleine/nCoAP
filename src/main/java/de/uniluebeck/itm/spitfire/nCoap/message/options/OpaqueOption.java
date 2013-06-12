@@ -2,16 +2,22 @@ package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionType;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
 /**
+ * This class contains all specific functionality for {@link Option} instances of {@link OptionType#OPAQUE}. If there is
+ * any need to access {@link Option} instances directly, e.g. to retrieve its value, one could either cast the option
+ * to {@link OpaqueOption} and call {@link #getDecodedValue()} or one could call {@link Option#getDecodedValue()} and
+ * cast the return value to {@link String}.
  *
  * @author Oliver Kleine
  */
-public class OpaqueOption extends Option{
+class OpaqueOption extends Option{
 
     private static Logger log = LoggerFactory.getLogger(OpaqueOption.class.getName());
     
@@ -26,8 +32,7 @@ public class OpaqueOption extends Option{
 
         setValue(optionName, value);
 
-        log.debug("New " + optionName + " option created (value: " +
-                  getHexString(value) + ", encoded length: " + value.length + ")");
+        log.debug("{} option with value {} created.", optionName, Tools.toHexString(value));
     }
 
     private void setValue(OptionName optionName, byte[] value) throws InvalidOptionException{
@@ -37,7 +42,7 @@ public class OpaqueOption extends Option{
 
         //Check whether length constraints are fulfilled
         if(value.length < min_length || value.length > max_length){
-            String msg = "[OpaqueOption] Value length for option number " + optionNumber + " must be between " +
+            String msg = "Value length for " + OptionName.getByNumber(optionNumber) + " must be between " +
                     min_length + " and " +  max_length + " but is " + value.length;
             throw new InvalidOptionException(optionNumber, msg);
         }
@@ -46,10 +51,15 @@ public class OpaqueOption extends Option{
         this.value = value;
     }
 
+    /**
+     * This method is just to implement the satisfy the {@link Option} abstract method from {@link Option}.
+     * The return value is exactly the same as {@link #getValue()}.
+     *
+     * @return the byte[] containing the options value
+     */
     @Override
-    public String getDecodedValue(){
-        ByteArrayWrapper decodedValue = new ByteArrayWrapper(value);
-        return decodedValue.toString();
+    public byte[] getDecodedValue(){
+       return getValue();
     }
 
     @Override

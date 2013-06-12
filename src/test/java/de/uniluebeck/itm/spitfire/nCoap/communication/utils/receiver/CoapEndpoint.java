@@ -3,8 +3,6 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -29,7 +27,7 @@ import static org.junit.Assert.fail;
 *
 * @author Oliver Kleine, Stefan Hueske
 */
-public class CoapMessageReceiver extends SimpleChannelHandler {
+public class CoapEndpoint extends SimpleChannelHandler {
 
     private DatagramChannel channel;
 
@@ -43,9 +41,9 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
     private SortedMap<Long, CoapMessage> receivedMessages = new TreeMap<Long, CoapMessage>();
 
     //contains a list of test specific messages to be sent
-    private LinkedList<MessageReceiverResponse> outgoingMessageQueue = new LinkedList<MessageReceiverResponse>();
+    //private LinkedList<MessageReceiverResponse> outgoingMessageQueue = new LinkedList<MessageReceiverResponse>();
 
-    public CoapMessageReceiver() {
+    public CoapEndpoint() {
         //Create datagram datagramChannel to receive messages
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(Executors.newCachedThreadPool());
@@ -58,7 +56,7 @@ public class CoapMessageReceiver extends SimpleChannelHandler {
                 ChannelPipeline pipeline = Channels.pipeline();
                 pipeline.addLast("Encoder", new CoapMessageEncoder());
                 pipeline.addLast("Decoder", new CoapMessageDecoder());
-                pipeline.addLast("CoAP Message Receiver", CoapMessageReceiver.this );
+                pipeline.addLast("CoAP Message Receiver", CoapEndpoint.this );
                 return pipeline;
             }
         });

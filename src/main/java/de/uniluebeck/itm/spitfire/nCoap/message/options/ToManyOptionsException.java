@@ -1,17 +1,18 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 
 /**
- * Created by IntelliJ IDEA.
- * User: olli
- * Date: 08.01.12
- * Time: 20:08
- * To change this template use File | Settings | File Templates.
+ * Exception thrown by the nCoAP framework when there are to many options to be included in a
+ * {@link CoapMessage}.
  */
 public class ToManyOptionsException extends CoapException {
 
-    public ToManyOptionsException(String msg){
-        super(msg);
+    /**
+     * @param message A string representation of the reason that caused the excpetion
+     */
+    public ToManyOptionsException(String message){
+        super(message);
     }
 }

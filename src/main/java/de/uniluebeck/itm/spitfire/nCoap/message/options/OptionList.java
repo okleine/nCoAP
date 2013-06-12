@@ -4,6 +4,7 @@ import com.google.common.collect.LinkedListMultimap;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionOccurence;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ public class OptionList {
 
         //Check if adding the option would exceed the maximum list size
         if(options.size() >= MAX_NUMBER_OF_OPTIONS){
-            String msg = "[OptionList] There are already " + MAX_NUMBER_OF_OPTIONS + " options contained.";
+            String msg = "There are already " + MAX_NUMBER_OF_OPTIONS + " options contained.";
             throw new ToManyOptionsException(msg);
         }
 
@@ -90,8 +91,7 @@ public class OptionList {
             throw new InvalidOptionException(option.getOptionNumber(), msg);
         }
 
-        log.debug("" + optionName + " option with value " + Option.getHexString(option.getValue()) +
-                " succesfully added to option list.");
+        log.debug("{} option with value {} added to option list.", optionName, Tools.toHexString(option.getValue()));
     }
 
     private LinkedListMultimap<OptionName, Option> getOptionList(){

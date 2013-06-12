@@ -27,6 +27,8 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,8 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
+
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
 
 /**
  * @author Oliver Kleine
@@ -75,25 +79,25 @@ public class CoapResponse extends CoapMessage {
      * OptionRegistry.MAX_AGE_DEFAULT
      */
     public boolean setMaxAge(long maxAge) throws InvalidOptionException, ToManyOptionsException {
-        optionList.removeAllOptions(OptionRegistry.OptionName.MAX_AGE);
+        optionList.removeAllOptions(MAX_AGE);
 
         if(maxAge == OptionRegistry.MAX_AGE_DEFAULT){
             return false;
         }
 
         try{
-            Option option = Option.createUintOption(OptionRegistry.OptionName.MAX_AGE, maxAge);
-            optionList.addOption(header.getCode(), OptionRegistry.OptionName.MAX_AGE, option);
+            Option option = Option.createUintOption(MAX_AGE, maxAge);
+            optionList.addOption(header.getCode(), MAX_AGE, option);
             return true;
         }
         catch(InvalidOptionException e){
-            log.debug("Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
-            optionList.removeAllOptions(OptionRegistry.OptionName.MAX_AGE);
+            log.debug("Elective option (" + MAX_AGE + ") could not be added.", e);
+            optionList.removeAllOptions(MAX_AGE);
             return false;
         }
         catch(ToManyOptionsException e){
-            log.debug("Elective option (" + OptionRegistry.OptionName.MAX_AGE + ") could not be added.", e);
-            optionList.removeAllOptions(OptionRegistry.OptionName.MAX_AGE);
+            log.debug("Elective option (" + MAX_AGE + ") could not be added.", e);
+            optionList.removeAllOptions(MAX_AGE);
             return false;
         }
     }
@@ -113,7 +117,7 @@ public class CoapResponse extends CoapMessage {
         try{
             Collection<Option> locationUriOptions = Option.createLocationUriOptions(locationURI);
             for(Option option : locationUriOptions){
-                OptionRegistry.OptionName optionName = OptionRegistry.getOptionName(option.getOptionNumber());
+                OptionName optionName = OptionName.getByNumber(option.getOptionNumber());
                 optionList.addOption(header.getCode(), optionName, option);
             }
         }
@@ -133,24 +137,26 @@ public class CoapResponse extends CoapMessage {
      * Returns the URI reconstructed from the location URI related options contained in the message
      * @return the URI reconstructed from the location URI related options contained in the message or null if there
      * are no location URI related options
-     * @throws java.net.URISyntaxException if the URI to be reconstructed from options is invalid
+     *
+     * @throws {@link java.net.URISyntaxException} if the URI to be reconstructed from options is invalid
      */
     public URI getLocationURI() throws URISyntaxException {
-        Collection<Option> options = optionList.getOption(OptionRegistry.OptionName.LOCATION_PATH);
+        Collection<Option> options = optionList.getOption(LOCATION_PATH);
         if(options.isEmpty()){
             return null;
         }
         String result = "";
         for(Option option : options){
-            result += ("/" + ((StringOption)option).getDecodedValue());
+            result += ("/" + option.getDecodedValue());
         }
 
-        options = optionList.getOption((OptionRegistry.OptionName.LOCATION_QUERY));
+        options = optionList.getOption((LOCATION_QUERY));
         if(!options.isEmpty()){
             result += "?";
-        }
-        for(Option option : options){
-            result += ("/" + ((StringOption)option).getDecodedValue());
+            for(Option option : options){
+                result += ("&" + ((StringOption)option).getDecodedValue());
+            }
+            result = result.substring(0, result.length() - 1);
         }
 
         if(result.equals("")){
@@ -159,6 +165,7 @@ public class CoapResponse extends CoapMessage {
 
         return new URI(result);
     }
+
     /**
      * Set the observe option. This causes eventually already contained observe options to be removed from
      * the list even in case of an exception.

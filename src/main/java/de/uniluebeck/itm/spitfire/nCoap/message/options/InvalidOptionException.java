@@ -51,7 +51,7 @@ public class InvalidOptionException extends CoapException {
      * @return the OptionName of the option that caused this exception
      */
     public OptionName getOptionName(){
-        return OptionRegistry.getOptionName(optionNumber);
+        return OptionName.getByNumber(optionNumber);
     }
 
     /**

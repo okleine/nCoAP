@@ -5,17 +5,16 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.Channels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
-
 import org.jboss.netty.channel.UpstreamMessageEvent;
+
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -44,16 +43,15 @@ class MessageRetransmitter implements Runnable {
     @Override
     public void run() {
         CoapMessage coapMessage = retransmissionSchedule.getCoapMessage();
-        if (!coapMessage.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty()) {
+        if (!coapMessage.getOption(OBSERVE_RESPONSE).isEmpty()) {
 
             CoapResponse coapResponse = (CoapResponse) coapMessage;
 
             //increment OBSERVE notification count before retransmissionSchedule
-            long observeOption = ((UintOption)coapResponse.getOption(OptionRegistry
-                    .OptionName.OBSERVE_RESPONSE).get(0)).getDecodedValue() + 1;
+            long notificationCount = (Long) coapResponse.getOption(OBSERVE_RESPONSE).get(0).getDecodedValue() + 1;
 
             try {
-                coapResponse.setObserveOptionResponse(observeOption);
+                coapResponse.setObserveOptionResponse(notificationCount);
                 UpstreamMessageEvent upstreamEvent = new UpstreamMessageEvent(ctx.getChannel(),
                         new InternalUpdateNotificationRetransmissionMessage(rcptAddress,
                                 coapResponse.getServicePath()), null);

@@ -4,7 +4,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableTestWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
+import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapEndpoint;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -29,7 +29,7 @@ public abstract class AbstractCoapCommunicationTest {
 
     protected static CoapTestClient testClient;
     protected static CoapTestServer testServer;
-    protected static CoapMessageReceiver testReceiver;
+    protected static CoapEndpoint testReceiver;
 
     private static boolean loggingInitialized = false;
     private static boolean componentsInitialized = false;
@@ -76,7 +76,7 @@ public abstract class AbstractCoapCommunicationTest {
         if(!componentsInitialized){
             testClient = new CoapTestClient();
             testServer = new CoapTestServer(0);
-            testReceiver = new CoapMessageReceiver();
+            testReceiver = new CoapEndpoint();
             componentsInitialized = true;
         }
     }

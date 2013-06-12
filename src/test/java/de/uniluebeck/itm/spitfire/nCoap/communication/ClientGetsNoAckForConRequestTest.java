@@ -1,6 +1,6 @@
 //package de.uniluebeck.itm.spitfire.nCoap.communication;
 //
-//import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapMessageReceiver;
+//import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapEndpoint;
 //import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
 //import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 //import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;

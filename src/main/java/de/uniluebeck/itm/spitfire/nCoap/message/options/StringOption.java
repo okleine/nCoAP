@@ -1,6 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.message.options;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +12,10 @@ import java.util.Arrays;
 import java.util.Locale;
 
 /**
+ * This class contains all specific functionality for {@link Option} instances of {@link OptionType#STRING}. If there is
+ * any need to access {@link Option} instances directly, e.g. to retrieve its value, one could either cast the option
+ * to {@link StringOption} and call {@link #getDecodedValue()} or one could all {@link Option#getDecodedValue()} and
+ * cast the return value to {@link String}.
  *
  * @author Oliver Kleine
  */
@@ -32,7 +37,7 @@ public class StringOption extends Option{
     }
 
     //Constructor with decoded value to be used for outgoing messages
-    public StringOption(OptionName optionName, String value) throws InvalidOptionException{
+    StringOption(OptionName optionName, String value) throws InvalidOptionException{
         super(optionName);
         //URI Host option must not contain upper case letters
         if(optionName == OptionName.URI_HOST){
@@ -88,8 +93,7 @@ public class StringOption extends Option{
 
                 if(d1 == -1 || d2 == -1){
                     //Unexpected end of stream (at least one byte missing after '%')
-                    throw new InvalidOptionException(optionName.number,
-                                                     "[String Option] Invalid percent encoding in: " + s);
+                    throw new InvalidOptionException(optionName.getNumber(), "Invalid percent encoding in: " + s);
                 }
 
                 //Write decoded value to Outputstream (e.g. sequence [0x02, 0x00] results into byte 0x20

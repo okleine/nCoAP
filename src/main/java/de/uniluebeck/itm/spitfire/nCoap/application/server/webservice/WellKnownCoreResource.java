@@ -19,11 +19,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 10.04.13
- * Time: 15:47
- * To change this template use File | Settings | File Templates.
+ * The .well-known/core resource is a standard webservice to be provided by every CoAP webserver as defined in
+ * the CoAP protocol draft. It provides a list of all available services on the server in CoRE Link Format.
+ *
+ * @author Oliver Kleine
  */
 public final class WellKnownCoreResource extends NotObservableWebService<Map<String, WebService>> {
 
@@ -38,8 +37,7 @@ public final class WellKnownCoreResource extends NotObservableWebService<Map<Str
     }
 
     /**
-     * The .well-known/core resource is a standard webservice to be provided by every CoAP webserver as defined in
-     * the CoAP protocol draft. It only allows requests with {@link Code#GET}. Any other out of {@link Code#POST},
+     * The .well-known/core resource only allows requests with {@link Code#GET}. Any other out of {@link Code#POST},
      * {@link Code#PUT} or {@link Code#DELETE} returns a {@link CoapResponse} with {@link Code#METHOD_NOT_ALLOWED_405}.
      *
      * In case of a request with {@link Code#GET} it returns a {@link CoapResponse} with {@link Code#CONTENT_205} and
