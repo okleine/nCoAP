@@ -52,15 +52,6 @@ public class CoapResponse extends CoapMessage {
         super(code);
     }
 
-//    public CoapResponse(Code code, int messageID) throws InvalidHeaderException {
-//        this(code);
-//        this.setMessageID(messageID);
-//    }
-
-    public CoapResponse(CoapResponse coapResponse) throws InvalidHeaderException {
-        super(coapResponse);
-    }
-
     public CoapResponse(Header header, OptionList optionList, ChannelBuffer payload){
         super(header, optionList, payload);
     }

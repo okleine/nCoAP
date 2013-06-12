@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
  * @author Oliver Kleine
  */
 public class OptionList {
@@ -32,15 +31,6 @@ public class OptionList {
         options = LinkedListMultimap.create(0);
     }
 
-    public OptionList(OptionList optionList){
-        this();
-        for(Map.Entry entry : optionList.options.entries()){
-            OptionName optionName = (OptionName) entry.getKey();
-            Option option = (Option) entry.getValue();
-            this.options.put(optionName, option);
-        }
-    }
-
     /**
      * This method is to add a new {@link Option} to the {@link OptionList}. The Option will only be added if it
      * satisfies some constraints. It must be meaningful with the {@link Code}, given as method parameter.
@@ -51,7 +41,8 @@ public class OptionList {
      * @param code the message code
      * @param optionName the name of the option to be added
      * @param option The option to be added
-     * @throws InvalidOptionException if the option cannot be added but is critical and is either of an
+     *
+     * @throws {@link InvalidOptionException} if the option cannot be added but is critical and is either of an
      * unrecognized type (see {@link OptionRegistry.OptionName}) or occured more often than allowed
      * @throws ToManyOptionsException if adding the option to the list would exceed the maximum number of
      * options per message
@@ -153,6 +144,7 @@ public class OptionList {
      * but the order of the values per key does.
      *
      * @param obj The object to test the equality with
+     *
      * @return  <code>true</code> if the given object is an instance of {@link OptionList} and is equal to this instance
      * according to the conditions explained above. Otherwise it returns <code>false</code>.
      */

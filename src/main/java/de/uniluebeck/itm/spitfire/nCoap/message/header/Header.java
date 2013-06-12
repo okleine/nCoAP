@@ -23,61 +23,106 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message.header;
 
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Instances of this class represent the header of a CoAP message.
+ *
  * @author Oliver Kleine
  */
 public class Header {
 
     private static Logger log = LoggerFactory.getLogger(Header.class.getName());
 
+    /**
+     * A constant used by the nCoAP framework to identify that the message ID was not set yet
+     */
     public static int MESSAGE_ID_UNDEFINED = -1;
 
     private MsgType msgType;
     private Code code;
     private int msgID = MESSAGE_ID_UNDEFINED;
 
+    /**
+     * @param code a {@link Code}
+     */
     public Header(Code code){
         setCode(code);
     }
 
-    public Header(Header header) throws InvalidHeaderException {
-        this(header.getMsgType(), header.getCode(), header.msgID);
-    }
-
+    /**
+     * @param msgType a {@link MsgType}
+     * @param code a {@link Code}
+     */
     public Header(MsgType msgType, Code code) {
         this(code);
         setMsgType(msgType);
     }
 
+    /**
+     * <b>Note:</b> This constructor is only for internal instance construction and not intended to be used by
+     * external applications. However, it is rather unlikely that an application needs to create a new instance of
+     * {@link Header} anyway.
+     *
+     * @param msgType a {@link MsgType}
+     * @param code a {@link Code}
+     * @param msgID an integer value
+     *
+     * @throws InvalidHeaderException
+     */
     public Header(MsgType msgType, Code code, int msgID) throws InvalidHeaderException {
         this(msgType, code);
         setMsgID(msgID);
     }
 
+    /**
+     * Returns the version of the CoAP message. According to the CoAP draft this is always 1.
+     * @return the version of the CoAP message. According to the CoAP draft this is always 1.
+     */
     public int getVersion(){
         return 1;
     }
 
+    /**
+     * Sets the {@link MsgType} of the message this {@link Header} is part of
+     * @param msgType a {@link MsgType}
+     */
     public void setMsgType(MsgType msgType){
         this.msgType = msgType;
     }
 
+    /**
+     * Returns the {@link MsgType} set for this {@link Header}
+     * @return the {@link MsgType} set for this {@link Header}
+     */
     public MsgType getMsgType(){
         return msgType;
     }
 
+    /**
+     * Sets the {@link Code} of the message this {@link Header} is part of
+     * @param code a {@link Code}
+     */
     public void setCode(Code code){
         this.code = code;
     }
 
+    /**
+     * Returns the {@link Code} set for this {@link Header}
+     * @return the {@link Code} set for this {@link Header}
+     */
     public Code getCode(){
         return code;
     }
 
+    /**
+     * Sets the message ID of this {@link Header}
+     *
+     * @param msgID the message ID
+     *
+     * @throws InvalidHeaderException if the given message ID is not valid.
+     */
     public void setMsgID(int msgID) throws InvalidHeaderException {
         //Check if msgID is syntactically correct
         if(msgID < -1 || msgID > 65535){
@@ -89,10 +134,23 @@ public class Header {
         log.debug("Message ID " + this.msgID + " successfully set.");
     }
 
+    /**
+     * Returns the message ID set for this {@link Header}
+     * @return the message ID set for this {@link Header}
+     */
     public int getMsgID(){
         return msgID;
     }
 
+    /**
+     * Returns true if and only if the given Object is an instance of {@link Header} and if all all
+     * its components (version, message type, code and message ID) match.
+     *
+     * @param other any other instance of {@link Object}
+     * @return <code>true</code> if and only if the given Object is an instance of {@link Header} and if all all
+     * its components (version, message type, code and message ID) match. It returns <code>false</code>
+     * otherwise.
+     */
     @Override
     public boolean equals(Object other){
         if(!(other instanceof Header)){

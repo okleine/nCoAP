@@ -35,6 +35,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.Retra
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -77,7 +78,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
     /**
      * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on the given port
-     * and already provides the default /.well-known/core resource
+     * and already provides the default <code>.well-known/core</code> resource
      */
     protected CoapServerApplication(int serverPort){
         channel = CoapServerDatagramChannelFactory.createChannel(this, serverPort);
@@ -85,21 +86,24 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         log.info("New server created. Listening on port " + this.getServerPort() + ".");
         registerService(new WellKnownCoreResource(registeredServices));
     }
+
     /**
      * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port 5683
-     * and already provides the default /.well-known/core resource
+     * and already provides the default <code>.well-known/core</code> resource
      */
     protected CoapServerApplication(){
         this(DEFAULT_COAP_SERVER_PORT);
     }
 
+    /**
+     * Set the {@link ScheduledExecutorService} instance to handle incoming requests in seperate threads. The
+     * nCoAP framework sets an executor service automatically so usually there is no need to set another one.
+     *
+     * @param executorService a {@link ScheduledExecutorService}
+     */
     public void setExecutorService(ScheduledExecutorService executorService){
         this.executorService = MoreExecutors.listeningDecorator(executorService);
         this.scheduledExecutorService = executorService;
-    }
-
-    public DatagramChannel getChannel(){
-        return this.channel;
     }
 
     /**
@@ -210,6 +214,19 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         });
     }
 
+    /**
+     * This method is invoked by the framework if an exception occured during the reception or sending of a
+     * {@link CoapMessage}.
+     *
+     * Classes extending {@link CoapServerApplication} may override this method to, e.g. deal with different
+     * types of exceptions differently. This implementation only logs an the error message (if logging is
+     * enabled).
+     *
+     * @param ctx the {@link ChannelHandlerContext} relating the {@link CoapServerApplication} and the
+     * {@link DatagramChannel} on which the exception occured
+     *
+     * @param e the {@link ExceptionEvent} containing, e.g. the exception
+     */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
         log.error("Exception while processing I/O task.", e.getCause());
@@ -239,11 +256,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
-                log.info("Server channel closed (port " + closedChannel.getLocalAddress().getPort() + ").");
+                log.info("Server channel closed (port {}).", closedChannel.getLocalAddress().getPort());
 
                 channel.getFactory().releaseExternalResources();
-                log.info("External resources released. Shutdown completed. (Port " +
-                        closedChannel.getLocalAddress().getPort() + ")");
+                log.info("External resources released, shutdown completed (port {}).",
+                        closedChannel.getLocalAddress().getPort());
             }
         });
 
@@ -318,7 +335,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
         }
 
         if(!registeredServices.isEmpty()){
-            log.error("All webServices should be removed but there are " + registeredServices.size() + " left.");
+            log.error("All Webservices should be removed but there are {} left.", registeredServices.size());
         }
     }
 

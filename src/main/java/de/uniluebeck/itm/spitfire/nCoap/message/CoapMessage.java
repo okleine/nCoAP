@@ -57,13 +57,6 @@ public abstract class CoapMessage implements Cloneable {
         this.payload = payload;
     }
 
-    protected CoapMessage(CoapMessage coapMessage) throws InvalidHeaderException {
-        this(new Header(coapMessage.getHeader()),
-             new OptionList(coapMessage.getOptionList()),
-             coapMessage.getPayload());
-        this.rcptAddress = coapMessage.rcptAddress;
-    }
-
     public static CoapMessage createEmptyReset(int messageID){
         CoapMessage emptyRST = new CoapMessage(){};
 
