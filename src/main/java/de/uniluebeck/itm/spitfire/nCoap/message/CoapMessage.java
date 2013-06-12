@@ -533,7 +533,15 @@ public abstract class CoapMessage implements Cloneable {
 
     @Override
     public String toString(){
-        return "CoapMessage: " + getHeader() + ", [TOKEN] " + new ByteArrayWrapper(getToken());
+        String result =  "CoAP message: " + getHeader() + " | " + getOptionList() + " | ";
+
+        long payloadLength = getPayload().readableBytes();
+        if(payloadLength == 0)
+            result +=  "no payload";
+        else
+            result += "[PAYLOAD] length: " + payloadLength + " bytes";
+
+        return result;
     }
 
 }

@@ -94,10 +94,6 @@ public class OptionList {
         log.debug("{} option with value {} added to option list.", optionName, Tools.toHexString(option.getValue()));
     }
 
-    private LinkedListMultimap<OptionName, Option> getOptionList(){
-        return options;
-    }
-
     /**
      * Returns a set of matching options from the list in order of there adding to the list
      * @param optionName the name of the requested options
@@ -191,14 +187,22 @@ public class OptionList {
         return true;
     }
 
+    /**
+     * Returns a {@link String} representation of this {@link OptionList} containing all {@link Option}s in the list
+     * @return a {@link String} representation of this {@link OptionList} containing all {@link Option}s in the list
+     */
     @Override
     public String toString(){
-        String result = "{[" + this.getClass().getName() + "] ";
+        String result = "[OPTIONS] ";
+        if(options.entries().isEmpty())
+            return result + "no options";
+
         for(Map.Entry<OptionName, Option > entry : options.entries()){
-            result += entry.getValue();
-            result += " ";
+            result += entry.getValue() + " (" + entry.getKey() + "), ";
         }
-        result += "}";
+
+        result = result.substring(0, result.lastIndexOf(", "));
+
         return result;
     }
 }

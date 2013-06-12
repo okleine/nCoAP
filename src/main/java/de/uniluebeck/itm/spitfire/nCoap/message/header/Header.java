@@ -109,6 +109,7 @@ public class Header {
 
     @Override
     public String toString(){
-        return "[HEADER] " + getVersion() + ", " + msgType + ", " + code + ", " + msgID;
+        return "[HEADER] " + getVersion() + " (version), " + msgType + " (type), " + code + " (code), "
+                + msgID + " (message ID)";
     }
 }
