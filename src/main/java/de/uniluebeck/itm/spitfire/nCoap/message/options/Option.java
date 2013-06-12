@@ -377,6 +377,6 @@ public abstract class Option{
 
     @Override
     public String toString(){
-        return "(" + OptionName.getByNumber(optionNumber) + ") " + getDecodedValue();
+        return "" + getDecodedValue() + " (" + OptionName.getByNumber(optionNumber) + ")";
     }
 }

@@ -1,6 +1,6 @@
 //package de.uniluebeck.itm.spitfire.nCoap.communication;
 //
-//import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapEndpoint;
+//import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapTestEndpoint;
 //import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
 //import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 //import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -50,7 +50,7 @@
 //    public void createTestScenario() throws Exception {
 //
 //        /*
-//             testClient                    testReceiver     DESCRIPTION
+//             testClient                    testEndpoint     DESCRIPTION
 //                  |                             |
 //              (1) |----CON-GET----------------->|           Client sends confirmable request
 //                  |                             |
@@ -65,9 +65,9 @@
 //                  |                             |
 //        */
 //
-//        testReceiver.setWriteEnabled(false);
+//        testEndpoint.setWriteEnabled(false);
 //
-//        URI targetUri = new URI("coap://localhost:" + testReceiver.getReceiverPort() + "/testpath");
+//        URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
 //        CoapRequest coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri, testClient);
 //
 //        //Send request
@@ -79,7 +79,7 @@
 //        Thread.sleep(45000);
 //
 //        log.info("Disable message reception after 45 seconds.");
-//        testReceiver.setReceiveEnabled(false);
+//        testEndpoint.setReceiveEnabled(false);
 //
 //        //Wait another 50 sec. to let the last retransmission time out before test methods start
 //        Thread.sleep(50000);
@@ -88,14 +88,14 @@
 //    @Test
 //    public void testNumberOfRequests(){
 //        int expected = 5;
-//        int actual = testReceiver.getReceivedMessages().size();
+//        int actual = testEndpoint.getReceivedMessages().size();
 //        String message = "Number of received messages: ";
 //        assertEquals(message, expected, actual);
 //    }
 //
 //    @Test
 //    public void testAllRequestsAreEqual(){
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        CoapMessage firstMessage = receivedMessages.get(receivedMessages.firstKey());
 //
 //        for(CoapMessage message : receivedMessages.values()){
@@ -113,7 +113,7 @@
 //    @Test
 //    public void testRetransmissionsWereReceivedInTime(){
 //        //Get times of received messages
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Object[] receptionTimes = receivedMessages.keySet().toArray();
 //
 //        long minDelay = 0;

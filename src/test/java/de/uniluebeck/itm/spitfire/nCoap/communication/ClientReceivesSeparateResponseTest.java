@@ -26,8 +26,8 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     //request
     private static CoapRequest coapRequest;
-    private static int requestMsgID;
-    private static byte[] requestToken;
+    private static int requestMsgID = 3333;
+    private static byte[] requestToken = new byte[]{0x12, 0x23, 0x34};
 
     //response
     private static CoapResponse expectedCoapResponse;
@@ -36,7 +36,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
     public void createTestScenario() throws Exception{
 
         /*
-             testReceiver                    Server      DESCRIPTION
+             testEndpoint                    Server      DESCRIPTION
                   |                             |
               (1) |--------GET----------------->|        send GET-Request to server
                   |                             |
@@ -54,43 +54,45 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         //define expected response
         expectedCoapResponse = new CoapResponse(Code.CONTENT_205);
         expectedCoapResponse.setPayload(NOT_OBSERVABLE_RESOURCE_CONTENT.getBytes("UTF-8"));
-        expectedCoapResponse.getHeader().setMsgType(MsgType.ACK);
+        expectedCoapResponse.getHeader().setMsgType(MsgType.CON);
 
         //setup test server
         registerNotObservableTestService(2500);
 
         //create request
-        requestToken = new byte[]{0x12, 0x23, 0x34};
-        requestMsgID = 3333;
         URI serviceURI = new URI("coap://localhost:" + testServer.getServerPort() + NOT_OBSERVABLE_SERVICE_PATH);
         coapRequest = new CoapRequest(MsgType.CON, Code.GET, serviceURI);
         coapRequest.getHeader().setMsgID(requestMsgID);
         coapRequest.setToken(requestToken);
 
         //send request to testServer
-        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
+        testEndpoint.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 
-        //wait for response (processing time on server to create seperate response is 2500ms)
+        //wait for responses from server (one empty ACK and one CON response afterwards)
         Thread.sleep(3000);
 
-        //let testReceiver write empty ACK to acknowledge seperate response
-        CoapResponse emptyACK = new CoapResponse(Code.EMPTY);
-        emptyACK.setMessageID(testReceiver.getReceivedMessages().get(testReceiver.getReceivedMessages().lastKey()).getMessageID());
-        emptyACK.getHeader().setMsgType(MsgType.ACK);
-        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
-        Thread.sleep(3000);
-        testReceiver.setReceiveEnabled(false);
+        //let testEndpoint write empty ACK to acknowledge seperate response
+        int messageID = testEndpoint.getReceivedMessages()
+                                    .get(testEndpoint.getReceivedMessages().lastKey())
+                                    .getMessageID();
+
+        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
+        testEndpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
+        testEndpoint.setReceiveEnabled(false);
+
+        //Wait some time to let the server receive the ACK
+        Thread.sleep(150);
     }
 
     @Test
     public void testReceiverReceivedTwoMessages() {
         String message = "Receiver did not receive two messages";
-        assertEquals(message, 2, testReceiver.getReceivedMessages().values().size());
+        assertEquals(message, 2, testEndpoint.getReceivedMessages().values().size());
     }
 
     @Test
     public void testReceiverReceivedEmptyAck() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "First received message is not an EMPTY ACK";
         assertEquals(message, Code.EMPTY, receivedMessage.getCode());
@@ -98,7 +100,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Test
     public void test2ndReceivedMessageIsResponse() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Receiver received more than one message";
         assertTrue(message, receivedMessage instanceof CoapResponse);
@@ -106,7 +108,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
 //    @Test
 //    public void test2ndReceivedMessageHasSameMsgID() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response Msg ID does not match with request Msg ID";
 //        assertEquals(message, coapRequest.getMessageID(), receivedMessage.getMessageID());
@@ -114,7 +116,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Test
     public void test2ndReceivedMessageHasSameToken() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response token does not match with request token";
         assertTrue(message, Arrays.equals(coapRequest.getToken(), receivedMessage.getToken()));
@@ -122,7 +124,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Test
     public void test2ndReceivedMessageHasCodeContent() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response code is not CONTENT 205";
         assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
@@ -130,7 +132,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Test
     public void test2ndReceivedMessageHasUnmodifiedPayload() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response payload was modified by testServer";
         assertEquals(message, expectedCoapResponse.getPayload(), receivedMessage.getPayload());
@@ -138,7 +140,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Test
     public void test2ndReceivedMessageHasMsgTypeCON() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response Msg Type is not CON";
         assertEquals(message, MsgType.CON, receivedMessage.getMessageType());

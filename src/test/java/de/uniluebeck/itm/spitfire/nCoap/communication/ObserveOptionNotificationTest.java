@@ -46,7 +46,7 @@
 //        //Wireshark: https://dl.dropbox.com/u/10179177/Screenshot_2013.04.11-19.41.51.png
 //
 //        /*
-//             testReceiver                   testServer      DESCRIPTION
+//             testEndpoint                   testServer      DESCRIPTION
 //                  |                             |
 //              (1) |------GET-OBSERVE----------->|           send observable request to server
 //                  |                             |
@@ -83,7 +83,7 @@
 //        registerObservableTestService(observableTestWebService);
 //
 //        //send request to testServer
-//        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 //
 //        //response sequence
 //        //wait for first response
@@ -94,37 +94,37 @@
 //        //wait for 2nd response
 //        Thread.sleep(150);
 //        //send empty ack
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        CoapMessage lastReceivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        CoapMessage emptyACK = new CoapResponse(Code.EMPTY);
 //        emptyACK.getHeader().setMsgID(lastReceivedMessage.getMessageID());
 //        emptyACK.getHeader().setMsgType(MsgType.ACK);
-//        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
 //        //notify
 ////        testServer.notifyCoapObservers();
 //        observableTestWebService.setResourceStatus(true);
 //        //wait for 3rd response
 //        Thread.sleep(150);
 //        //send RST
-//        receivedMessages = testReceiver.getReceivedMessages();
+//        receivedMessages = testEndpoint.getReceivedMessages();
 //        lastReceivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        emptyACK = new CoapResponse(Code.EMPTY);
 //        emptyACK.getHeader().setMsgID(lastReceivedMessage.getMessageID());
 //        emptyACK.getHeader().setMsgType(MsgType.RST);
-//        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
 //
-//        testReceiver.setReceiveEnabled(false);
+//        testEndpoint.setReceiveEnabled(false);
 //    }
 //
 //    @Test
 //    public void testReceiverReceived3Messages() {
 //        String message = "Receiver did not receive 3 messages";
-//        assertEquals(message, 3, testReceiver.getReceivedMessages().values().size());
+//        assertEquals(message, 3, testEndpoint.getReceivedMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testReceiverReceivedNotification1() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //        String message = "1st notification: MsgType is not ACK";
 //        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
@@ -136,7 +136,7 @@
 //
 //    @Test
 //    public void testReceiverReceivedNotification2() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
@@ -150,7 +150,7 @@
 //
 //    @Test
 //    public void testReceiverReceivedNotification3() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        timeKeys.next();
@@ -165,7 +165,7 @@
 //
 //    @Test
 //    public void testObserveOptionIsSetProperly() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        CoapMessage receivedMessage1 = receivedMessages.get(timeKeys.next());
 //        CoapMessage receivedMessage2 = receivedMessages.get(timeKeys.next());
@@ -181,7 +181,7 @@
 //
 //    @Test
 //    public void testObserveOptionExists() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        CoapMessage receivedMessage1 = receivedMessages.get(timeKeys.next());
 //        CoapMessage receivedMessage2 = receivedMessages.get(timeKeys.next());
@@ -195,7 +195,7 @@
 //
 //    @Test
 //    public void testFirstNotificationHasSameMsgID() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //        String message = "First notification Msg ID does not match with request Msg ID";
 //        assertEquals(message, coapRequest.getMessageID(), receivedMessage.getMessageID());
@@ -203,7 +203,7 @@
 //
 //    @Test
 //    public void testAllNotificationsHaveTheSameToken() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        CoapMessage receivedMessage1 = receivedMessages.get(timeKeys.next());
 //        CoapMessage receivedMessage2 = receivedMessages.get(timeKeys.next());

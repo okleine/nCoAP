@@ -73,4 +73,9 @@ class OpaqueOption extends Option{
         }
         return false;
     }
+
+    @Override
+    public String toString(){
+        return new ByteArrayWrapper(getValue()).toString() + " (" + OptionName.getByNumber(optionNumber) + ")";
+    }
 }

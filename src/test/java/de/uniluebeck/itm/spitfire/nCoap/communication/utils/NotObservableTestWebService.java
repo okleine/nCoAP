@@ -57,11 +57,7 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
         } catch (MessageDoesNotAllowPayloadException e) {
             log.error("This should never happen.", e);
         }
-        log.debug("Response for resource " + getPath() + ": " + response);
+        log.debug("Created response for resource {}: {}.", getPath(), response);
         return response;
     }
-
-
-
-
 }

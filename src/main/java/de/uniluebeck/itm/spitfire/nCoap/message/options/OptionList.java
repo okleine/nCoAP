@@ -189,8 +189,8 @@ public class OptionList {
         if(options.entries().isEmpty())
             return result + "no options";
 
-        for(Map.Entry<OptionName, Option > entry : options.entries()){
-            result += entry.getValue() + " (" + entry.getKey() + "), ";
+        for(Option option : options.values()){
+            result += option + ", ";
         }
 
         result = result.substring(0, result.lastIndexOf(", "));

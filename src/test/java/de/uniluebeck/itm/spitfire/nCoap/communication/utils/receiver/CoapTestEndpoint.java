@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
@@ -20,14 +19,12 @@ import static org.junit.Assert.fail;
 
 
 /**
-* Receives and sends CoAP Messages for testing purposes.
-* Receiving and automatic response can be configured.
-* To send a message either schedule a automatic response using addMessageToOutgoingQueue (using setWriteEnabled(true))
-* or send a message manually using writeMessage (which will send the message immediately regardless of writeEnabled).
-*
-* @author Oliver Kleine, Stefan Hueske
+ * Receives and sends CoAP Messages for testing purposes. A {@link CoapTestEndpoint} has no automatic functionality
+ * besides encoding pf incoming and decoding of outgoing messages.
+ *
+ * @author Oliver Kleine, Stefan Hueske
 */
-public class CoapEndpoint extends SimpleChannelHandler {
+public class CoapTestEndpoint extends SimpleChannelHandler {
 
     private DatagramChannel channel;
 
@@ -35,16 +32,13 @@ public class CoapEndpoint extends SimpleChannelHandler {
 
     //Received messages are ignored when set to false
     private boolean receiveEnabled = true;
-    private boolean writeEnabled = true;
+    //private boolean writeEnabled = true;
 
     //map to save received messages
     private SortedMap<Long, CoapMessage> receivedMessages = new TreeMap<Long, CoapMessage>();
 
-    //contains a list of test specific messages to be sent
-    //private LinkedList<MessageReceiverResponse> outgoingMessageQueue = new LinkedList<MessageReceiverResponse>();
-
-    public CoapEndpoint() {
-        //Create datagram datagramChannel to receive messages
+    public CoapTestEndpoint() {
+        //Create datagram datagramChannel to receive and send messages
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 
@@ -56,7 +50,7 @@ public class CoapEndpoint extends SimpleChannelHandler {
                 ChannelPipeline pipeline = Channels.pipeline();
                 pipeline.addLast("Encoder", new CoapMessageEncoder());
                 pipeline.addLast("Decoder", new CoapMessageDecoder());
-                pipeline.addLast("CoAP Message Receiver", CoapEndpoint.this );
+                pipeline.addLast("CoAP Message Receiver", CoapTestEndpoint.this );
                 return pipeline;
             }
         });
@@ -65,18 +59,18 @@ public class CoapEndpoint extends SimpleChannelHandler {
         log.info("New message receiver channel created for port " + channel.getLocalAddress().getPort());
     }
 
-    public int getReceiverPort(){
+    public int getPort(){
         return channel.getLocalAddress().getPort();
     }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         if ((e.getMessage() instanceof CoapMessage) && receiveEnabled) {
-            CoapMessage coapMessage = (CoapMessage) e.getMessage();
-            receivedMessages.put(System.currentTimeMillis(), coapMessage);
+
+            receivedMessages.put(System.currentTimeMillis(), (CoapMessage) e.getMessage());
 
             log.info("Incoming #{} (from {}): {}.",
-                    new Object[]{getReceivedMessages().size(), e.getRemoteAddress(), coapMessage});
+                    new Object[]{getReceivedMessages().size(), e.getRemoteAddress(), e.getMessage()});
         }
     }
 
@@ -92,9 +86,9 @@ public class CoapEndpoint extends SimpleChannelHandler {
         this.receiveEnabled = receiveEnabled;
     }
 
-    public synchronized void setWriteEnabled(boolean writeEnabled) {
-        this.writeEnabled = writeEnabled;
-    }
+//    public synchronized void setWriteEnabled(boolean writeEnabled) {
+//        this.writeEnabled = writeEnabled;
+//    }
 
 //    public synchronized void reset() {
 //        receivedMessages.clear();
@@ -104,12 +98,7 @@ public class CoapEndpoint extends SimpleChannelHandler {
 //    }
 
     public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
-        if(!writeEnabled){
-            log.error("Write is disabled!");
-            return;
-        }
-
-        log.info("Write message: " + coapMessage);
+        log.info("Write " + coapMessage);
         Channels.write(channel, coapMessage, remoteAddress);
     }
 
@@ -139,10 +128,11 @@ public class CoapEndpoint extends SimpleChannelHandler {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
-                log.info("Message receiver channel closed (port: " + closedChannel.getLocalAddress().getPort() + ").");
+                log.info("Message receiver channel closed (port {}).", closedChannel.getLocalAddress().getPort());
 
                 channel.getFactory().releaseExternalResources();
-                log.info("External resources released. Shutdown completed.");
+                log.info("External resources released, shutdown completed (port {}).",
+                        closedChannel.getLocalAddress().getPort());
             }
         });
 

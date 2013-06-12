@@ -37,7 +37,7 @@
 //    @Override
 //    public void createTestScenario() throws Exception {
 //        /*
-//             testReceiver                    Server      DESCRIPTION
+//             testEndpoint                    Server      DESCRIPTION
 //                  |                             |
 //              (1) |--------GET_OBSERVE--------->|        Register observer
 //                  |                             |
@@ -74,7 +74,7 @@
 //        coapRequest.setObserveOptionRequest();
 //
 //        //registration
-//        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 //
 //        //wait for Max-Age to end and resulting notification
 //        Thread.sleep(2500);
@@ -84,23 +84,23 @@
 //        resetMessage.getHeader().setMsgType(MsgType.RST);
 //
 //        CoapMessage updateNotification =
-//                testReceiver.getReceivedMessages().get(testReceiver.getReceivedMessages().lastKey());
+//                testEndpoint.getReceivedMessages().get(testEndpoint.getReceivedMessages().lastKey());
 //
 //        resetMessage.setMessageID(updateNotification.getMessageID());
-//        testReceiver.writeMessage(resetMessage, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(resetMessage, new InetSocketAddress("localhost", testServer.getServerPort()));
 //
-//        testReceiver.setReceiveEnabled(false);
+//        testEndpoint.setReceiveEnabled(false);
 //    }
 //
 //    @Test
 //    public void testReceiverReceived2Messages() {
 //        String message = "Receiver did not receive 2 messages";
-//        assertEquals(message, 2, testReceiver.getReceivedMessages().values().size());
+//        assertEquals(message, 2, testEndpoint.getReceivedMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testReceivedMessageArrivedIn2secDelay() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        Long msg1time = timeKeys.next();
 //        Long msg2time = timeKeys.next();
@@ -112,7 +112,7 @@
 //
 //    @Test
 //    public void testObserveOptionIsSetProperly() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        CoapMessage recNotification1 = receivedMessages.get(timeKeys.next());
 //        CoapMessage recNotification2 = receivedMessages.get(timeKeys.next());
@@ -127,7 +127,7 @@
 //
 //    @Test
 //    public void testMessageType() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        CoapMessage recNotification1 = receivedMessages.get(timeKeys.next());
 //        CoapMessage recNotification2 = receivedMessages.get(timeKeys.next());
@@ -140,7 +140,7 @@
 //
 //    @Test
 //    public void testMessagePayload() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        CoapMessage recNotification1 = receivedMessages.get(timeKeys.next());
 //        CoapMessage recNotification2 = receivedMessages.get(timeKeys.next());

@@ -4,7 +4,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableTestWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapEndpoint;
+import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapTestEndpoint;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -29,7 +29,7 @@ public abstract class AbstractCoapCommunicationTest {
 
     protected static CoapTestClient testClient;
     protected static CoapTestServer testServer;
-    protected static CoapEndpoint testReceiver;
+    protected static CoapTestEndpoint testEndpoint;
 
     private static boolean loggingInitialized = false;
     private static boolean componentsInitialized = false;
@@ -58,8 +58,8 @@ public abstract class AbstractCoapCommunicationTest {
     public static void setupComponents() throws Exception {
         initializeLogging();
         initializeComponents();
-        testReceiver.getReceivedMessages().clear();
-        //testReceiver.getOutgoingMessageQueue().clear();
+        testEndpoint.getReceivedMessages().clear();
+        //testEndpoint.getOutgoingMessageQueue().clear();
     }
 
     @AfterClass
@@ -67,7 +67,7 @@ public abstract class AbstractCoapCommunicationTest {
         Logger.getLogger("JUnit").info("******* shutDownComponents() *******");
         testServer.shutdown();
         testClient.shutdown();
-        testReceiver.shutdown();
+        testEndpoint.shutdown();
         componentsInitialized = false;
         scenarioCreated = false;
     }
@@ -76,7 +76,7 @@ public abstract class AbstractCoapCommunicationTest {
         if(!componentsInitialized){
             testClient = new CoapTestClient();
             testServer = new CoapTestServer(0);
-            testReceiver = new CoapEndpoint();
+            testEndpoint = new CoapTestEndpoint();
             componentsInitialized = true;
         }
     }
@@ -94,7 +94,7 @@ public abstract class AbstractCoapCommunicationTest {
             //Define loglevel
             Logger.getRootLogger().setLevel(Level.INFO);
             //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application").setLevel(Level.DEBUG);
-            //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication").setLevel(Level.DEBUG);
+            Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication").setLevel(Level.DEBUG);
             Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.encoding").setLevel(Level.INFO);
 
             loggingInitialized = true;
@@ -110,6 +110,10 @@ public abstract class AbstractCoapCommunicationTest {
         testServer.registerService(observableTestWebService);
     }
 
+    /**
+     * @param artificialDelay defines the delay for response in milliseconds, e.g. to test seperate
+     *                        responses
+     */
     public void registerNotObservableTestService(long artificialDelay){
         testServer.registerService(new NotObservableTestWebService(NOT_OBSERVABLE_SERVICE_PATH,
                 NOT_OBSERVABLE_RESOURCE_CONTENT, artificialDelay));

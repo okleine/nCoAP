@@ -35,7 +35,7 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
     public void createTestScenario() throws Exception {
         
         /*
-             testReceiver                    Server      DESCRIPTION
+             testEndpoint                    Server      DESCRIPTION
                   |                             |
               (1) |--------GET----------------->|        send GET-Request to server
                   |                             |
@@ -62,23 +62,22 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
 
 
         //send request to testServer
-        testReceiver.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
+        testEndpoint.writeMessage(coapRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 
-        //wait for response
+        //wait some time for response from server
         Thread.sleep(150);
-
-        testReceiver.setReceiveEnabled(false);
+        testEndpoint.setReceiveEnabled(false);
     }
 
     @Test
     public void testReceiverReceivedOnlyOneMessage() {
         String message = "Receiver received unexpected number of messages.";
-        assertEquals(message, 1, testReceiver.getReceivedMessages().values().size());
+        assertEquals(message, 1, testEndpoint.getReceivedMessages().values().size());
     }
 
     @Test
     public void testReceiverReceivedResponse() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Received message is not a CoapResponse";
         assertTrue(message, receivedMessage instanceof CoapResponse);
@@ -86,7 +85,7 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
 
     @Test
     public void testReceivedMessageHasSameMsgID() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response Msg ID does not match with request Msg ID";
         assertEquals(message, coapRequest.getMessageID(), receivedMessage.getMessageID());
@@ -94,7 +93,7 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
 
     @Test
     public void testReceivedMessageHasSameToken() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response token does not match with request token";
         assertTrue(message, Arrays.equals(coapRequest.getToken(), receivedMessage.getToken()));
@@ -102,7 +101,7 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
 
     @Test
     public void testReceivedMessageHasCodeContent() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response code is not CONTENT 205";
         assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
@@ -110,7 +109,7 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
 
     @Test
     public void testReceivedMessageHasUnmodifiedPayload() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response payload was modified by testServer";
         assertEquals(message, expectedCoapResponse.getPayload(), receivedMessage.getPayload());
@@ -118,7 +117,7 @@ public class ClientReceivesPiggyBackedResponseTest extends AbstractCoapCommunica
 
     @Test
     public void testReceivedMessageHasMsgTypeACK() {
-        SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response Msg Type is not ACK";
         assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());

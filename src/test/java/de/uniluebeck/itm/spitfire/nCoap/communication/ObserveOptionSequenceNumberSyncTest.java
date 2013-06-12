@@ -39,7 +39,7 @@
 //    public void createTestScenario() throws Exception {
 //
 //        /*
-//            testReceiver               Server               Service
+//            testEndpoint               Server               Service
 //                 |                        |                    |
 //    (regRequest) |-----GET OBSERVE------->|                    |
 //                 |                        |                    |
@@ -78,7 +78,7 @@
 //        //run test sequence
 //
 //        //registration
-//        testReceiver.writeMessage(regRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(regRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 //        //wait for response
 //        Thread.sleep(150);
 //
@@ -90,7 +90,7 @@
 //        CoapMessage emptyACK = new CoapResponse(Code.EMPTY);
 //        emptyACK.setMessageID(notification2.getMessageID());
 //        emptyACK.getHeader().setMsgType(MsgType.ACK);
-//        testReceiver.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", testServer.getServerPort()));
 //
 //        //second resource update
 //        observableTestWebService.setResourceStatus(true);
@@ -98,21 +98,21 @@
 //
 //        //send RST message
 //        CoapMessage cancelRSTmsg = CoapMessage.createEmptyReset(notification3.getMessageID());
-//        testReceiver.writeMessage(cancelRSTmsg, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(cancelRSTmsg, new InetSocketAddress("localhost", testServer.getServerPort()));
 //
-//        testReceiver.setReceiveEnabled(false);
+//        testEndpoint.setReceiveEnabled(false);
 //    }
 //
 //    @Test
 //    public void testReceiverReceived4Messages() {
 //        String message = "Receiver did not receive 4 messages";
-//        assertEquals(message, 4, testReceiver.getReceivedMessages().values().size());
+//        assertEquals(message, 4, testEndpoint.getReceivedMessages().values().size());
 //    }
 //
 //    @Test
 //    public void sequenceNumbersAreSynchronized() {
 //        try{
-//            SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//            SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //            Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //            timeKeys.next();
 //            timeKeys.next();

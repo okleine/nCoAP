@@ -35,7 +35,7 @@
 //    public void createTestScenario() throws Exception {
 //
 //        /*
-//            testReceiver               Server               Service
+//            testEndpoint               Server               Service
 //                 |                        |                    |
 //    (regRequest) |-----GET OBSERVE------->|                    |
 //                 |                        |                    |
@@ -79,7 +79,7 @@
 //        //run test sequence
 //
 //        //registration
-//        testReceiver.writeMessage(regRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(regRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 //        //wait for response
 //        Thread.sleep(150);
 //
@@ -89,20 +89,20 @@
 //
 //        //send RST message
 //        CoapMessage cancelRSTmsg = CoapMessage.createEmptyReset(notification2.getMessageID());
-//        testReceiver.writeMessage(cancelRSTmsg, new InetSocketAddress("localhost", testServer.getServerPort()));
+//        testEndpoint.writeMessage(cancelRSTmsg, new InetSocketAddress("localhost", testServer.getServerPort()));
 //
-//        testReceiver.setReceiveEnabled(false);
+//        testEndpoint.setReceiveEnabled(false);
 //    }
 //
 //    @Test
 //    public void testReceiverReceived7Messages() {
 //        String message = "Receiver did not receive 7 messages";
-//        assertEquals(message, 7, testReceiver.getReceivedMessages().values().size());
+//        assertEquals(message, 7, testEndpoint.getReceivedMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testLast6ConRetransmissions() {
-//         SortedMap<Long, CoapMessage> receivedMessages = testReceiver.getReceivedMessages();
+//         SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //
