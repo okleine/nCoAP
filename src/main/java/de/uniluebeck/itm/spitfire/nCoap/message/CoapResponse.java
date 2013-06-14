@@ -188,7 +188,7 @@ public class CoapResponse extends CoapMessage {
     }
 
     public boolean isUpdateNotification(){
-        return !this.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty();
+        return !(this.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty());
     }
 
     public long getMaxAge(){

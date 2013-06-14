@@ -61,8 +61,8 @@ public interface WebService<T> {
 
     /**
      * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
-     * {@link CoapServerApplication} instance. So, there is no need to set another {@link ScheduledExecutorService}
-     * instance manually.
+     * {@link CoapServerApplication} instance (using {@link CoapServerApplication#registerService(WebService)}.
+     * So, usually there is no need to set another {@link ScheduledExecutorService} instance manually.
      *
      * @param executorService a {@link ScheduledExecutorService} instance.
      */

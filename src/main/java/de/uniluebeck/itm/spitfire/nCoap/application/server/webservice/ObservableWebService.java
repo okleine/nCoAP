@@ -58,11 +58,14 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 
     /**
      * Returns whether update notifications should be sent with {@link MsgType#CON} or {@link MsgType#NON}
-     * @return <code>true</code> if update notifications should be sent with {@link MsgType#CON} or
-*              <code>false</code> for {@link MsgType#NON}. Default, i.e. if not set otherwise, is {@link MsgType#CON}.
+     * @return {@link MsgType#CON} if update notifications should be sent confirmable or {@link MsgType#NON}
+     * otherwise. Default, i.e. if not set otherwise, is {@link MsgType#CON}.
      */
-    public final boolean isUpdateNotificationConfirmable(){
-        return this.isUpdateNotificationConfirmable;
+    public final MsgType getMessageTypeForUpdateNotifications(){
+        if(isUpdateNotificationConfirmable)
+            return MsgType.CON;
+        else
+            return MsgType.NON;
     }
 
     /**

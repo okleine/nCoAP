@@ -25,7 +25,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.core.callback;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.InternalAcknowledgementMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutException;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
@@ -130,6 +130,21 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             }
             me.getFuture().setSuccess();
         }
+
+        else if(me.getMessage() instanceof RetransmissionTimeoutMessage){
+            RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
+            ByteArrayWrapper token = new ByteArrayWrapper(timeoutMessage.getToken());
+            InetSocketAddress remoteAddress = (timeoutMessage.getRemoteAddress());
+
+            //Find proper callback
+            ResponseCallback callback = callbacks.get(token, remoteAddress);
+
+            //Invoke method of callback instance
+            log.debug("Invoke retransmission timeout notification");
+            callback.handleRetransmissionTimout();
+
+            me.getFuture().setSuccess();
+        }
         else{
             ctx.sendUpstream(me);
         }
@@ -138,20 +153,6 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
         Throwable cause = e.getCause();
-        if(cause instanceof RetransmissionTimeoutException){
-            RetransmissionTimeoutException ex = (RetransmissionTimeoutException) e.getCause();
-            ByteArrayWrapper token = new ByteArrayWrapper(ex.getToken());
-            InetSocketAddress remoteAddress = (ex.getRcptAddress());
-
-            //Find proper callback
-            ResponseCallback callback = callbacks.get(token, remoteAddress);
-
-            //Invoke method of callback instance
-            log.debug("Invoke retransmission timeout notification");
-            callback.handleRetransmissionTimout();
-        }
-        else{
-            log.error("Unexpected exception caught!", cause);
-        }
+        log.error("Unexpected exception caught!", cause);
     }
 }

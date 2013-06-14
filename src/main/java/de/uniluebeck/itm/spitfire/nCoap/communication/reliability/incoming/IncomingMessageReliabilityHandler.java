@@ -129,7 +129,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
-        log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
+        log.info("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
         if(!(me.getMessage() instanceof CoapResponse)){
             ctx.sendDownstream(me);
@@ -139,9 +139,11 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
         //Check if this is a response on a confirmable request and set the message type properly (CON or ACK)
-        setMessageType(coapResponse,
-                removeAcknowledgementStatus((InetSocketAddress) me.getRemoteAddress(), coapResponse.getMessageID()));
-
+        if(coapResponse.getMessageType() == null){
+            setMessageType(coapResponse,
+                    removeAcknowledgementStatus((InetSocketAddress) me.getRemoteAddress(),
+                            coapResponse.getMessageID()));
+        }
 
         ctx.sendDownstream(me);
     }
@@ -164,8 +166,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         else{
             coapResponse.getHeader().setMsgType(MsgType.ACK);
         }
-
-        log.debug("Test11");
     }
 
     /**

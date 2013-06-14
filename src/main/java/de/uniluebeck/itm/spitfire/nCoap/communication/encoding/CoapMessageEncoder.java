@@ -51,7 +51,6 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
     @Override
     protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception{
-
         if(!(object instanceof CoapMessage)){
             return object instanceof ChannelBuffer ? object : null;
         }
@@ -69,11 +68,21 @@ public class CoapMessageEncoder extends OneToOneEncoder {
     }
 
     private void encodeHeader(ChannelBuffer buffer, Header header, int optionCount){
-        buffer.writeInt((header.getVersion() << 30) |
-            (header.getMsgType().number << 28) |
-            (optionCount << 24) |
-            (header.getCode().number << 16) |
-            (header.getMsgID()));
+        int encodedHeader = (header.getVersion() << 30) |
+                (header.getMsgType().number << 28) |
+                (optionCount << 24) |
+                (header.getCode().number << 16) |
+                (header.getMsgID());
+
+        buffer.writeInt(encodedHeader);
+
+        if(log.isDebugEnabled()){
+            String binary = Integer.toBinaryString(encodedHeader);
+            while(binary.length() < 32){
+                binary = "0" + binary;
+            }
+            log.debug("Encoded Header: {}", binary);
+        }
     }
 
     private void encodeOptions(ChannelBuffer buffer, OptionList optionList) throws Exception {

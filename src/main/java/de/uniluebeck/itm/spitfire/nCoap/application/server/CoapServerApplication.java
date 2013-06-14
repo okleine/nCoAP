@@ -181,7 +181,8 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
                     //Set observe response option if requested
                     if(webService instanceof ObservableWebService && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
-                        coapResponse.setObserveOptionResponse(0);
+                        if(!coapResponse.getCode().isErrorMessage())
+                            coapResponse.setObserveOptionResponse(0);
                 }
                 catch (Exception ex) {
                     coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);

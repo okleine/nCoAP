@@ -26,6 +26,7 @@ package de.uniluebeck.itm.spitfire.nCoap.application.client;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.Channels;
@@ -62,8 +63,13 @@ public abstract class CoapClientApplication implements ResponseCallback{
      */
     public final void writeCoapRequest(CoapRequest coapRequest){
 
+        int targetPort = coapRequest.getTargetUri().getPort();
+        if(targetPort == -1)
+            targetPort = OptionRegistry.COAP_PORT_DEFAULT;
+
+
         final InetSocketAddress rcptSocketAddress = new InetSocketAddress(coapRequest.getTargetUri().getHost(),
-                coapRequest.getTargetUri().getPort());
+                targetPort);
 
         ChannelFuture future = Channels.write(datagramChannel, coapRequest, rcptSocketAddress);
 

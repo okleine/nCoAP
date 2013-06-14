@@ -3,6 +3,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.observe;
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.InternalServiceRemovedFromServerMessage;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -87,6 +88,10 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
      *         {@link InternalUpdateNotificationRetransmissionMessage#getServicePath()}.
      *     </li>
      *     <li>
+     *         {@link RetransmissionTimeoutMessage}: Stop all observations of the observer that did not confirm
+     *         a confirmable update notification
+     *     </li>
+     *     <li>
      *         {@link CoapRequest}: Add {@link MessageEvent#getRemoteAddress()} as observer for
      *         {@link CoapRequest#getTargetUri()} if the request contains the option
      *         {@link OptionRegistry.OptionName#OBSERVE_REQUEST}.
@@ -103,7 +108,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
         if(me.getMessage() instanceof InternalUpdateNotificationRejectedMessage){
             InternalUpdateNotificationRejectedMessage message = (InternalUpdateNotificationRejectedMessage) me.getMessage();
-            removeObserver(message.getObserverAddress(), message.getServicePath());
+            removeObservation(message.getObserverAddress(), message.getServicePath());
 
             me.getFuture().setSuccess();
             return;
@@ -119,19 +124,24 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
             return;
         }
 
+        if(me.getMessage() instanceof RetransmissionTimeoutMessage){
+            RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
+            removeAllObservations(timeoutMessage.getRemoteAddress());
+        }
+
         if(me.getMessage() instanceof CoapRequest){
             CoapRequest coapRequest = (CoapRequest) me.getMessage();
 
             //If the remote address is registered as observer than stop the observation
             if(coapRequest.getCode() == GET){
                 if(observations.contains(me.getRemoteAddress(), coapRequest.getTargetUri().getPath())){
-                    removeObserver((InetSocketAddress) me.getRemoteAddress(), coapRequest.getTargetUri().getPath());
+                    removeObservation((InetSocketAddress) me.getRemoteAddress(), coapRequest.getTargetUri().getPath());
                 }
             }
 
             //Add remote address as observer if the observe request option is set
             if(!coapRequest.getOption(OBSERVE_REQUEST).isEmpty()){
-                addObserver((InetSocketAddress) me.getRemoteAddress(), coapRequest.getTargetUri().getPath(),
+                addObservation((InetSocketAddress) me.getRemoteAddress(), coapRequest.getTargetUri().getPath(),
                         coapRequest.getToken());
             }
         }
@@ -181,7 +191,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
             if(coapResponse.getOption(OBSERVE_RESPONSE).isEmpty()){
                 if(observations.contains(me.getRemoteAddress(), coapResponse.getServicePath())){
-                    removeObserver((InetSocketAddress) me.getRemoteAddress(), coapResponse.getServicePath());
+                    removeObservation((InetSocketAddress) me.getRemoteAddress(), coapResponse.getServicePath());
                 }
             }
             else{
@@ -208,13 +218,19 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         ctx.sendDownstream(me);
     }
 
-    private synchronized void removeObserver(InetSocketAddress observerAddress, String servicePath){
+    private void removeAllObservations(InetSocketAddress observerAddress){
+        for(Object servicePath : observations.row(observerAddress).keySet().toArray()){
+            removeObservation(observerAddress, (String) servicePath);
+        }
+    }
+
+    private synchronized void removeObservation(InetSocketAddress observerAddress, String servicePath){
         if(observations.remove(observerAddress, servicePath) != null){
             log.info("Removed {} as observer of {}.", observerAddress, servicePath);
         }
     }
 
-    private synchronized void addObserver(InetSocketAddress observerAddress, String servicePath, byte[] token){
+    private synchronized void addObservation(InetSocketAddress observerAddress, String servicePath, byte[] token){
         observations.put(observerAddress, servicePath,  new ObservationParameter(token));
         log.info("Added {} as observer for {}.", observerAddress, servicePath);
     }
@@ -297,7 +313,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
                             if(coapResponse.getCode().isErrorMessage()){
                                 //If resource produced an error stop the observation
-                                removeObserver(observerAddress, webService.getPath());
+                                removeObservation(observerAddress, webService.getPath());
 
                                 //Send error message
                                 CoapResponse updateNotification =
@@ -319,10 +335,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                         updateNotification.setServicePath(webService.getPath());
 
                         //reliability
-                        if(webService.isUpdateNotificationConfirmable())
-                            updateNotification.getHeader().setMsgType(CON);
-                        else
-                            updateNotification.getHeader().setMsgType(NON);
+                        updateNotification.getHeader().setMsgType(webService.getMessageTypeForUpdateNotifications());
 
                         //set options
                         updateNotification.setMaxAge(webService.getMaxAge());

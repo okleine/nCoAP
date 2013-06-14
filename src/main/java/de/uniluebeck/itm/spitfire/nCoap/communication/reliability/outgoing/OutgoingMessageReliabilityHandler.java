@@ -91,7 +91,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
+        log.info("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendDownstream(me);
@@ -146,11 +146,12 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
         //Compute delays
         int[] delays = new int[MAX_RETRANSMITS];
-        if(coapMessage instanceof CoapResponse && ((CoapResponse) coapMessage).getMaxAge() > 60){
+        if(coapMessage instanceof CoapResponse && ((CoapResponse) coapMessage).isUpdateNotification()
+                && ((CoapResponse) coapMessage).getMaxAge() > 30){
             long maxAge = ((CoapResponse) coapMessage).getMaxAge() * 1000;
             double maxExponent = Math.log(maxAge) / Math.log(2);
-            for(int counter = 1; counter <= MAX_RETRANSMITS; counter++){
-                delays[counter -1] = (int) Math.pow(2, counter/MAX_RETRANSMITS * maxExponent);
+            for(int counter = MAX_RETRANSMITS; counter > 0; counter--){
+                delays[counter - 1] = (int) Math.pow(2, maxExponent - MAX_RETRANSMITS + counter);
             }
         }
         else{
@@ -182,12 +183,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             executorService.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    String message = "Could not deliver message dispite " + (MAX_RETRANSMITS + 1) + " attempts.";
-                    Throwable cause = new RetransmissionTimeoutException(coapMessage.getToken(), rcptAddress, message);
-                    ExceptionEvent event = new DefaultExceptionEvent(ctx.getChannel(), cause);
+                    RetransmissionTimeoutMessage timeoutMessage =
+                            new RetransmissionTimeoutMessage(coapMessage.getToken(), rcptAddress);
 
-                    log.info("Retransmission timed out. Send timeout message to upstream.");
-                    ctx.sendUpstream(event);
+                    MessageEvent timeoutEvent = new UpstreamMessageEvent(ctx.getChannel(), timeoutMessage,
+                            new InetSocketAddress(0));
+
+                    log.info("Retransmission timeout for {}.", coapMessage);
+                    ctx.sendUpstream(timeoutEvent);
                 }
             }, delay, TimeUnit.MILLISECONDS);
 

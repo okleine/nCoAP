@@ -59,7 +59,6 @@ public abstract class AbstractCoapCommunicationTest {
         initializeLogging();
         initializeComponents();
         testEndpoint.getReceivedMessages().clear();
-        //testEndpoint.getOutgoingMessageQueue().clear();
     }
 
     @AfterClass
@@ -92,10 +91,7 @@ public abstract class AbstractCoapCommunicationTest {
             Logger.getRootLogger().addAppender(consoleAppender);
 
             //Define loglevel
-            Logger.getRootLogger().setLevel(Level.INFO);
-            //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application").setLevel(Level.DEBUG);
-            Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication").setLevel(Level.DEBUG);
-            Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.encoding").setLevel(Level.INFO);
+            Logger.getRootLogger().setLevel(Level.DEBUG);
 
             loggingInitialized = true;
         }

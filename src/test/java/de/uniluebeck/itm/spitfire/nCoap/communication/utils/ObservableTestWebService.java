@@ -29,6 +29,8 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
     private long artificalDelay;
     private long updateInterval;
 
+    public static int NO_AUTOMATIC_UPDATE = -1;
+
     /**
      * @param path the absolute path of the service
      * @param initialStatus the initial internal status
@@ -41,20 +43,44 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
         super(path, initialStatus);
         this.artificalDelay = artificalDelay;
         this.updateInterval = updateInterval;
-
-        if(updateInterval > 0)
-            scheduleStatusChange();
     }
 
-    private void scheduleStatusChange(){
-        getExecutorService().schedule(new Runnable(){
+    /**
+     * @param path the absolute path of the service
+     * @param initialStatus the initial internal status
+     * @param artificalDelay the artificial delay in milliseconds to simulate a longer processing time for incoming
+     *                       requests
+     */
+    public ObservableTestWebService(String path, int initialStatus, long artificalDelay){
+        super(path, initialStatus);
+        this.artificalDelay = artificalDelay;
+        updateInterval = NO_AUTOMATIC_UPDATE;
+    }
 
-            @Override
-            public void run() {
-                setResourceStatus((getResourceStatus() + 1) % 5);
-                scheduleStatusChange();
-            }
-        }, updateInterval, TimeUnit.MILLISECONDS);
+    /**
+     * Schedule automatic status changes every according to the update interval. If there is no update interval
+     * defined this method returns <code>false</code>.
+     *
+     * @return <code>true</code> if automatic updates where scheduled succesfully, <code>false</code> otherwise.
+     */
+    public boolean scheduleAutomaticStatusChange(){
+        if(updateInterval != NO_AUTOMATIC_UPDATE){
+            getExecutorService().schedule(new Runnable(){
+
+                @Override
+                public void run() {
+                    setResourceStatus((getResourceStatus() + 1) % 5);
+                    scheduleAutomaticStatusChange();
+                }
+            }, updateInterval, TimeUnit.MILLISECONDS);
+
+            return true;
+        }
+        else{
+            log.error("No update interval defined for service " + getPath() + ". Could not schedule automatic" +
+                    "updates");
+            return false;
+        }
     }
 
 

@@ -79,6 +79,7 @@ public class OptionRegistry {
      * Enumeration containing the available media types
      */
     public static enum MediaType {
+        UNKNOWN(-1),
         TEXT_PLAIN_UTF8(0),
         APP_LINK_FORMAT(40),
         APP_XML(41),
@@ -100,7 +101,7 @@ public class OptionRegistry {
          * Returns the corresonding {@link MediaType} for the given number
          *
          * @param number the number to look up the corresponding {@link MediaType}
-         * @return the corresonding {@link MediaType} for the given number or null if there is no.
+         * @return the corresonding {@link MediaType} for the given number
          */
         public static MediaType getByNumber(Long number){
             for(MediaType mediaType : MediaType.values()){
@@ -108,8 +109,7 @@ public class OptionRegistry {
                     return mediaType;
                 }
             }
-            
-            return null;
+            return UNKNOWN;
         }
     }
 

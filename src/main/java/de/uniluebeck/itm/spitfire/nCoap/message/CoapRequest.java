@@ -273,7 +273,7 @@ public class CoapRequest extends CoapMessage {
      * Returns a {@link Set<MediaType>} reconstructed from the contained {@link OptionName#ACCEPT} options
      * @return a {@link Set<MediaType>} reconstructed from the contained {@link OptionName#ACCEPT} options
      */
-    public Set<MediaType> getAccept(){
+    public Set<MediaType> getAcceptedMediaTypes(){
         EnumSet<MediaType> result = EnumSet.noneOf(MediaType.class);
 
         for(Option option : optionList.getOption(ACCEPT)){
