@@ -32,6 +32,7 @@ import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WellKnownC
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.observe.InternalObservableResourceRegistrationMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -61,8 +62,7 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Op
  *
  * @author Oliver Kleine
  */
-public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
-        implements RetransmissionTimeoutHandler{
+public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler{
 
     public static final int DEFAULT_COAP_SERVER_PORT = 5683;
 

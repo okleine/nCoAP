@@ -6,6 +6,8 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.BeforeClass;
@@ -13,12 +15,9 @@ import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.SortedMap;
+import java.util.*;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.*;
 
 /**
 * Tests if the server adapts MAX_RETRANSMIT to avoid CON timeout before Max-Age ends.
@@ -51,24 +50,22 @@ public class ServerAdaptsMaxRetransmitForConNotificationTest extends AbstractCoa
                      |                        |                    |
      (notification1) |<----ACK OBSERVE--------|                    |
                      |                        |<-----UPDATE()------|
-     (notification2) |<-CON Not.,MAX-AGE:100--|                    |
+     (notification2) |<-CON Not.,MAX-AGE:100--|                    |      time: 0
                      |                        |                    | |
-                     |<----CON RETR.1---------|                    | |
+                     |<----CON RETR.1---------|                    | |    time: 11.25 sec
                      |                        |                    | |
-                     |<----CON RETR.2---------|                    | |
+                     |<----CON RETR.2---------|                    | |    time: 22.5 sec
+                     |                        | <---UPDATE()-------| |    time: ~35 sec.
+                     |<----CON RETR.3---------|                    | |    time: 45 sec
                      |                        |                    | |
-                     |<----CON RETR.3---------|                    | | Time for 4th retransmission
-                     |                        |                    | | >= MAX-AGE
-                     |<----CON RETR.4---------|                    | |
+                     |<----CON RETR.4---------|                    | |    time: 90 sec. (>= MAX AGE)
 
-          (If the 5th retransmission exists, MAX_RETRANSMIT was adapted)
         */
 
         //Create observable service
         ObservableTestWebService webService = new ObservableTestWebService(OBSERVABLE_SERVICE_PATH, 0, 0);
         webService.setMaxAge(90);
         testServer.registerService(webService);
-        webService.scheduleAutomaticStatusChange();
 
         //create observation request
         URI targetUri = new URI("coap://localhost:" + testServer.getServerPort() + OBSERVABLE_SERVICE_PATH);
@@ -81,11 +78,11 @@ public class ServerAdaptsMaxRetransmitForConNotificationTest extends AbstractCoa
         observationRequestSent = System.currentTimeMillis();
         testEndpoint.writeMessage(observationRequest, new InetSocketAddress("localhost", testServer.getServerPort()));
 
-        //wait 2 seconds and update observed resource
+        //wait 2.5 seconds (until first retransmission was sent and update observed resource
         Thread.sleep(2000);
         webService.setResourceStatus(1);
 
-        //wait for 2 retransmissions and change status then
+        //wait for update notification and 2 retransmissions and change status then
         Thread.sleep(35000);
         webService.setResourceStatus(2);
 
@@ -118,20 +115,43 @@ public class ServerAdaptsMaxRetransmitForConNotificationTest extends AbstractCoa
                 delay >= 90000);
     }
 
-//    @Test
-//    public void testLast4ConRetransmissions() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
-//        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
-//        timeKeys.next();
-//
-//        for (int i = 1; i < 6; i++) {
-//            CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
-//            String message = "Notification Nr. " + i + "was not of type CON";
-//            assertEquals(message, MsgType.CON, receivedMessage.getMessageType());
-//            message = "Notification Nr. " + i + "has invalid message ID";
-//            assertEquals(message, notification2.getMessageID(), receivedMessage.getMessageID());
-//            message = "Notification Nr. " + i + "has invalid payload";
-//            assertEquals(message, notification2.getPayload(), receivedMessage.getPayload());
-//        }
-//    }
+    @Test
+    public void testUpdateOfStatusDuringRetransmission(){
+        CoapMessage[] receivedMessages = new CoapMessage[6];
+        receivedMessages = testEndpoint.getReceivedMessages().values().toArray(receivedMessages);
+
+        ByteArrayWrapper[] payloads = new ByteArrayWrapper[5];
+
+        for(int i = 1; i < 6; i++){
+            payloads[i-1] = new ByteArrayWrapper(receivedMessages[i].getPayload().copy().array());
+        }
+
+        assertEquals("Original message and 1st retransmission do not match", payloads[0], payloads[1]);
+        assertEquals("1st and 2nd retransmission do not match", payloads[1], payloads[2]);
+        assertFalse("2nd and 3rd retransmission do match!", payloads[2].equals(payloads[3]));
+        assertEquals("3rd and 4th retransmission do not match", payloads[3], payloads[4]);
+    }
+
+    @Test
+    public void testNotificationCount(){
+        CoapResponse[] receivedMessages = new CoapResponse[6];
+        receivedMessages = testEndpoint.getReceivedMessages().values().toArray(receivedMessages);
+
+        long[] notificationCounts = new long[5];
+
+        for(int i = 1; i < 6; i++){
+            notificationCounts[i-1] =
+                    (Long) receivedMessages[i]
+                           .getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE)
+                           .get(0)
+                           .getDecodedValue();
+        }
+
+        for(int i = 1; i < 5; i++){
+            long actual = notificationCounts[i];
+            long previous = notificationCounts[i-1];
+            assertTrue("Notification count (" + actual + ") was not larger than previous (" + previous + ")!",
+                    notificationCounts[i] > notificationCounts[i-1]);
+        }
+    }
 }
