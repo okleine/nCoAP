@@ -24,18 +24,21 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core.callback;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.InternalAcknowledgementMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.invoke.empty.Empty;
 
 import java.net.InetSocketAddress;
-import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
 
 /**
  * @author Oliver Kleine
@@ -91,6 +94,18 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
 
+        if(me.getMessage() instanceof EmptyAcknowledgementReceivedMessage){
+            EmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
+                    (EmptyAcknowledgementReceivedMessage) me.getMessage();
+
+            ResponseCallback callback =
+                    callbacks.get(emptyAcknowledgementReceivedMessage.getToken(), me.getRemoteAddress());
+
+
+            callback.receiveEmptyACK();
+            me.getFuture().setSuccess();
+        }
+
         if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
@@ -100,7 +115,8 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
 
 
             ResponseCallback callback;
-            if(!coapResponse.getOption(OBSERVE_RESPONSE).isEmpty()){
+
+            if(coapResponse.isUpdateNotification()){
                 callback = callbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
                         me.getRemoteAddress());
             }
@@ -118,18 +134,18 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             }
             me.getFuture().setSuccess();
         }
-        else if (me.getMessage() instanceof InternalAcknowledgementMessage){
-
-            ByteArrayWrapper token = ((InternalAcknowledgementMessage) me.getMessage()).getToken();
-
-            ResponseCallback callback = callbacks.get(token, me.getRemoteAddress());
-
-            if(callback != null){
-                log.debug("Received empty acknowledgement for request with token " + token.toString());
-                callback.receiveEmptyACK();
-            }
-            me.getFuture().setSuccess();
-        }
+//        else if (me.getMessage() instanceof EmptyAcknowledgementReceivedMessage){
+//
+//            ByteArrayWrapper token = ((EmptyAcknowledgementReceivedMessage) me.getMessage()).getToken();
+//
+//            ResponseCallback callback = callbacks.get(token, me.getRemoteAddress());
+//
+//            if(callback != null){
+//                log.debug("Received empty acknowledgement for request with token " + token.toString());
+//                callback.receiveEmptyACK();
+//            }
+//            me.getFuture().setSuccess();
+//        }
 
         else if(me.getMessage() instanceof RetransmissionTimeoutMessage){
             RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
@@ -141,7 +157,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
 
             //Invoke method of callback instance
             log.debug("Invoke retransmission timeout notification");
-            callback.handleRetransmissionTimout();
+            callback.handleRetransmissionTimeout(timeoutMessage);
 
             me.getFuture().setSuccess();
         }

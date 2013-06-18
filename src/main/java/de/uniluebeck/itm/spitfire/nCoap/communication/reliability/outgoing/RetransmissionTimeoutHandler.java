@@ -8,5 +8,5 @@ public interface RetransmissionTimeoutHandler {
     /**
      * Method invoked by the nCoAP framework when there was an outgoing
      */
-    public void handleRetransmissionTimout();
+    public void handleRetransmissionTimeout(RetransmissionTimeoutMessage timeoutMessage);
 }

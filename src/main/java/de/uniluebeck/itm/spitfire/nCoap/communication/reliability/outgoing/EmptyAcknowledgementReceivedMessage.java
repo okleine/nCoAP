@@ -11,14 +11,14 @@ import org.slf4j.LoggerFactory;
  * Time: 18:22
  * To change this template use File | Settings | File Templates.
  */
-public class InternalAcknowledgementMessage {
+public class EmptyAcknowledgementReceivedMessage {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private ByteArrayWrapper token;
 
-    public InternalAcknowledgementMessage(ByteArrayWrapper token){
-        this.token = token;
+    public EmptyAcknowledgementReceivedMessage(byte[] token){
+        this.token = new ByteArrayWrapper(token);
         log.info("Internal acknowledgement message created for token " + token);
     }
 

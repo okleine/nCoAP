@@ -21,7 +21,7 @@ import org.junit.BeforeClass;
  */
 public abstract class AbstractCoapCommunicationTest {
 
-    protected Logger log = Logger.getLogger(this.getClass().getName());
+    protected static Logger log = Logger.getLogger(AbstractCoapCommunicationTest.class.getName());
 
     protected static String OBSERVABLE_SERVICE_PATH = "/observable";
     protected static String NOT_OBSERVABLE_SERVICE_PATH = "/not/observable";
@@ -44,9 +44,9 @@ public abstract class AbstractCoapCommunicationTest {
     public AbstractCoapCommunicationTest(){
         if(!scenarioCreated){
             try {
-                log.info("******* Starting tests in " + this.getClass().getName() + " **********");
+                log.error("******* Starting tests in " + this.getClass().getName() + " **********");
                 createTestScenario();
-                log.info("******* Test scenario finished: " + this.getClass().getName() + " **********");
+                log.error("******* Test scenario finished: " + this.getClass().getName() + " **********");
                 scenarioCreated = true;
             } catch (Exception e) {
                 throw new RuntimeException("Could not create test scenario. ", e);
@@ -63,12 +63,14 @@ public abstract class AbstractCoapCommunicationTest {
 
     @AfterClass
     public static void shutDownComponents(){
-        Logger.getLogger("JUnit").info("******* shutDownComponents() *******");
+        log.error("******* shutDownComponents() *******");
         testServer.shutdown();
         testClient.shutdown();
         testEndpoint.shutdown();
         componentsInitialized = false;
         scenarioCreated = false;
+        log.error("******* Components shut down! *******");
+
     }
 
     private static void initializeComponents(){

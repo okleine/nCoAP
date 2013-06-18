@@ -63,7 +63,7 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
         pipeline.addLast("CoAP Message Decoder", decoder);
         pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
         pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
-        //pipeline.addLast("BlockwiseTransferHandler", blockwiseTransferHandler);
+        pipeline.addLast("BlockwiseTransferHandler", blockwiseTransferHandler);
         pipeline.addLast("ResponseCallbacbkHandler", responseCallbackHandler);
 
         return pipeline;

@@ -231,13 +231,10 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
     }
 
     private void errorMessageReceived(ChannelHandlerContext ctx, MessageEvent me){
-        log.info("11111111111");
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
         synchronized (incompleteResponseMonitor){
             incompleteResponsePayload.remove(coapMessage.getToken());
         }
-
-        log.info("2222222222");
         ctx.sendUpstream(me);
     }
 

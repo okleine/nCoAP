@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.GET;
-import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.CON;
 import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.NON;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
@@ -209,7 +208,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                         }
 
                         //set the observer specific notification count of the running observation
-                        coapResponse.setObserveOptionResponse(status.getNotificationCount());
+                        coapResponse.setObserveOptionValue(status.getNotificationCount());
                     }
                 }
             }
@@ -341,7 +340,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                         updateNotification.setMaxAge(webService.getMaxAge());
                         updateNotification.setToken(parameter.getToken());
                         parameter.increaseNotificationCount();
-                        updateNotification.setObserveOptionResponse(parameter.getNotificationCount());
+                        updateNotification.setObserveOptionValue(parameter.getNotificationCount());
 
                         //set payload
                         updateNotification.setPayload(ChannelBuffers.copiedBuffer(payload.get(parameter.getAcceptedMediaType())));

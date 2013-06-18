@@ -75,7 +75,7 @@ public class RetransmissionSchedule {
      * {@link CoapServerApplication} instance.
      *
      * The task itself causes the nCoAP framework to invoke the method
-     * {@link RetransmissionTimeoutHandler#handleRetransmissionTimout()}.
+     * {@link RetransmissionTimeoutHandler#handleRetransmissionTimeout()}.
      *
      * @param timeoutNotificationFuture
      */

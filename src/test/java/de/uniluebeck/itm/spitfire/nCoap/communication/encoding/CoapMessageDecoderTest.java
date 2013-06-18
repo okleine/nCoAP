@@ -40,14 +40,6 @@ public class CoapMessageDecoderTest {
     TestChannel testChannel = new TestChannel(testRcptAdress);
     
     static{
-        //String pattern = "%r ms: [%C{1}] %m %n";
-        //String pattern = "[%t] %d{ABSOLUTE}: [%C{1}] %m %n";
-        String pattern = "%-23d{yyyy-MM-dd HH:mm:ss,SSS} | %-32.32t | %-30.30c{1} | %-5p | %m%n";
-        PatternLayout patternLayout = new PatternLayout(pattern);
-
-        ConsoleAppender consoleAppender = new ConsoleAppender(patternLayout);
-        Logger.getRootLogger().addAppender(consoleAppender);
-
         Logger.getRootLogger().setLevel(Level.DEBUG);
     }
 

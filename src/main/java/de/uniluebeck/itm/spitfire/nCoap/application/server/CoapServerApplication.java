@@ -62,7 +62,8 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Op
  *
  * @author Oliver Kleine
  */
-public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler{
+public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
+        implements RetransmissionTimeoutHandler{
 
     public static final int DEFAULT_COAP_SERVER_PORT = 5683;
 
@@ -118,6 +119,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     @Override
     public final void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         log.info("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
+
+        if(me.getMessage() instanceof RetransmissionTimeoutMessage){
+            handleRetransmissionTimeout((RetransmissionTimeoutMessage) me.getMessage());
+            return;
+        }
 
         if(!(me.getMessage() instanceof CoapRequest)){
             ctx.sendUpstream(me);
@@ -182,7 +188,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                     //Set observe response option if requested
                     if(webService instanceof ObservableWebService && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
                         if(!coapResponse.getCode().isErrorMessage())
-                            coapResponse.setObserveOptionResponse(0);
+                            coapResponse.setObserveOptionValue(0);
                 }
                 catch (Exception ex) {
                     coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);

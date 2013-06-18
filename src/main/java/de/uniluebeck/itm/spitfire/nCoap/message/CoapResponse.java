@@ -164,7 +164,7 @@ public class CoapResponse extends CoapMessage {
      * @throws ToManyOptionsException if adding an observe options would exceed the maximum number of
      * options per message.
      */
-    public void setObserveOptionResponse(long sequenceNumber) throws ToManyOptionsException {
+    public void setObserveOptionValue(long sequenceNumber) throws ToManyOptionsException {
         optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
         try{
             Option option = Option.createUintOption(OptionRegistry.OptionName.OBSERVE_RESPONSE, sequenceNumber);
@@ -179,16 +179,31 @@ public class CoapResponse extends CoapMessage {
         }
     }
 
+    /**
+     * Returns <code>true</code> if the {@link OptionName#OBSERVE_RESPONSE} option is set and <code>false</code>
+     * otherwise
+     * @return <code>true</code> if the {@link OptionName#OBSERVE_RESPONSE} option is set and <code>false</code>
+     * otherwise
+     */
+    public boolean isUpdateNotification(){
+        return !(this.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty());
+    }
+
+    /**
+     * Returns the value of the {@link OptionName#OBSERVE_RESPONSE} option
+     * @return the value of the {@link OptionName#OBSERVE_RESPONSE} option
+     * @throws NullPointerException if this response does not contain an {@link OptionName#OBSERVE_RESPONSE} option
+     */
+    public long getObserveOptionValue() throws NullPointerException{
+       return (Long) this.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).get(0).getDecodedValue();
+    }
+
     public String getServicePath() {
         return servicePath;
     }
 
     public void setServicePath(String servicePath) {
         this.servicePath = servicePath;
-    }
-
-    public boolean isUpdateNotification(){
-        return !(this.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty());
     }
 
     public long getMaxAge(){

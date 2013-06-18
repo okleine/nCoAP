@@ -1,6 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import org.apache.log4j.Logger;
 
@@ -43,7 +44,7 @@ public class CoapTestClient extends CoapClientApplication {
     }
 
     @Override
-    public void handleRetransmissionTimout() {
+    public void handleRetransmissionTimeout(RetransmissionTimeoutMessage timeoutMessage) {
         if(!timeoutNotificationTimes.add(System.currentTimeMillis())){
             log.error("Could not add notification time for retransmission timeout.");
         }
@@ -60,7 +61,7 @@ public class CoapTestClient extends CoapClientApplication {
     public SortedMap<Long, CoapResponse> getReceivedResponses() {
         return receivedResponses;
     }
-    
+
 
 //    public synchronized void setReceiveEnabled(boolean receiveEnabled) {
 //        this.receiveEnabled = receiveEnabled;

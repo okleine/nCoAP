@@ -23,8 +23,6 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -50,26 +48,29 @@ public class CoapClientDatagramChannelFactory {
     public static final int RECEIVE_BUFFER_SIZE = 65536;
     private static final int NO_OF_THREADS = 10;
 
-    private static int clientNumber = 0;
     private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
+
+    private static DatagramChannel datagramChannel = null;
 
     public static DatagramChannel getChannel(){
 
-        clientNumber = clientNumber + 1;
+        if(datagramChannel != null){
+            return datagramChannel;
+        }
 
         ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
 
-        DatagramChannel channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+        datagramChannel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
 
         FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
-        channel.getConfig().setReceiveBufferSizePredictor(predictor);
+        datagramChannel.getConfig().setReceiveBufferSizePredictor(predictor);
 
-        log.info("New client channel created for port " + channel.getLocalAddress().getPort());
+        log.info("New client datagram channel created for port {}", datagramChannel.getLocalAddress().getPort());
 
-        return channel;
+        return datagramChannel;
     }
 
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){

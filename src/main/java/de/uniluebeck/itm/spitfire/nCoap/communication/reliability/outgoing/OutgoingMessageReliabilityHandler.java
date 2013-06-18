@@ -27,9 +27,11 @@ import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.spitfire.nCoap.communication.observe.InternalUpdateNotificationRejectedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +63,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     /**
      * The approximate number of milliseconds between the last retransmission attempt for outgoing {@link CoapMessage}s
      * with {@link MsgType#CON} and a timeout notification, i.e. invokation of
-     * {@link RetransmissionTimeoutHandler#handleRetransmissionTimout()}.
+     * {@link RetransmissionTimeoutHandler#handleRetransmissionTimeout(RetransmissionTimeoutMessage)}.
      */
     public static final int TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION = 5000;
 
@@ -251,7 +253,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             }
         }
 
-        if (coapMessage.getMessageType() == MsgType.ACK || coapMessage.getMessageType() == MsgType.RST) {
+       if (coapMessage.getMessageType() == MsgType.ACK || coapMessage.getMessageType() == MsgType.RST) {
 
             //Look up remaining retransmissionSchedules
             RetransmissionSchedule retransmissionSchedule;
@@ -260,8 +262,19 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                         retransmissionSchedules.remove(me.getRemoteAddress(), coapMessage.getMessageID());
             }
 
-            if(retransmissionSchedule != null)
+            if(retransmissionSchedule != null){
                 retransmissionSchedule.stopScheduledTasks();
+                if(coapMessage.getCode() == Code.EMPTY){
+                    if(coapMessage.getMessageType() == MsgType.ACK){
+
+                        EmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
+                                new EmptyAcknowledgementReceivedMessage(retransmissionSchedule.getToken());
+
+                        ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), emptyAcknowledgementReceivedMessage,
+                                me.getRemoteAddress()));
+                    }
+                }
+            }
             else {
                 log.debug("No open CON found for messageID {} to {}. IGNORE.",
                         coapMessage.getMessageID(), remoteAddress);

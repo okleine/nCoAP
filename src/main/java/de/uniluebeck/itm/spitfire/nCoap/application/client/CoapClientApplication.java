@@ -44,10 +44,8 @@ import java.net.InetSocketAddress;
  */
 public abstract class CoapClientApplication implements ResponseCallback{
 
-    private Logger log = LoggerFactory.getLogger(CoapClientApplication.class.getName());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private DatagramChannel datagramChannel;
-
-    //private boolean isObserver = false;
 
     protected CoapClientApplication(){
         datagramChannel =  CoapClientDatagramChannelFactory.getChannel();
@@ -76,24 +74,11 @@ public abstract class CoapClientApplication implements ResponseCallback{
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("CoAP Request sent to "
-                        + rcptSocketAddress.getAddress().getHostAddress()
-                        + ":" + rcptSocketAddress.getPort());
+                log.info("CoAP Request sent to {}:{}", rcptSocketAddress.getAddress().getHostAddress(),
+                        rcptSocketAddress.getPort());
             }
         });
     }
-
-//    @Override
-//    public boolean isObserver(){
-//        return isObserver;
-//    }
-//
-//    /**
-//     * @param isObserver
-//     */
-//    private void setObserver(boolean isObserver){
-//        this.isObserver = isObserver;
-//    }
 
     public int getClientPort() {
         return datagramChannel.getLocalAddress().getPort();
@@ -113,9 +98,6 @@ public abstract class CoapClientApplication implements ResponseCallback{
             public void operationComplete(ChannelFuture future) throws Exception {
                 DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
                 log.info("Client channel closed (port: " + closedChannel.getLocalAddress().getPort() + ").");
-
-                //datagramChannel.getFactory().releaseExternalResources();
-                //log.info("External resources released. Shutdown completed.");
             }
         });
 

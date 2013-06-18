@@ -3,7 +3,6 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 import de.uniluebeck.itm.spitfire.nCoap.communication.observe.InternalUpdateNotificationRetransmissionMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -51,7 +50,7 @@ class MessageRetransmitter implements Runnable {
             long notificationCount = (Long) coapResponse.getOption(OBSERVE_RESPONSE).get(0).getDecodedValue() + 1;
 
             try {
-                coapResponse.setObserveOptionResponse(notificationCount);
+                coapResponse.setObserveOptionValue(notificationCount);
                 UpstreamMessageEvent upstreamEvent = new UpstreamMessageEvent(ctx.getChannel(),
                         new InternalUpdateNotificationRetransmissionMessage(rcptAddress,
                                 coapResponse.getServicePath()), null);
