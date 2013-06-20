@@ -23,7 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.callback.ResponseCallback;
+import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;

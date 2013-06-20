@@ -21,50 +21,37 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uniluebeck.itm.spitfire.nCoap.communication.core.callback;
+package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
-import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Random;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 
 /**
- * The TokenFactory generates tokens to match incoming responses with open requests and enable the
- * ReponseCallbackHandler to invoke the correct callback method. Since there are pow(2,64) possibilities for a token
- * and the generation is randomized, it is rather unlikely to get the same token within the usual time to wait for
- * a response. That's why we pass on memorizing tokens currently being in use.
+ * Interface to be implemented by client applications to handle responses
  *
  * @author Oliver Kleine
  */
-public abstract class TokenFactory {
-
-    private static Logger log = LoggerFactory.getLogger(TokenFactory.class.getName());
-
-    //private static TokenFactory instance = new TokenFactory();
-    private static Random random = new Random(System.currentTimeMillis());
-
-//    private TokenFactory(){
-//        random = new Random(System.currentTimeMillis());
-//    }
-//
-//    public static TokenFactory getInstance(){
-//        return instance;
-//    }
+public interface ResponseCallback extends RetransmissionTimeoutHandler {
 
     /**
-     * Returns the next token to be used
-     * @return the next token to be used
+     * Method to be called by the {@link ResponseCallbackHandler} for an incoming response (which is of any type but
+     * empty acknowledgement). For empty ACK messages the {@link ResponseCallbackHandler} invokes the receiveEmptyACK()
+     * method.
+     *
+     * @param coapResponse the response message
      */
-    public static byte[] getNextToken(){
-        byte[] tmp = Longs.toByteArray(random.nextLong());
+    public void receiveResponse (CoapResponse coapResponse);
 
-        for(int i = 0; i < 8; i++){
-            if(tmp[i] != 0){
-                return Tools.getByteArrayRange(tmp, i, 8);
-            }
-        }
-        return new byte[0];
-    }
+    /**
+     * This method is invoked by the {@link ResponseCallbackHandler} (automatically) for an incoming empty
+     * acknowledgement. If the client application is e.g. a browser, one could e.g. display a message in the
+     * browser windows telling the user that the server has received the request but needs some time to
+     * process it.
+     */
+    public void receiveEmptyACK();
+
+    public void setToken();
+
+    public byte[] getToken();
+
 }

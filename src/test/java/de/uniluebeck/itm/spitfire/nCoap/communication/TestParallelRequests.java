@@ -1,6 +1,5 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapTestClient;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.NotObservableTestWebService;
@@ -10,13 +9,10 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -30,7 +26,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
-    private static Map<CoapTestClient, CoapRequest> clients = new HashMap<CoapTestClient, CoapRequest>();
+    private static CoapTestClient[] clients = new CoapTestClient[3];
+    private static CoapRequest[] requests = new CoapRequest[3];
+
     private static CoapTestServer server;
 
     @Override
@@ -38,59 +36,40 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
         server = new CoapTestServer(0);
 
-
-        clients.put(new CoapTestClient(),
-                    new CoapRequest(MsgType.CON, Code.GET,
-                            new URI("coap://localhost:" + testServer.getServerPort() + "/service1"));
-        request1.setResponseCallback(clients[0]);
-        clients[0].writeCoapRequest(request1);
-
-
-        clients[1] = new CoapTestClient();
-        CoapRequest request2 = new CoapRequest(MsgType.CON, Code.GET,
-                new URI("coap://localhost:" + testServer.getServerPort() + "/service2"));
-        request2.setResponseCallback(clients[1]);
-        clients[1].writeCoapRequest(request2);
-
-        clients[2] = new CoapTestClient();
-        CoapRequest request3 = new CoapRequest(MsgType.CON, Code.GET,
-                new URI("coap://localhost:" + testServer.getServerPort() + "/service3"));
-        request3.setResponseCallback(clients[2]);
-        clients[2].writeCoapRequest(request3);
-
         //Add 3 different webservices to server
-        NotObservableTestWebService webService1 =
-                new NotObservableTestWebService("/service1", "Status of Webservice 1", 3000);
-        testServer.registerService(webService1);
+        server.registerService(new NotObservableTestWebService("/service1", "Status of Webservice 1", 3000));
+        server.registerService(new NotObservableTestWebService("/service2", "Status of Webservice 2", 3000));
+        server.registerService(new NotObservableTestWebService("/service3", "Status of Webservice 3", 3000));
 
-        NotObservableTestWebService webService2 =
-                new NotObservableTestWebService("/service2", "Status of Webservice 2", 4000);
-        testServer.registerService(webService2);
-
-        NotObservableTestWebService webService3 =
-                new NotObservableTestWebService("/service3", "Status of Webservice 3", 5000);
-        testServer.registerService(webService3);
+        //Create clients and requests
+        for(int i = 0; i < 3; i++){
+            clients[i] = new CoapTestClient();
+            requests[i] =  new CoapRequest(MsgType.CON, Code.GET,
+                    new URI("coap://localhost:" + server.getServerPort() + "/service" + (i+1)));
+            requests[i].setResponseCallback(clients[i]);
+        }
     }
 
     @Override
     public void shutdownComponents() throws Exception {
-        //To change body of implemented methods use File | Settings | File Templates.
+        for(CoapTestClient client : clients)
+            client.shutdown();
+
+        server.shutdown();
     }
 
     @Override
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.reliability").setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.core.callback").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.callback").setLevel(Level.DEBUG);
     }
 
     @Override
     public void createTestScenario() throws Exception {
 
-
-
-        //Create 3 client applications and write seperate requests
-
-
+        for(int i = 0; i < 3; i++){
+            clients[i].writeCoapRequest(requests[i]);
+        }
 
         //await responses
         Thread.sleep(6000);

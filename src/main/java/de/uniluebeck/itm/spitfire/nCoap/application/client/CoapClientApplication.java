@@ -23,18 +23,28 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.callback.ResponseCallback;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
+import de.uniluebeck.itm.spitfire.nCoap.communication.callback.TokenFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.Channels;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * This is the abstract class to be extended by a CoAP client. By {@link #writeCoapRequest(CoapRequest)} it provides an
@@ -42,14 +52,149 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public abstract class CoapClientApplication implements ResponseCallback{
+public class CoapClientApplication extends SimpleChannelHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
+    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, ResponseCallback> responseCallbacks =
+            HashBasedTable.create();
+
     private DatagramChannel datagramChannel;
 
-    protected CoapClientApplication(){
+
+    public CoapClientApplication(){
         datagramChannel =  CoapClientDatagramChannelFactory.getChannel();
-        log.info("New CoAP client on port " + datagramChannel.getLocalAddress().getPort());
+        log.info("New CoAP client on port {}.", datagramChannel.getLocalAddress().getPort());
+    }
+
+
+    /**
+     * This method handles downstream message events. It adds a token to outgoing requests to enable the method
+     * <code>messageReceived</code> to relate incoming responses to requests.
+     *
+     * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
+     * {@link Channel}
+     * @param me The {@link MessageEvent} containing the {@link de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage}
+     */
+    @Override
+    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+
+        if(me.getMessage() instanceof CoapRequest){
+            log.debug("CoapRequest received on downstream");
+
+            CoapRequest coapRequest = (CoapRequest) me.getMessage();
+
+            if(coapRequest.getResponseCallback() != null){
+
+                coapRequest.setToken(TokenFactory.getNextToken());
+
+                addResponseCallback(coapRequest.getToken(), (InetSocketAddress) me.getRemoteAddress(),
+                        coapRequest.getResponseCallback());
+
+                log.info("New confirmable Request added (Remote Address: {}" + me.getRemoteAddress() +
+                        ", Token: " + Tools.toHexString(coapRequest.getToken()) + ")");
+
+                log.debug("Number of registered responseCallbacks: " + responseCallbacks.size());
+            }
+        }
+
+        ctx.sendDownstream(me);
+    }
+
+    private synchronized void addResponseCallback(byte[] token, InetSocketAddress remoteAddress,
+                                                  ResponseCallback responseCallback){
+        responseCallbacks.put(new ByteArrayWrapper(token), remoteAddress, responseCallback);
+    }
+
+//    private synchronized void removeResponseCallback(ResponseCallback responseCallback){
+//        Iterator<Table.Cell<ByteArrayWrapper, InetSocketAddress, ResponseCallback>> iterator =
+//                responseCallbacks.cellSet().iterator();
+//
+//        while(iterator.hasNext()){
+//            Table.Cell<ByteArrayWrapper, InetSocketAddress, ResponseCallback> cell = iterator.next();
+//            if(cell.getValue().equals(responseCallback)){
+//                iterator.remove();
+//            }
+//        }
+//    }
+
+    private synchronized ResponseCallback removeResponseCallback(byte[] token, InetSocketAddress remoteAddress){
+        return responseCallbacks.remove(new ByteArrayWrapper(token), remoteAddress);
+    }
+
+    /**
+     * This method relates incoming responses to open requests and invokes the method <code>reveiveCoapResponse</code>
+     * of the client that sent the response. CoaP clients thus should implement the {@link ResponseCallback} interface
+     * by extending the abstract class {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication}.
+     *
+     * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
+     * {@link org.jboss.netty.channel.Channel}
+     * @param me The {@link MessageEvent} containing the {@link de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage}
+     */
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
+
+        if(me.getMessage() instanceof EmptyAcknowledgementReceivedMessage){
+            EmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
+                    (EmptyAcknowledgementReceivedMessage) me.getMessage();
+
+            ResponseCallback callback =
+                    responseCallbacks.get(emptyAcknowledgementReceivedMessage.getToken(), me.getRemoteAddress());
+
+
+            callback.receiveEmptyACK();
+            me.getFuture().setSuccess();
+        }
+
+        if(me.getMessage() instanceof CoapResponse){
+            CoapResponse coapResponse = (CoapResponse) me.getMessage();
+
+            log.debug("Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
+                    ") is a response (Remote Address: " + me.getRemoteAddress() +
+                    ", Token: " + Tools.toHexString(coapResponse.getToken()));
+
+
+            ResponseCallback callback;
+
+            if(coapResponse.isUpdateNotification()){
+                callback = responseCallbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
+                        me.getRemoteAddress());
+            }
+            else{
+                callback = removeResponseCallback(coapResponse.getToken(), (InetSocketAddress) me.getRemoteAddress());
+            }
+
+            if(callback != null){
+                log.debug("Received response for request with token " + Tools.toHexString(coapResponse.getToken()));
+                callback.receiveResponse(coapResponse);
+            }
+            else{
+                log.debug("No callback found for request with token " + Tools.toHexString(coapResponse.getToken()));
+            }
+            me.getFuture().setSuccess();
+        }
+
+        else if(me.getMessage() instanceof RetransmissionTimeoutMessage){
+            RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
+
+            //Find proper callback
+            ResponseCallback callback =
+                    removeResponseCallback(timeoutMessage.getToken(), timeoutMessage.getRemoteAddress());
+
+            //Invoke method of callback instance
+            if(callback != null){
+                log.debug("Invoke retransmission timeout notification");
+                callback.handleRetransmissionTimeout(timeoutMessage);
+            }
+            else{
+                log.debug("No callback found for request with token {}.", Tools.toHexString(timeoutMessage.getToken()));
+            }
+
+            me.getFuture().setSuccess();
+        }
+        else{
+            ctx.sendUpstream(me);
+        }
     }
 
     /**
@@ -59,7 +204,7 @@ public abstract class CoapClientApplication implements ResponseCallback{
      *
      * @param coapRequest The {@link CoapRequest} object to be sent
      */
-    public final void writeCoapRequest(CoapRequest coapRequest){
+    public final void writeCoapRequest(CoapRequest coapRequest, ResponseCallback responseCallback){
 
         int targetPort = coapRequest.getTargetUri().getPort();
         if(targetPort == -1)
@@ -80,6 +225,8 @@ public abstract class CoapClientApplication implements ResponseCallback{
         });
     }
 
+
+
     public int getClientPort() {
         return datagramChannel.getLocalAddress().getPort();
     }
@@ -88,7 +235,7 @@ public abstract class CoapClientApplication implements ResponseCallback{
      * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
      */
-    public void shutdown(){
+    public final void shutdown(){
         //Close the datagram datagramChannel (includes unbind)
         ChannelFuture future = datagramChannel.close();
 
@@ -98,6 +245,9 @@ public abstract class CoapClientApplication implements ResponseCallback{
             public void operationComplete(ChannelFuture future) throws Exception {
                 DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
                 log.info("Client channel closed (port: " + closedChannel.getLocalAddress().getPort() + ").");
+
+                //datagramChannel.getFactory().releaseExternalResources();
+                //log.info("External resources released. Shutdown completed.");
             }
         });
 

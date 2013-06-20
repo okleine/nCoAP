@@ -24,7 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransferHandler;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.callback.ResponseCallbackHandler;
+import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;

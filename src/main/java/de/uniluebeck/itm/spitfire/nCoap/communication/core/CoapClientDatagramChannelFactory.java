@@ -50,20 +50,14 @@ public class CoapClientDatagramChannelFactory {
 
     private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
 
-    private static DatagramChannel datagramChannel = null;
-
-    public static DatagramChannel getChannel(){
-
-        if(datagramChannel != null){
-            return datagramChannel;
-        }
+    public synchronized static DatagramChannel getChannel(){
 
         ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
 
-        datagramChannel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+        DatagramChannel datagramChannel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
 
         FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
         datagramChannel.getConfig().setReceiveBufferSizePredictor(predictor);

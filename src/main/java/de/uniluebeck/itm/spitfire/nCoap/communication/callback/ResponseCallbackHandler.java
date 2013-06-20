@@ -21,24 +21,22 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uniluebeck.itm.spitfire.nCoap.communication.core.callback;
+package de.uniluebeck.itm.spitfire.nCoap.communication.callback;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.invoke.empty.Empty;
 
 import java.net.InetSocketAddress;
+import java.util.Iterator;
 
 /**
  * @author Oliver Kleine
@@ -47,7 +45,8 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, ResponseCallback> callbacks = HashBasedTable.create();
+    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, ResponseCallback> responseCallbacks =
+            HashBasedTable.create();
 
     /**
      * This method handles downstream message events. It adds a token to outgoing requests to enable the method
@@ -69,17 +68,38 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
 
                 coapRequest.setToken(TokenFactory.getNextToken());
 
-                callbacks.put(new ByteArrayWrapper(coapRequest.getToken()),
-                        (InetSocketAddress) me.getRemoteAddress(),
+                addResponseCallback(coapRequest.getToken(), (InetSocketAddress) me.getRemoteAddress(),
                         coapRequest.getResponseCallback());
 
-                log.info("New confirmable Request added (Remote Address: " + me.getRemoteAddress() +
+                log.info("New confirmable Request added (Remote Address: {}" + me.getRemoteAddress() +
                         ", Token: " + Tools.toHexString(coapRequest.getToken()) + ")");
 
-                log.debug("Number of registered callbacks: " + callbacks.size());
+                log.debug("Number of registered responseCallbacks: " + responseCallbacks.size());
             }
         }
+
         ctx.sendDownstream(me);
+    }
+
+    private synchronized void addResponseCallback(byte[] token, InetSocketAddress remoteAddress,
+                                                  ResponseCallback responseCallback){
+        responseCallbacks.put(new ByteArrayWrapper(token), remoteAddress, responseCallback);
+    }
+
+    private synchronized void removeResponseCallback(ResponseCallback responseCallback){
+        Iterator<Table.Cell<ByteArrayWrapper, InetSocketAddress, ResponseCallback>> iterator =
+                responseCallbacks.cellSet().iterator();
+
+        while(iterator.hasNext()){
+            Table.Cell<ByteArrayWrapper, InetSocketAddress, ResponseCallback> cell = iterator.next();
+            if(cell.getValue().equals(responseCallback)){
+                iterator.remove();
+            }
+        }
+    }
+
+    private synchronized ResponseCallback removeResponseCallback(byte[] token, InetSocketAddress remoteAddress){
+        return responseCallbacks.remove(new ByteArrayWrapper(token), remoteAddress);
     }
 
     /**
@@ -99,7 +119,7 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
                     (EmptyAcknowledgementReceivedMessage) me.getMessage();
 
             ResponseCallback callback =
-                    callbacks.get(emptyAcknowledgementReceivedMessage.getToken(), me.getRemoteAddress());
+                    responseCallbacks.get(emptyAcknowledgementReceivedMessage.getToken(), me.getRemoteAddress());
 
 
             callback.receiveEmptyACK();
@@ -117,12 +137,11 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             ResponseCallback callback;
 
             if(coapResponse.isUpdateNotification()){
-                callback = callbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
+                callback = responseCallbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
                         me.getRemoteAddress());
             }
             else{
-                callback = callbacks.remove(new ByteArrayWrapper(coapResponse.getToken()),
-                                                         me.getRemoteAddress());
+                callback = removeResponseCallback(coapResponse.getToken(), (InetSocketAddress) me.getRemoteAddress());
             }
 
             if(callback != null){
@@ -134,30 +153,22 @@ public class ResponseCallbackHandler extends SimpleChannelHandler {
             }
             me.getFuture().setSuccess();
         }
-//        else if (me.getMessage() instanceof EmptyAcknowledgementReceivedMessage){
-//
-//            ByteArrayWrapper token = ((EmptyAcknowledgementReceivedMessage) me.getMessage()).getToken();
-//
-//            ResponseCallback callback = callbacks.get(token, me.getRemoteAddress());
-//
-//            if(callback != null){
-//                log.debug("Received empty acknowledgement for request with token " + token.toString());
-//                callback.receiveEmptyACK();
-//            }
-//            me.getFuture().setSuccess();
-//        }
 
         else if(me.getMessage() instanceof RetransmissionTimeoutMessage){
             RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
-            ByteArrayWrapper token = new ByteArrayWrapper(timeoutMessage.getToken());
-            InetSocketAddress remoteAddress = (timeoutMessage.getRemoteAddress());
 
             //Find proper callback
-            ResponseCallback callback = callbacks.get(token, remoteAddress);
+            ResponseCallback callback =
+                    removeResponseCallback(timeoutMessage.getToken(), timeoutMessage.getRemoteAddress());
 
             //Invoke method of callback instance
-            log.debug("Invoke retransmission timeout notification");
-            callback.handleRetransmissionTimeout(timeoutMessage);
+            if(callback != null){
+                log.debug("Invoke retransmission timeout notification");
+                callback.handleRetransmissionTimeout(timeoutMessage);
+            }
+            else{
+                log.debug("No callback found for request with token {}.", Tools.toHexString(timeoutMessage.getToken()));
+            }
 
             me.getFuture().setSuccess();
         }
