@@ -4,13 +4,11 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableTestWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver.CoapTestEndpoint;
+import de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 /**
  * Created with IntelliJ IDEA.
@@ -27,13 +25,10 @@ public abstract class AbstractCoapCommunicationTest {
     protected static String NOT_OBSERVABLE_SERVICE_PATH = "/not/observable";
     protected static String NOT_OBSERVABLE_RESOURCE_CONTENT = "testpayload";
 
-    protected static CoapTestClient testClient;
-    protected static CoapTestServer testServer;
-    protected static CoapTestEndpoint testEndpoint;
 
-    private static boolean loggingInitialized = false;
-    private static boolean componentsInitialized = false;
-    private static boolean scenarioCreated = false;
+    private static boolean isLoggingConfigured = false;
+    private static boolean areComponentsSetup = false;
+    private static boolean isTestScenarioCreated = false;
 
 
     /**
@@ -41,49 +36,62 @@ public abstract class AbstractCoapCommunicationTest {
      */
     public abstract void createTestScenario() throws Exception;
 
+    /**
+     * This method is to instanciate all necessary instances of {@link CoapTestClient}, {@link CoapTestServer} and
+     * {@link CoapTestEndpoint}.
+     *
+     * Additionally all necessary instances {@link NotObservableTestWebService} and
+     * {@link ObservableTestWebService} are supposed to be created and registered at the {@link CoapTestServer}
+     * instance(s)
+     *
+     * @throws Exception
+     */
+    public abstract void setupComponents() throws Exception;
+
+    /**
+     * This method is to shutdown all existing instances of {@link CoapTestClient}, {@link CoapTestServer} and
+     * {@link CoapTestEndpoint}.
+     *
+     * @throws Exception
+     */
+    public abstract void shutdownComponents() throws Exception;
+
+    /**
+     * If the extending test class is supposed to use any other logging level then {@link Level#ERROR} for everything
+     * then this can be configured by overriding this method
+     *
+     * @throws Exception
+     */
+    public abstract void setupLogging() throws Exception;
+
+
     public AbstractCoapCommunicationTest(){
-        if(!scenarioCreated){
-            try {
-                log.error("******* Starting tests in " + this.getClass().getName() + " **********");
-                createTestScenario();
-                log.error("******* Test scenario finished: " + this.getClass().getName() + " **********");
-                scenarioCreated = true;
-            } catch (Exception e) {
-                throw new RuntimeException("Could not create test scenario. ", e);
+        try {
+            if(!isLoggingConfigured){
+                log.info("Start: " + this.getClass().getName());
+                initializeLogging();
+                setupLogging();
+                isLoggingConfigured = true;
             }
+
+            if(!areComponentsSetup){
+                setupComponents();
+                areComponentsSetup = true;
+            }
+
+            if(!isTestScenarioCreated){
+                createTestScenario();
+                isTestScenarioCreated = true;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Could not create test scenario. ", e);
         }
-    }
-
-    @BeforeClass
-    public static void setupComponents() throws Exception {
-        initializeLogging();
-        initializeComponents();
-        testEndpoint.getReceivedMessages().clear();
-    }
-
-    @AfterClass
-    public static void shutDownComponents(){
-        log.error("******* shutDownComponents() *******");
-        testServer.shutdown();
-        testClient.shutdown();
-        testEndpoint.shutdown();
-        componentsInitialized = false;
-        scenarioCreated = false;
-        log.error("******* Components shut down! *******");
 
     }
 
-    private static void initializeComponents(){
-        if(!componentsInitialized){
-            testClient = new CoapTestClient();
-            testServer = new CoapTestServer(0);
-            testEndpoint = new CoapTestEndpoint();
-            componentsInitialized = true;
-        }
-    }
 
     public static void initializeLogging(){
-        if(!loggingInitialized){
+        if(!isLoggingConfigured){
             //Output pattern
             String pattern = "%-23d{yyyy-MM-dd HH:mm:ss,SSS} | %-32.32t | %-35.35c{1} | %-5p | %m%n";
             PatternLayout patternLayout = new PatternLayout(pattern);
@@ -93,29 +101,7 @@ public abstract class AbstractCoapCommunicationTest {
             Logger.getRootLogger().addAppender(consoleAppender);
 
             //Define loglevel
-            Logger.getRootLogger().setLevel(Level.DEBUG);
-
-            loggingInitialized = true;
+            Logger.getRootLogger().setLevel(Level.ERROR);
         }
     }
-
-    public void registerObservableTestService(long artificialDelay, long updateInterval){
-        testServer.registerService(new ObservableTestWebService(OBSERVABLE_SERVICE_PATH, 0,
-                artificialDelay, updateInterval));
-    }
-
-    public void registerObservableTestService(ObservableTestWebService observableTestWebService) {
-        testServer.registerService(observableTestWebService);
-    }
-
-    /**
-     * @param artificialDelay defines the delay for response in milliseconds, e.g. to test seperate
-     *                        responses
-     */
-    public void registerNotObservableTestService(long artificialDelay){
-        testServer.registerService(new NotObservableTestWebService(NOT_OBSERVABLE_SERVICE_PATH,
-                NOT_OBSERVABLE_RESOURCE_CONTENT, artificialDelay));
-    }
-    
-
 }

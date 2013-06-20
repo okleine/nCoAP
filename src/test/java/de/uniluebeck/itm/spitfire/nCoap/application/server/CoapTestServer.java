@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
+package de.uniluebeck.itm.spitfire.nCoap.application.server;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;

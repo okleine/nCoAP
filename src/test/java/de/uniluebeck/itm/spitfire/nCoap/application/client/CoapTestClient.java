@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
+package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;

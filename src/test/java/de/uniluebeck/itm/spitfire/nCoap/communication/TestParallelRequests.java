@@ -1,8 +1,9 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableTestWebService;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapTestClient;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapTestServer;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.NotObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -14,6 +15,8 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -27,37 +30,18 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
-    private static CoapTestClient[] clients = new CoapTestClient[3];
-
-    @BeforeClass
-    public static void logging(){
-        Logger.getRootLogger().setLevel(Level.ERROR);
-
-        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.reliability").setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.core.callback").setLevel(Level.DEBUG);
-    }
+    private static Map<CoapTestClient, CoapRequest> clients = new HashMap<CoapTestClient, CoapRequest>();
+    private static CoapTestServer server;
 
     @Override
-    public void createTestScenario() throws Exception {
+    public void setupComponents() throws Exception {
 
-        //Add 3 different webservices to server
-        NotObservableTestWebService webService1 =
-                new NotObservableTestWebService("/service1", "Status of Webservice 1", 3000);
-        testServer.registerService(webService1);
+        server = new CoapTestServer(0);
 
-        NotObservableTestWebService webService2 =
-                new NotObservableTestWebService("/service2", "Status of Webservice 2", 4000);
-        testServer.registerService(webService2);
 
-        NotObservableTestWebService webService3 =
-                new NotObservableTestWebService("/service3", "Status of Webservice 3", 5000);
-        testServer.registerService(webService3);
-
-        //Create 3 client applications and write seperate requests
-
-        clients[0] = new CoapTestClient();
-        CoapRequest request1 = new CoapRequest(MsgType.CON, Code.GET,
-                new URI("coap://localhost:" + testServer.getServerPort() + "/service1"));
+        clients.put(new CoapTestClient(),
+                    new CoapRequest(MsgType.CON, Code.GET,
+                            new URI("coap://localhost:" + testServer.getServerPort() + "/service1"));
         request1.setResponseCallback(clients[0]);
         clients[0].writeCoapRequest(request1);
 
@@ -74,9 +58,45 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         request3.setResponseCallback(clients[2]);
         clients[2].writeCoapRequest(request3);
 
+        //Add 3 different webservices to server
+        NotObservableTestWebService webService1 =
+                new NotObservableTestWebService("/service1", "Status of Webservice 1", 3000);
+        testServer.registerService(webService1);
+
+        NotObservableTestWebService webService2 =
+                new NotObservableTestWebService("/service2", "Status of Webservice 2", 4000);
+        testServer.registerService(webService2);
+
+        NotObservableTestWebService webService3 =
+                new NotObservableTestWebService("/service3", "Status of Webservice 3", 5000);
+        testServer.registerService(webService3);
+    }
+
+    @Override
+    public void shutdownComponents() throws Exception {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void setupLogging() throws Exception {
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.reliability").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.core.callback").setLevel(Level.DEBUG);
+    }
+
+    @Override
+    public void createTestScenario() throws Exception {
+
+
+
+        //Create 3 client applications and write seperate requests
+
+
+
         //await responses
         Thread.sleep(6000);
     }
+
+
 
     @Test
     public void testAllClientsReceivedACKandCONResponse(){

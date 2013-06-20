@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.utils.receiver;
+package de.uniluebeck.itm.spitfire.nCoap.application.endpoint;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;

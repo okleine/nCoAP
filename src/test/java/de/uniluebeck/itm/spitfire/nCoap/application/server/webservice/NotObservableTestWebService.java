@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.spitfire.nCoap.communication.utils;
+package de.uniluebeck.itm.spitfire.nCoap.application.server.webservice;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.NotObservableWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;

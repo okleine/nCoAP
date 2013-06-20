@@ -1,9 +1,12 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
+import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapTestClient;
+import de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -27,6 +30,30 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
 
     private static long timeRequestSent;
     private static CoapRequest coapRequest;
+
+    private static CoapTestClient testClient;
+    private static CoapTestEndpoint testEndpoint;
+
+    @Override
+    public void setupComponents() throws Exception {
+        testClient = new CoapTestClient();
+        testEndpoint = new CoapTestEndpoint();
+
+        URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
+        coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri, testClient);
+    }
+
+    @Override
+    public void shutdownComponents() throws Exception {
+        testClient.shutdown();
+        testEndpoint.shutdown();
+    }
+
+    @Override
+    public void setupLogging() throws Exception {
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.reliability").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application").setLevel(Level.DEBUG);
+    }
 
     /**
      * Retransmission intervals (RC = Retransmission Counter):
@@ -59,8 +86,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
         */
 
 
-        URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
-        coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri, testClient);
+
 
         //Send request
         timeRequestSent = System.currentTimeMillis();
@@ -75,6 +101,8 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
         //Wait another 50 sec. to let the last retransmission time out before test methods start
         Thread.sleep(10000);
     }
+
+
 
     @Test
     public void testNumberOfRequests(){
