@@ -48,26 +48,25 @@ public class CoapClientDatagramChannelFactory {
     public static final int RECEIVE_BUFFER_SIZE = 65536;
     private static final int NO_OF_THREADS = 10;
 
-    private static ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
+    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
 
-    public synchronized static DatagramChannel getChannel(){
+    private DatagramChannel datagramChannel = null;
 
+    public CoapClientDatagramChannelFactory(){
         ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
 
-        DatagramChannel datagramChannel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+        datagramChannel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
 
         FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
         datagramChannel.getConfig().setReceiveBufferSizePredictor(predictor);
 
-        log.info("New client datagram channel created for port {}", datagramChannel.getLocalAddress().getPort());
-
-        return datagramChannel;
+        log.info("New client datagram datagramChannel created for port {}", datagramChannel.getLocalAddress().getPort());
     }
 
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
-       log.info("Exception while processing I/O task.", e.getCause());
+    public DatagramChannel getDatagramChannel(){
+        return this.datagramChannel;
     }
 }

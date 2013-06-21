@@ -24,10 +24,10 @@
 package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.communication.callback.TokenFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -41,13 +41,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * This is the abstract class to be extended by a CoAP client. By {@link #writeCoapRequest(CoapRequest)} it provides an
+ * This is the abstract class to be extended by a CoAP client. By
+ * {@link #writeCoapRequest(CoapRequest, ResponseCallback)} it provides an
  * easy-to-use method to write CoAP requests to a server.
  *
  * @author Oliver Kleine
@@ -61,16 +60,14 @@ public class CoapClientApplication extends SimpleChannelHandler {
 
     private DatagramChannel datagramChannel;
 
-
     public CoapClientApplication(){
-        datagramChannel =  CoapClientDatagramChannelFactory.getChannel();
+        datagramChannel =  new CoapClientDatagramChannelFactory().getDatagramChannel();
         log.info("New CoAP client on port {}.", datagramChannel.getLocalAddress().getPort());
     }
 
-
     /**
-     * This method handles downstream message events. It adds a token to outgoing requests to enable the method
-     * <code>messageReceived</code> to relate incoming responses to requests.
+     * This method is automatically invoked by the framework to handle downstream message events. It adds a token to
+     * outgoing requests to enable relating incoming responses to requests.
      *
      * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
      * {@link Channel}
@@ -79,7 +76,11 @@ public class CoapClientApplication extends SimpleChannelHandler {
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        if(me.getMessage() instanceof CoapRequest){
+        if(me.getMessage() instanceof Map){
+
+            Map message = (Map) me.getMessage();
+
+            message.get()
             log.debug("CoapRequest received on downstream");
 
             CoapRequest coapRequest = (CoapRequest) me.getMessage();
@@ -106,17 +107,6 @@ public class CoapClientApplication extends SimpleChannelHandler {
         responseCallbacks.put(new ByteArrayWrapper(token), remoteAddress, responseCallback);
     }
 
-//    private synchronized void removeResponseCallback(ResponseCallback responseCallback){
-//        Iterator<Table.Cell<ByteArrayWrapper, InetSocketAddress, ResponseCallback>> iterator =
-//                responseCallbacks.cellSet().iterator();
-//
-//        while(iterator.hasNext()){
-//            Table.Cell<ByteArrayWrapper, InetSocketAddress, ResponseCallback> cell = iterator.next();
-//            if(cell.getValue().equals(responseCallback)){
-//                iterator.remove();
-//            }
-//        }
-//    }
 
     private synchronized ResponseCallback removeResponseCallback(byte[] token, InetSocketAddress remoteAddress){
         return responseCallbacks.remove(new ByteArrayWrapper(token), remoteAddress);
@@ -146,7 +136,7 @@ public class CoapClientApplication extends SimpleChannelHandler {
             me.getFuture().setSuccess();
         }
 
-        if(me.getMessage() instanceof CoapResponse){
+        else if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             log.debug("Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
@@ -192,8 +182,10 @@ public class CoapClientApplication extends SimpleChannelHandler {
 
             me.getFuture().setSuccess();
         }
+
         else{
-            ctx.sendUpstream(me);
+            me.getFuture().setFailure(new RuntimeException("Could not deal with message"
+                    + me.getMessage().getClass().getName()));
         }
     }
 
@@ -214,7 +206,10 @@ public class CoapClientApplication extends SimpleChannelHandler {
         final InetSocketAddress rcptSocketAddress = new InetSocketAddress(coapRequest.getTargetUri().getHost(),
                 targetPort);
 
-        ChannelFuture future = Channels.write(datagramChannel, coapRequest, rcptSocketAddress);
+        Map<CoapRequest, ResponseCallback> message = new HashMap<CoapRequest, ResponseCallback>();
+        message.put(coapRequest, responseCallback);
+
+        ChannelFuture future = Channels.write(datagramChannel, message, rcptSocketAddress);
 
         future.addListener(new ChannelFutureListener() {
             @Override
