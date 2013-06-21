@@ -35,6 +35,8 @@ import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -43,13 +45,13 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
-//    public static final int NUMBER_OF_EXECUTION_THREADS = 50;
+    public static final int NUMBER_OF_EXECUTION_THREADS = 50;
 
     private CoapMessageEncoder encoder = new CoapMessageEncoder();
     private CoapMessageDecoder decoder = new CoapMessageDecoder();
 
-//    private ExecutionHandler executionHandler =
-//            new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(NUMBER_OF_EXECUTION_THREADS, 0, 0));
+    private ExecutionHandler executionHandler =
+            new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(NUMBER_OF_EXECUTION_THREADS, 0, 0));
 
     private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
     private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
@@ -67,7 +69,7 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
         this.observableResourceHandler = new ObservableResourceHandler(executorService);
 
-        MessageIDFactory.setExecutorService(executorService);
+        //MessageIDFactory.setExecutorService(executorService);
     }
 
 
@@ -82,6 +84,7 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         //pipeline.addLast("BlockwiseTransferHander", blockwiseTransferHandler);
         //pipeline.addLast("ExecutionHandler", executionHandler);
         pipeline.addLast("ObservableResourceHandler", observableResourceHandler);
+        //pipeline.addLast("Execution Handler", executionHandler);
         pipeline.addLast("ServerApplication", serverApp);
         
         return pipeline;

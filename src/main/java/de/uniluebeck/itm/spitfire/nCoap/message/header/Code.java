@@ -231,11 +231,26 @@ public enum Code {
     }
 
     /**
-     * This method indicates wheter the message code refers to a request or a response
-     * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
+     * This method indicates wheter the message code refers to a request.
+     *
+     * <b>Note:</b> Messages of Code {@link Code#EMPTY} are considered neither a response nor a request
+     *
+     * @return <code>true</code> in case of a request code, <code>false</code> otherwise.
+     *
      */
     public boolean isRequest(){
         return (number < 5 && number > 0);
+    }
+
+    /**
+     * This method indicates wheter the message code refers to a response.
+     *
+     * <b>Note:</b> Messages of Code {@link Code#EMPTY} are considered neither a response nor a request.
+     *
+     * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
+     */
+    public boolean isResponse(){
+        return number >= 5;
     }
 
     /**

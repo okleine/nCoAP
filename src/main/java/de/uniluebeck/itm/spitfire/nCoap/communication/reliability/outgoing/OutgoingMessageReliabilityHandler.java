@@ -31,7 +31,6 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +62,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     /**
      * The approximate number of milliseconds between the last retransmission attempt for outgoing {@link CoapMessage}s
      * with {@link MsgType#CON} and a timeout notification, i.e. invokation of
-     * {@link RetransmissionTimeoutHandler#handleRetransmissionTimeout(RetransmissionTimeoutMessage)}.
+     * {@link RetransmissionTimeoutProcessor#processRetransmissionTimeout(RetransmissionTimeoutMessage)}.
      */
     public static final int TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION = 5000;
 
@@ -78,9 +77,12 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     //Contains running observations (message ID, observer address, observed service path)
     private HashBasedTable<Integer, InetSocketAddress, String> observations = HashBasedTable.create();
 
+    private MessageIDFactory messageIDFactory;
+
     public OutgoingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
-        MessageIDFactory.registerObserver(this);
+        messageIDFactory = new MessageIDFactory(executorService);
+        messageIDFactory.registerObserver(this);
     }
 
     /**
@@ -93,7 +95,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        log.info("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
+        log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendDownstream(me);
@@ -105,7 +107,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         //Set message ID
         if(coapMessage.getMessageID() == Header.MESSAGE_ID_UNDEFINED){
             try {
-                coapMessage.setMessageID(MessageIDFactory.nextMessageID());
+                coapMessage.setMessageID(messageIDFactory.nextMessageID());
             } catch (InvalidHeaderException e) {
                 log.error("This should never happen.", e);
             }
@@ -266,6 +268,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                 retransmissionSchedule.stopScheduledTasks();
                 if(coapMessage.getCode() == Code.EMPTY){
                     if(coapMessage.getMessageType() == MsgType.ACK){
+
+                        log.info("Empty ACK received for message ID " + coapMessage.getMessageID());
 
                         EmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
                                 new EmptyAcknowledgementReceivedMessage(retransmissionSchedule.getToken());

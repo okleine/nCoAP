@@ -24,15 +24,16 @@
 package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.TokenFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapException;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.jboss.netty.channel.*;
@@ -41,80 +42,56 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * This is the abstract class to be extended by a CoAP client. By
- * {@link #writeCoapRequest(CoapRequest, ResponseCallback)} it provides an
+ * {@link #writeCoapRequest(CoapRequest, CoapResponseProcessor)} it provides an
  * easy-to-use method to write CoAP requests to a server.
  *
  * @author Oliver Kleine
  */
-public class CoapClientApplication extends SimpleChannelHandler {
+public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, ResponseCallback> responseCallbacks =
+    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, CoapResponseProcessor> responseCallbacks =
             HashBasedTable.create();
 
     private DatagramChannel datagramChannel;
 
+    private ScheduledExecutorService executorService;
+
     public CoapClientApplication(){
-        datagramChannel =  new CoapClientDatagramChannelFactory().getDatagramChannel();
+        CoapClientDatagramChannelFactory factory = new CoapClientDatagramChannelFactory();
+
+        datagramChannel = factory.getDatagramChannel();
+        datagramChannel.getPipeline().addLast("Client application", this);
+
+        executorService = factory.getExecutorService();
+
         log.info("New CoAP client on port {}.", datagramChannel.getLocalAddress().getPort());
+
     }
 
-    /**
-     * This method is automatically invoked by the framework to handle downstream message events. It adds a token to
-     * outgoing requests to enable relating incoming responses to requests.
-     *
-     * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
-     * {@link Channel}
-     * @param me The {@link MessageEvent} containing the {@link de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage}
-     */
-    @Override
-    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
-
-        if(me.getMessage() instanceof Map){
-
-            Map message = (Map) me.getMessage();
-
-            message.get()
-            log.debug("CoapRequest received on downstream");
-
-            CoapRequest coapRequest = (CoapRequest) me.getMessage();
-
-            if(coapRequest.getResponseCallback() != null){
-
-                coapRequest.setToken(TokenFactory.getNextToken());
-
-                addResponseCallback(coapRequest.getToken(), (InetSocketAddress) me.getRemoteAddress(),
-                        coapRequest.getResponseCallback());
-
-                log.info("New confirmable Request added (Remote Address: {}" + me.getRemoteAddress() +
-                        ", Token: " + Tools.toHexString(coapRequest.getToken()) + ")");
-
-                log.debug("Number of registered responseCallbacks: " + responseCallbacks.size());
-            }
-        }
-
-        ctx.sendDownstream(me);
-    }
 
     private synchronized void addResponseCallback(byte[] token, InetSocketAddress remoteAddress,
-                                                  ResponseCallback responseCallback){
-        responseCallbacks.put(new ByteArrayWrapper(token), remoteAddress, responseCallback);
+                                                  CoapResponseProcessor coapResponseProcessor){
+        responseCallbacks.put(new ByteArrayWrapper(token), remoteAddress, coapResponseProcessor);
+        log.debug("Number of clients waiting for response: {}. ", responseCallbacks.size());
     }
 
 
-    private synchronized ResponseCallback removeResponseCallback(byte[] token, InetSocketAddress remoteAddress){
-        return responseCallbacks.remove(new ByteArrayWrapper(token), remoteAddress);
+    private synchronized CoapResponseProcessor removeResponseCallback(byte[] token, InetSocketAddress remoteAddress){
+        CoapResponseProcessor result = responseCallbacks.remove(new ByteArrayWrapper(token), remoteAddress);
+        log.debug("Number of clients waiting for response: {}. ", responseCallbacks.size());
+        return result;
     }
 
     /**
      * This method relates incoming responses to open requests and invokes the method <code>reveiveCoapResponse</code>
-     * of the client that sent the response. CoaP clients thus should implement the {@link ResponseCallback} interface
+     * of the client that sent the response. CoaP clients thus should implement the {@link CoapResponseProcessor} interface
      * by extending the abstract class {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication}.
      *
      * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
@@ -125,18 +102,35 @@ public class CoapClientApplication extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
 
         if(me.getMessage() instanceof EmptyAcknowledgementReceivedMessage){
-            EmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
+            EmptyAcknowledgementReceivedMessage message =
                     (EmptyAcknowledgementReceivedMessage) me.getMessage();
 
-            ResponseCallback callback =
-                    responseCallbacks.get(emptyAcknowledgementReceivedMessage.getToken(), me.getRemoteAddress());
+            CoapResponseProcessor callback =
+                    responseCallbacks.get(message.getToken(), me.getRemoteAddress());
 
+            if(callback != null && callback instanceof EmptyAcknowledgementProcessor)
+                ((EmptyAcknowledgementProcessor) callback).processEmptyAcknowledgement(message);
 
-            callback.receiveEmptyACK();
             me.getFuture().setSuccess();
+            return;
         }
 
-        else if(me.getMessage() instanceof CoapResponse){
+        if(me.getMessage() instanceof RetransmissionTimeoutMessage){
+            RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
+
+            //Find proper callback
+            CoapResponseProcessor callback =
+                    removeResponseCallback(timeoutMessage.getToken(), timeoutMessage.getRemoteAddress());
+
+            //Invoke method of callback instance
+            if(callback != null && callback instanceof RetransmissionTimeoutProcessor)
+                ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout(timeoutMessage);
+
+            me.getFuture().setSuccess();
+            return;
+        }
+
+        if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             log.debug("Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
@@ -144,83 +138,77 @@ public class CoapClientApplication extends SimpleChannelHandler {
                     ", Token: " + Tools.toHexString(coapResponse.getToken()));
 
 
-            ResponseCallback callback;
+            CoapResponseProcessor callback;
 
-            if(coapResponse.isUpdateNotification()){
-                callback = responseCallbacks.get(new ByteArrayWrapper(coapResponse.getToken()),
-                        me.getRemoteAddress());
-            }
-            else{
+            if(coapResponse.isUpdateNotification())
+                callback = responseCallbacks.get(new ByteArrayWrapper(coapResponse.getToken()), me.getRemoteAddress());
+            else
                 callback = removeResponseCallback(coapResponse.getToken(), (InetSocketAddress) me.getRemoteAddress());
-            }
 
             if(callback != null){
-                log.debug("Received response for request with token " + Tools.toHexString(coapResponse.getToken()));
-                callback.receiveResponse(coapResponse);
+                log.debug("Received response with token " + Tools.toHexString(coapResponse.getToken()));
+                callback.processCoapResponse(coapResponse);
             }
             else{
-                log.debug("No callback found for request with token " + Tools.toHexString(coapResponse.getToken()));
-            }
-            me.getFuture().setSuccess();
-        }
-
-        else if(me.getMessage() instanceof RetransmissionTimeoutMessage){
-            RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
-
-            //Find proper callback
-            ResponseCallback callback =
-                    removeResponseCallback(timeoutMessage.getToken(), timeoutMessage.getRemoteAddress());
-
-            //Invoke method of callback instance
-            if(callback != null){
-                log.debug("Invoke retransmission timeout notification");
-                callback.handleRetransmissionTimeout(timeoutMessage);
-            }
-            else{
-                log.debug("No callback found for request with token {}.", Tools.toHexString(timeoutMessage.getToken()));
+                log.debug("No callback found for token " + Tools.toHexString(coapResponse.getToken()));
             }
 
             me.getFuture().setSuccess();
         }
+
 
         else{
-            me.getFuture().setFailure(new RuntimeException("Could not deal with message"
+            me.getFuture().setFailure(new RuntimeException("Could not deal with message "
                     + me.getMessage().getClass().getName()));
         }
     }
 
     /**
-     * This method is supposed be used by the extending client implementation to send a CoAP request to a remote
+     * This method is to send a CoAP request to a remote
      * recipient. All necessary information to send the message (like the recipient IP address or port) is
-     * automatically extracted from the given {@link CoapRequest} object.
+     * automatically extracted from the given {@link CoapRequest} instance.
      *
      * @param coapRequest The {@link CoapRequest} object to be sent
+     * @param coapResponseProcessor The {@link CoapResponseProcessor} instance to handle responses and status information
      */
-    public final void writeCoapRequest(CoapRequest coapRequest, ResponseCallback responseCallback){
+    public void writeCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor)
+            throws ToManyOptionsException, InvalidOptionException {
 
-        int targetPort = coapRequest.getTargetUri().getPort();
-        if(targetPort == -1)
-            targetPort = OptionRegistry.COAP_PORT_DEFAULT;
+        executorService.submit(new Runnable(){
 
-
-        final InetSocketAddress rcptSocketAddress = new InetSocketAddress(coapRequest.getTargetUri().getHost(),
-                targetPort);
-
-        Map<CoapRequest, ResponseCallback> message = new HashMap<CoapRequest, ResponseCallback>();
-        message.put(coapRequest, responseCallback);
-
-        ChannelFuture future = Channels.write(datagramChannel, message, rcptSocketAddress);
-
-        future.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("CoAP Request sent to {}:{}", rcptSocketAddress.getAddress().getHostAddress(),
-                        rcptSocketAddress.getPort());
+            public void run() {
+                try {
+                    coapRequest.setToken(TokenFactory.getNextToken());
+
+                    int targetPort = coapRequest.getTargetUri().getPort();
+                    if(targetPort == -1)
+                        targetPort = OptionRegistry.COAP_PORT_DEFAULT;
+
+
+                    final InetSocketAddress rcptSocketAddress =
+                            new InetSocketAddress(coapRequest.getTargetUri().getHost(), targetPort);
+
+                    addResponseCallback(coapRequest.getToken(), rcptSocketAddress, coapResponseProcessor);
+
+                    ChannelFuture future = Channels.write(datagramChannel, coapRequest, rcptSocketAddress);
+
+                    future.addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            log.info("Sent to to {}:{}: {}",
+                                    new Object[]{rcptSocketAddress.getAddress().getHostAddress(),
+                                    rcptSocketAddress.getPort(), coapRequest});
+                        }
+                    });
+
+                } catch (Exception e) {
+                    log.error("Exception while trying to send message.", e);
+                }
             }
         });
+
     }
-
-
 
     public int getClientPort() {
         return datagramChannel.getLocalAddress().getPort();

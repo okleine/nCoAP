@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Observable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -42,11 +43,18 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
         this.resourceStatus = initialStatus;
     }
 
+    /**
+     * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
+     * {@link de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication} instance (using {@link de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication#registerService(WebService)}.
+     * So, usually there is no need to set another {@link ScheduledExecutorService} instance manually.
+     *
+     * @param executorService a {@link ScheduledExecutorService} instance.
+     */
     @Override
-    public final void setExecutorService(ScheduledExecutorService executorService){
+    public void setExecutorService(ScheduledExecutorService executorService){
         this.executorService = executorService;
-        //scheduleMaxAgeNotifications();
     }
+
 
     @Override
     public ScheduledExecutorService getExecutorService(){

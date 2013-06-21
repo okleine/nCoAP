@@ -26,12 +26,13 @@ package de.uniluebeck.itm.spitfire.nCoap.application.server;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WebService;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.observe.InternalObservableResourceRegistrationMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutHandler;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -49,7 +50,9 @@ import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
@@ -63,13 +66,15 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Op
  * @author Oliver Kleine
  */
 public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
-        implements RetransmissionTimeoutHandler{
+        implements RetransmissionTimeoutProcessor {
 
     public static final int DEFAULT_COAP_SERVER_PORT = 5683;
+    //public static final int NUMBER_OF_THREADS_TO_HANDLE_REQUESTS = 1000;
 
     private static Logger log = LoggerFactory.getLogger(CoapServerApplication.class.getName());
 
     private DatagramChannel channel;
+
 
     //This map holds all registered webServices (key: URI path, value: WebService instance)
     private HashMap<String, WebService> registeredServices = new HashMap<String, WebService>();
@@ -81,31 +86,38 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on the given port
      * and already provides the default <code>.well-known/core</code> resource
      */
-    protected CoapServerApplication(int serverPort){
+    protected CoapServerApplication(int numberOfThreads, int serverPort){
         channel = CoapServerDatagramChannelFactory.createChannel(this, serverPort);
+
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP server #%d").build();
+        this.scheduledExecutorService =
+                Executors.newScheduledThreadPool(numberOfThreads, threadFactory);
+        this.executorService = MoreExecutors.listeningDecorator(scheduledExecutorService);
 
         log.info("New server created. Listening on port " + this.getServerPort() + ".");
         registerService(new WellKnownCoreResource(registeredServices));
     }
 
     /**
-     * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port 5683
-     * and already provides the default <code>.well-known/core</code> resource
+     * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port
+     * {@link #DEFAULT_COAP_SERVER_PORT} and already provides the default <code>.well-known/core</code> resource.
+     *
+     * @param numberOfThreads The number of threads to handle incoming requests in parallel
      */
-    protected CoapServerApplication(){
-        this(DEFAULT_COAP_SERVER_PORT);
+    protected CoapServerApplication(int numberOfThreads){
+        this(numberOfThreads, DEFAULT_COAP_SERVER_PORT);
     }
 
-    /**
-     * Set the {@link ScheduledExecutorService} instance to handle incoming requests in seperate threads. The
-     * nCoAP framework sets an executor service automatically so usually there is no need to set another one.
-     *
-     * @param executorService a {@link ScheduledExecutorService}
-     */
-    public void setExecutorService(ScheduledExecutorService executorService){
-        this.executorService = MoreExecutors.listeningDecorator(executorService);
-        this.scheduledExecutorService = executorService;
-    }
+//    /**
+//     * Set the {@link ScheduledExecutorService} instance to handle incoming requests in seperate threads. The
+//     * nCoAP framework sets an executor service automatically so usually there is no need to set another one.
+//     *
+//     * @param executorService a {@link ScheduledExecutorService}
+//     */
+//    public void setExecutorService(ScheduledExecutorService executorService){
+//        this.executorService = MoreExecutors.listeningDecorator(executorService);
+//        this.scheduledExecutorService = executorService;
+//    }
 
     /**
      * This method is called by the Netty framework whenever a new message is received to be processed by the server.
@@ -117,11 +129,11 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * @param me the {@link MessageEvent} containing the actual message
      */
     @Override
-    public final void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
+    public void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         log.info("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
         if(me.getMessage() instanceof RetransmissionTimeoutMessage){
-            handleRetransmissionTimeout((RetransmissionTimeoutMessage) me.getMessage());
+            processRetransmissionTimeout((RetransmissionTimeoutMessage) me.getMessage());
             return;
         }
 
@@ -134,7 +146,6 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
 
         final CoapRequest coapRequest = (CoapRequest) me.getMessage();
         final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
-
 
         //Look up web service instance to handle the request
         final WebService webService = registeredServices.get(coapRequest.getTargetUri().getPath());
@@ -194,6 +205,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                     coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);
                     try {
                         coapResponse.setMessageID(coapRequest.getMessageID());
+                        coapResponse.setToken(coapRequest.getToken());
                         coapResponse.setServicePath(webService.getPath());
                         StringWriter errors = new StringWriter();
                         ex.printStackTrace(new PrintWriter(errors));
@@ -207,6 +219,7 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
                 sendCoapResponse(coapResponse, remoteAddress);
             }
         }, executorService);
+
     }
 
     private void sendCoapResponse(final CoapResponse coapResponse, final InetSocketAddress remoteAddress){

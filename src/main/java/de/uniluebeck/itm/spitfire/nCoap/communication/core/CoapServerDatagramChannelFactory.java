@@ -33,11 +33,13 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -48,7 +50,7 @@ import java.util.concurrent.ThreadFactory;
 public abstract class CoapServerDatagramChannelFactory {
 
     private static Logger log = LoggerFactory.getLogger(CoapServerDatagramChannelFactory.class.getName());
-    private static final int NO_OF_THREADS = 10;
+    private static final int NO_OF_THREADS = 3;
 
     /**
      * Creates a new {@link DatagramChannel} instance associated with the given local server port. Upon creation the
@@ -62,10 +64,12 @@ public abstract class CoapServerDatagramChannelFactory {
     public static DatagramChannel createChannel(CoapServerApplication serverApp, int coapServerPort)
             throws ChannelException {
 
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP server #%d").build();
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS, (threadFactory));
+//        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP server #%d").build();
+//        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS, (threadFactory));
+//
+//        serverApp.setExecutorService(executorService);
 
-        serverApp.setExecutorService(executorService);
+        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
 
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(executorService);
@@ -79,7 +83,7 @@ public abstract class CoapServerDatagramChannelFactory {
 
         pipelineFactory.getObservableResourceHandler().setChannel(channel);
 
-        log.info("New server channel created for port " + channel.getLocalAddress().getPort());
+        log.info("New server channel created for port {}.", channel.getLocalAddress().getPort());
         return channel;
     }
 }

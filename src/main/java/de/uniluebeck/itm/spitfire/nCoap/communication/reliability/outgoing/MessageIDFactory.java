@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class MessageIDFactory extends Observable{
 
-    private static Logger log = LoggerFactory.getLogger(MessageIDFactory.class.getName());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     //public static int ALLOCATION_TIMEOUT = Configuration.getInstance().getInt("messageID.allocation.timeout", 120);
     public static int ALLOCATION_TIMEOUT = 120;
@@ -49,29 +49,16 @@ public class MessageIDFactory extends Observable{
     //Allocated message IDs
     private final Set<Integer> allocatedMessageIDs = Collections.synchronizedSet(new HashSet<Integer>());
 
-    int nextMessageID = 0;
+    private int nextMessageID = 0;
 
-    /**
-     * Returns the one and only instance of the message ID factory
-     * @return the one and only instance of the message ID factory
-     */
-    private static MessageIDFactory getInstance(){
-        return instance;
-    }
-
-    private MessageIDFactory(){}
-
-    private static MessageIDFactory instance = new MessageIDFactory();
-
-    public static void setExecutorService(ScheduledExecutorService executorService){
-        getInstance().executorService = executorService;
-    }
-
-    public static void registerObserver(Observer observer){
-        instance.addObserver(observer);
+    public MessageIDFactory(ScheduledExecutorService executorService){
+        this.executorService = executorService;
     }
 
 
+    public void registerObserver(Observer observer){
+        this.addObserver(observer);
+    }
 
     /**
      * Returns the next available message ID within range 1 to (2^16)-1 and allocates this message ID for
@@ -80,28 +67,28 @@ public class MessageIDFactory extends Observable{
      *
      * @return the next available message ID within range 1 to (2^16)-1
      */
-    public static int nextMessageID(){
-        instance.produceNextMessageID();
+    public synchronized int nextMessageID(){
+        produceNextMessageID();
 
-        final int messageID = instance.nextMessageID;
-        instance.executorService.schedule(new Runnable(){
+        final int messageID = nextMessageID;
+        executorService.schedule(new Runnable(){
 
             @Override
             public void run() {
-                if(instance.allocatedMessageIDs.remove(messageID))
+                if(allocatedMessageIDs.remove(messageID))
                     log.debug("Deallocated message ID " + messageID);
                 else
                     log.error("Message ID " + messageID + " could not be removed! This should never happen.");
 
-                instance.setChanged();
-                instance.notifyObservers(messageID);
+                setChanged();
+                notifyObservers(messageID);
             }
         }, ALLOCATION_TIMEOUT, TimeUnit.SECONDS);
 
         return messageID;
     }
 
-    private synchronized void produceNextMessageID(){
+    private void produceNextMessageID(){
         boolean created;
         do{
             nextMessageID = (nextMessageID + 1) & 0x0000FFF;

@@ -1,14 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestClient;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.CoapTestServer;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.NotObservableTestWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
+import org.apache.log4j.*;
+import org.junit.AfterClass;
 
 /**
  * Created with IntelliJ IDEA.
@@ -20,11 +14,6 @@ import org.apache.log4j.PatternLayout;
 public abstract class AbstractCoapCommunicationTest {
 
     protected static Logger log = Logger.getLogger(AbstractCoapCommunicationTest.class.getName());
-
-    protected static String OBSERVABLE_SERVICE_PATH = "/observable";
-    protected static String NOT_OBSERVABLE_SERVICE_PATH = "/not/observable";
-    protected static String NOT_OBSERVABLE_RESOURCE_CONTENT = "testpayload";
-
 
     private static boolean isLoggingConfigured = false;
     private static boolean areComponentsSetup = false;
@@ -64,17 +53,16 @@ public abstract class AbstractCoapCommunicationTest {
      */
     public abstract void setupLogging() throws Exception;
 
-
     public AbstractCoapCommunicationTest(){
         try {
             if(!isLoggingConfigured){
-                log.info("Start: " + this.getClass().getName());
                 initializeLogging();
                 setupLogging();
                 isLoggingConfigured = true;
             }
 
             if(!areComponentsSetup){
+                log.info("Start: " + this.getClass().getName());
                 setupComponents();
                 areComponentsSetup = true;
             }
@@ -82,6 +70,7 @@ public abstract class AbstractCoapCommunicationTest {
             if(!isTestScenarioCreated){
                 createTestScenario();
                 isTestScenarioCreated = true;
+                log.info("Scenario created for: " + this.getClass().getName());
             }
         } catch (Exception e) {
             throw new RuntimeException("Could not create test scenario. ", e);
@@ -97,11 +86,16 @@ public abstract class AbstractCoapCommunicationTest {
             PatternLayout patternLayout = new PatternLayout(pattern);
 
             //Appenders
-            ConsoleAppender consoleAppender = new ConsoleAppender(patternLayout);
-            Logger.getRootLogger().addAppender(consoleAppender);
+            AsyncAppender appender = new AsyncAppender();
+            appender.addAppender(new ConsoleAppender(patternLayout));
+            Logger.getRootLogger().addAppender(appender);
+
+            appender.setBufferSize(1000);
 
             //Define loglevel
             Logger.getRootLogger().setLevel(Level.ERROR);
+            Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.AbstractCoapCommunicationTest")
+                  .setLevel(Level.DEBUG);
         }
     }
 }

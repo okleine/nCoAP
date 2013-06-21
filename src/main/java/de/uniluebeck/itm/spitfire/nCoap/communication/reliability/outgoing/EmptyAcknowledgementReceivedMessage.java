@@ -1,6 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +20,15 @@ public class EmptyAcknowledgementReceivedMessage {
 
     public EmptyAcknowledgementReceivedMessage(byte[] token){
         this.token = new ByteArrayWrapper(token);
-        log.info("Internal acknowledgement message created for token " + token);
+        log.debug("Internal acknowledgement message created for token {}.", Tools.toHexString(token));
     }
 
     public ByteArrayWrapper getToken(){
         return token;
+    }
+
+    @Override
+    public String toString(){
+        return "EmptyAcknowledgementReceivedMessage: " + token + " (token)";
     }
 }

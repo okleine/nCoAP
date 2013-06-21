@@ -24,7 +24,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
 import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransferHandler;
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallbackHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
@@ -46,13 +45,13 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
     private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
 
     private BlockwiseTransferHandler blockwiseTransferHandler = new BlockwiseTransferHandler();
-    private ResponseCallbackHandler responseCallbackHandler = new ResponseCallbackHandler();
+    //private ResponseCallbackHandler responseCallbackHandler = new ResponseCallbackHandler();
 
     public CoapClientPipelineFactory(ScheduledExecutorService executorService){
         outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
         incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
 
-        MessageIDFactory.setExecutorService(executorService);
+        //MessageIDFactory.setExecutorService(executorService);
     }
 
     @Override
@@ -64,7 +63,7 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
         pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
         pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
         pipeline.addLast("BlockwiseTransferHandler", blockwiseTransferHandler);
-        pipeline.addLast("ResponseCallbacbkHandler", responseCallbackHandler);
+        //pipeline.addLast("ResponseCallbacbkHandler", responseCallbackHandler);
 
         return pipeline;
     }

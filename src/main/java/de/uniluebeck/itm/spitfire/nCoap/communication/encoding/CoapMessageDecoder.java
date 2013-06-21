@@ -95,9 +95,21 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             result = new CoapRequest(header, optionList, buffer);
             log.debug("Decoded CoapRequest.");
         }
-        else{
+        else if (header.getCode().isResponse()){
             result = new CoapResponse(header, optionList, buffer);
             log.debug("Decoded CoapResponse.");
+        }
+        else if(header.getCode() == Code.EMPTY){
+            if(header.getMsgType() == MsgType.ACK)
+                result = CoapMessage.createEmptyAcknowledgement(header.getMsgID());
+            else if(header.getMsgType() == MsgType.RST)
+                result = CoapMessage.createEmptyReset(header.getMsgID());
+
+            else
+                throw new EncodingFailedException("Not decodable header: " + header);
+        }
+        else{
+            throw new EncodingFailedException("Not decodable header: " + header);
         }
 
         //TODO Set IP address of local socket (currently [0::] for wildcard address)

@@ -23,6 +23,7 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
+import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -46,14 +47,17 @@ public class CoapClientDatagramChannelFactory {
     private static Logger log = LoggerFactory.getLogger(CoapClientDatagramChannelFactory.class.getName());
 
     public static final int RECEIVE_BUFFER_SIZE = 65536;
-    private static final int NO_OF_THREADS = 10;
+    private static final int NO_OF_THREADS = 100;
 
     private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
 
     private DatagramChannel datagramChannel = null;
 
     public CoapClientDatagramChannelFactory(){
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService);
+
+        executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
+
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService, NO_OF_THREADS);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
@@ -68,5 +72,9 @@ public class CoapClientDatagramChannelFactory {
 
     public DatagramChannel getDatagramChannel(){
         return this.datagramChannel;
+    }
+
+    public ScheduledExecutorService getExecutorService(){
+        return this.executorService;
     }
 }

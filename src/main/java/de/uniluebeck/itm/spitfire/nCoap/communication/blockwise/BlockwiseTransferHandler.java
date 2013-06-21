@@ -62,7 +62,7 @@ public class BlockwiseTransferHandler extends SimpleChannelHandler{
             CoapRequest request = (CoapRequest) me.getMessage();
             byte[] token = request.getToken();
 
-            //There was no ResponseCallback attached to the response and thus there is no token
+            //There was no CoapResponseProcessor attached to the response and thus there is no token
             if(token.length == 0){
                 ctx.sendDownstream(me);
                 return;

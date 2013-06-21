@@ -23,10 +23,8 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.message;
 
-import de.uniluebeck.itm.spitfire.nCoap.communication.callback.ResponseCallback;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Header;
-import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
@@ -53,14 +51,11 @@ public class CoapRequest extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapRequest.class.getName());
 
-    private ResponseCallback callback;
+    //private CoapResponseProcessor callback;
 
     /**
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
      * and initial option list with target URI-related options set.
-     *
-     * <b>Note</b>: Use {@link this#CoapRequest(MsgType, Code, URI, ResponseCallback)} if you want to deal with a
-     * {@link CoapResponse} from a server.
      *
      * @param msgType  A {@link MsgType}
      * @param code A {@link Code}
@@ -86,28 +81,28 @@ public class CoapRequest extends CoapMessage {
 
     }
 
-    /**
-     * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
-     * and initial option list with target URI-related options set.
-     *
-     * @param msgType  a {@link MsgType}
-     * @param code a {@link Code}
-     * @param targetUri the recipients URI
-     * @param callback a {@link ResponseCallback} instance, most likely the {@link CoapClientApplication} instance that
-     *                 created this request
-     *
-     * @throws {@link InvalidOptionException} if one of the target URI options to be created is not valid
-     * @throws {@link URISyntaxException} if the URI is not appropriate for a CoAP message
-     * @throws {@link ToManyOptionsException} if the target URI needs more than the maximum number of options per message
-     * @throws {@link InvalidMessageException} if the given code is not suitable for a request
-     *
-     */
-    public CoapRequest(MsgType msgType, Code code, URI targetUri, ResponseCallback callback)
-            throws InvalidMessageException, ToManyOptionsException, InvalidOptionException, URISyntaxException {
-
-        this(msgType, code, targetUri);
-        this.callback = callback;
-    }
+//    /**
+//     * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
+//     * and initial option list with target URI-related options set.
+//     *
+//     * @param msgType  a {@link MsgType}
+//     * @param code a {@link Code}
+//     * @param targetUri the recipients URI
+//     * @param callback a {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapResponseProcessor} instance, most likely the {@link CoapClientApplication} instance that
+//     *                 created this request
+//     *
+//     * @throws {@link InvalidOptionException} if one of the target URI options to be created is not valid
+//     * @throws {@link URISyntaxException} if the URI is not appropriate for a CoAP message
+//     * @throws {@link ToManyOptionsException} if the target URI needs more than the maximum number of options per message
+//     * @throws {@link InvalidMessageException} if the given code is not suitable for a request
+//     *
+//     */
+//    public CoapRequest(MsgType msgType, Code code, URI targetUri, CoapResponseProcessor callback)
+//            throws InvalidMessageException, ToManyOptionsException, InvalidOptionException, URISyntaxException {
+//
+//        this(msgType, code, targetUri);
+//        this.callback = callback;
+//    }
 
     /**
      * Creates a new {@link CoapRequest} instance using the given parameters
@@ -120,23 +115,23 @@ public class CoapRequest extends CoapMessage {
         super(header, optionList, payload);
     }
 
-    /**
-     * Returns the {@link ResponseCallback} instance to be called upon reception of a {@link CoapResponse}
-     * @return the {@link ResponseCallback} instance to be called upon reception of a {@link CoapResponse}
-     */
-    public ResponseCallback getResponseCallback() {
-        return callback;
-    }
-
-    /**
-     * Set the {@link ResponseCallback} instance to be called upon reception of a {@link CoapResponse}
-     *
-     * @param responseCallback the {@link ResponseCallback} instance to be called upon reception of a
-     * {@link CoapResponse}
-     */
-    public void setResponseCallback(ResponseCallback responseCallback){
-        this.callback = responseCallback;
-    }
+//    /**
+//     * Returns the {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapResponseProcessor} instance to be called upon reception of a {@link CoapResponse}
+//     * @return the {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapResponseProcessor} instance to be called upon reception of a {@link CoapResponse}
+//     */
+//    public CoapResponseProcessor getResponseCallback() {
+//        return callback;
+//    }
+//
+//    /**
+//     * Set the {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapResponseProcessor} instance to be called upon reception of a {@link CoapResponse}
+//     *
+//     * @param coapResponseProcessor the {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapResponseProcessor} instance to be called upon reception of a
+//     * {@link CoapResponse}
+//     */
+//    public void setResponseCallback(CoapResponseProcessor coapResponseProcessor){
+//        this.callback = coapResponseProcessor;
+//    }
 
      /**
      * Returns the target URI of this {@link CoapRequest}.

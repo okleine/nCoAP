@@ -3,6 +3,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing;
 import java.net.InetSocketAddress;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 
 /**
  * Instances of {@link RetransmissionTimeoutMessage} are sent upstream by the {@link OutgoingMessageReliabilityHandler}
@@ -41,5 +42,11 @@ public class RetransmissionTimeoutMessage{
      */
     public InetSocketAddress getRemoteAddress() {
         return remoteAddress;
+    }
+
+    @Override
+    public String toString(){
+        return "RetransmissionTimeoutMessage: " + remoteAddress + " (remote address), "
+                + Tools.toHexString(token) + " (token)";
     }
 }

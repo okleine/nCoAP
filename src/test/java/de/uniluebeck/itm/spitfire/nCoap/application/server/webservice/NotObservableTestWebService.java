@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.junit.Assert.fail;
 
@@ -27,11 +29,12 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
 
     private long pretendedProcessingTimeForRequests;
 
+    private Object monitor = null;
+
     public NotObservableTestWebService(String path, String initialStatus, long pretendedProcessingTimeForRequests){
         super(path, initialStatus);
         this.pretendedProcessingTimeForRequests = pretendedProcessingTimeForRequests;
     }
-
 
     @Override
     public void shutdown() {
@@ -42,13 +45,13 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
     public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress) {
         log.debug("Incoming request for resource " + getPath());
         //Simulate a potentially long processing time
+
         try {
             Thread.sleep(pretendedProcessingTimeForRequests);
         } catch (InterruptedException e) {
-            fail(e.getMessage());
+            fail("This should never happen.");
         }
 
-        //TODO GET, POST, PUT, DELETE
         //create response
         CoapResponse response = new CoapResponse(Code.CONTENT_205);
 
@@ -57,7 +60,9 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
         } catch (MessageDoesNotAllowPayloadException e) {
             log.error("This should never happen.", e);
         }
+
         log.debug("Created response for resource {}: {}.", getPath(), response);
+
         return response;
     }
 }

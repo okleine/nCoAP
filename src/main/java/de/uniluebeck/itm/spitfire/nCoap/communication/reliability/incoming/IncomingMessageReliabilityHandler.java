@@ -24,6 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.util.concurrent.ListenableFuture;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
@@ -105,6 +107,8 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                                     messageID, remoteAddress);
                     }
                 }, 1900, TimeUnit.MILLISECONDS);
+
+                log.debug("Scheduled empty ACK for {}.", coapMessage);
             }
 
             if(coapMessage instanceof CoapResponse)
@@ -129,7 +133,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
-        log.info("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
+        log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
         if(!(me.getMessage() instanceof CoapResponse)){
             ctx.sendDownstream(me);
