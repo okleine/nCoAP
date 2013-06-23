@@ -16,28 +16,23 @@ public class CoapTestServer extends CoapServerApplication {
 
     private HashBasedTable<InetSocketAddress, ByteArrayWrapper, Long> timeoutMessages = HashBasedTable.create();
 
-    private Map<Long, Integer> requestReceptionTimes =
-            Collections.synchronizedMap(new TreeMap<Long, Integer>());
+    private Map<Integer, Long> requestReceptionTimes = Collections.synchronizedMap(new TreeMap<Integer, Long>());
 
-    public CoapTestServer(int numberOfThreads, int serverPort){
-        super(numberOfThreads, serverPort);
+    public CoapTestServer(int serverPort){
+        super(serverPort);
     }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
-        if(me.getMessage() instanceof CoapRequest)
-            requestReceptionTimes.put(System.currentTimeMillis(), ((CoapRequest) me.getMessage()).getMessageID());
+        if(me.getMessage() instanceof CoapRequest){
+           requestReceptionTimes.put(((CoapRequest) me.getMessage()).getMessageID(), System.currentTimeMillis());
+        }
 
         super.messageReceived(ctx, me);
+
     }
 
-    public Map<Long, Integer> getRequestReceptionTimes(){
+    public Map<Integer, Long> getRequestReceptionTimes(){
         return this.requestReceptionTimes;
-    }
-
-    @Override
-    public void processRetransmissionTimeout(RetransmissionTimeoutMessage timeoutMessage) {
-        timeoutMessages.put(timeoutMessage.getRemoteAddress(), new ByteArrayWrapper(timeoutMessage.getToken()),
-                System.currentTimeMillis());
     }
 }

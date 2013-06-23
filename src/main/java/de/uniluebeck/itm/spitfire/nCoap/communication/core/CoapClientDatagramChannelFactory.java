@@ -47,17 +47,12 @@ public class CoapClientDatagramChannelFactory {
     private static Logger log = LoggerFactory.getLogger(CoapClientDatagramChannelFactory.class.getName());
 
     public static final int RECEIVE_BUFFER_SIZE = 65536;
-    private static final int NO_OF_THREADS = 100;
 
-    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
+    private DatagramChannel datagramChannel;
 
-    private DatagramChannel datagramChannel = null;
+    public CoapClientDatagramChannelFactory(ScheduledExecutorService executorService){
 
-    public CoapClientDatagramChannelFactory(){
-
-        executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
-
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService, NO_OF_THREADS);
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
@@ -67,14 +62,10 @@ public class CoapClientDatagramChannelFactory {
         FixedReceiveBufferSizePredictor predictor = new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE);
         datagramChannel.getConfig().setReceiveBufferSizePredictor(predictor);
 
-        log.info("New client datagram datagramChannel created for port {}", datagramChannel.getLocalAddress().getPort());
+        log.info("New client channel created for port {}", datagramChannel.getLocalAddress().getPort());
     }
 
-    public DatagramChannel getDatagramChannel(){
+    public DatagramChannel getChannel(){
         return this.datagramChannel;
-    }
-
-    public ScheduledExecutorService getExecutorService(){
-        return this.executorService;
     }
 }

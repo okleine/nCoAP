@@ -27,43 +27,53 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransfe
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.handler.execution.ExecutionHandler;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 
 public class CoapClientPipelineFactory implements ChannelPipelineFactory {
 
-    private CoapMessageEncoder encoder = new CoapMessageEncoder();
-    private CoapMessageDecoder decoder = new CoapMessageDecoder();
+    private ExecutionHandler executionHandler;
 
+    //Encoding
+    private CoapMessageEncoder encoder;
+    private CoapMessageDecoder decoder;
+
+    //Reliability
     private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
     private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
 
-    private BlockwiseTransferHandler blockwiseTransferHandler = new BlockwiseTransferHandler();
-    //private ResponseCallbackHandler responseCallbackHandler = new ResponseCallbackHandler();
+    //Blockwise
+    private BlockwiseTransferHandler blockwiseTransferHandler;
+
 
     public CoapClientPipelineFactory(ScheduledExecutorService executorService){
+        executionHandler = new ExecutionHandler(executorService);
+
+        encoder = new CoapMessageEncoder();
+        decoder = new CoapMessageDecoder();
+
         outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
         incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
 
-        //MessageIDFactory.setExecutorService(executorService);
+        blockwiseTransferHandler = new BlockwiseTransferHandler();
     }
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
+        //pipeline.addLast("Execution Handler", executionHandler);
         pipeline.addLast("CoAP Message Encoder", encoder);
         pipeline.addLast("CoAP Message Decoder", decoder);
-        pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
-        pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
-        pipeline.addLast("BlockwiseTransferHandler", blockwiseTransferHandler);
-        //pipeline.addLast("ResponseCallbacbkHandler", responseCallbackHandler);
+        pipeline.addLast("Outgoing Message Reliability Handler", outgoingMessageReliabilityHandler);
+        pipeline.addLast("Incoming Message Reliability Handler", incomingMessageReliabilityHandler);
+        pipeline.addLast("Blockwise Transfer Handler", blockwiseTransferHandler);
 
         return pipeline;
     }

@@ -24,6 +24,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
@@ -42,11 +43,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 /**
- * This is the abstract class to be extended by a CoAP client. By
+ * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapRequest}s. By
  * {@link #writeCoapRequest(CoapRequest, CoapResponseProcessor)} it provides an
  * easy-to-use method to write CoAP requests to a server.
  *
@@ -63,18 +65,103 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
     private ScheduledExecutorService executorService;
 
+    /**
+     * Creates a new instance of {@link CoapClientApplication} which is bound to a local socket and provides all
+     * functionality to send {@link CoapRequest}s and receive {@link CoapResponse}s.
+     */
     public CoapClientApplication(){
-        CoapClientDatagramChannelFactory factory = new CoapClientDatagramChannelFactory();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Client I/O Thread#%d").build();
+        this.executorService =
+                Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), threadFactory);
 
-        datagramChannel = factory.getDatagramChannel();
+        CoapClientDatagramChannelFactory factory = new CoapClientDatagramChannelFactory(executorService);
+
+        datagramChannel = factory.getChannel();
         datagramChannel.getPipeline().addLast("Client application", this);
 
-        executorService = factory.getExecutorService();
 
         log.info("New CoAP client on port {}.", datagramChannel.getLocalAddress().getPort());
+    }
+
+    /**
+     * This method is to send a CoAP request to a remote
+     * recipient. All necessary information to send the message (like the recipient IP address or port) is
+     * automatically extracted from the given {@link CoapRequest} instance.
+     *
+     * @param coapRequest The {@link CoapRequest} object to be sent
+     * @param coapResponseProcessor The {@link CoapResponseProcessor} instance to handle responses and status information
+     */
+    public void writeCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor)
+            throws ToManyOptionsException, InvalidOptionException {
+
+        executorService.submit(new Runnable(){
+
+            @Override
+            public void run() {
+                try {
+                    coapRequest.setToken(TokenFactory.getNextToken());
+
+                    int targetPort = coapRequest.getTargetUri().getPort();
+                    if(targetPort == -1)
+                        targetPort = OptionRegistry.COAP_PORT_DEFAULT;
+
+
+                    final InetSocketAddress rcptSocketAddress =
+                            new InetSocketAddress(coapRequest.getTargetUri().getHost(), targetPort);
+
+                    addResponseCallback(coapRequest.getToken(), rcptSocketAddress, coapResponseProcessor);
+
+                    ChannelFuture future = Channels.write(datagramChannel, coapRequest, rcptSocketAddress);
+
+                    future.addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            log.info("Sent to to {}:{}: {}",
+                                    new Object[]{rcptSocketAddress.getAddress().getHostAddress(),
+                                            rcptSocketAddress.getPort(), coapRequest});
+                        }
+                    });
+
+                } catch (Exception e) {
+                    log.error("Exception while trying to send message.", e);
+                }
+            }
+        });
 
     }
 
+    /**
+     * Returns the local port the {@link DatagramChannel} of this {@link CoapClientApplication} is bound to.
+     * @return the local port the {@link DatagramChannel} of this {@link CoapClientApplication} is bound to.
+     */
+    public int getClientPort() {
+        return datagramChannel.getLocalAddress().getPort();
+    }
+
+    /**
+     * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
+     * by this means free the port. All blocked or bound external resources are released.
+     */
+    public final void shutdown(){
+        //Close the datagram datagramChannel (includes unbind)
+        ChannelFuture future = datagramChannel.close();
+
+        //Await the closure and let the factory release its external resource to finalize the shutdown
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
+                log.info("Client channel closed (port: " + closedChannel.getLocalAddress().getPort() + ").");
+
+                executorService.shutdownNow();
+
+                datagramChannel.getFactory().releaseExternalResources();
+                log.info("External resources released. Shutdown completed.");
+            }
+        });
+
+        future.awaitUninterruptibly();
+    }
 
     private synchronized void addResponseCallback(byte[] token, InetSocketAddress remoteAddress,
                                                   CoapResponseProcessor coapResponseProcessor){
@@ -163,77 +250,5 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         }
     }
 
-    /**
-     * This method is to send a CoAP request to a remote
-     * recipient. All necessary information to send the message (like the recipient IP address or port) is
-     * automatically extracted from the given {@link CoapRequest} instance.
-     *
-     * @param coapRequest The {@link CoapRequest} object to be sent
-     * @param coapResponseProcessor The {@link CoapResponseProcessor} instance to handle responses and status information
-     */
-    public void writeCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor)
-            throws ToManyOptionsException, InvalidOptionException {
 
-        executorService.submit(new Runnable(){
-
-            @Override
-            public void run() {
-                try {
-                    coapRequest.setToken(TokenFactory.getNextToken());
-
-                    int targetPort = coapRequest.getTargetUri().getPort();
-                    if(targetPort == -1)
-                        targetPort = OptionRegistry.COAP_PORT_DEFAULT;
-
-
-                    final InetSocketAddress rcptSocketAddress =
-                            new InetSocketAddress(coapRequest.getTargetUri().getHost(), targetPort);
-
-                    addResponseCallback(coapRequest.getToken(), rcptSocketAddress, coapResponseProcessor);
-
-                    ChannelFuture future = Channels.write(datagramChannel, coapRequest, rcptSocketAddress);
-
-                    future.addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) throws Exception {
-                            log.info("Sent to to {}:{}: {}",
-                                    new Object[]{rcptSocketAddress.getAddress().getHostAddress(),
-                                    rcptSocketAddress.getPort(), coapRequest});
-                        }
-                    });
-
-                } catch (Exception e) {
-                    log.error("Exception while trying to send message.", e);
-                }
-            }
-        });
-
-    }
-
-    public int getClientPort() {
-        return datagramChannel.getLocalAddress().getPort();
-    }
-
-    /**
-     * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
-     * by this means free the port. All blocked or bound external resources are released.
-     */
-    public final void shutdown(){
-        //Close the datagram datagramChannel (includes unbind)
-        ChannelFuture future = datagramChannel.close();
-
-        //Await the closure and let the factory release its external resource to finalize the shutdown
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
-                log.info("Client channel closed (port: " + closedChannel.getLocalAddress().getPort() + ").");
-
-                //datagramChannel.getFactory().releaseExternalResources();
-                //log.info("External resources released. Shutdown completed.");
-            }
-        });
-
-        future.awaitUninterruptibly();
-    }
 }

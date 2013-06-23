@@ -23,67 +23,52 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
-import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * @author Oliver Kleine
  */
-public abstract class CoapServerDatagramChannelFactory {
+public class CoapServerDatagramChannelFactory {
 
     private static Logger log = LoggerFactory.getLogger(CoapServerDatagramChannelFactory.class.getName());
-    private static final int NO_OF_THREADS = 3;
+
+    private DatagramChannel datagramChannel;
 
     /**
-     * Creates a new {@link DatagramChannel} instance associated with the given local server port. Upon creation the
-     * channel is bound to the given local server port and listens for incoming messages.
      *
-     * @param serverApp the instance of {@link CoapServerApplication} to handle incoming {@link CoapRequest}s.
-     * @param coapServerPort the local port the server is supposed to listen at
-     * @return the newly created {@link DatagramChannel} instance
-     * @throws ChannelException if the channel could not be created for any reason.
+     * @param executorService
+     * @param serverPort
      */
-    public static DatagramChannel createChannel(CoapServerApplication serverApp, int coapServerPort)
-            throws ChannelException {
-
-//        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP server #%d").build();
-//        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS, (threadFactory));
-//
-//        serverApp.setExecutorService(executorService);
-
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(NO_OF_THREADS);
-
+    public CoapServerDatagramChannelFactory(ScheduledExecutorService executorService, int serverPort){
         ChannelFactory channelFactory =
                 new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        CoapServerPipelineFactory pipelineFactory =
-                new CoapServerPipelineFactory(serverApp, coapServerPort, executorService);
+        CoapServerPipelineFactory pipelineFactory = new CoapServerPipelineFactory(executorService);
         bootstrap.setPipelineFactory(pipelineFactory);
 
-        DatagramChannel channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(coapServerPort));
+        datagramChannel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(serverPort));
 
-        pipelineFactory.getObservableResourceHandler().setChannel(channel);
+        pipelineFactory.getObservableResourceHandler().setChannel(datagramChannel);
 
-        log.info("New server channel created for port {}.", channel.getLocalAddress().getPort());
-        return channel;
+        log.info("New server datagramChannel created for port {}.", datagramChannel.getLocalAddress().getPort());
+    }
+
+    /**
+     *
+     */
+    public DatagramChannel getChannel(){
+        return this.datagramChannel;
     }
 }

@@ -90,7 +90,7 @@ public abstract class AbstractCoapCommunicationTest {
             appender.addAppender(new ConsoleAppender(patternLayout));
             Logger.getRootLogger().addAppender(appender);
 
-            appender.setBufferSize(1000);
+            appender.setBufferSize(100000);
 
             //Define loglevel
             Logger.getRootLogger().setLevel(Level.ERROR);

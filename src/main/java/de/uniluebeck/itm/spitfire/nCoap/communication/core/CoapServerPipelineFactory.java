@@ -23,20 +23,15 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.communication.core;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.spitfire.nCoap.communication.blockwise.BlockwiseTransferHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.observe.ObservableResourceHandler;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.MessageIDFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
-import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.handler.execution.ExecutionHandler;
-import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -45,31 +40,27 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
-    public static final int NUMBER_OF_EXECUTION_THREADS = 50;
+    private ExecutionHandler executionHandler;
 
-    private CoapMessageEncoder encoder = new CoapMessageEncoder();
-    private CoapMessageDecoder decoder = new CoapMessageDecoder();
-
-    private ExecutionHandler executionHandler =
-            new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(NUMBER_OF_EXECUTION_THREADS, 0, 0));
+    private CoapMessageEncoder encoder;
+    private CoapMessageDecoder decoder;
 
     private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
     private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
 
-    private BlockwiseTransferHandler blockwiseTransferHandler = new BlockwiseTransferHandler();
-
-    private ChannelHandler serverApp;
-
     private ObservableResourceHandler observableResourceHandler;
     
-    public CoapServerPipelineFactory(CoapServerApplication serverApp, int serverPort,
-                                     ScheduledExecutorService executorService){
-        this.serverApp = serverApp;
+    public CoapServerPipelineFactory(ScheduledExecutorService executorService){
+
+        this.executionHandler = new ExecutionHandler(executorService);
+
+        this.encoder = new CoapMessageEncoder();
+        this.decoder = new CoapMessageDecoder();
+
         this.outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
         this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
-        this.observableResourceHandler = new ObservableResourceHandler(executorService);
 
-        //MessageIDFactory.setExecutorService(executorService);
+        this.observableResourceHandler = new ObservableResourceHandler(executorService);
     }
 
 
@@ -77,16 +68,16 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
+        pipeline.addLast("Execution Handler", executionHandler);
+
         pipeline.addLast("CoAP Message Encoder", encoder);
         pipeline.addLast("CoAP Message Decoder", decoder);
+
         pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
         pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
-        //pipeline.addLast("BlockwiseTransferHander", blockwiseTransferHandler);
-        //pipeline.addLast("ExecutionHandler", executionHandler);
+
         pipeline.addLast("ObservableResourceHandler", observableResourceHandler);
-        //pipeline.addLast("Execution Handler", executionHandler);
-        pipeline.addLast("ServerApplication", serverApp);
-        
+
         return pipeline;
     }
 

@@ -49,24 +49,20 @@ import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
 
 /**
- * Abstract class to be extended by a CoAP server application. Even though the communication is based on the Netty
+ * Even though the communication is based on the Netty
  * framework, a developer of such a server doesn't have to go into details regarding the architecture. The whole
  * architecture is hidden from the users perspective. Technically speaking, the extending class will be the
  * topmost {@link ChannelUpstreamHandler} of the automatically generated netty handler stack.
  *
  * @author Oliver Kleine
  */
-public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
-        implements RetransmissionTimeoutProcessor {
+public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
     public static final int DEFAULT_COAP_SERVER_PORT = 5683;
     //public static final int NUMBER_OF_THREADS_TO_HANDLE_REQUESTS = 1000;
@@ -86,38 +82,45 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
      * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on the given port
      * and already provides the default <code>.well-known/core</code> resource
      */
-    protected CoapServerApplication(int numberOfThreads, int serverPort){
-        channel = CoapServerDatagramChannelFactory.createChannel(this, serverPort);
+    public CoapServerApplication(int serverPort){
 
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP server #%d").build();
-        this.scheduledExecutorService =
-                Executors.newScheduledThreadPool(numberOfThreads, threadFactory);
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Server I/O Thread#%d").build();
+
+        ScheduledExecutorService ioExecutorService =
+                Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), threadFactory);
+
+        CoapServerDatagramChannelFactory factory = new CoapServerDatagramChannelFactory(ioExecutorService, serverPort);
+        channel = factory.getChannel();
+
+        channel.getPipeline().addLast("Server Application", this);
+
+        registerService(new WellKnownCoreResource(registeredServices));
+
+        this.scheduledExecutorService = ioExecutorService;
         this.executorService = MoreExecutors.listeningDecorator(scheduledExecutorService);
 
-        log.info("New server created. Listening on port " + this.getServerPort() + ".");
-        registerService(new WellKnownCoreResource(registeredServices));
+        log.info("New server created. Listening on port {}.", getServerPort());
+
     }
 
     /**
      * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port
      * {@link #DEFAULT_COAP_SERVER_PORT} and already provides the default <code>.well-known/core</code> resource.
-     *
-     * @param numberOfThreads The number of threads to handle incoming requests in parallel
      */
-    protected CoapServerApplication(int numberOfThreads){
-        this(numberOfThreads, DEFAULT_COAP_SERVER_PORT);
+    public CoapServerApplication(){
+        this(DEFAULT_COAP_SERVER_PORT);
     }
 
-//    /**
-//     * Set the {@link ScheduledExecutorService} instance to handle incoming requests in seperate threads. The
-//     * nCoAP framework sets an executor service automatically so usually there is no need to set another one.
-//     *
-//     * @param executorService a {@link ScheduledExecutorService}
-//     */
-//    public void setExecutorService(ScheduledExecutorService executorService){
-//        this.executorService = MoreExecutors.listeningDecorator(executorService);
-//        this.scheduledExecutorService = executorService;
-//    }
+      /**
+     * Set the {@link ScheduledExecutorService} instance to handle incoming requests in seperate threads. The
+     * nCoAP framework sets an executor service automatically so usually there is no need to set another one.
+     *
+     * @param executorService a {@link ScheduledExecutorService}
+     */
+    public void setExecutorService(ScheduledExecutorService executorService){
+        this.executorService = MoreExecutors.listeningDecorator(executorService);
+        this.scheduledExecutorService = executorService;
+    }
 
     /**
      * This method is called by the Netty framework whenever a new message is received to be processed by the server.
@@ -131,11 +134,6 @@ public abstract class CoapServerApplication extends SimpleChannelUpstreamHandler
     @Override
     public void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         log.info("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
-
-        if(me.getMessage() instanceof RetransmissionTimeoutMessage){
-            processRetransmissionTimeout((RetransmissionTimeoutMessage) me.getMessage());
-            return;
-        }
 
         if(!(me.getMessage() instanceof CoapRequest)){
             ctx.sendUpstream(me);
