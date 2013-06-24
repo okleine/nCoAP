@@ -1,136 +1,170 @@
-//package de.uniluebeck.itm.spitfire.nCoap.communication;
-//
-//import de.uniluebeck.itm.spitfire.nCoap.communication.utils.ObservableTestWebService;
-//import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
-//import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
-//import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-//import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-//import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-//import de.uniluebeck.itm.spitfire.nCoap.message.options.UintOption;
-//import java.net.InetSocketAddress;
-//import java.net.URI;
-//import java.util.Arrays;
-//import java.util.Iterator;
-//import java.util.SortedMap;
-//
-//import org.junit.Test;
-//
-//import static junit.framework.Assert.*;
-//import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
-//
-//import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.*;
-//
-///**
-// * Tests for the removal of observers.
-// *
-// * @author Stefan Hueske
-// */
-//public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest {
-//
-//    //registration requests
-//    private static CoapRequest reg1Request;
-//    private static CoapRequest reg2Request;
-//
-//    //cancellation messages
-//    private static CoapRequest cancelGETrequest;
-//    private static CoapMessage cancelRSTmsg;
-//
-//    //notifications
-//    private static CoapResponse notification;
-//
-//    @Override
-//    public void createTestScenario() throws Exception {
-//        //create registration requests
-//        String requestPath = "/testpath";
-//        URI targetUri = new URI("coap://localhost:" + testServer.getServerPort() + requestPath);
-//        reg1Request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
-//        reg1Request.getHeader().setMsgID(1111);
-//        reg1Request.setToken(new byte[]{0x12, 0x23, 0x34});
-//        reg1Request.setObserveOptionRequest();
-//
-//        reg2Request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
-//        reg2Request.getHeader().setMsgID(2222);
-//        reg2Request.setToken(new byte[]{0x23, 0x43, 0x43});
-//        reg2Request.setObserveOptionRequest();
-//
-//        //create notification
-//        (notification = new CoapResponse(Code.CONTENT_205)).setPayload("testpayload".getBytes("UTF-8"));
-//
-//        //create cancellation messages
-//        cancelGETrequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
-//        cancelGETrequest.getHeader().setMsgID(3333);
-//        cancelGETrequest.setToken(new byte[]{0x54, 0x43, 0x43});
-//
-//        //setup testServer/Observable WebService
-//        ObservableTestWebService observableTestWebService = new ObservableTestWebService(requestPath, true, 0, 0);
-//        observableTestWebService.addPreparedResponses(6, notification);
-//        registerObservableTestService(observableTestWebService);
-//
-//        //test sequence, test GET and RST cancellation
-//        //Wireshark: https://dl.dropbox.com/u/10179177/Screenshot_2013.04.11-22.16.33.png
-//        /*
+package de.uniluebeck.itm.spitfire.nCoap.communication;
+
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableTestWebService;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.junit.Test;
+
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import static junit.framework.Assert.assertEquals;
+
+/**
+* Tests for the removal of observers.
+*
+* @author Stefan Hueske, Oliver Kleine
+*/
+public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest {
+
+    private static String PATH_TO_SERVICE = "/observable";
+
+    private static CoapServerApplication server;
+    private static ObservableTestWebService service;
+
+    private static CoapTestEndpoint endpoint;
+    private static TestCoapResponseProcessor responseProcessor;
+
+    //requests
+    private static CoapRequest observationRequest1;
+    private static CoapRequest normalRequest;
+    private static CoapRequest observationRequest2;
+
+    ScheduledExecutorService executorService;
+
+    @Override
+    public void setupLogging() throws Exception {
+        Logger
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.encoding").setLevel(Level.DEBUG);
+    }
+
+    @Override
+    public void setupComponents() throws Exception {
+        server = new CoapServerApplication(0);
+        service = new ObservableTestWebService(PATH_TO_SERVICE, 0, 0, 1000);
+        service.setUpdateNotificationConfirmable(false);
+        server.registerService(service);
+
+        endpoint = new CoapTestEndpoint();
+        responseProcessor = new TestCoapResponseProcessor();
+
+        URI targetURI = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
+
+        observationRequest1 = new CoapRequest(MsgType.CON, Code.GET, targetURI);
+        observationRequest1.setObserveOptionRequest();
+        observationRequest1.getHeader().setMsgID(123);
+        observationRequest1.setToken(new byte[]{1,2,3,4});
+
+        normalRequest = new CoapRequest(MsgType.CON, Code.GET, targetURI);
+        observationRequest1.getHeader().setMsgID(456);
+
+        observationRequest2 = new CoapRequest(MsgType.CON, Code.GET, targetURI);
+        observationRequest2.setObserveOptionRequest();
+        observationRequest1.getHeader().setMsgID(789);
+        observationRequest1.setToken(new byte[]{5,6,7,8});
+
+        executorService = Executors.newScheduledThreadPool(1);
+    }
+
+    @Override
+    public void shutdownComponents() throws Exception {
+        server.shutdown();
+        endpoint.shutdown();
+    }
+
+
+    @Override
+    public void createTestScenario() throws Exception {
+
 //             testEndpoint                    Server        DESCRIPTION
 //                  |                             |
-//              (1) |--------GET_OBSERVE--------->|          Register observer
+//                  |--------GET_OBSERVE--------->|          Register observer
 //                  |                             |
-//              (2) |<-------1st Notification-----|          Receive first notification
+//                  |<-------1st Notification-----|          Receive first notification
 //                  |                             |
-//              (3) |--------GET----------------->|          Remove observer using a GET request without observe option
+//                  |                             |  <-----  Status update (new status: 2) (after 1000 ms)
 //                  |                             |
-//              (4) |<-------Simple ACK response--|          Receive ACK response (without observe option)
-//                  |                             |              (call testServer.notifyCoapObservers() here
-//                  |                             |               to test if removal was successful)
-//              (5) |--------GET_OBSERVE--------->|          Register observer
+//                  |<-------2nd Notification-----|
 //                  |                             |
-//              (6) |<-------1st Notification-----|          Receive first notification (ACK)
+//                  |--------GET----------------->|          Remove observer using a GET request without observe option
 //                  |                             |
-//              (7) |<-------2nd Notification-----|          Receive second notification (CON)
+//                  |<-------Simple ACK response--|          Receive ACK response (without observe option)
 //                  |                             |
-//              (8) |--------RST----------------->|          Respond with reset to the 2nd notification
-//                  |                             |              (call testServer.notifyCoapObservers() here
-//                  |                             |               to test if removal was successful)
-//        */
-//        //first registration
-//  /*1*/ testEndpoint.writeMessage(reg1Request, new InetSocketAddress("localhost", testServer.getServerPort()));
-//        //wait for first response
-//  /*2*/ Thread.sleep(150);
-//        //send GET for same resource without Observe Option
-//  /*3*/ testEndpoint.writeMessage(cancelGETrequest, new InetSocketAddress("localhost", testServer.getServerPort()));
-//        //wait for Simple ACK response (without Observe Option)
-//  /*4*/ Thread.sleep(150);
-//        //if cancellation was successful, nothing should happen here
-//
-//        observableTestWebService.setResourceStatus(true);
-////        testServer.notifyCoapObservers();
-//        Thread.sleep(150);
-//
-//        //second registration
-//  /*5*/ testEndpoint.writeMessage(reg2Request, new InetSocketAddress("localhost", testServer.getServerPort()));
-//        //wait for first response
-//  /*6*/ Thread.sleep(150);
-//        //get second CON response
-//        observableTestWebService.setResourceStatus(true);
-////        testServer.notifyCoapObservers();
-//  /*7*/ Thread.sleep(150);
-//        //respond with RST message
-//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
-//        CoapMessage lastReceivedMessage = receivedMessages.get(receivedMessages.lastKey());
-//        cancelRSTmsg = CoapMessage.createEmptyReset(lastReceivedMessage.getMessageID());
-//  /*8*/ testEndpoint.writeMessage(cancelRSTmsg, new InetSocketAddress("localhost", testServer.getServerPort()));
-//        Thread.sleep(150);
-//        //if cancellation was successful, nothing should happen here
-//        observableTestWebService.setResourceStatus(true);
-////        testServer.notifyCoapObservers();
-//        Thread.sleep(2000);
-//        testEndpoint.setReceiveEnabled(false);
-//    }
-//
-//    @Test
-//    public void testReceiverReceived4Messages() {
-//        String message = "Receiver did not receive 4 messages";
-//        assertEquals(message, 4, testEndpoint.getReceivedMessages().values().size());
-//    }
-//
+//                  |                             |
+//                  |                             |  <-----  Status update (new status: 3) (after 2000 ms)
+//                  |                             |
+//                  |                             |          some time passes... nothing should happen!
+//                  |                             |
+//                  |                             |  <-----  Status update (new status: 4) (after 3000 ms)
+//                  |                             |
+//                  |--------GET_OBSERVE--------->|          Register observer
+//                  |                             |
+//                  |<-------1st Notification-----|          Receive first notification (ACK)
+//                  |                             |
+//                  |                             |  <-----  Status update (new status: 0) (after 4000 ms)
+//                  |                             |
+//                  |<-------2nd Notification-----|
+//                  |                             |
+//                  |--------RST----------------->|          Respond with reset to the 2nd notification
+//                  |                             |
+
+        //schedule first observation request
+        executorService.schedule(new Runnable(){
+            @Override
+            public void run() {
+                endpoint.writeMessage(observationRequest1, new InetSocketAddress("localhost", server.getServerPort()));
+            }
+        }, 0, TimeUnit.MILLISECONDS);
+
+        //send GET for same resource without Observe Option
+        executorService.schedule(new Runnable() {
+            @Override
+            public void run() {
+                endpoint.writeMessage(normalRequest, new InetSocketAddress("localhost", server.getServerPort()));
+            }
+        }, 1100, TimeUnit.MILLISECONDS);
+
+        //send GET for same resource without Observe Option
+        executorService.schedule(new Runnable() {
+            @Override
+            public void run() {
+                endpoint.writeMessage(observationRequest2, new InetSocketAddress("localhost", server.getServerPort()));
+            }
+        }, 3100, TimeUnit.MILLISECONDS);
+
+        //send GET for same resource without Observe Option
+        executorService.schedule(new Runnable() {
+            @Override
+            public void run() {
+                int messageID =
+                        endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().lastKey()).getMessageID();
+
+                endpoint.writeMessage(CoapMessage.createEmptyReset(messageID),
+                        new InetSocketAddress("localhost", server.getServerPort()));
+            }
+        }, 4100, TimeUnit.MILLISECONDS);
+
+        Thread.sleep(5000);
+    }
+
+
+
+    @Test
+    public void testReceiverReceived5Messages() {
+        String message = "Receiver did not receive 5 messages";
+        assertEquals(message, 5, endpoint.getReceivedMessages().values().size());
+    }
+
 //    @Test
 //    public void testReceiverReceivedRegistration1Notification1() {
 //        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
@@ -252,5 +286,5 @@
 //        assertTrue(message, Arrays.equals(reg2Request.getToken(), reg2notification1.getToken()));
 //        assertTrue(message, Arrays.equals(reg2Request.getToken(), reg2notification2.getToken()));
 //    }
-//
-//}
+
+}

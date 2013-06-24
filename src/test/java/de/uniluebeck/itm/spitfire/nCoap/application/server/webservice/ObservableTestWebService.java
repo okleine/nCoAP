@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.fail;
@@ -39,7 +40,6 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
      * @param updateInterval the time passing between two status updates
      */
     public ObservableTestWebService(String path, int initialStatus, long artificalDelay, final long updateInterval){
-
         super(path, initialStatus);
         this.artificalDelay = artificalDelay;
         this.updateInterval = updateInterval;
@@ -52,9 +52,13 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
      *                       requests
      */
     public ObservableTestWebService(String path, int initialStatus, long artificalDelay){
-        super(path, initialStatus);
-        this.artificalDelay = artificalDelay;
-        updateInterval = NO_AUTOMATIC_UPDATE;
+        this(path, initialStatus, artificalDelay, NO_AUTOMATIC_UPDATE);
+    }
+
+    @Override
+    public void setExecutorService(ScheduledExecutorService executorService){
+        super.setExecutorService(executorService);
+        scheduleAutomaticStatusChange();
     }
 
     /**
@@ -63,7 +67,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
      *
      * @return <code>true</code> if automatic updates where scheduled succesfully, <code>false</code> otherwise.
      */
-    public boolean scheduleAutomaticStatusChange(){
+    private boolean scheduleAutomaticStatusChange(){
         if(updateInterval != NO_AUTOMATIC_UPDATE){
             getExecutorService().schedule(new Runnable(){
 
@@ -82,7 +86,6 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
             return false;
         }
     }
-
 
     @Override
     public void shutdown() {

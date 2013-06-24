@@ -40,5 +40,7 @@ public interface CoapResponseProcessor {
      *
      * @param coapResponse the response message
      */
-    public abstract void processCoapResponse(CoapResponse coapResponse);
+    public void processCoapResponse(CoapResponse coapResponse);
+
+    public void messageSuccesfullySent();
 }

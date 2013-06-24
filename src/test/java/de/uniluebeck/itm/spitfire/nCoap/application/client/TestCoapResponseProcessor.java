@@ -1,5 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
@@ -7,6 +9,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.Retra
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import org.apache.log4j.Logger;
 
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -17,23 +20,28 @@ import java.util.TreeMap;
  * Time: 11:24
  * To change this template use File | Settings | File Templates.
  */
-public class TestCoapReponseProcessor implements CoapResponseProcessor, RetransmissionTimeoutProcessor,
+public class TestCoapResponseProcessor implements CoapResponseProcessor, RetransmissionTimeoutProcessor,
         EmptyAcknowledgementProcessor {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    private SortedMap<Long, CoapResponse> responses = new TreeMap<Long, CoapResponse>();
+    private HashMultimap <Long, CoapResponse> responses = HashMultimap.create();
 
-    private SortedMap<Long, EmptyAcknowledgementReceivedMessage> emptyAcknowledgements
-                                    = new TreeMap<Long, EmptyAcknowledgementReceivedMessage>();
-    private SortedMap<Long, RetransmissionTimeoutMessage> timeoutMessages
-                                    = new TreeMap<Long, RetransmissionTimeoutMessage>();
+    private HashMultimap<Long, EmptyAcknowledgementReceivedMessage> emptyAcknowledgements = HashMultimap.create();
 
+    private HashMultimap<Long, RetransmissionTimeoutMessage> timeoutMessages = HashMultimap.create();
+
+    private long requestSendTime;
 
     @Override
     public void processCoapResponse(CoapResponse coapResponse) {
         log.info("Received Response: " + coapResponse);
         responses.put(System.currentTimeMillis(), coapResponse);
+    }
+
+    @Override
+    public void messageSuccesfullySent() {
+        requestSendTime = System.currentTimeMillis();
     }
 
     @Override
@@ -48,17 +56,20 @@ public class TestCoapReponseProcessor implements CoapResponseProcessor, Retransm
         emptyAcknowledgements.put(System.currentTimeMillis(), message);
     }
 
-    public SortedMap<Long, CoapResponse> getCoapResponses(){
+    public Multimap<Long, CoapResponse> getCoapResponses(){
         return this.responses;
     }
 
-    public SortedMap<Long, EmptyAcknowledgementReceivedMessage> getEmptyAcknowledgements() {
+    public Multimap<Long, EmptyAcknowledgementReceivedMessage> getEmptyAcknowledgements() {
         return emptyAcknowledgements;
     }
 
-    public SortedMap<Long, RetransmissionTimeoutMessage> getTimeoutMessages() {
+    public Multimap<Long, RetransmissionTimeoutMessage> getTimeoutMessages() {
         return timeoutMessages;
     }
 
 
+    public long getRequestSendTime() {
+        return requestSendTime;
+    }
 }

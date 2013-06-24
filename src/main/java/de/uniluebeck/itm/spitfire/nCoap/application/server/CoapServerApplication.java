@@ -255,8 +255,6 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      * by this means free the port. All blocked or bound external resources are released.
      */
     public void shutdown(){
-        //Close the datagram datagramChannel (includes unbind)
-        ChannelFuture future = channel.close();
 
         //remove all webServices
         WebService[] services;
@@ -268,6 +266,9 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         for(WebService service : services){
             removeService(service.getPath());
         }
+
+        //Close the datagram datagramChannel (includes unbind)
+        ChannelFuture future = channel.close();
 
         //Await the closure and let the factory release its external resource to finalize the shutdown
         future.addListener(new ChannelFutureListener() {
@@ -283,6 +284,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         });
 
         future.awaitUninterruptibly();
+
+        executorService.shutdownNow();
     }
     
 

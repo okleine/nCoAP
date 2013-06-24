@@ -1,8 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapResponseProcessor;
-import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapReponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -30,7 +29,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
     private static final String PAYLOAD = "Some arbitrary content!";
 
     private static CoapClientApplication client;
-    private static TestCoapReponseProcessor responseProcessor;
+    private static TestCoapResponseProcessor responseProcessor;
     private static CoapRequest coapRequest;
 
     private static CoapTestEndpoint endpoint;
@@ -50,7 +49,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
 
         //Create client and response processor
         client = new CoapClientApplication();
-        responseProcessor = new TestCoapReponseProcessor();
+        responseProcessor = new TestCoapResponseProcessor();
 
         URI targetUri =  new URI("coap://localhost:" + endpoint.getPort());
         coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);

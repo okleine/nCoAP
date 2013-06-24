@@ -122,8 +122,19 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         if(coapMessage.getMessageType() == MsgType.CON){
             if (coapMessage instanceof CoapResponse && ((CoapResponse) coapMessage).isUpdateNotification()) {
                 //check all open CON messages to me.getObserverAddress() for retransmission with same token
-                if (updateRetransmissions(coapMessage, (InetSocketAddress) me.getRemoteAddress())) {
+                long delayForNextRetransmission =
+                        updateRetransmissions(coapMessage, (InetSocketAddress) me.getRemoteAddress());
+
+                log.debug("Delay for next retransmission: {} ms.", delayForNextRetransmission);
+
+                if (delayForNextRetransmission > -1){
                     log.info("Existing retransmission updated: {}.", coapMessage);
+
+                    if(delayForNextRetransmission > 1000){
+                        log.debug("Next retransmission due in {} ms. Send an additional notification now!");
+                        ctx.sendDownstream(me);
+                    }
+
                     return;
                 }
             }
@@ -207,20 +218,37 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         }
     }
 
-    private synchronized boolean updateRetransmissions(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
+    private synchronized long updateRetransmissions(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
         for(int messageID : retransmissionSchedules.row(remoteAddress).keySet()){
             RetransmissionSchedule retransmissionSchedule = retransmissionSchedules.get(remoteAddress, messageID);
             if(Arrays.equals(retransmissionSchedule.getToken(), coapMessage.getToken())){
-                retransmissionSchedule.setCoapMessage(coapMessage);
 
+                //Update the retransmission schedule for the given coap message
+                retransmissionSchedule.setCoapMessage(coapMessage);
                 retransmissionSchedules.remove(remoteAddress, messageID);
                 retransmissionSchedules.put(remoteAddress, coapMessage.getMessageID(), retransmissionSchedule);
 
-                return true;
+                //If there was no retransmission open then return -1
+                if (retransmissionSchedule.getRetransmissionFutures().size() == 0)
+                    return -1;
+
+
+                //Find the delay of the next retransmission
+                long nextRetransmissionDelay = Long.MAX_VALUE;
+                Iterator<ScheduledFuture> iterator = retransmissionSchedule.getRetransmissionFutures().iterator();
+
+                while (iterator.hasNext()){
+                    ScheduledFuture future = iterator.next();
+                    long futureDelay = future.getDelay(TimeUnit.MILLISECONDS);
+                    nextRetransmissionDelay =
+                            futureDelay < nextRetransmissionDelay && futureDelay > 0 ?
+                                    futureDelay : nextRetransmissionDelay;
+                }
+                return nextRetransmissionDelay;
             }
         }
 
-        return false;
+        return -1;
     }
 
     /**

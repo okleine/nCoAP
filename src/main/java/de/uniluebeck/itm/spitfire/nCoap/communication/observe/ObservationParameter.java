@@ -1,19 +1,8 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication.observe;
 
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.InvalidHeaderException;
-import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.Option;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
-
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.ACCEPT;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created with IntelliJ IDEA.
@@ -23,6 +12,8 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Op
  * To change this template use File | Settings | File Templates.
  */
 class ObservationParameter {
+
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private byte[] token;
     private MediaType acceptedMediaType;
@@ -48,6 +39,7 @@ class ObservationParameter {
 
     public void increaseNotificationCount() {
         this.notificationCount++;
+        log.debug("Notificaton count set to {}.", notificationCount);
     }
 
     public byte[] getToken() {

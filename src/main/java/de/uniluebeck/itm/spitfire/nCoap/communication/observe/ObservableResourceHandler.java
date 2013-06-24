@@ -188,27 +188,31 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
         if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
-            if(coapResponse.getOption(OBSERVE_RESPONSE).isEmpty()){
+            if(!coapResponse.isUpdateNotification()){
                 if(observations.contains(me.getRemoteAddress(), coapResponse.getServicePath())){
                     removeObservation((InetSocketAddress) me.getRemoteAddress(), coapResponse.getServicePath());
                 }
             }
             else{
                 if(observations.contains(me.getRemoteAddress(), coapResponse.getServicePath())){
-                    increaseNotificationCount((InetSocketAddress) me.getRemoteAddress(),
-                            coapResponse.getServicePath());
 
-                    ObservationParameter status = observations.get(me.getRemoteAddress(), coapResponse.getServicePath());
+                    if((Long) coapResponse.getOption(OBSERVE_RESPONSE).get(0).getDecodedValue() == 0){
+                        increaseNotificationCount((InetSocketAddress) me.getRemoteAddress(),
+                                coapResponse.getServicePath());
+                    }
 
-                    if(status != null){
+                    ObservationParameter parameter =
+                            observations.get(me.getRemoteAddress(), coapResponse.getServicePath());
+
+                    if(parameter != null){
                         if(coapResponse.getContentType() != null){
                             log.info("Set MediaType {} for {} observing {}", new Object[]{coapResponse.getContentType(),
                                     me.getRemoteAddress(), coapResponse.getServicePath()});
-                            status.setAcceptedMediaType(coapResponse.getContentType());
+                            parameter.setAcceptedMediaType(coapResponse.getContentType());
                         }
 
                         //set the observer specific notification count of the running observation
-                        coapResponse.setObserveOptionValue(status.getNotificationCount());
+                        coapResponse.setObserveOptionValue(parameter.getNotificationCount());
                     }
                 }
             }
@@ -255,8 +259,6 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         ObservationParameter parameter = observations.get(observerAddress, servicePath);
         if(parameter != null){
             parameter.increaseNotificationCount();
-            log.debug("Notificaton count for {} observing {} set to {}.",
-                    new Object[]{observerAddress, servicePath, parameter.getNotificationCount()});
         }
     }
 

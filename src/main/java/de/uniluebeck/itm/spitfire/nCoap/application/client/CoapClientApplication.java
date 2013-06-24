@@ -119,6 +119,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                             log.info("Sent to to {}:{}: {}",
                                     new Object[]{rcptSocketAddress.getAddress().getHostAddress(),
                                             rcptSocketAddress.getPort(), coapRequest});
+                            coapResponseProcessor.messageSuccesfullySent();
                         }
                     });
 

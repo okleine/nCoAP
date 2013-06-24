@@ -5,12 +5,12 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import  de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Observable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -45,14 +45,18 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 
     /**
      * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
-     * {@link de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication} instance (using {@link de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication#registerService(WebService)}.
+     * {@link CoapServerApplication} instance (using {@link CoapServerApplication#registerService(WebService)}.
      * So, usually there is no need to set another {@link ScheduledExecutorService} instance manually.
      *
      * @param executorService a {@link ScheduledExecutorService} instance.
      */
     @Override
     public void setExecutorService(ScheduledExecutorService executorService){
+        if(this.executorService != null)
+            this.executorService.shutdownNow();
+
         this.executorService = executorService;
+        scheduleMaxAgeNotifications();
     }
 
 

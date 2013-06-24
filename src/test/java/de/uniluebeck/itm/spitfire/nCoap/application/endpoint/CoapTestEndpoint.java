@@ -78,42 +78,14 @@ public class CoapTestEndpoint extends SimpleChannelHandler {
         return receivedMessages;
     }
 
-//    public LinkedList<MessageReceiverResponse> getOutgoingMessageQueue(){
-//        return outgoingMessageQueue;
-//    }
-
     public synchronized void setReceiveEnabled(boolean receiveEnabled) {
         this.receiveEnabled = receiveEnabled;
     }
-
-//    public synchronized void setWriteEnabled(boolean writeEnabled) {
-//        this.writeEnabled = writeEnabled;
-//    }
-
-//    public synchronized void reset() {
-//        receivedMessages.clear();
-//        outgoingMessageQueue.clear();
-//        setReceiveEnabled(true);
-//        setWriteEnabled(true);
-//    }
 
     public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
         log.info("Write " + coapMessage);
         Channels.write(channel, coapMessage, remoteAddress);
     }
-
-//    public void writeNextMessage(InetSocketAddress remoteAddress){
-//        if(!writeEnabled)
-//            fail("Write is disabled!");
-//        CoapMessage coapMessage = outgoingMessageQueue.poll();
-//        log.info("Write message: {}", coapMessage);
-//        Channels.write(channel, coapMessage, remoteAddress);
-//    }
-//
-//
-//    public void addMessageToOutgoingQueue(MessageReceiverResponse response) {
-//        outgoingMessageQueue.add(response);
-//    }
 
     /**
      * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and

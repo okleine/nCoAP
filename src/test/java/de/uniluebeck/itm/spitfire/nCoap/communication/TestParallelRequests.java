@@ -1,7 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapReponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.NotObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -16,7 +16,6 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
@@ -35,14 +34,12 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     private static final int NUMBER_OF_PARALLEL_REQUESTS = 1000;
 
-    private static TestCoapReponseProcessor[] responseProcessors =
-            new TestCoapReponseProcessor[NUMBER_OF_PARALLEL_REQUESTS];
+    private static TestCoapResponseProcessor[] responseProcessors =
+            new TestCoapResponseProcessor[NUMBER_OF_PARALLEL_REQUESTS];
 
     private static CoapRequest[] requests = new CoapRequest[NUMBER_OF_PARALLEL_REQUESTS];
 
     private static CoapTestServer server;
-
-    private static long startTime;
 
     @Override
     public void setupComponents() throws Exception {
@@ -59,7 +56,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         client = new CoapClientApplication();
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            responseProcessors[i] = new TestCoapReponseProcessor();
+            responseProcessors[i] = new TestCoapResponseProcessor();
             requests[i] =  new CoapRequest(MsgType.CON, Code.GET,
                     new URI("coap://localhost:" + server.getServerPort() + "/service" + (i+1)));
         }
@@ -73,60 +70,43 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication")
-              .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.NotObservableTestWebService")
-              .setLevel(Level.DEBUG);
         Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.TestParallelRequests").setLevel(Level.DEBUG);
         //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.reliability").setLevel(Level.INFO);
-        //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.callback").setLevel(Level.DEBUG);
+
     }
 
     @Override
     public void createTestScenario() throws Exception {
-
-        startTime = System.currentTimeMillis();
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
             client.writeCoapRequest(requests[i], responseProcessors[i]);
         }
 
         //await responses
-        Thread.sleep(5000);
+        Thread.sleep(10000);
     }
 
-
-
     @Test
-    public void testAllResponseProcessorsReceivedACKandCONResponse(){
+    public void testAllResponseProcessorsReceivedACKinTime(){
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            assertEquals("ResponseProcessor " + (i + 1) + " received wrong number of empty ACKs.",
-                    1, responseProcessors[i].getEmptyAcknowledgements().size());
-
-            long emptyAckTime = responseProcessors[i].getEmptyAcknowledgements().firstKey();
-
-            assertEquals("ResponseProcessor " + (i + 1) + " received wrong number of CON responses.",
+            assertEquals("ResponseProcessor " + (i + 1) + " received wrong number of ACKs.",
                     1, responseProcessors[i].getCoapResponses().size());
 
-            long conResponseTime = responseProcessors[i].getCoapResponses().firstKey();
-
-            assertTrue("Response Processor " + (i+1) + " received CON response before empty ACK!",
-                    conResponseTime > emptyAckTime);
+            for(Long responseReceptionTime : responseProcessors[i].getEmptyAcknowledgements().keySet()){
+                long delay = responseReceptionTime - responseProcessors[i].getRequestSendTime();
+                assertTrue("ACK was received to late (delay: " + delay + "ms.", delay <= 2200);
+            }
         }
-
     }
 
     @Test
     public void testClientsReceivedCorrectResponses(){
+
         for (int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            CoapResponse coapResponse = responseProcessors[i].getCoapResponses()
-                    .get(responseProcessors[i].getCoapResponses().firstKey());
-
-//            assertEquals("Response Processor " + (i+1) + " received wrong message type!",
-//                    MsgType.CON, coapResponse.getMessageType());
-
-            assertEquals("Response Processor " + (i+1) + " received wrong message content",
-                    "Status of Webservice " + (i+1), coapResponse.getPayload().toString(Charset.forName("UTF-8")));
+            for(CoapResponse coapResponse : responseProcessors[i].getCoapResponses().values()){
+                assertEquals("Response Processor " + (i+1) + " received wrong message content",
+                        "Status of Webservice " + (i+1), coapResponse.getPayload().toString(Charset.forName("UTF-8")));
+            }
         }
     }
 
