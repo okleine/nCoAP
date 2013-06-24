@@ -6,19 +6,27 @@ import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.charset.Charset;
+import java.util.Iterator;
+import java.util.SortedMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.Assert.assertEquals;
+import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
 * Tests for the removal of observers.
@@ -44,8 +52,10 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
 
     @Override
     public void setupLogging() throws Exception {
-        Logger
-        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.encoding").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.observe")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint")
+                .setLevel(Level.DEBUG);
     }
 
     @Override
@@ -66,12 +76,12 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         observationRequest1.setToken(new byte[]{1,2,3,4});
 
         normalRequest = new CoapRequest(MsgType.CON, Code.GET, targetURI);
-        observationRequest1.getHeader().setMsgID(456);
+        normalRequest.getHeader().setMsgID(456);
 
         observationRequest2 = new CoapRequest(MsgType.CON, Code.GET, targetURI);
         observationRequest2.setObserveOptionRequest();
-        observationRequest1.getHeader().setMsgID(789);
-        observationRequest1.setToken(new byte[]{5,6,7,8});
+        observationRequest2.getHeader().setMsgID(789);
+        observationRequest2.setToken(new byte[]{5,6,7,8});
 
         executorService = Executors.newScheduledThreadPool(1);
     }
@@ -111,7 +121,7 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
 //                  |                             |
 //                  |<-------1st Notification-----|          Receive first notification (ACK)
 //                  |                             |
-//                  |                             |  <-----  Status update (new status: 0) (after 4000 ms)
+//                  |                             |  <-----  Status update (new status: 5) (after 4000 ms)
 //                  |                             |
 //                  |<-------2nd Notification-----|
 //                  |                             |
@@ -119,42 +129,28 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
 //                  |                             |
 
         //schedule first observation request
-        executorService.schedule(new Runnable(){
-            @Override
-            public void run() {
-                endpoint.writeMessage(observationRequest1, new InetSocketAddress("localhost", server.getServerPort()));
-            }
-        }, 0, TimeUnit.MILLISECONDS);
+        endpoint.writeMessage(observationRequest1, new InetSocketAddress("localhost", server.getServerPort()));
+        //Wait for ACK and one NON update notification
+        Thread.sleep(1100);
 
-        //send GET for same resource without Observe Option
-        executorService.schedule(new Runnable() {
-            @Override
-            public void run() {
-                endpoint.writeMessage(normalRequest, new InetSocketAddress("localhost", server.getServerPort()));
-            }
-        }, 1100, TimeUnit.MILLISECONDS);
+        //write normal GET request to cancel observation
+        endpoint.writeMessage(normalRequest, new InetSocketAddress("localhost", server.getServerPort()));
+        //Wait for ACK, there should be no update notification for new status 3
+        Thread.sleep(2000);
 
-        //send GET for same resource without Observe Option
-        executorService.schedule(new Runnable() {
-            @Override
-            public void run() {
-                endpoint.writeMessage(observationRequest2, new InetSocketAddress("localhost", server.getServerPort()));
-            }
-        }, 3100, TimeUnit.MILLISECONDS);
+        //write second observation request
+        endpoint.writeMessage(observationRequest2, new InetSocketAddress("localhost", server.getServerPort()));
+        //wait for ACK and one NON update notification
+        Thread.sleep(1000);
 
-        //send GET for same resource without Observe Option
-        executorService.schedule(new Runnable() {
-            @Override
-            public void run() {
-                int messageID =
-                        endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().lastKey()).getMessageID();
-
-                endpoint.writeMessage(CoapMessage.createEmptyReset(messageID),
+        //Write reset message to cancel observation
+        int messageID =
+                endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().lastKey()).getMessageID();
+        endpoint.writeMessage(CoapMessage.createEmptyReset(messageID),
                         new InetSocketAddress("localhost", server.getServerPort()));
-            }
-        }, 4100, TimeUnit.MILLISECONDS);
 
-        Thread.sleep(5000);
+        //There is another status update but the endpoint should be already removed as observer
+        Thread.sleep(2000);
     }
 
 
@@ -165,81 +161,129 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         assertEquals(message, 5, endpoint.getReceivedMessages().values().size());
     }
 
-//    @Test
-//    public void testReceiverReceivedRegistration1Notification1() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
-//        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
-//        String message = "1st notification: MsgType is not ACK";
-//        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
-//        message = "1st notification: Code is not 2.05 (Content)";
-//        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
-//        message = "1st notification: Payload does not match";
-//        assertEquals(message, notification.getPayload(), receivedMessage.getPayload());
-//    }
-//
-//    @Test
-//    public void testReceiverReceivedRegistration1ACKresponse() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
-//        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
-//        timeKeys.next();
-//        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
-//        String message = "Simple ACK response: MsgType is not ACK";
-//        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
-//        message = "Simple ACK response: Code is not 2.05 (Content)";
-//        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
-//        message = "Simple ACK response: Payload does not match";
-//        assertEquals(message, notification.getPayload(), receivedMessage.getPayload());
-//    }
-//
-//    @Test
-//    public void testReceiverReceivedRegistration2Notification1() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
-//        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
-//        timeKeys.next();
-//        timeKeys.next();
-//        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
-//        String message = "2nd registration, 1st notification: MsgType is not ACK";
-//        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
-//        message = "2nd registration, 1st notification: Code is not 2.05 (Content)";
-//        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
-//        message = "2nd registration, 1st notification: Payload does not match";
-//        assertEquals(message, notification.getPayload(), receivedMessage.getPayload());
-//    }
-//
-//    @Test
-//    public void testReceiverReceivedRegistration2Notification2() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
-//        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
-//        timeKeys.next();
-//        timeKeys.next();
-//        timeKeys.next();
-//        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
-//        String message = "2nd registration, 2nd notification: MsgType is not ACK";
-//        assertEquals(message, MsgType.CON, receivedMessage.getMessageType());
-//        message = "2nd registration, 2nd notification: Code is not 2.05 (Content)";
-//        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
-//        message = "2nd registration, 2nd notification: Payload does not match";
-//        assertEquals(message, notification.getPayload(), receivedMessage.getPayload());
-//    }
-//
-//    @Test
-//    public void testReg2ObserveOptionSequenceIsSetProperly() {
-//        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
-//        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
-//        timeKeys.next();
-//        timeKeys.next();
-//        CoapMessage reg2notification1 = receivedMessages.get(timeKeys.next());
-//        CoapMessage reg2notification2 = receivedMessages.get(timeKeys.next());
-//
-//        Long observe1 = ((UintOption)reg2notification1.getOption(OBSERVE_RESPONSE).get(0)).getDecodedValue();
-//        Long observe2 = ((UintOption)reg2notification2.getOption(OBSERVE_RESPONSE).get(0)).getDecodedValue();
-//
-//        String message = String.format("ObserveOption sequence in second "
-//                + "registration is not set properly (1st: %d, 2nd: %d)",
-//                observe1, observe2);
-//        assertTrue(message, observe1 < observe2);
-//    }
-//
+    @Test
+    public void testFirstReceivedMessage() {
+        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
+
+        String message = "1st notification: MsgType is not ACK";
+        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
+
+        message = "1st notification: Code is not 2.05 (Content)";
+        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+
+        message = "1st notification: Payload does not match";
+        assertEquals(message, "Status #1",receivedMessage.getPayload().toString(Charset.forName("UTF-8")));
+    }
+
+    @Test
+    public void testSecondReceivedMessage() {
+        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
+        timeKeys.next();
+
+        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
+
+        String message = "Message type is not NON";
+        assertEquals(message, MsgType.NON, receivedMessage.getMessageType());
+
+        message = "Simple ACK response: Code is not 2.05 (Content)";
+        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+
+        message = "Payload does not match.";
+
+        assertEquals(message, "Status #2", receivedMessage.getPayload().toString(Charset.forName("UTF-8")));
+    }
+
+    @Test
+    public void testThirdReceivedMessage() {
+        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
+        timeKeys.next();
+        timeKeys.next();
+
+        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
+
+        String message = "Message type is not ACK.";
+        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
+
+        message = "Code is not 2.05 (Content)";
+        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+
+        message = "Payload does not match.";
+        assertEquals(message, "Status #2", receivedMessage.getPayload().toString(Charset.forName("UTF-8")));
+    }
+
+    @Test
+    public void test4thReceivedMessage() {
+        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
+        timeKeys.next();
+        timeKeys.next();
+        timeKeys.next();
+
+        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
+
+        String message = "MsgType is not ACK";
+        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
+
+        message = "Code is not 2.05 (Content)";
+        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+
+        message = "Payload does not match";
+        assertEquals(message, "Status #4", receivedMessage.getPayload().toString(Charset.forName("UTF-8")));
+    }
+
+    @Test
+    public void test5thReceivedMessage() {
+        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
+        timeKeys.next();
+        timeKeys.next();
+        timeKeys.next();
+        timeKeys.next();
+
+        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
+
+        String message = "MsgType is not NON";
+        assertEquals(message, MsgType.NON, receivedMessage.getMessageType());
+
+        message = "Code is not 2.05 (Content)";
+        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+
+        message = "Payload does not match";
+        assertEquals(message, "Status #5", receivedMessage.getPayload().toString(Charset.forName("UTF-8")));
+    }
+
+    @Test
+    public void testObserveResponseOptions(){
+        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
+
+        CoapResponse coapResponse1 = (CoapResponse) receivedMessages.get(timeKeys.next());
+        long notificationCount1 = (Long) coapResponse1.getOption(OBSERVE_RESPONSE).get(0).getDecodedValue();
+
+        CoapResponse coapResponse2 = (CoapResponse) receivedMessages.get(timeKeys.next());
+        long notificationCount2 = (Long) coapResponse2.getOption(OBSERVE_RESPONSE).get(0).getDecodedValue();
+
+        assertTrue("Notification count of response 2 is not larger than of response 1.",
+                notificationCount2 > notificationCount1);
+
+        CoapResponse coapResponse3 = (CoapResponse) receivedMessages.get(timeKeys.next());
+        assertFalse("Response 3 is an update notification!", coapResponse3.isUpdateNotification());
+
+        CoapResponse coapResponse4 = (CoapResponse) receivedMessages.get(timeKeys.next());
+        long notificationCount4 = (Long) coapResponse4.getOption(OBSERVE_RESPONSE).get(0).getDecodedValue();
+
+        CoapResponse coapResponse5 = (CoapResponse) receivedMessages.get(timeKeys.next());
+        long notificationCount5 = (Long) coapResponse5.getOption(OBSERVE_RESPONSE).get(0).getDecodedValue();
+
+        assertTrue("Notification count of response 5 is not larger than of response 4.",
+                notificationCount5 > notificationCount4);
+    }
+
+
+
 //    @Test
 //    public void testObserveOptions() {
 //        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();

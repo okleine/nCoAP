@@ -173,8 +173,8 @@ public class ObservableWebServiceStatusChangeDuringRetransmissionTest extends Ab
 
         long[] notificationCounts = new long[exectedNotifications];
 
-        for(int i = 1; i <= exectedNotifications; i++){
-            notificationCounts[i-1] =
+        for(int i = 0; i < exectedNotifications; i++){
+            notificationCounts[i] =
                     (Long) receivedMessages[i]
                            .getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE)
                            .get(0)
@@ -184,10 +184,9 @@ public class ObservableWebServiceStatusChangeDuringRetransmissionTest extends Ab
         for(int i = 1; i < exectedNotifications; i++){
             long actual = notificationCounts[i];
             long previous = notificationCounts[i-1];
+
             assertTrue("Notification count (" + actual + ") was not larger than previous (" + previous + ")!",
                     notificationCounts[i] > notificationCounts[i-1]);
         }
     }
-
-
 }

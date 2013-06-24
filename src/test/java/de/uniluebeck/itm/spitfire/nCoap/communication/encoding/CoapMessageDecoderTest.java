@@ -168,6 +168,9 @@ public class CoapMessageDecoderTest {
                 + " b" //option delta => absolute option number: 11 + 0 = 11 = TOKEN
                 + " 1" //option length in bytes
                 + "35")); // <-- TOKEN
+
+
+        testMessages.add(new DecodeTestMessage(CoapMessage.createEmptyReset(45), new byte[]{112, 0, 0, 45}));
     }
     
     /**

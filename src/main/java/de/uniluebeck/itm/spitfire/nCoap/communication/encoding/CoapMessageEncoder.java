@@ -56,13 +56,15 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         }
 
         CoapMessage coapMessage = (CoapMessage) object;
+        log.debug("CoapMessage to encode: {}", coapMessage);
+
         ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
         encodeHeader(buffer, coapMessage.getHeader(), coapMessage.getOptionCount());
         encodeOptions(buffer, coapMessage.getOptionList());
 
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, coapMessage.getPayload());
 
-        log.debug("Encoded message {} (length: {} bytes).", coapMessage, buf.readableBytes());
+
 
         return buf;
     }
@@ -103,7 +105,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
                     prevNumber = optionName.getNumber();
                 }
 
-                log.debug("Encoded {}: {}", option.getOptionNumber(), Tools.toHexString(option.getValue()));
+                log.debug("Encoded {}: {}", optionName, Tools.toHexString(option.getValue()));
             }
         }
     }

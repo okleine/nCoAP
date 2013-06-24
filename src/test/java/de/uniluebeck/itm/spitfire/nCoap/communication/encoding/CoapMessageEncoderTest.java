@@ -96,6 +96,12 @@ public class CoapMessageEncoderTest {
                 + " 2" //option length in bytes
                 + "ffff" // 65535 = 0xFFFF
                 + getBytesAsString("testpayload\u00FF".getBytes("UTF8")))); //payload
+
+        //CoAPMessage to encode
+
+        testMessages.add(new EncodeTestMessage(CoapMessage.createEmptyReset(45)
+                , new byte[]{112, 0, 0, 45}));
+
     }
     
     /**

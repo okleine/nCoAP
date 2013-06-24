@@ -50,7 +50,7 @@ public class CoapTestEndpoint extends SimpleChannelHandler {
                 ChannelPipeline pipeline = Channels.pipeline();
                 pipeline.addLast("Encoder", new CoapMessageEncoder());
                 pipeline.addLast("Decoder", new CoapMessageDecoder());
-                pipeline.addLast("CoAP Message Receiver", CoapTestEndpoint.this );
+                pipeline.addLast("CoAP Endpoint", CoapTestEndpoint.this );
                 return pipeline;
             }
         });

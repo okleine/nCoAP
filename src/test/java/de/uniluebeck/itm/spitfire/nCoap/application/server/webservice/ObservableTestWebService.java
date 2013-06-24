@@ -19,7 +19,7 @@ import static org.junit.Assert.fail;
 /**
  * This observable resource changes its status periodically with a delay given as argument for the constructor.
  * There are 5 possible states. The internal state representation, i.e. the returned value v of
- * {@link #getResourceStatus()} is 0, 1, 2, 3 or 4. The payload contained in a the {@link CoapResponse}
+ * {@link #getResourceStatus()} is 1, 2, 3, 4 or 5. The payload contained in a the {@link CoapResponse}
  * returned by {@link #processMessage(CoapRequest, InetSocketAddress)} is "Status 1",
  * "Status 2", ..., "Status 5".
  */
@@ -73,7 +73,10 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
 
                 @Override
                 public void run() {
-                    setResourceStatus((getResourceStatus() + 1) % 5);
+                    int newStatus = (getResourceStatus() + 1) % 6;
+                    if(newStatus == 0)
+                        newStatus = 1;
+                    setResourceStatus(newStatus);
                     scheduleAutomaticStatusChange();
                 }
             }, updateInterval, TimeUnit.MILLISECONDS);
