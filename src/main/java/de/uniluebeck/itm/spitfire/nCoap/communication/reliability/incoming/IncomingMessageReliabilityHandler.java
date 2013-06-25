@@ -155,7 +155,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     private void setMessageType(CoapResponse coapResponse, Boolean acknowledgementSent) throws Exception{
 
         //the response is either on a NON request or is an update notification for observers
-        if(acknowledgementSent == null){
+        if(acknowledgementSent == null && !coapResponse.isUpdateNotification()){
+            coapResponse.getHeader().setMsgID(Header.MESSAGE_ID_UNDEFINED);
+            coapResponse.getHeader().setMsgType(MsgType.NON);
             return;
         }
 
@@ -213,16 +215,16 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     }
 
 
-    private synchronized boolean removeAcknowledgementStatus(InetSocketAddress remoteAddress, int messageID){
-        Boolean removed = acknowledgementStates.remove(remoteAddress, messageID);
-
-        if(removed != null && removed)
-            log.debug("Removed ACK status for message ID {} to {}." , remoteAddress, messageID);
-
-        if(removed != null)
-            return removed;
-        else
-            return false;
+    private synchronized Boolean removeAcknowledgementStatus(InetSocketAddress remoteAddress, int messageID){
+        return acknowledgementStates.remove(remoteAddress, messageID);
+//
+//        if(removed != null && removed)
+//            log.debug("Removed ACK status for message ID {} to {}." , remoteAddress, messageID);
+//
+//        if(removed != null)
+//            return removed;
+//        else
+//            return false;
     }
 
 

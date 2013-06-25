@@ -29,8 +29,6 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
 
     private long pretendedProcessingTimeForRequests;
 
-    private Object monitor = null;
-
     public NotObservableTestWebService(String path, String initialStatus, long pretendedProcessingTimeForRequests){
         super(path, initialStatus);
         this.pretendedProcessingTimeForRequests = pretendedProcessingTimeForRequests;
@@ -44,8 +42,8 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
     @Override
     public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress) {
         log.debug("Incoming request for resource " + getPath());
-        //Simulate a potentially long processing time
 
+        //Simulate a potentially long processing time
         try {
             Thread.sleep(pretendedProcessingTimeForRequests);
         } catch (InterruptedException e) {

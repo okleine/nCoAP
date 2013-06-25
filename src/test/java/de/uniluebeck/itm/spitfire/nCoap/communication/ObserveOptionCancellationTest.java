@@ -48,8 +48,6 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
     private static CoapRequest normalRequest;
     private static CoapRequest observationRequest2;
 
-    ScheduledExecutorService executorService;
-
     @Override
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.observe")
@@ -82,8 +80,6 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         observationRequest2.setObserveOptionRequest();
         observationRequest2.getHeader().setMsgID(789);
         observationRequest2.setToken(new byte[]{5,6,7,8});
-
-        executorService = Executors.newScheduledThreadPool(1);
     }
 
     @Override

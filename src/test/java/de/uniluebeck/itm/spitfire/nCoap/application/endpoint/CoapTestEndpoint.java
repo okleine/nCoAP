@@ -15,8 +15,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
 
-import static org.junit.Assert.fail;
-
 
 /**
  * Receives and sends CoAP Messages for testing purposes. A {@link CoapTestEndpoint} has no automatic functionality
