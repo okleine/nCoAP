@@ -156,7 +156,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     private void scheduleRetransmissions(final ChannelHandlerContext ctx, final InetSocketAddress rcptAddress,
                                          final CoapMessage coapMessage){
 
-        //Schedule retransmissionSchedules
         RetransmissionSchedule retransmissionSchedule = new RetransmissionSchedule(coapMessage);
 
         //Compute delays

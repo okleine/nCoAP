@@ -61,7 +61,7 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
     @Override
     public void setupComponents() throws Exception {
         server = new CoapServerApplication(0);
-        service = new ObservableTestWebService(PATH_TO_SERVICE, 0, 0, 1000);
+        service = new ObservableTestWebService(PATH_TO_SERVICE, 1, 0, 1000);
         service.setUpdateNotificationConfirmable(false);
         server.registerService(service);
 

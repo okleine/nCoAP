@@ -1,6 +1,5 @@
 package de.uniluebeck.itm.spitfire.nCoap.application.server.webservice;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.MessageDoesNotAllowPayloadException;
@@ -109,7 +108,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
         //Create response 
         CoapResponse response = new CoapResponse(Code.CONTENT_205);
         try {
-            String payload = "Status #" + (getResourceStatus() + 1);
+            String payload = "Status #" + (getResourceStatus());
             response.setPayload(ChannelBuffers.wrappedBuffer(payload.getBytes(Charset.forName("UTF-8"))));
         }
         catch (MessageDoesNotAllowPayloadException e) {

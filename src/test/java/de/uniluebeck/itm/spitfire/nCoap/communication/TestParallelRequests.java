@@ -72,7 +72,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.TestParallelRequests").setLevel(Level.DEBUG);
         //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.reliability").setLevel(Level.INFO);
-
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor").setLevel(Level.DEBUG);
     }
 
     @Override
@@ -87,26 +87,12 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
     }
 
     @Test
-    public void testAllResponseProcessorsReceivedACKinTime(){
-        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            assertEquals("ResponseProcessor " + (i + 1) + " received wrong number of ACKs.",
-                    1, responseProcessors[i].getCoapResponses().size());
-
-            for(Long responseReceptionTime : responseProcessors[i].getEmptyAcknowledgements().keySet()){
-                long delay = responseReceptionTime - responseProcessors[i].getRequestSendTime();
-                assertTrue("ACK was received to late (delay: " + delay + "ms.", delay <= 2200);
-            }
-        }
-    }
-
-    @Test
     public void testClientsReceivedCorrectResponses(){
-
         for (int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            for(CoapResponse coapResponse : responseProcessors[i].getCoapResponses().values()){
-                assertEquals("Response Processor " + (i+1) + " received wrong message content",
-                        "Status of Webservice " + (i+1), coapResponse.getPayload().toString(Charset.forName("UTF-8")));
-            }
+            CoapResponse coapResponse = responseProcessors[i].getCoapResponses().get(0);
+
+            assertEquals("Response Processor " + (i+1) + " received wrong message content",
+                    "Status of Webservice " + (i+1), coapResponse.getPayload().toString(Charset.forName("UTF-8")));
         }
     }
 

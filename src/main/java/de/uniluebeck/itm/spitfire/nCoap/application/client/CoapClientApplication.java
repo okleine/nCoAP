@@ -58,7 +58,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, CoapResponseProcessor> responseCallbacks =
+    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, CoapResponseProcessor> responseProcessors =
             HashBasedTable.create();
 
     private DatagramChannel datagramChannel;
@@ -77,7 +77,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         CoapClientDatagramChannelFactory factory = new CoapClientDatagramChannelFactory(executorService);
 
         datagramChannel = factory.getChannel();
-        datagramChannel.getPipeline().addLast("Client application", this);
+        datagramChannel.getPipeline().addLast("Client Application", this);
 
 
         log.info("New CoAP client on port {}.", datagramChannel.getLocalAddress().getPort());
@@ -166,14 +166,14 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
     private synchronized void addResponseCallback(byte[] token, InetSocketAddress remoteAddress,
                                                   CoapResponseProcessor coapResponseProcessor){
-        responseCallbacks.put(new ByteArrayWrapper(token), remoteAddress, coapResponseProcessor);
-        log.debug("Number of clients waiting for response: {}. ", responseCallbacks.size());
+        responseProcessors.put(new ByteArrayWrapper(token), remoteAddress, coapResponseProcessor);
+        log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
     }
 
 
     private synchronized CoapResponseProcessor removeResponseCallback(byte[] token, InetSocketAddress remoteAddress){
-        CoapResponseProcessor result = responseCallbacks.remove(new ByteArrayWrapper(token), remoteAddress);
-        log.debug("Number of clients waiting for response: {}. ", responseCallbacks.size());
+        CoapResponseProcessor result = responseProcessors.remove(new ByteArrayWrapper(token), remoteAddress);
+        log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
         return result;
     }
 
@@ -194,7 +194,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                     (EmptyAcknowledgementReceivedMessage) me.getMessage();
 
             CoapResponseProcessor callback =
-                    responseCallbacks.get(message.getToken(), me.getRemoteAddress());
+                    responseProcessors.get(message.getToken(), me.getRemoteAddress());
 
             if(callback != null && callback instanceof EmptyAcknowledgementProcessor)
                 ((EmptyAcknowledgementProcessor) callback).processEmptyAcknowledgement(message);
@@ -221,29 +221,25 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
-            log.debug("Received message (" + coapResponse.getMessageType() + ", " + coapResponse.getCode() +
-                    ") is a response (Remote Address: " + me.getRemoteAddress() +
-                    ", Token: " + Tools.toHexString(coapResponse.getToken()));
-
+            log.debug("Response received: {}.", coapResponse);
 
             CoapResponseProcessor callback;
 
             if(coapResponse.isUpdateNotification())
-                callback = responseCallbacks.get(new ByteArrayWrapper(coapResponse.getToken()), me.getRemoteAddress());
+                callback = responseProcessors.get(new ByteArrayWrapper(coapResponse.getToken()), me.getRemoteAddress());
             else
                 callback = removeResponseCallback(coapResponse.getToken(), (InetSocketAddress) me.getRemoteAddress());
 
             if(callback != null){
-                log.debug("Received response with token " + Tools.toHexString(coapResponse.getToken()));
+                log.debug("Callback found for token {}.", Tools.toHexString(coapResponse.getToken()));
                 callback.processCoapResponse(coapResponse);
             }
             else{
-                log.debug("No callback found for token " + Tools.toHexString(coapResponse.getToken()));
+                log.debug("No callback found for token {}.", Tools.toHexString(coapResponse.getToken()));
             }
 
             me.getFuture().setSuccess();
         }
-
 
         else{
             me.getFuture().setFailure(new RuntimeException("Could not deal with message "

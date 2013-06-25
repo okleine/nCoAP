@@ -1,71 +1,138 @@
-//package de.uniluebeck.itm.spitfire.nCoap.communication;
-//
-//import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
-//import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
-//import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
-//import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
-//import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-//
-//import org.junit.Test;
-//
-//import java.net.URI;
-//import java.util.Iterator;
-//import java.util.SortedMap;
-//
-//import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.CONTENT_205;
-//import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.GET;
-//import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.CON;
-//import static de.uniluebeck.itm.spitfire.nCoap.testtools.ByteTestTools.assertEquals;
-//import static junit.framework.Assert.assertEquals;
-//
-///**
-//* Tests if a client receives notifications.
-//* @author Stefan Hueske
-//*/
-//public class ClientReceivesObserveNotification extends AbstractCoapCommunicationTest{
-//
-//    //observable request
-//    private static CoapRequest request;
-//
-//    //notifications
-//    private static CoapResponse expectedNotification1;
-//    private static CoapResponse expectedNotification2;
-//
-//    @Override
-//    public void createTestScenario() throws Exception {
-//        //define expected responses
-//        expectedNotification1 = new CoapResponse(CONTENT_205);
-//        expectedNotification1.setPayload("testpayload1".getBytes("UTF-8"));
-//
-//        expectedNotification2 = new CoapResponse(CONTENT_205);
-//        expectedNotification2.setPayload("testpayload2".getBytes("UTF-8"));
-//
-//        //setup testserver
-//        registerObservableTestService(0, 3000);
-//
-//        //create CoAP request
-//        URI serviceUri = new URI("coap://localhost:" + testServer.getServerPort() + OBSERVABLE_SERVICE_PATH);
-//        request = new CoapRequest(CON, GET, serviceUri, testClient);
-//        request.setObserveOptionRequest();
-//
-//        //run test sequence
-//        testClient.writeCoapRequest(request);
-//
-//        //wait for 2 notifications (first immediate, second after 3 seconds)
-//        Thread.sleep(4000);
-//
-//        testClient.setReceiveEnabled(false);
-//
-//        //delete service from server to stop observability
-//        testServer.removeService(OBSERVABLE_SERVICE_PATH);
-//    }
-//
-//    @Test
-//    public void testReceiverReceived2Messages() {
-//        String message = "Receiver did not receive 2 messages";
-//        assertEquals(message, 2, testClient.getReceivedResponses().size());
-//    }
-//
+package de.uniluebeck.itm.spitfire.nCoap.communication;
+
+import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableTestWebService;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
+import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
+import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.junit.Test;
+
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.util.Iterator;
+import java.util.SortedMap;
+
+import static junit.framework.Assert.assertEquals;
+
+/**
+* Tests if a client receives notifications.
+* @author Stefan Hueske, Oliver Kleine
+*/
+public class ClientReceivesObserveNotification extends AbstractCoapCommunicationTest{
+
+    private static final String PATH_TO_SERVICE = "/observable";
+
+    private static CoapClientApplication client;
+    private static TestCoapResponseProcessor responseProcessor;
+
+    private static CoapServerApplication server;
+    private static ObservableTestWebService service;
+
+    //observable request
+    private static CoapRequest request;
+
+
+    @Override
+    public void setupLogging() throws Exception {
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.observe")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor")
+                .setLevel(Level.INFO);
+    }
+
+    @Override
+    public void setupComponents() throws Exception {
+        server = new CoapServerApplication(0);
+        service = new ObservableTestWebService(PATH_TO_SERVICE, 1, 0);
+        server.registerService(service);
+
+        client = new CoapClientApplication();
+        responseProcessor = new TestCoapResponseProcessor();
+
+        URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
+        request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        request.setObserveOptionRequest();
+    }
+
+    @Override
+    public void shutdownComponents() throws Exception {
+        client.shutdown();
+    }
+
+
+    @Override
+    public void createTestScenario() throws Exception {
+
+//               Client                        Server
+//              (1) |------GET-OBSERVE----------->|           send observable request to server
+//                  |                             |
+//              (2) |<-----ACK-NOTIFICATION-------|           server responds with initial, piggy-backed notification
+//                  |                             |
+//                  |                             |  <------  status update (new status: 2)
+//                  |                             |
+//              (3) |<-----CON-NOTIFICATION-------|           server sends 2nd notification,
+//                  |                             |
+//              (4) |------EMPTY-ACK------------->|
+//                  |                             |
+//                  |                             |  <------- shutdown server
+//                  |                             |
+//              (5) |<-----CON-NOTIFICATION-------|           server sends 3rd notification (404 not found)
+
+
+
+        //write request
+        client.writeCoapRequest(request, responseProcessor);
+
+        Thread.sleep(3000);
+        service.setResourceStatus(2);
+
+        Thread.sleep(1000);
+
+        server.shutdown();
+        Thread.sleep(1000);
+    }
+
+    @Test
+    public void testClientReceived3Messages() {
+        String message = "Receiver did not receive 3 messages";
+        assertEquals(message, 3, responseProcessor.getCoapResponses().size());
+    }
+
+    @Test
+    public void testFirstMessage(){
+        CoapResponse response = responseProcessor.getCoapResponse(0);
+
+        assertEquals("Messagt type is not ACK", MsgType.ACK, response.getMessageType());
+
+        assertEquals("Content does not match.", "Status #1",
+                response.getPayload().toString(Charset.forName("UTF-8")));
+    }
+
+    @Test
+    public void testSecondMessage(){
+        CoapResponse response = responseProcessor.getCoapResponse(1);
+
+        assertEquals("Messagt type is not CON", MsgType.CON, response.getMessageType());
+
+        assertEquals("Content does not match.", "Status #2",
+                response.getPayload().toString(Charset.forName("UTF-8")));
+    }
+
+    @Test
+    public void testThirdMessage(){
+        CoapResponse response = responseProcessor.getCoapResponse(2);
+
+        assertEquals("Messagt type is not CON", MsgType.CON, response.getMessageType());
+
+        assertEquals("Code is not 404", Code.NOT_FOUND_404, response.getCode());
+    }
+
 //    @Test
 //    public void testReceiverReceivedNotification1() {
 //        SortedMap<Long, CoapResponse> receivedMessages = testClient.getReceivedResponses();
@@ -91,6 +158,6 @@
 //        message = "2nd notification: Payload does not match";
 //        assertEquals(message, expectedNotification2.getPayload(), receivedMessage.getPayload());
 //    }
-//
-//
-//}
+
+
+}

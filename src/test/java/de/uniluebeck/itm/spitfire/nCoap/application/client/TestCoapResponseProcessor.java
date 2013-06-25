@@ -9,9 +9,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.Retra
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import org.apache.log4j.Logger;
 
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -25,18 +23,18 @@ public class TestCoapResponseProcessor implements CoapResponseProcessor, Retrans
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    private HashMultimap <Long, CoapResponse> responses = HashMultimap.create();
+    private ArrayList<Object[]> responses = new ArrayList<Object[]>();
 
-    private HashMultimap<Long, EmptyAcknowledgementReceivedMessage> emptyAcknowledgements = HashMultimap.create();
+    private ArrayList<Object[]> emptyAcknowledgements = new ArrayList<Object[]>();
 
-    private HashMultimap<Long, RetransmissionTimeoutMessage> timeoutMessages = HashMultimap.create();
+    private ArrayList<Object[]>  timeoutMessages = new ArrayList<Object[]>();
 
     private long requestSendTime;
 
     @Override
     public void processCoapResponse(CoapResponse coapResponse) {
-        log.info("Received Response: " + coapResponse);
-        responses.put(System.currentTimeMillis(), coapResponse);
+       responses.add(new Object[]{coapResponse, System.currentTimeMillis()});
+       log.info("Received Response #" + responses.size() + ": " + coapResponse);
     }
 
     @Override
@@ -47,27 +45,63 @@ public class TestCoapResponseProcessor implements CoapResponseProcessor, Retrans
     @Override
     public void processRetransmissionTimeout(RetransmissionTimeoutMessage message) {
         log.info("Retransmission Timeout: " + message);
-        timeoutMessages.put(System.currentTimeMillis(), message);
+        timeoutMessages.add(new Object[]{message, System.currentTimeMillis()});
     }
 
     @Override
     public void processEmptyAcknowledgement(EmptyAcknowledgementReceivedMessage message) {
         log.info("Received empty ACK: " + message);
-        emptyAcknowledgements.put(System.currentTimeMillis(), message);
+        emptyAcknowledgements.add(new Object[]{message, System.currentTimeMillis()});
     }
 
-    public Multimap<Long, CoapResponse> getCoapResponses(){
-        return this.responses;
+    public List<CoapResponse> getCoapResponses(){
+        List<CoapResponse> result = new ArrayList<CoapResponse>();
+        for(Object[] object : responses){
+            result.add((CoapResponse) object[0]);
+        }
+        return result;
+    }
+    
+    public Long getCoapResponseReceptionTime(int index){
+        return (Long) (responses.get(index))[1];   
     }
 
-    public Multimap<Long, EmptyAcknowledgementReceivedMessage> getEmptyAcknowledgements() {
-        return emptyAcknowledgements;
+    public CoapResponse getCoapResponse(int index){
+        return (CoapResponse) (responses.get(index))[0];
     }
 
-    public Multimap<Long, RetransmissionTimeoutMessage> getTimeoutMessages() {
-        return timeoutMessages;
+
+    public List<EmptyAcknowledgementReceivedMessage> getEmptyAcknowledgementReceivedMessages(){
+        List<EmptyAcknowledgementReceivedMessage> result = new ArrayList<EmptyAcknowledgementReceivedMessage>();
+        for(Object[] object : emptyAcknowledgements){
+            result.add((EmptyAcknowledgementReceivedMessage) object[0]);
+        }
+        return result;
     }
 
+    public Long getEmptyAcknowledgementeReceptionTime(int index){
+        return (Long) (emptyAcknowledgements.get(index))[1];
+    }
+
+    public EmptyAcknowledgementReceivedMessage getEmptyAcknowledgementReceivedMessage(int index){
+        return (EmptyAcknowledgementReceivedMessage) (responses.get(index))[0];
+    }
+
+    public List<RetransmissionTimeoutMessage> getRetransmissionTimeoutMessages(){
+        List<RetransmissionTimeoutMessage> result = new ArrayList<RetransmissionTimeoutMessage>();
+        for(Object[] object : timeoutMessages){
+            result.add((RetransmissionTimeoutMessage) object[0]);
+        }
+        return result;
+    }
+
+    public Long getRetransmissionTimeoutTime(int index){
+        return (Long) (timeoutMessages.get(index))[1];
+    }
+
+    public RetransmissionTimeoutMessage getRetransmissionTimeoutMessage(int index){
+        return (RetransmissionTimeoutMessage) (timeoutMessages.get(index))[0];
+    }
 
     public long getRequestSendTime() {
         return requestSendTime;

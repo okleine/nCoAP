@@ -49,6 +49,7 @@ import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.*;
 
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
@@ -133,7 +134,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
-        log.info("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
+        log.debug("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
         if(!(me.getMessage() instanceof CoapRequest)){
             ctx.sendUpstream(me);
@@ -226,7 +227,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Response for token {} successfully sent to recipient {}.",
+                log.debug("Response for token {} successfully sent to recipient {}.",
                         new ByteArrayWrapper(coapResponse.getToken()), remoteAddress);
             }
         });
@@ -254,7 +255,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      * Shuts the server down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
      */
-    public void shutdown(){
+    public void shutdown() throws InterruptedException {
 
         //remove all webServices
         WebService[] services;
@@ -266,6 +267,9 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         for(WebService service : services){
             removeService(service.getPath());
         }
+
+        //some time to send possible update notifications (404_NOT_FOUND) to observers
+        Thread.sleep(1000);
 
         //Close the datagram datagramChannel (includes unbind)
         ChannelFuture future = channel.close();
@@ -284,8 +288,6 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         });
 
         future.awaitUninterruptibly();
-
-        executorService.shutdownNow();
     }
     
 

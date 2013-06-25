@@ -26,9 +26,12 @@ public abstract class AbstractCoapCommunicationTest {
 
 
     /**
-     * This method is supposed to define all communication to create the scenario the test method do their testing on
+     * If the extending test class is supposed to use any other logging level then {@link Level#ERROR} for everything
+     * then this can be configured by overriding this method
+     *
+     * @throws Exception
      */
-    public abstract void createTestScenario() throws Exception;
+    public abstract void setupLogging() throws Exception;
 
     /**
      * This method is to instanciate all necessary instances of {@link CoapClientApplication},
@@ -51,12 +54,10 @@ public abstract class AbstractCoapCommunicationTest {
     public abstract void shutdownComponents() throws Exception;
 
     /**
-     * If the extending test class is supposed to use any other logging level then {@link Level#ERROR} for everything
-     * then this can be configured by overriding this method
-     *
-     * @throws Exception
+     * This method is supposed to define all communication to create the scenario the test method do their testing on
      */
-    public abstract void setupLogging() throws Exception;
+    public abstract void createTestScenario() throws Exception;
+
 
     public AbstractCoapCommunicationTest(){
 
@@ -113,7 +114,7 @@ public abstract class AbstractCoapCommunicationTest {
             //Define loglevel
             Logger.getRootLogger().setLevel(Level.ERROR);
             Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.AbstractCoapCommunicationTest")
-                  .setLevel(Level.DEBUG);
+                  .setLevel(Level.INFO);
         }
     }
 }

@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static de.uniluebeck.itm.spitfire.nCoap.message.header.Code.GET;
-import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.NON;
+import static de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType.*;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
@@ -30,7 +30,7 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Op
 
 /**
  * This handler manages the observation of observable resources. Clients can register as observers of observable
- * resources by sending a request to the resource with the observe request option set. There are two ways for
+ * resources by sending a request to the resource with the observe request option set. There are three ways for
  * clients to unregister as observer:
  * <ul>
  *  <li>
@@ -42,6 +42,9 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Op
  *      send a {@link MsgType#RST} message within 2 minutes after reception of an update notification that echos
  *      the message ID of the update notification. This works for both kinds of update notification {@link MsgType#CON}
  *      and {@link MsgType#NON}. Later {@link MsgType#RST} messages are ignored.
+ *  </li>
+ *   <li>
+ *      do not acknowledge an update notification with message type {@link MsgType#CON}.
  *  </li>
  * </ul>
  *
@@ -173,11 +176,13 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                         observations.remove(observerAddress, message.getServicePath());
 
                 if(parameter != null){
-                    CoapResponse updateNotification =
-                            new CoapResponse(Code.NOT_FOUND_404);
+                    log.info("Removed {} as observer for service {}.", observerAddress, message.getServicePath());
+                    CoapResponse updateNotification = new CoapResponse(Code.NOT_FOUND_404);
+                    updateNotification.getHeader().setMsgType(CON);
+
                     updateNotification.setServicePath(message.getServicePath());
                     updateNotification.setToken(parameter.getToken());
-                    updateNotification.getHeader().setMsgType(NON);
+
                     sendUpdateNotification(updateNotification, (InetSocketAddress) observerAddress);
                 }
             }

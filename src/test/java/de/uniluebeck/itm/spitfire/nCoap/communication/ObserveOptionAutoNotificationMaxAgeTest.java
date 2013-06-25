@@ -57,7 +57,7 @@ public class ObserveOptionAutoNotificationMaxAgeTest extends AbstractCoapCommuni
     @Override
     public void setupComponents() throws Exception {
         server = new CoapServerApplication();
-        service = new ObservableTestWebService(PATH_TO_SERVICE, 0, 30);
+        service = new ObservableTestWebService(PATH_TO_SERVICE, 1, 30);
         service.setMaxAge(5);
 
         server.registerService(service);
