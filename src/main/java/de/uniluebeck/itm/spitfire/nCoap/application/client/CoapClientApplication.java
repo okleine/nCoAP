@@ -30,8 +30,7 @@ import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.Empty
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
@@ -178,13 +177,13 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     }
 
     /**
-     * This method relates incoming responses to open requests and invokes the method <code>reveiveCoapResponse</code>
-     * of the client that sent the response. CoaP clients thus should implement the {@link CoapResponseProcessor} interface
-     * by extending the abstract class {@link de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication}.
+     * This method relates incoming responses to open requests and invokes the appropriate method
+     * of the {@link CoapResponseProcessor} instance given with the {@link CoapRequest}.
      *
-     * @param ctx The {@link ChannelHandlerContext} to relate this handler to the
-     * {@link org.jboss.netty.channel.Channel}
-     * @param me The {@link MessageEvent} containing the {@link de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage}
+     * The invoked method depends on the message contained in the {@link MessageEvent}.
+     *
+     * @param ctx The {@link ChannelHandlerContext} to relate this handler to the {@link Channel}
+     * @param me The {@link MessageEvent} containing the {@link CoapMessage}
      */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
@@ -193,6 +192,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             EmptyAcknowledgementReceivedMessage message =
                     (EmptyAcknowledgementReceivedMessage) me.getMessage();
 
+            //find proper callback
             CoapResponseProcessor callback =
                     responseProcessors.get(message.getToken(), me.getRemoteAddress());
 

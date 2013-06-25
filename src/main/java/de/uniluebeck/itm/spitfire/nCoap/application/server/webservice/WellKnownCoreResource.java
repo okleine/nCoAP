@@ -2,13 +2,14 @@ package de.uniluebeck.itm.spitfire.nCoap.application.server.webservice;
 
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.message.MessageDoesNotAllowPayloadException;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.spitfire.nCoap.message.options.ToManyOptionsException;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * The .well-known/core resource is a standard webservice to be provided by every CoAP webserver as defined in
@@ -24,7 +24,7 @@ import java.util.Set;
  *
  * @author Oliver Kleine
  */
-public final class WellKnownCoreResource extends NotObservableWebService<Map<String, WebService>> {
+public final class WellKnownCoreResource extends ObservableWebService<Map<String, WebService>> {
 
     private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
 
@@ -47,7 +47,8 @@ public final class WellKnownCoreResource extends NotObservableWebService<Map<Str
      *
      * @param request The {@link CoapRequest} to be processed by the {@link WebService} instance
      * @param remoteAddress The address of the sender of the request
-     * @return
+     * @return the list of all paths of services registered at the same {@link CoapServerApplication} instance as
+     * this service is registered at.
      */
     @Override
     public CoapResponse processMessage(CoapRequest request, InetSocketAddress remoteAddress) {

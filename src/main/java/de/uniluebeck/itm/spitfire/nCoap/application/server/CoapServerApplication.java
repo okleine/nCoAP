@@ -56,19 +56,17 @@ import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.Me
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
 
 /**
- * Even though the communication is based on the Netty
- * framework, a developer of such a server doesn't have to go into details regarding the architecture. The whole
- * architecture is hidden from the users perspective. Technically speaking, the extending class will be the
- * topmost {@link ChannelUpstreamHandler} of the automatically generated netty handler stack.
+ * An instance of {@link CoapServerApplication} is the component to enable instances of {@link WebService} to
+ * communicate with the outside world, i.e. the Internet. Once a {@link CoapServerApplication} was instanciated
+ * one can register {@link WebService} instances and by this means make them available at their specified path.
  *
  * @author Oliver Kleine
  */
 public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
     public static final int DEFAULT_COAP_SERVER_PORT = 5683;
-    //public static final int NUMBER_OF_THREADS_TO_HANDLE_REQUESTS = 1000;
 
-    private static Logger log = LoggerFactory.getLogger(CoapServerApplication.class.getName());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private DatagramChannel channel;
 

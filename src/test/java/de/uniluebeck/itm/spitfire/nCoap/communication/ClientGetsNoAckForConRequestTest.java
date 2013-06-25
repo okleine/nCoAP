@@ -9,7 +9,6 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 import org.junit.Test;
 
 import java.net.URI;
