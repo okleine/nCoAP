@@ -6,6 +6,8 @@ import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication
 /**
  * This internal message is sent downstream when there is a new {@link ObservableWebService} instance registered
  * on the {@link CoapServerApplication} instance
+ *
+ * @author Oliver Kleine
  */
 public class InternalObservableResourceRegistrationMessage {
 

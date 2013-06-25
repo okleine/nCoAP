@@ -1,7 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -32,7 +32,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     private static CoapRequest request;
 
     private static CoapClientApplication client;
-    private static TestCoapResponseProcessor responseProcessor;
+    private static TestResponseProcessor responseProcessor;
 
     private static CoapTestEndpoint testEndpoint;
 
@@ -47,7 +47,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
         testEndpoint = new CoapTestEndpoint();
 
         client = new CoapClientApplication();
-        responseProcessor = new TestCoapResponseProcessor();
+        responseProcessor = new TestResponseProcessor();
         URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
         request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
     }
@@ -57,8 +57,6 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
         client.shutdown();
         testEndpoint.shutdown();
     }
-
-
 
     /**
      * Retransmission intervals (RC = Retransmission Counter):
@@ -87,8 +85,6 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
 //              (5) |----4th RETRANSMISSION------>|
 //                  |                             |
 //                  |                             |           internal timeout notification to response processor
-
-
 
 
         //Send request
@@ -172,6 +168,12 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
         log.info(message);
         assertTrue(message, minDelay <= actualDelay);
         assertTrue(message, maxDelay >= actualDelay);
+    }
+
+    @Test
+    public void testClientWasNotifiedOf5AttemptsToDeliverRequest(){
+        assertEquals("Client was not notfied the proper number of times about transmission attempts.",
+                5, responseProcessor.getRequestSentTimes().size());
     }
 }
 

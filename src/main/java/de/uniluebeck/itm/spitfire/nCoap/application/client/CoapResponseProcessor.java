@@ -23,24 +23,43 @@
 
 package de.uniluebeck.itm.spitfire.nCoap.application.client;
 
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
+import de.uniluebeck.itm.spitfire.nCoap.message.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.*;
 
 
 /**
- * Interface to be implemented by client applications to handle responses
+ * Classes implementing the {@link CoapResponseProcessor} interface handle incoming {@link CoapResponse}s related to
+ * a particular {@link CoapRequest}
+ *
+ * If you want your instance of {@link CoapResponseProcessor} to handle other events as well, the instance must
+ * additionally implement other interfaces, i.e.
+ * <ul>
+ *     <li>
+ *         {@link RetransmissionTimeoutProcessor} to be informed if the maximum number of retransmission attempts
+ *         was made for a confirmable {@link CoapRequest} and there was no acknowledgement received.
+ *     </li>
+ *     <li>
+ *         {@link EmptyAcknowledgementProcessor} to be informed if a confirmable {@link CoapRequest} was
+ *         acknowledged by the recipient with an empty acknowledgement.
+ *     </li>
+ *     <li>
+ *         {@link RetransmissionProcessor} to be informed about every transmission attempt for the {@link CoapRequest}.
+ *     </li>
+ * </ul>
+ *
+ * A {@link CoapResponseProcessor} is comparable to a tab in a browser, assuming the browser to be the
+ * {@link CoapClientApplication}
  *
  * @author Oliver Kleine
  */
 public interface CoapResponseProcessor {
 
     /**
-     * Method to be called by the {@link CoapClientApplication} for an incoming response (which is of any type but
+     * Method invoked by the {@link CoapClientApplication} for an incoming response (which is of any type but
      * empty {@link MsgType#ACK} or {@link MsgType#RST}).
      *
      * @param coapResponse the response message
      */
     public void processCoapResponse(CoapResponse coapResponse);
-
-    public void messageSuccesfullySent();
 }

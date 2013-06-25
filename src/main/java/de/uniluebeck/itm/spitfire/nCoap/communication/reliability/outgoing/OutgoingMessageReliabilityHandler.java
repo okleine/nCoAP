@@ -62,7 +62,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     /**
      * The approximate number of milliseconds between the last retransmission attempt for outgoing {@link CoapMessage}s
      * with {@link MsgType#CON} and a timeout notification, i.e. invokation of
-     * {@link RetransmissionTimeoutProcessor#processRetransmissionTimeout(RetransmissionTimeoutMessage)}.
+     * {@link RetransmissionTimeoutProcessor#processRetransmissionTimeout(InternalRetransmissionTimeoutMessage)}.
      */
     public static final int TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION = 5000;
 
@@ -197,8 +197,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             executorService.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    RetransmissionTimeoutMessage timeoutMessage =
-                            new RetransmissionTimeoutMessage(coapMessage.getToken(), rcptAddress);
+                    InternalRetransmissionTimeoutMessage timeoutMessage =
+                            new InternalRetransmissionTimeoutMessage(coapMessage.getToken(), rcptAddress);
 
                     MessageEvent timeoutEvent = new UpstreamMessageEvent(ctx.getChannel(), timeoutMessage,
                             new InetSocketAddress(0));
@@ -298,8 +298,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
                         log.info("Empty ACK received for message ID " + coapMessage.getMessageID());
 
-                        EmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
-                                new EmptyAcknowledgementReceivedMessage(retransmissionSchedule.getToken());
+                        InternalEmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
+                                new InternalEmptyAcknowledgementReceivedMessage(retransmissionSchedule.getToken());
 
                         ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), emptyAcknowledgementReceivedMessage,
                                 me.getRemoteAddress()));

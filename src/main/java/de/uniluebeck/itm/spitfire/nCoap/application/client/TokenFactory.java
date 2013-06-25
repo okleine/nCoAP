@@ -32,9 +32,11 @@ import java.util.Random;
 
 /**
  * The TokenFactory generates tokens to match incoming responses with open requests and enable the
- * ReponseCallbackHandler to invoke the correct callback method. Since there are pow(2,64) possibilities for a token
+ * {@link CoapClientApplication} to invoke the correct callback method.
+ *
+ * Since there are pow(2,64) possibilities for a token
  * and the generation is randomized, it is rather unlikely to get the same token within the usual time to wait for
- * a response. That's why we pass on memorizing tokens currently being in use.
+ * a response. That's why we pass on memorizing tokens currently in use.
  *
  * @author Oliver Kleine
  */
@@ -42,16 +44,7 @@ public abstract class TokenFactory {
 
     private static Logger log = LoggerFactory.getLogger(TokenFactory.class.getName());
 
-    //private static TokenFactory instance = new TokenFactory();
     private static Random random = new Random(System.currentTimeMillis());
-
-//    private TokenFactory(){
-//        random = new Random(System.currentTimeMillis());
-//    }
-//
-//    public static TokenFactory getInstance(){
-//        return instance;
-//    }
 
     /**
      * Returns the next token to be used

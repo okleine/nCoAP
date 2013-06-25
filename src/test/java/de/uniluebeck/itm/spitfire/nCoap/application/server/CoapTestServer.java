@@ -1,9 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.application.server;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.spitfire.nCoap.communication.AbstractCoapCommunicationTest;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.ChannelHandlerContext;

@@ -6,11 +6,11 @@ import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
 import de.uniluebeck.itm.spitfire.nCoap.toolbox.Tools;
 
 /**
- * Instances of {@link RetransmissionTimeoutMessage} are sent upstream by the {@link OutgoingMessageReliabilityHandler}
+ * Instances of {@link InternalRetransmissionTimeoutMessage} are sent upstream by the {@link OutgoingMessageReliabilityHandler}
  * if a {@link CoapMessage} of type {@link MsgType#CON} was not acknowledged despite the maximum number of
  * retransmission attempts.
  */
-public class RetransmissionTimeoutMessage{
+public class InternalRetransmissionTimeoutMessage {
 
     private byte[] token;
     private InetSocketAddress remoteAddress;
@@ -21,7 +21,7 @@ public class RetransmissionTimeoutMessage{
      * @param remoteAddress the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that
      *                      did not acknowledge the reception
      */
-    public RetransmissionTimeoutMessage(byte[] token, InetSocketAddress remoteAddress){
+    public InternalRetransmissionTimeoutMessage(byte[] token, InetSocketAddress remoteAddress){
         this.token = token;
         this.remoteAddress = remoteAddress;
     }
@@ -46,7 +46,7 @@ public class RetransmissionTimeoutMessage{
 
     @Override
     public String toString(){
-        return "RetransmissionTimeoutMessage: " + remoteAddress + " (remote address), "
+        return "InternalRetransmissionTimeoutMessage: " + remoteAddress + " (remote address), "
                 + Tools.toHexString(token) + " (token)";
     }
 }

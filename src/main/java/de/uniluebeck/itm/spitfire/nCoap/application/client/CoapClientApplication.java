@@ -26,10 +26,7 @@ package de.uniluebeck.itm.spitfire.nCoap.application.client;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapClientDatagramChannelFactory;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementProcessor;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.*;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
@@ -118,7 +115,9 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                             log.info("Sent to to {}:{}: {}",
                                     new Object[]{rcptSocketAddress.getAddress().getHostAddress(),
                                             rcptSocketAddress.getPort(), coapRequest});
-                            coapResponseProcessor.messageSuccesfullySent();
+
+                            if(coapResponseProcessor instanceof RetransmissionProcessor)
+                                ((RetransmissionProcessor) coapResponseProcessor).requestSent();
                         }
                     });
 
@@ -187,10 +186,11 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
      */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
+        log.debug("Received: {}.", me.getMessage());
 
-        if(me.getMessage() instanceof EmptyAcknowledgementReceivedMessage){
-            EmptyAcknowledgementReceivedMessage message =
-                    (EmptyAcknowledgementReceivedMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalEmptyAcknowledgementReceivedMessage){
+            InternalEmptyAcknowledgementReceivedMessage message =
+                    (InternalEmptyAcknowledgementReceivedMessage) me.getMessage();
 
             //find proper callback
             CoapResponseProcessor callback =
@@ -203,8 +203,8 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             return;
         }
 
-        if(me.getMessage() instanceof RetransmissionTimeoutMessage){
-            RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalRetransmissionTimeoutMessage){
+            InternalRetransmissionTimeoutMessage timeoutMessage = (InternalRetransmissionTimeoutMessage) me.getMessage();
 
             //Find proper callback
             CoapResponseProcessor callback =
@@ -213,6 +213,20 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             //Invoke method of callback instance
             if(callback != null && callback instanceof RetransmissionTimeoutProcessor)
                 ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout(timeoutMessage);
+
+            me.getFuture().setSuccess();
+            return;
+        }
+
+        if(me.getMessage() instanceof InternalMessageRetransmissionMessage){
+            InternalMessageRetransmissionMessage retransmissionMessage =
+                    (InternalMessageRetransmissionMessage) me.getMessage();
+
+            CoapResponseProcessor callback =
+                    responseProcessors.get(retransmissionMessage.getToken(), retransmissionMessage.getRemoteAddress());
+
+            if(callback != null && callback instanceof RetransmissionProcessor)
+                ((RetransmissionProcessor) callback).requestSent();
 
             me.getFuture().setSuccess();
             return;

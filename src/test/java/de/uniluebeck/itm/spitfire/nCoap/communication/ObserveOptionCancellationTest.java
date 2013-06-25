@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
-import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableTestWebService;
@@ -9,7 +9,6 @@ import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.MsgType;
-import de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -19,9 +18,6 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.SortedMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static junit.framework.Assert.assertEquals;
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.OptionName.*;
@@ -41,7 +37,7 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
     private static ObservableTestWebService service;
 
     private static CoapTestEndpoint endpoint;
-    private static TestCoapResponseProcessor responseProcessor;
+    private static TestResponseProcessor responseProcessor;
 
     //requests
     private static CoapRequest observationRequest1;
@@ -64,7 +60,7 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         server.registerService(service);
 
         endpoint = new CoapTestEndpoint();
-        responseProcessor = new TestCoapResponseProcessor();
+        responseProcessor = new TestResponseProcessor();
 
         URI targetURI = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
 

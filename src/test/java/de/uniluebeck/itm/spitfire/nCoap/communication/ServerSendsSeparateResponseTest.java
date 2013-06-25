@@ -1,7 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -29,7 +29,7 @@ import static junit.framework.Assert.*;
 public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTest {
 
     private static CoapClientApplication client;
-    private static TestCoapResponseProcessor responseProcessor;
+    private static TestResponseProcessor responseProcessor;
     private static CoapRequest request;
 
     private static CoapTestEndpoint endpoint;
@@ -55,7 +55,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         URI targetUri = new URI("coap://localhost:" + endpoint.getPort());
         request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
 
-        responseProcessor = new TestCoapResponseProcessor();
+        responseProcessor = new TestResponseProcessor();
     }
 
     @Override

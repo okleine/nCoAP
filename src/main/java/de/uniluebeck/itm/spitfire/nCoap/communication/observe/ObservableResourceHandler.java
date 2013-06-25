@@ -3,7 +3,7 @@ package de.uniluebeck.itm.spitfire.nCoap.communication.observe;
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.InternalServiceRemovedFromServerMessage;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableWebService;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
+import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -90,7 +90,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
      *         {@link InternalUpdateNotificationRetransmissionMessage#getServicePath()}.
      *     </li>
      *     <li>
-     *         {@link RetransmissionTimeoutMessage}: Stop all observations of the observer that did not confirm
+     *         {@link de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage}: Stop all observations of the observer that did not confirm
      *         a confirmable update notification
      *     </li>
      *     <li>
@@ -126,8 +126,8 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
             return;
         }
 
-        if(me.getMessage() instanceof RetransmissionTimeoutMessage){
-            RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalRetransmissionTimeoutMessage){
+            InternalRetransmissionTimeoutMessage timeoutMessage = (InternalRetransmissionTimeoutMessage) me.getMessage();
             removeAllObservations(timeoutMessage.getRemoteAddress());
         }
 

@@ -41,7 +41,7 @@ class MessageRetransmitter implements Runnable {
 
     @Override
     public void run() {
-        CoapMessage coapMessage = retransmissionSchedule.getCoapMessage();
+        final CoapMessage coapMessage = retransmissionSchedule.getCoapMessage();
         if (!coapMessage.getOption(OBSERVE_RESPONSE).isEmpty()) {
 
             CoapResponse coapResponse = (CoapResponse) coapMessage;
@@ -68,6 +68,10 @@ class MessageRetransmitter implements Runnable {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 log.info("Retransmition completed {}", MessageRetransmitter.this);
+                UpstreamMessageEvent upstreamEvent = new UpstreamMessageEvent(ctx.getChannel(),
+                        new InternalMessageRetransmissionMessage(rcptAddress, coapMessage.getToken()), null);
+
+                ctx.sendUpstream(upstreamEvent);
             }
         });
 

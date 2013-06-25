@@ -1,10 +1,9 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.ObservableTestWebService;
-import de.uniluebeck.itm.spitfire.nCoap.message.CoapMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -15,8 +14,6 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.Iterator;
-import java.util.SortedMap;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -29,7 +26,7 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
     private static final String PATH_TO_SERVICE = "/observable";
 
     private static CoapClientApplication client;
-    private static TestCoapResponseProcessor responseProcessor;
+    private static TestResponseProcessor responseProcessor;
 
     private static CoapServerApplication server;
     private static ObservableTestWebService service;
@@ -42,7 +39,7 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.observe")
                 .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor")
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.client.TestResponseProcessor")
                 .setLevel(Level.INFO);
     }
 
@@ -53,7 +50,7 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
         server.registerService(service);
 
         client = new CoapClientApplication();
-        responseProcessor = new TestCoapResponseProcessor();
+        responseProcessor = new TestResponseProcessor();
 
         URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
         request = new CoapRequest(MsgType.CON, Code.GET, targetUri);

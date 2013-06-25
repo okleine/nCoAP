@@ -6,29 +6,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 27.08.12
- * Time: 18:22
- * To change this template use File | Settings | File Templates.
+ * Instances are sent upstream (i.e. to the application) by the {@link OutgoingMessageReliabilityHandler}
+ * when there was an empty acknowledgement received indicating that a recipient received a a confirmable
+ * message.
+ *
+ * @author Oliver Kleine
  */
-public class EmptyAcknowledgementReceivedMessage {
+public class InternalEmptyAcknowledgementReceivedMessage {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private ByteArrayWrapper token;
 
-    public EmptyAcknowledgementReceivedMessage(byte[] token){
+    /**
+     * @param token the token of the confirmed message
+     */
+    public InternalEmptyAcknowledgementReceivedMessage(byte[] token){
         this.token = new ByteArrayWrapper(token);
         log.debug("Internal acknowledgement message created for token {}.", Tools.toHexString(token));
     }
 
+    /**
+     * Returns the token of the confirmed message
+     * @return the token of the confirmed message
+     */
     public ByteArrayWrapper getToken(){
         return token;
     }
 
     @Override
     public String toString(){
-        return "EmptyAcknowledgementReceivedMessage: " + token + " (token)";
+        return "InternalEmptyAcknowledgementReceivedMessage: " + token + " (token)";
     }
 }

@@ -32,8 +32,6 @@ import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WebService
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.spitfire.nCoap.communication.core.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.spitfire.nCoap.communication.observe.InternalObservableResourceRegistrationMessage;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
-import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 import de.uniluebeck.itm.spitfire.nCoap.message.header.Code;
@@ -49,7 +47,6 @@ import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.*;
 
 import static de.uniluebeck.itm.spitfire.nCoap.message.options.OptionRegistry.MediaType;
@@ -93,10 +90,10 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
         channel.getPipeline().addLast("Server Application", this);
 
-        registerService(new WellKnownCoreResource(registeredServices));
-
         this.scheduledExecutorService = ioExecutorService;
         this.executorService = MoreExecutors.listeningDecorator(scheduledExecutorService);
+
+        registerService(new WellKnownCoreResource(registeredServices));
 
         log.info("New server created. Listening on port {}.", getServerPort());
 
@@ -110,7 +107,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         this(DEFAULT_COAP_SERVER_PORT);
     }
 
-      /**
+    /**
      * Set the {@link ScheduledExecutorService} instance to handle incoming requests in seperate threads. The
      * nCoAP framework sets an executor service automatically so usually there is no need to set another one.
      *

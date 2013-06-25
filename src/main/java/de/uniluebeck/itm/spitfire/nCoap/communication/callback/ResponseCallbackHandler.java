@@ -27,8 +27,8 @@
 //import com.google.common.collect.Table;
 //import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapResponseProcessor;
 //import de.uniluebeck.itm.spitfire.nCoap.application.client.TokenFactory;
-//import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.EmptyAcknowledgementReceivedMessage;
-//import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.RetransmissionTimeoutMessage;
+//import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.InternalEmptyAcknowledgementReceivedMessage;
+//import de.uniluebeck.itm.spitfire.nCoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;
 //import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
 //import de.uniluebeck.itm.spitfire.nCoap.message.CoapResponse;
 //import de.uniluebeck.itm.spitfire.nCoap.toolbox.ByteArrayWrapper;
@@ -116,9 +116,9 @@
 //    @Override
 //    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
 //
-//        if(me.getMessage() instanceof EmptyAcknowledgementReceivedMessage){
-//            EmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
-//                    (EmptyAcknowledgementReceivedMessage) me.getMessage();
+//        if(me.getMessage() instanceof InternalEmptyAcknowledgementReceivedMessage){
+//            InternalEmptyAcknowledgementReceivedMessage emptyAcknowledgementReceivedMessage =
+//                    (InternalEmptyAcknowledgementReceivedMessage) me.getMessage();
 //
 //            CoapResponseProcessor callback =
 //                    responseCallbacks.get(emptyAcknowledgementReceivedMessage.getToken(), me.getRemoteAddress());
@@ -156,8 +156,8 @@
 //            me.getFuture().setSuccess();
 //        }
 //
-//        else if(me.getMessage() instanceof RetransmissionTimeoutMessage){
-//            RetransmissionTimeoutMessage timeoutMessage = (RetransmissionTimeoutMessage) me.getMessage();
+//        else if(me.getMessage() instanceof InternalRetransmissionTimeoutMessage){
+//            InternalRetransmissionTimeoutMessage timeoutMessage = (InternalRetransmissionTimeoutMessage) me.getMessage();
 //
 //            //Find proper callback
 //            CoapResponseProcessor callback =

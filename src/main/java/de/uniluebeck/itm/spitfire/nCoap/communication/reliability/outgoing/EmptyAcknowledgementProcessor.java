@@ -15,5 +15,5 @@ public interface EmptyAcknowledgementProcessor {
      * browser windows telling the user that the server has received the request but needs some time to
      * process it.
      */
-    public void processEmptyAcknowledgement(EmptyAcknowledgementReceivedMessage message);
+    public void processEmptyAcknowledgement(InternalEmptyAcknowledgementReceivedMessage message);
 }

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * This is the abstract class to be extended by classes to represent an observable resource.The generic type T
+ * This is the abstract class to be extended by classes to represent an observable resource. The generic type T
  * means, that the object that holds the resourceStatus of the resource is of type T.
  *
  * Example: Assume, you want to realize a not observable service representing a temperature with limited accuracy

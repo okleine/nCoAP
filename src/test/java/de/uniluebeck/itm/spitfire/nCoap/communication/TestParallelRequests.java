@@ -1,7 +1,7 @@
 package de.uniluebeck.itm.spitfire.nCoap.communication;
 
 import de.uniluebeck.itm.spitfire.nCoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor;
+import de.uniluebeck.itm.spitfire.nCoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.CoapTestServer;
 import de.uniluebeck.itm.spitfire.nCoap.application.server.webservice.NotObservableTestWebService;
 import de.uniluebeck.itm.spitfire.nCoap.message.CoapRequest;
@@ -34,8 +34,8 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     private static final int NUMBER_OF_PARALLEL_REQUESTS = 1000;
 
-    private static TestCoapResponseProcessor[] responseProcessors =
-            new TestCoapResponseProcessor[NUMBER_OF_PARALLEL_REQUESTS];
+    private static TestResponseProcessor[] responseProcessors =
+            new TestResponseProcessor[NUMBER_OF_PARALLEL_REQUESTS];
 
     private static CoapRequest[] requests = new CoapRequest[NUMBER_OF_PARALLEL_REQUESTS];
 
@@ -56,7 +56,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         client = new CoapClientApplication();
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            responseProcessors[i] = new TestCoapResponseProcessor();
+            responseProcessors[i] = new TestResponseProcessor();
             requests[i] =  new CoapRequest(MsgType.CON, Code.GET,
                     new URI("coap://localhost:" + server.getServerPort() + "/service" + (i+1)));
         }
@@ -72,7 +72,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.TestParallelRequests").setLevel(Level.DEBUG);
         //Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.communication.reliability").setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.client.TestCoapResponseProcessor").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.spitfire.nCoap.application.client.TestResponseProcessor").setLevel(Level.DEBUG);
     }
 
     @Override
