@@ -42,8 +42,8 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.application.endpoint").setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.outgoing").setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap").setLevel(Level.DEBUG);
+        //Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.outgoing").setLevel(Level.INFO);
     }
 
     @Override
