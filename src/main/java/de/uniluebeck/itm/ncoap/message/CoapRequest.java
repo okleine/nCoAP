@@ -29,18 +29,19 @@ import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
+import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 
 import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.*;
 
@@ -51,8 +52,6 @@ public class CoapRequest extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapRequest.class.getName());
 
-    //private CoapResponseProcessor callback;
-
     /**
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
      * and initial option list with target URI-related options set.
@@ -61,10 +60,10 @@ public class CoapRequest extends CoapMessage {
      * @param code A {@link Code}
      * @param targetUri the recipients URI
      *
-     * @throws {@link InvalidOptionException} if one of the target URI options to be created is not valid
-     * @throws {@link URISyntaxException} if the URI is not appropriate for a CoAP message.
-     * @throws {@link ToManyOptionsException} if the target URI needs more than the maximum number of options per message
-     * @throws {@link InvalidMessageException} if the given code is not suitable for a request
+     * @throws InvalidOptionException if one of the target URI options to be created is not valid
+     * @throws URISyntaxException if the URI is not appropriate for a CoAP message.
+     * @throws ToManyOptionsException if the target URI needs more than the maximum number of options per message
+     * @throws InvalidMessageException if the given code is not suitable for a request
      */
     public CoapRequest(MsgType msgType, Code code, URI targetUri)
             throws InvalidMessageException, ToManyOptionsException, InvalidOptionException, URISyntaxException {
@@ -81,57 +80,18 @@ public class CoapRequest extends CoapMessage {
 
     }
 
-//    /**
-//     * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
-//     * and initial option list with target URI-related options set.
-//     *
-//     * @param msgType  a {@link MsgType}
-//     * @param code a {@link Code}
-//     * @param targetUri the recipients URI
-//     * @param callback a {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor} instance, most likely the {@link CoapClientApplication} instance that
-//     *                 created this request
-//     *
-//     * @throws {@link InvalidOptionException} if one of the target URI options to be created is not valid
-//     * @throws {@link URISyntaxException} if the URI is not appropriate for a CoAP message
-//     * @throws {@link ToManyOptionsException} if the target URI needs more than the maximum number of options per message
-//     * @throws {@link InvalidMessageException} if the given code is not suitable for a request
-//     *
-//     */
-//    public CoapRequest(MsgType msgType, Code code, URI targetUri, CoapResponseProcessor callback)
-//            throws InvalidMessageException, ToManyOptionsException, InvalidOptionException, URISyntaxException {
-//
-//        this(msgType, code, targetUri);
-//        this.callback = callback;
-//    }
-
     /**
-     * Creates a new {@link CoapRequest} instance using the given parameters
+     * This is the constructor basically supposed to be used internally, in particular with the decoding process of
+     * incoming {@link CoapResponse}s. In other cases it is recommended to use {@link #CoapRequest(MsgType, Code, URI)} and
+     * set options and payload by invoking the appropriate methods and let the nCoAP framework do the rest.
      *
-     * @param header a {@link Header}
-     * @param optionList an {@link OptionList}
-     * @param payload a {@link ChannelBuffer} containing the payload
+     * @param header the {@link Header} of the {@link CoapRequest}
+     * @param optionList  the {@link OptionList} of the {@link CoapRequest}
+     * @param payload the {@link ChannelBuffer} containing the payload of the {@link CoapRequest}
      */
     public CoapRequest(Header header, OptionList optionList, ChannelBuffer payload){
         super(header, optionList, payload);
     }
-
-//    /**
-//     * Returns the {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor} instance to be called upon reception of a {@link CoapResponse}
-//     * @return the {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor} instance to be called upon reception of a {@link CoapResponse}
-//     */
-//    public CoapResponseProcessor getResponseCallback() {
-//        return callback;
-//    }
-//
-//    /**
-//     * Set the {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor} instance to be called upon reception of a {@link CoapResponse}
-//     *
-//     * @param coapResponseProcessor the {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor} instance to be called upon reception of a
-//     * {@link CoapResponse}
-//     */
-//    public void setResponseCallback(CoapResponseProcessor coapResponseProcessor){
-//        this.callback = coapResponseProcessor;
-//    }
 
      /**
      * Returns the target URI of this {@link CoapRequest}.
@@ -140,33 +100,32 @@ public class CoapRequest extends CoapMessage {
     public URI getTargetUri() {
 
         try {
-            String uri = "coap://";
-
             //add host
-            uri += getOption(URI_HOST).get(0).getDecodedValue();
+            String host = (String) getOption(URI_HOST).get(0).getDecodedValue();
 
             //add port
             long port = (Long) getOption(URI_PORT).get(0).getDecodedValue();
             if(port != OptionRegistry.COAP_PORT_DEFAULT)
-                uri += ":" + port;
+                host += ":" + port;
 
             //add path
+            String path = "";
             for(Option option : getOption(URI_PATH)){
-                 uri += "/" + option.getDecodedValue();
+                 path += "/" + option.getDecodedValue();
             }
 
             //add query
             List<Option> list = getOption(URI_QUERY);
+            String query = "";
             if(!list.isEmpty()){
-                uri += "?";
                 for(Option option : list){
-                    uri = uri + option.getDecodedValue() + "&";
+                    query += option.getDecodedValue() + "&";
                 }
                 //remove the last "&"
-                uri = uri.substring(0, uri.length() - 1);
+                query = query.substring(0, query.length() - 1);
             }
 
-            return new URI(uri);
+            return new URI("coap", host, path, query == "" ? null : query, null);
         }
         catch (URISyntaxException e) {
             log.error("This should never happen!", e);
@@ -202,7 +161,7 @@ public class CoapRequest extends CoapMessage {
             for(Option option : targetUriOptions){
 
                 log.debug("Add {} option with value {}.", OptionName.getByNumber(option.getOptionNumber()),
-                        Tools.toHexString(option.getValue()));
+                        new ByteArrayWrapper(option.getValue()));
 
 
                 OptionRegistry.OptionName optionName = OptionName.getByNumber(option.getOptionNumber());

@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.ncoap.communication.blockwise;
 
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.examples.performance.client.CoapResponseProcessor;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 
 /**

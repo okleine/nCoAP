@@ -28,7 +28,7 @@ import static org.junit.Assert.assertTrue;
  * Time: 14:58
  * To change this template use File | Settings | File Templates.
  */
-public class TestParallelRequests extends AbstractCoapCommunicationTest {
+public class Test1000ParallelRequests extends AbstractCoapCommunicationTest {
 
     private static CoapClientApplication client;
 
@@ -40,6 +40,12 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
     private static CoapRequest[] requests = new CoapRequest[NUMBER_OF_PARALLEL_REQUESTS];
 
     private static CoapTestServer server;
+
+    @Override
+    public void setupLogging() throws Exception {
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.Test1000ParallelRequests").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor").setLevel(Level.DEBUG);
+    }
 
     @Override
     public void setupComponents() throws Exception {
@@ -68,14 +74,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         server.shutdown();
     }
 
-    @Override
-    public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.TestParallelRequests").setLevel(Level.DEBUG);
-        //Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability").setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor").setLevel(Level.DEBUG);
-    }
-
-    @Override
+   @Override
     public void createTestScenario() throws Exception {
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
@@ -83,7 +82,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         }
 
         //await responses
-        Thread.sleep(10000);
+        Thread.sleep(12000);
     }
 
     @Test

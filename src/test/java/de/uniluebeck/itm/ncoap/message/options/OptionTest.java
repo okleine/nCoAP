@@ -1,10 +1,13 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
+import de.uniluebeck.itm.ncoap.AbstractCoapTest;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.header.Code;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.toolbox.ByteTestTools;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Test;
 
@@ -26,8 +29,13 @@ import static org.junit.Assert.fail;
  * "CoAP URI Options" to "URI" encoding.
  * @author Stefan Hueske
  */
-public class OptionTest {
-    
+public class OptionTest extends AbstractCoapTest{
+
+    @Override
+    public void setupLogging() throws Exception {
+        Logger.getRootLogger().setLevel(Level.DEBUG);
+    }
+
     /**
      * Test of createTargetURIOptions method, of class Option.
      */
@@ -121,21 +129,21 @@ public class OptionTest {
         //TODO uncomment this when percent encoding is fixed
         //See issue #14 on https://github.com/okleine/nCoAP/issues/14
         
-//        list.add(new CoAPUriOptionsToUriTest("coap://host.com:5555/testpath/test%5Dpath", //expected encoding
-//                new Option[]{ 
-//                    new StringOption(URI_HOST, "host.com"),
-//                    new UintOption(URI_PORT, 5555),
-//                    new StringOption(URI_PATH, "testpath"),
-//                    new StringOption(URI_PATH, "test]path")
-//                }));
-//        
-//        list.add(new CoAPUriOptionsToUriTest("coaps://host.com/testpath/test%5Dpath?testq%5F", //expected encoding
-//                new Option[]{ 
-//                    new StringOption(URI_HOST, "host.com"),
-//                    new StringOption(URI_PATH, "testpath"),
-//                    new StringOption(URI_PATH, "test]path"),
-//                    new StringOption(URI_QUERY, "testq_")
-//                }));
+        list.add(new CoAPUriOptionsToUriTest("coap://host.com:5555/testpath/test%5Dpath", //expected encoding
+                new Option[]{
+                    new StringOption(URI_HOST, "host.com"),
+                    new UintOption(URI_PORT, 5555),
+                    new StringOption(URI_PATH, "testpath"),
+                    new StringOption(URI_PATH, "test]path")
+                }));
+
+        list.add(new CoAPUriOptionsToUriTest("coap://host.com/testpath/test%5Dpath?testq_", //expected encoding
+                new Option[]{
+                    new StringOption(URI_HOST, "host.com"),
+                    new StringOption(URI_PATH, "testpath"),
+                    new StringOption(URI_PATH, "test]path"),
+                    new StringOption(URI_QUERY, "testq_")
+                }));
         
         CoAPUriOptionsToUriTest.test(list, new TestRunner<URI, Option[]>() {
 
@@ -153,7 +161,9 @@ public class OptionTest {
             }
         });
     }
-    
+
+
+
     static class UriToCoAPUriOptionsTest {
         URI inputUri;
         Option[] expectedOptions;

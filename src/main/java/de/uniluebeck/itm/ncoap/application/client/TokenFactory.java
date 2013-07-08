@@ -24,40 +24,64 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
+import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Random;
+import java.util.*;
 
 /**
  * The TokenFactory generates tokens to match incoming responses with open requests and enable the
  * {@link CoapClientApplication} to invoke the correct callback method.
  *
- * Since there are pow(2,64) possibilities for a token
+ * Since there are 2^64 possibilities for a token
  * and the generation is randomized, it is rather unlikely to get the same token within the usual time to wait for
  * a response. That's why we pass on memorizing tokens currently in use.
  *
  * @author Oliver Kleine
  */
-public abstract class TokenFactory {
+class TokenFactory {
 
-    private static Logger log = LoggerFactory.getLogger(TokenFactory.class.getName());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private static Random random = new Random(System.currentTimeMillis());
+    private Random random = new Random(System.currentTimeMillis());
+    private Set<Long> usedTokens = Collections.synchronizedSet(new HashSet<Long>());
 
     /**
      * Returns the next token to be used
      * @return the next token to be used
      */
-    public static byte[] getNextToken(){
-        byte[] tmp = Longs.toByteArray(random.nextLong());
+    byte[] getNextToken(){
+        //create new token
+        Long token;
+        do
+            token = random.nextLong();
+        while(!usedTokens.add(token));
 
-        for(int i = 0; i < 8; i++){
-            if(tmp[i] != 0){
-                return Tools.getByteArrayRange(tmp, i, 8);
-            }
-        }
-        return new byte[0];
+        byte[] result = Longs.toByteArray(token);
+        log.debug("Added token: {} (Now {} tokens in use).", new ByteArrayWrapper(result), usedTokens.size());
+
+        return ByteArrayWrapper.removeLeadingZerosFromByteArray(result);
     }
-}
+
+    /**
+     * Pass the token back to make it re-usable for upcoming requests
+     * @param token the token not used anymore
+     */
+    void passBackToken(byte[] token){
+        if(token.length < 8){
+            byte[] tmp = new byte[]{0,0,0,0,0,0,0,0};
+            for(int i = 0; i < token.length; i++){
+                tmp[i + 8 - token.length] = token[i];
+            }
+            token = tmp;
+        }
+
+        if(usedTokens.remove(Longs.fromByteArray(token)))
+            log.debug("Passed back token: {} (Now {} tokens in use.)", new ByteArrayWrapper(token), usedTokens.size());
+        else
+            log.warn("Could not pass back token {}. Still {} tokens in use.", new ByteArrayWrapper(token),
+                    usedTokens.size());
+    }
+
+ }

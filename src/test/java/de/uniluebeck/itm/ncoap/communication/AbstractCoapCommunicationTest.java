@@ -1,7 +1,7 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.examples.performance.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableTestWebService;

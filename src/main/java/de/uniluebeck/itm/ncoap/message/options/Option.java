@@ -2,7 +2,7 @@ package de.uniluebeck.itm.ncoap.message.options;
 
 import com.google.common.net.InetAddresses;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
+import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +10,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -169,7 +170,7 @@ public abstract class Option{
             int endPos = Math.min(startPos + OptionRegistry.getMaxLength(OptionName.PROXY_URI),
                                    encodedUri.length);
             proxyOptions.add(new StringOption(OptionName.PROXY_URI,
-                             Tools.getByteArrayRange(encodedUri, startPos, endPos)));
+                    Arrays.copyOfRange(encodedUri, startPos, endPos)));
             startPos = endPos;
         }
         return proxyOptions;

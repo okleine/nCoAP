@@ -4,7 +4,7 @@ import com.google.common.collect.LinkedListMultimap;
 import de.uniluebeck.itm.ncoap.message.header.Code;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionOccurence;
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
+import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +81,7 @@ public class OptionList {
             throw new InvalidOptionException(option.getOptionNumber(), msg);
         }
 
-        log.debug("{} option with value {} added to option list.", optionName, Tools.toHexString(option.getValue()));
+        log.debug("{} option with value {} added to option list.", optionName, new ByteArrayWrapper(option.getValue()));
     }
 
     /**

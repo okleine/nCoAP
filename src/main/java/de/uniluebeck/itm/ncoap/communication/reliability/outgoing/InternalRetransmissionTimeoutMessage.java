@@ -1,9 +1,9 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import java.net.InetSocketAddress;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.header.MsgType;
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
+import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import java.net.InetSocketAddress;
 
 /**
  * Instances of {@link InternalRetransmissionTimeoutMessage} are sent upstream by the {@link OutgoingMessageReliabilityHandler}
@@ -47,6 +47,6 @@ public class InternalRetransmissionTimeoutMessage {
     @Override
     public String toString(){
         return "InternalRetransmissionTimeoutMessage: " + remoteAddress + " (remote address), "
-                + Tools.toHexString(token) + " (token)";
+                + new ByteArrayWrapper(token) + " (token)";
     }
 }

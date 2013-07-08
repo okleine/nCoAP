@@ -1,7 +1,6 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +22,7 @@ public class InternalEmptyAcknowledgementReceivedMessage {
      */
     public InternalEmptyAcknowledgementReceivedMessage(byte[] token){
         this.token = new ByteArrayWrapper(token);
-        log.debug("Internal acknowledgement message created for token {}.", Tools.toHexString(token));
+        log.debug("Internal acknowledgement message created for token {}.", new ByteArrayWrapper(token));
     }
 
     /**

@@ -1,9 +1,8 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionType;
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
+import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,7 @@ class OpaqueOption extends Option{
 
         setValue(optionName, value);
 
-        log.debug("{} option with value {} created.", optionName, Tools.toHexString(value));
+        log.debug("{} option with value {} created.", optionName, new ByteArrayWrapper(value));
     }
 
     private void setValue(OptionName optionName, byte[] value) throws InvalidOptionException{

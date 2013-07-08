@@ -245,6 +245,9 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     /**
      * Shuts the server down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
+     *
+     * Prior to doing so this methods removes all registered {@link WebService} instances from the server, i.e.
+     * invokes the {@link WebService#shutdown()} method of all registered services.
      */
     public void shutdown() throws InterruptedException {
 
@@ -313,10 +316,11 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     }
     
     /**
-     * Removes a service from the server
+     * Removes the {@link WebService} instance registered at the given path from the server
      * 
-     * @param uriPath service path
-     * @return true if a registered service was removed
+     * @param uriPath the path of the {@link WebService} instance to be removed
+     *
+     * @return <code>true</code> if the service was removed succesfully, <code>false</code> otherwise.
      */
     public synchronized boolean removeService(String uriPath) {
         WebService removedService = registeredServices.remove(uriPath);
@@ -335,7 +339,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     }
     
     /**
-     * Removes all webServices from server.
+     * Removes all registered {@link WebService} instances from the server.
      */
     public void removeAllServices() {
 

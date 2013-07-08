@@ -25,6 +25,7 @@ package de.uniluebeck.itm.ncoap.message;
 
 import de.uniluebeck.itm.ncoap.message.header.Code;
 import de.uniluebeck.itm.ncoap.message.header.Header;
+import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -46,10 +47,25 @@ public class CoapResponse extends CoapMessage {
 
     private String servicePath;
 
+    /**
+     * This is the constructor supposed to be used to create {@link CoapResponse} instances. The {@link MsgType} is
+     * automatically set by the nCoAP framework.
+     *
+     * @param code The {@link Code} of the response
+     */
     public CoapResponse(Code code){
         super(code);
     }
 
+    /**
+     * This is the constructor basically supposed to be used internally, in particular with the decoding process of
+     * incoming {@link CoapResponse}s. In other cases it is recommended to use {@link #CoapResponse(Code)} and
+     * set options and payload by invoking the appropriate methods and let the nCoAP framework do the rest.
+     *
+     * @param header the {@link Header} of the {@link CoapResponse}
+     * @param optionList  the {@link OptionList} of the {@link CoapResponse}
+     * @param payload the {@link ChannelBuffer} containing the payload of the {@link CoapResponse}
+     */
     public CoapResponse(Header header, OptionList optionList, ChannelBuffer payload){
         super(header, optionList, payload);
     }

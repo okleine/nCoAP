@@ -3,7 +3,7 @@ package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.examples.performance.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 
 import java.util.LinkedList;

@@ -4,7 +4,7 @@ import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionType;
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
+import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +25,7 @@ public class UintOption extends Option{
         super(optionName);
         setValue(optionName, value);
 
-        log.debug("{} option with value {} created.", optionName, Tools.toHexString(value));
+        log.debug("{} option with value {} created.", optionName, new ByteArrayWrapper(value));
     }
 
     //constructor with decoded value should only be used for outgoing messages
@@ -33,7 +33,7 @@ public class UintOption extends Option{
         super(optionName);
         setValue(optionName, value);
 
-        log.debug("{} option with value {} created.", optionName, Tools.toHexString(this.value));
+        log.debug("{} option with value {} created.", optionName, new ByteArrayWrapper(this.value));
     }
 
     private void setValue(OptionName optionName, byte[] bytes) throws InvalidOptionException {
@@ -45,7 +45,7 @@ public class UintOption extends Option{
             throw new InvalidOptionException(optionNumber, msg);
         }
 
-        this.value = removeLeadingZeroBytes(bytes);
+        this.value = ByteArrayWrapper.removeLeadingZerosFromByteArray(bytes);
     }
 
     //Sets the options value after checking its correctness
@@ -61,24 +61,7 @@ public class UintOption extends Option{
         }
 
         //Set value if there was no Exception thrown so far
-        this.value = removeLeadingZeroBytes(Longs.toByteArray(value));
-    }
-
-    private byte[] removeLeadingZeroBytes(byte[] bytes) throws InvalidOptionException {
-        //Empty array and thus nothing to remove
-        if(bytes.length == 0){
-            return bytes;
-        }
-
-        //Remove eventual leading zeros
-        for(int i = 0; i < bytes.length; i++){
-            if(bytes[i] != 0){
-                return Tools.getByteArrayRange(bytes, i, bytes.length);
-            }
-        }
-
-        //All elements were zeros so return empty array
-        return new byte[0];
+        this.value = ByteArrayWrapper.removeLeadingZerosFromByteArray(Longs.toByteArray(value));
     }
 
     /**
@@ -91,12 +74,14 @@ public class UintOption extends Option{
     }
 
     /**
-     * This method checks the equality of any given object with the current UintOption from which the method
-     * is called. The method returns <code>true</code> if and only if the given object is an instance of
-     * UintOption and has both the same {@link OptionName} and value as the current UintOption.
-     * @param o
+     * This method checks the equality of any given object with this {@link UintOption} instance. The method returns
+     * <code>true</code> if and only if the given object is an instance of
+     * {@link UintOption} and has both the same {@link OptionName} and value.
+     *
+     * @param o the {@link Object} to check for equality
+     *
      * @return   <code>true</code> if and only if the given object is an instance of
-     * UintOption and has both the same OptionName and value as the current UintOption. Otherwise it returns
+     * {@link UintOption} and has both the same {@link OptionName} and value. Otherwise it returns
      * <code>false</code>.
      */
     @Override

@@ -390,7 +390,9 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                 }
 
                 try{
-                    updateNotification.setToken(parameter.getToken());
+                    byte[] token = parameter.getToken();
+                    if(token.length > 0)
+                        updateNotification.setToken(token);
                 }
                 catch (Exception e){
                     log.error("This should never happen.", e);

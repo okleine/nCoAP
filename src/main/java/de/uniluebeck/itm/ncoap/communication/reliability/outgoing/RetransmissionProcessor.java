@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.ncoap.application.client.*;
+import de.uniluebeck.itm.examples.performance.client.*;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 
 /**

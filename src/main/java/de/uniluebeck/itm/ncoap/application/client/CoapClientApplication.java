@@ -29,12 +29,13 @@ import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceived
 import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceivedMessageProcessor;
 import de.uniluebeck.itm.ncoap.communication.core.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
-import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.ncoap.message.options.ToManyOptionsException;
 import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
-import de.uniluebeck.itm.ncoap.toolbox.Tools;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -57,6 +58,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
+    private TokenFactory tokenFactory = new TokenFactory();
     private HashBasedTable<ByteArrayWrapper, InetSocketAddress, CoapResponseProcessor> responseProcessors =
             HashBasedTable.create();
 
@@ -99,7 +101,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             @Override
             public void run() {
                 try {
-                    coapRequest.setToken(TokenFactory.getNextToken());
+                    coapRequest.setToken(tokenFactory.getNextToken());
 
                     int targetPort = coapRequest.getTargetUri().getPort();
                     if(targetPort == -1)
@@ -219,6 +221,9 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             if(callback != null && callback instanceof RetransmissionTimeoutProcessor)
                 ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout(timeoutMessage);
 
+            //pass the token back
+            tokenFactory.passBackToken(timeoutMessage.getToken());
+
             me.getFuture().setSuccess();
             return;
         }
@@ -266,12 +271,15 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 callback = removeResponseCallback(coapResponse.getToken(), (InetSocketAddress) me.getRemoteAddress());
 
             if(callback != null){
-                log.debug("Callback found for token {}.", Tools.toHexString(coapResponse.getToken()));
+                log.debug("Callback found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
                 callback.processCoapResponse(coapResponse);
             }
             else{
-                log.debug("No callback found for token {}.", Tools.toHexString(coapResponse.getToken()));
+                log.debug("No callback found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
             }
+
+            //pass the token back
+            tokenFactory.passBackToken(coapResponse.getToken());
 
             me.getFuture().setSuccess();
         }
