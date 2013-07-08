@@ -9,6 +9,8 @@ import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
  * This could, e.g. be the case if a client sends a request to the service and the server holding this service
  * is located in constrained environment in terms of bandwith or MTU size. Thus, the server splits up the response
  * on several responses.
+ *
+ * @author Oliver Kleine
  */
 public class InternalNextBlockReceivedMessage {
 
@@ -21,6 +23,10 @@ public class InternalNextBlockReceivedMessage {
         this.token = token;
     }
 
+    /**
+     * Returns the token of the not yet completely received message
+     * @return the token of the not yet completely received message
+     */
     public ByteArrayWrapper getToken(){
         return new ByteArrayWrapper(this.token);
     }
