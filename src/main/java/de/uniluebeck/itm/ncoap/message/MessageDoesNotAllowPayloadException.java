@@ -24,7 +24,7 @@
 package de.uniluebeck.itm.ncoap.message;
 
 /**
- *@author Oliver Kleine
+ * @author Oliver Kleine
  */
 public class MessageDoesNotAllowPayloadException extends Exception{
 

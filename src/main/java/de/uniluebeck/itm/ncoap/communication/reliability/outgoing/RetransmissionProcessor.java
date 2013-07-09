@@ -1,6 +1,6 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.examples.performance.client.*;
+import de.uniluebeck.itm.ncoap.application.client.*;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 
 /**
@@ -13,11 +13,11 @@ import de.uniluebeck.itm.ncoap.message.CoapRequest;
 public interface RetransmissionProcessor {
 
     /**
-     * Method invoked by the {@link CoapClientApplication} for each attempt to send the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} related
+     * Method invoked by the {@link CoapClientApplication} for each attempt to send the {@link CoapRequest} related
      * to this {@link CoapResponseProcessor}.
      *
      * This happens 5 times at maximum, once for the original request and 4 times for retransmission attempts if the
-     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} was confirmable.
+     * {@link CoapRequest} was confirmable.
      */
     public void requestSent();
 }

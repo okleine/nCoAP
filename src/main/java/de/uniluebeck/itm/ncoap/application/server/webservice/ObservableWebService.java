@@ -8,7 +8,7 @@ import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
-import  de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
+import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,5 +1,6 @@
 package de.uniluebeck.itm.ncoap.message;
 
+import com.google.common.annotations.Beta;
 import com.google.common.net.InetAddresses;
 import de.uniluebeck.itm.ncoap.communication.blockwise.Blocksize;
 import de.uniluebeck.itm.ncoap.message.header.Code;
@@ -23,9 +24,12 @@ import java.util.List;
 import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.*;
 
 /**
+ * This class is the base class for inheriting subtypes, i.e. requests and responses. This abstract class provides the
+ * cut-set in terms of functionality of {@link CoapRequest} and {@link CoapResponse}.
+ *
  * @author Oliver Kleine
  */
-public abstract class CoapMessage implements Cloneable {
+public abstract class CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
@@ -57,6 +61,12 @@ public abstract class CoapMessage implements Cloneable {
         this.payload = payload;
     }
 
+    /**
+     * Method to create an empty reset message which is strictly speaking neither a request nor a response
+     * @param messageID the message ID of the reset message.
+     *
+     * @return an instance of {@link CoapMessage} with {@link MsgType#RST}
+     */
     public static CoapMessage createEmptyReset(int messageID){
         CoapMessage emptyRST = new CoapMessage(){};
 
@@ -69,6 +79,12 @@ public abstract class CoapMessage implements Cloneable {
         return emptyRST;
     }
 
+    /**
+     * Method to create an empty acknowledgement message which is strictly speaking neither a request nor a response
+     * @param messageID the message ID of the acknowledgement message.
+     *
+     * @return an instance of {@link CoapMessage} with {@link MsgType#ACK}
+     */
     public static CoapMessage createEmptyAcknowledgement(int messageID){
         CoapMessage emptyACK = new CoapMessage(){};
 
@@ -97,6 +113,10 @@ public abstract class CoapMessage implements Cloneable {
         return header.getMsgID();
     }
 
+    /**
+     * Returns the {@link MsgType} of this message
+     * @return the {@link MsgType} of this message
+     */
     public MsgType getMessageType() {
         return header.getMsgType();
     }
@@ -111,8 +131,8 @@ public abstract class CoapMessage implements Cloneable {
     }
 
     /**
-     * Returns the message Code (method code for requests, status code for responses or empty)
-     * @return the message code
+     * Returns the {@link Code} (method code for requests, status code for responses or empty)
+     * @return the {@link Code} of this message
      */
     public Code getCode() {
         return header.getCode();
@@ -131,15 +151,6 @@ public abstract class CoapMessage implements Cloneable {
         catch(IndexOutOfBoundsException e){
             return new byte[0];
         }
-    }
-
-    /**
-     * Returns <code>true</code> is the message is a request (as indicated by the message code) or <code>false</code>
-     * otherwise
-     * @return  <code>true</code> if message is request, <code>false</code> otherwise
-     */
-    public boolean isRequest() {
-        return header.getCode().isRequest();
     }
 
     /**
@@ -270,10 +281,28 @@ public abstract class CoapMessage implements Cloneable {
         }
     }
 
+    /**
+     * Sets the blocksize for requests, i.e. {@link OptionName#BLOCK_1}.
+     *
+     * @param blocksize the {@link Blocksize}
+     *
+     * @throws ToManyOptionsException
+     * @throws InvalidOptionException
+     */
+    @Beta
     public void setMaxBlocksizeForRequest(Blocksize blocksize) throws ToManyOptionsException, InvalidOptionException {
         setBlockOption(BLOCK_1, 0, true, blocksize);
     }
 
+    /**
+     * Sets the blocksize for respones, i.e. {@link OptionName#BLOCK_2}.
+     *
+     * @param blocksize the {@link Blocksize}
+     *
+     * @throws ToManyOptionsException
+     * @throws InvalidOptionException
+     */
+    @Beta
     public void setMaxBlocksizeForResponse(Blocksize blocksize) throws ToManyOptionsException, InvalidOptionException {
         setBlockOption(BLOCK_2, 0, true, blocksize);
     }
@@ -291,6 +320,7 @@ public abstract class CoapMessage implements Cloneable {
      * @throws InvalidOptionException
      * @throws ToManyOptionsException
      */
+    @Beta
     public void setBlockOption(OptionName optionName, long blockNumber, boolean isLastBlock,
                                Blocksize blocksize) throws InvalidOptionException, ToManyOptionsException {
 
@@ -315,6 +345,11 @@ public abstract class CoapMessage implements Cloneable {
         optionList.addOption(getCode(), optionName, option);
     }
 
+    /**
+     * Returns the blocksize for requests, i.e. {@link OptionName#BLOCK_1}.
+     * @return the blocksize for requests, i.e. {@link OptionName#BLOCK_1} or <code>null</code> if option is not set
+     */
+    @Beta
     public Blocksize getMaxBlocksizeForRequest(){
         try {
             return getBlocksize(BLOCK_1);
@@ -324,6 +359,11 @@ public abstract class CoapMessage implements Cloneable {
         }
     }
 
+    /**
+     * Returns the blocksize for responses, i.e. {@link OptionName#BLOCK_2}.
+     * @return the blocksize for responses, i.e. {@link OptionName#BLOCK_2} or <code>null</code> if option is not set
+     */
+    @Beta
     public Blocksize getMaxBlocksizeForResponse(){
         try {
             return getBlocksize(BLOCK_2);
@@ -333,6 +373,7 @@ public abstract class CoapMessage implements Cloneable {
         }
     }
 
+    @Beta
     private Blocksize getBlocksize(OptionName optionName) throws InvalidOptionException {
 
         if(optionName != BLOCK_1 && optionName != BLOCK_2){
@@ -362,6 +403,18 @@ public abstract class CoapMessage implements Cloneable {
         return null;
     }
 
+    /**
+     * Returns whether this message contains the last block of a blockwise transfered message, i.e. if a message
+     * with the full payload can be delivered to the application.
+     *
+     * @param optionName one of {@link OptionName#BLOCK_1} or {@link OptionName#BLOCK_2}
+     *
+     * @return <code>true</code> if this messages contains the last block, <code>false</code> otherwise
+     *
+     * @throws InvalidOptionException if the given {@link OptionName} is neither {@link OptionName#BLOCK_1} nor
+     * {@link OptionName#BLOCK_2}
+     */
+    @Beta
     public boolean isLastBlock(OptionName optionName) throws InvalidOptionException {
 
             if(optionName != BLOCK_1 && optionName != BLOCK_2){
@@ -377,6 +430,17 @@ public abstract class CoapMessage implements Cloneable {
 
     }
 
+    /**
+     * Returns the position of this messages payload in the full payload.
+     *
+     * @param optionName one of {@link OptionName#BLOCK_1} or {@link OptionName#BLOCK_2}
+     *
+     * @return the position of this messages payload in the full payload.
+     *
+     * @throws InvalidOptionException if the given {@link OptionName} is neither {@link OptionName#BLOCK_1} nor
+     * {@link OptionName#BLOCK_2}
+     */
+    @Beta
     public long getBlockNumber(OptionName optionName) throws InvalidOptionException {
 
         if(optionName != BLOCK_1 && optionName != BLOCK_2){
@@ -506,19 +570,29 @@ public abstract class CoapMessage implements Cloneable {
     }
 
     /**
-     * Returns the messages header
-     * @return the messages header
+     * Returns the messages {@link Header}
+     * @return the messages {@link Header}
      */
     public Header getHeader(){
         return header;
     }
 
-    public boolean equals(Object obj){
-        if(!(obj instanceof CoapMessage)){
+    /**
+     * Returns <code>true</code> if and only if the given object is an instance of {@link CoapMessage} and if
+     * the {@link Header}, the {@link OptionList} and the payload of both instances equal.
+     *
+     * @param object another object to compare this {@link CoapMessage} with
+     *
+     * @return <code>true</code> if and only if the given object is an instance of {@link CoapMessage} and if
+     * the {@link Header}, the {@link OptionList} and the payload of both instances equal.
+     */
+    @Override
+    public boolean equals(Object object){
+        if(!(object instanceof CoapMessage)){
             return false;
         }
 
-        CoapMessage msg = (CoapMessage) obj;
+        CoapMessage msg = (CoapMessage) object;
         return this.getHeader().equals(msg.getHeader())
             && optionList.equals(msg.getOptionList())
             && payload.equals(msg.getPayload());

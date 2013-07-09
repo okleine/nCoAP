@@ -8,6 +8,7 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
@@ -16,11 +17,8 @@ import org.jboss.netty.channel.UpstreamMessageEvent;
 import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.*;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 15.11.12
- * Time: 15:09
- * To change this template use File | Settings | File Templates.
+ * Implementation of {@link Runnable} to retransmit a confirmable message in exponentially increasing
+ * intervals.
  */
 class MessageRetransmitter implements Runnable {
 
@@ -31,6 +29,13 @@ class MessageRetransmitter implements Runnable {
     private int retransmitNo;
     private ChannelHandlerContext ctx;
 
+    /**
+     * @param ctx the {@link ChannelHandlerContext} to get the {@link DatagramChannel} to be used to send the
+     *            outgoing {@link CoapMessage}s
+     * @param rcptAddress the address of the recipient
+     * @param retransmissionSchedule the {@link RetransmissionSchedule} providing the times of retransmission
+     * @param retransmitNo the number of previously sent retransmitions plus 1
+     */
     public MessageRetransmitter(ChannelHandlerContext ctx, InetSocketAddress rcptAddress,
             RetransmissionSchedule retransmissionSchedule, int retransmitNo){
         this.rcptAddress = rcptAddress;
@@ -46,7 +51,7 @@ class MessageRetransmitter implements Runnable {
 
             CoapResponse coapResponse = (CoapResponse) coapMessage;
 
-            //increment OBSERVE notification count before retransmissionSchedule
+            //increment OBSERVE notification count before retransmission
             long notificationCount = (Long) coapResponse.getOption(OBSERVE_RESPONSE).get(0).getDecodedValue() + 1;
 
             try {

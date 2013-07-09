@@ -48,12 +48,13 @@ import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.
 import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
 
 /**
+ * A {@link CoapMessageDecoder} de-serializes incoming messages.
+ *
  * @author Oliver Kleine
  */
 public class CoapMessageDecoder extends OneToOneDecoder{
 
     private static Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class.getName());
-
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
@@ -138,11 +139,13 @@ public class CoapMessageDecoder extends OneToOneDecoder{
      * silently ignored. Malformed critical options cause an InvalidOptionException. No list will be created in the
      * latter case.
      *
-     * @param buffer The ChannelBuffer containing the options to be decoded
-     * @param optionCount The number of options to be decoded
-     * @param code The message code of the message that is intended to include the new OptionList
-     * @param header
-     * @return An OptionList object containing the decoded options
+     * @param buffer the {@link ChannelBuffer} containing the options to be decoded
+     * @param optionCount the number of options to be decoded
+     * @param code the {@link Code} of the message that is intended to include the new OptionList
+     * @param header the {@link Header} of the message to be decoded
+     *
+     * @return An {@link OptionList} instance containing the decoded options
+     *
      * @throws InvalidOptionException if a critical option is malformed, e.g. size is out of defined bounds
      * @throws ToManyOptionsException if there are too many options contained in the list
      */
@@ -180,13 +183,17 @@ public class CoapMessageDecoder extends OneToOneDecoder{
     }
 
     /**
-     * This static methodes creates reads and decodes the Option starting at the current reader index of
-     * the given ChannelBuffer. Thus, there must be an encoded option starting at the current reader index.
-     * Otherwise an InvalidOptionException is thrown
-     * @param buf A ChannelBuffer with its reader index at an options starting position
-     * @param prevOptionNumber The option number of the previous option in the ChannelBuffer (or ZERO if there is no)
-     * @param header
-     * @return The decoded Option
+     * This method creates reads and decodes the {@link Option} starting at the current reader index of
+     * the given {@link ChannelBuffer}. Thus, there must be an encoded option starting at the current reader index.
+     * Otherwise an {@link InvalidOptionException} is thrown.
+     *
+     * @param buf a {@link ChannelBuffer} with its reader index at an options starting position
+     * @param prevOptionNumber the option number of the previous option in the {@link ChannelBuffer}
+     *                         (or ZERO if there is no)
+     * @param header the {@link Header} of the message to be decoded
+     *
+     * @return The decoded {@link Option}
+     *
      * @throws InvalidOptionException if the option to be decoded is invalid
      */
     private Option decodeOption(ChannelBuffer buf, int prevOptionNumber, Header header) throws InvalidOptionException {

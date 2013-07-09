@@ -54,6 +54,9 @@ import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.
  * communicate with the outside world, i.e. the Internet. Once a {@link CoapServerApplication} was instanciated
  * one can register {@link WebService} instances and by this means make them available at their specified path.
  *
+ * Each instance of {@link CoapServerApplication} is automatically bound to a local port to listen at for
+ * incoming requests.
+ *
  * @author Oliver Kleine
  */
 public class CoapServerApplication extends SimpleChannelUpstreamHandler {

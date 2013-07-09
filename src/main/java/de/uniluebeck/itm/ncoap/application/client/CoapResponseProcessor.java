@@ -31,10 +31,10 @@ import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceived
 
 /**
  * Classes implementing the {@link CoapResponseProcessor} interface handle incoming {@link CoapResponse}s related to
- * a particular {@link CoapRequest}
+ * a particular {@link CoapRequest}.
  *
- * If you want your instance of {@link CoapResponseProcessor} to handle other events as well, the instance must
- * additionally implement one ore more of the following other interfaces, i.e.
+ * If one wants an instance of {@link CoapResponseProcessor} to handle other events as well, the implementing class
+ * must additionally implement one ore more of the following other interfaces, i.e.
  * <ul>
  *     <li>
  *         {@link RetransmissionTimeoutProcessor} to be informed if the maximum number of retransmission attempts
@@ -53,8 +53,8 @@ import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceived
  *     </li>
  * </ul>
  *
- * A {@link CoapResponseProcessor} is comparable to a tab in a browser, assuming the browser to be the
- * {@link CoapClientApplication}
+ * A {@link CoapResponseProcessor} is comparable to a tab in a browser, whereas the {@link CoapClientApplication}
+ * browser is comparable to the browser application.
  *
  * @author Oliver Kleine
  */

@@ -23,6 +23,7 @@
 
 package de.uniluebeck.itm.ncoap.communication.core;
 
+import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
@@ -36,6 +37,10 @@ import java.util.concurrent.ScheduledExecutorService;
 
 
 /**
+ * Factory to provide a {@link DatagramChannel} for a {@link CoapClientApplication}. Each instance of
+ * {@link CoapClientDatagramChannelFactory} provides one {@link DatagramChannel}. So, multiple calls
+ * of {@link #getChannel()} will always return the same instance of {@link DatagramChannel}.
+ *
  * @author Oliver Kleine
  */
 public class CoapClientDatagramChannelFactory {
@@ -46,6 +51,9 @@ public class CoapClientDatagramChannelFactory {
 
     private DatagramChannel datagramChannel;
 
+    /**
+     * @param executorService The {@link ScheduledExecutorService} to provide the threads for I/O operations.
+     */
     public CoapClientDatagramChannelFactory(ScheduledExecutorService executorService){
 
         ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService);
@@ -61,6 +69,10 @@ public class CoapClientDatagramChannelFactory {
         log.info("New client channel created for port {}", datagramChannel.getLocalAddress().getPort());
     }
 
+    /**
+     * Returns the {@link DatagramChannel} provided by this factory
+     * @return the {@link DatagramChannel} provided by this factory
+     */
     public DatagramChannel getChannel(){
         return this.datagramChannel;
     }

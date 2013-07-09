@@ -42,8 +42,8 @@ public class InternalUpdateNotificationRejectedMessage {
 
     @Override
     public String toString(){
-        return "[InternalUpdateNotificationRejectedMessage] Remote address " + observerAddress + ", observable web service " +
-                servicePath + ".";
+        return "[InternalUpdateNotificationRejectedMessage] Remote address " + observerAddress +
+                ", observable web service " + servicePath + ".";
     }
 
 }

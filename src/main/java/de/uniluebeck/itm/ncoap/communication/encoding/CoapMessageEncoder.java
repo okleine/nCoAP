@@ -41,6 +41,7 @@ import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.
 import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
 
 /**
+ * A {@link CoapMessageEncoder} serializes outgoing {@link CoapMessage}s.
  *
  * @author Oliver Kleine
  */

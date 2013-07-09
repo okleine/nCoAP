@@ -42,6 +42,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * This handler deals with outgoing {@link CoapMessage}s with {@link MsgType#CON}. It retransmits the outgoing
+ * message in exponentially increasing intervals (up to {@link #MAX_RETRANSMITS} times) until was no corresponding
+ * message with {@link MsgType#ACK} or {@link MsgType#RST} received.
+ *
+ * To relate incoming with outgoing messages this is the handler to set the message ID of outgoing {@link CoapMessage}s
+ * if the message ID was not already set previously.
+ *
  * @author Oliver Kleine
  */
 public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler implements Observer {
@@ -79,6 +86,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
     private MessageIDFactory messageIDFactory;
 
+    /**
+     * @param executorService the {@link ScheduledExecutorService} to provide the thread(s) to retransmit outgoing
+     *                        {@link CoapMessage}s with {@link MsgType#CON}
+     */
     public OutgoingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
         messageIDFactory = new MessageIDFactory(executorService);

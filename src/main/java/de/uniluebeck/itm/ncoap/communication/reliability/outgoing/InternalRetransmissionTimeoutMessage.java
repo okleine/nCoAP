@@ -6,9 +6,11 @@ import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import java.net.InetSocketAddress;
 
 /**
- * Instances of {@link InternalRetransmissionTimeoutMessage} are sent upstream by the {@link OutgoingMessageReliabilityHandler}
- * if a {@link CoapMessage} of type {@link MsgType#CON} was not acknowledged despite the maximum number of
- * retransmission attempts.
+ * Instances of {@link InternalRetransmissionTimeoutMessage} are sent upstream by the
+ * {@link OutgoingMessageReliabilityHandler} if a {@link CoapMessage} of type {@link MsgType#CON} was not
+ * acknowledged despite the maximum number of retransmission attempts.
+ *
+ * @author Oliver Kleine
  */
 public class InternalRetransmissionTimeoutMessage {
 

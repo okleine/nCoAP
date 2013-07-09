@@ -52,6 +52,8 @@ import java.util.concurrent.ThreadFactory;
  * {@link #writeCoapRequest(CoapRequest, CoapResponseProcessor)} it provides an
  * easy-to-use method to write CoAP requests to a server.
  *
+ * Each instance of {@link CoapClientApplication} is automatically bound to a (random) available local port.
+ *
  * @author Oliver Kleine
  */
 public class CoapClientApplication extends SimpleChannelUpstreamHandler {

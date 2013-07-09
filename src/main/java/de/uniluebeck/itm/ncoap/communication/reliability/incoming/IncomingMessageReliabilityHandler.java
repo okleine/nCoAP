@@ -58,6 +58,10 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     private ScheduledExecutorService executorService;
 
+    /**
+     * @param executorService the {@link ScheduledExecutorService} to provide the threads that execute the
+     *                        operations for reliability.
+     */
     public IncomingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
     }
@@ -203,26 +207,18 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     private synchronized boolean addAcknowledgementStatus(InetSocketAddress remoteAddress, CoapMessage coapMessage){
         //Ignore duplicates
         if(acknowledgementStates.contains(remoteAddress, coapMessage.getMessageID())){
-            log.info("Received duplicate (" + coapMessage + "). IGNORE!");
+            log.info("Received duplicate (IGNORE): {}.", coapMessage);
             return false;
         }
 
         acknowledgementStates.put(remoteAddress, coapMessage.getMessageID(), false);
-        log.debug("Added ACK status for " + coapMessage);
+        log.debug("Added ACK status for {}.", coapMessage);
         return true;
     }
 
 
     private synchronized Boolean removeAcknowledgementStatus(InetSocketAddress remoteAddress, int messageID){
         return acknowledgementStates.remove(remoteAddress, messageID);
-//
-//        if(removed != null && removed)
-//            log.debug("Removed ACK status for message ID {} to {}." , remoteAddress, messageID);
-//
-//        if(removed != null)
-//            return removed;
-//        else
-//            return false;
     }
 
 
@@ -240,33 +236,4 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             }
         });
     }
-
-//    private class EmptyAcknowledgementSender implements Runnable{
-//
-//        private Logger log = LoggerFactory.getLogger(EmptyAcknowledgementSender.class.getName());
-//
-//        private ChannelHandlerContext ctx;
-//        private InetSocketAddress remoteAddress;
-//        private int messageID;
-//
-//
-//        public EmptyAcknowledgementSender(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
-//                                          int messageID){
-//            this.ctx = ctx;
-//            this.remoteAddress = remoteAddress;
-//            this.messageID = messageID;
-//        }
-//
-//        @Override
-//        public void run(){
-//            log.debug("Start to send empty ACK for message ID {} to {}.", messageID, remoteAddress);
-//            if(setAcknowledgementSent(remoteAddress, messageID)){
-//
-//            }
-//            else{
-//                log.debug("ACK for message ID {} to {} was already sent as piggy-backed response.", messageID, remoteAddress);
-//            }
-//        }
-//    }
-
 }

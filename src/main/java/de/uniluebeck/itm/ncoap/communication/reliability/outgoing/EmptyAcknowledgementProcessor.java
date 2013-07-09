@@ -1,11 +1,12 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
+import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 21.06.13
- * Time: 13:12
- * To change this template use File | Settings | File Templates.
+ * Interface to be implemented by instances of {@link CoapResponseProcessor} to get the information that a
+ * request was received by a server but that the server needs some more time to proceed the request.
+ *
+ * @author Oliver Kleine
  */
 public interface EmptyAcknowledgementProcessor {
 

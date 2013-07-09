@@ -23,6 +23,8 @@
 
 package de.uniluebeck.itm.ncoap.communication.core;
 
+import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
+
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -34,18 +36,21 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
+ * Factory to provide the {@link DatagramChannel} for a {@link CoapServerApplication}. Each instance of
+ * {@link CoapServerDatagramChannelFactory} provides one {@link DatagramChannel}. So, multiple calls
+ * of {@link #getChannel()} will always return the same instance of {@link DatagramChannel}.
+ *
  * @author Oliver Kleine
  */
 public class CoapServerDatagramChannelFactory {
 
-    private static Logger log = LoggerFactory.getLogger(CoapServerDatagramChannelFactory.class.getName());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private DatagramChannel datagramChannel;
 
     /**
-     *
-     * @param executorService
-     * @param serverPort
+     * @param executorService the {@link ScheduledExecutorService} to provide the threads for I/O
+     * @param serverPort the local port the {@link DatagramChannel} of this factory is bound to.
      */
     public CoapServerDatagramChannelFactory(ScheduledExecutorService executorService, int serverPort){
         ChannelFactory channelFactory =
@@ -63,7 +68,8 @@ public class CoapServerDatagramChannelFactory {
     }
 
     /**
-     *
+     * Returns the {@link DatagramChannel} provided by this factory
+     * @return the {@link DatagramChannel} provided by this factory
      */
     public DatagramChannel getChannel(){
         return this.datagramChannel;

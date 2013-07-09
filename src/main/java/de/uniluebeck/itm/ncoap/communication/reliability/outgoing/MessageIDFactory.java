@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Oliver Kleine
  */
-public class MessageIDFactory extends Observable{
+class MessageIDFactory extends Observable{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -51,11 +51,20 @@ public class MessageIDFactory extends Observable{
 
     private int nextMessageID = 0;
 
+    /**
+     * @param executorService the {@link ScheduledExecutorService} to provide the thread(s) for operations to
+     *                        provide available message IDs
+     */
     public MessageIDFactory(ScheduledExecutorService executorService){
         this.executorService = executorService;
     }
 
-
+    /**
+     * Calls of this method cause the given {@link Observer} to be informed whenever there was a message ID reallocated,
+     * i.e. this message ID could be returned by any future call of {@link #nextMessageID()}.
+     *
+     * @param observer the {@link Observer} to be informed whenever there was a message ID reallocated
+     */
     public void registerObserver(Observer observer){
         this.addObserver(observer);
     }
