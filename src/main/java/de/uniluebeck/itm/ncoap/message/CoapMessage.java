@@ -219,8 +219,8 @@ public abstract class CoapMessage {
     }
 
     /**
-     * Adds an appropriate number of proxy URI options to the list. This causes eventually already contained
-     * ETAG options to be removed from the list even in case of an exception.
+     * Adds an appropriate number of {@link OptionName#ETAG} options to the list. This causes eventually already
+     * contained ETAG options to be removed from the list even in case of an exception.
      *
      * @param etags The set of ETAGs to be added as options
      * @throws InvalidOptionException if at least one of the options to be added is invalid
