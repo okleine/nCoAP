@@ -15,9 +15,36 @@ see: http://tools.ietf.org/html/draft-ietf-core-block-04
 For now, the blockwise transfer only works for clients receiving blockwise responses
 
 
+Maven
+=====
+
+To use the nCoAP Maven artifact add the following to your pom.xml
+
+<repositories>
+...
+    <repository>
+        <id>itm-maven-repository-releases-site</id>
+        <url>https://maven.itm.uni-luebeck.de/content/repositories/releases/</url>
+    </repository>
+...
+</repositories>
+
+....
+
+<dependencies>
+...
+    <dependency>
+        <groupId>de.uniluebeck.itm</groupId>
+        <artifactId>ncoap</artifactId>
+        <version>1.0</version>
+    </dependency>
+...
+</dependencies>
+
+
 Documentation
 =============
 
-The API documentation is available at http://media.itm.uni-luebeck.de/people/kleine/ncoap-1.0-snapshot/apidoc/.
+The API documentation is available at http://media.itm.uni-luebeck.de/people/kleine/ncoap-1.0/apidoc/.
 
 To get started with using the nCoAP framework I refer to https://github.com/okleine/SimpleCoapApplications.
