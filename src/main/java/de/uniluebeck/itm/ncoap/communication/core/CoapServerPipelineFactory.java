@@ -28,14 +28,19 @@ import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.communication.observe.ObservableResourceHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
+
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.channel.socket.DatagramChannel;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
+ * Factory to provide the {@link ChannelPipeline} for newly created {@link DatagramChannel}s via
+ * {@link CoapServerDatagramChannelFactory}.
+ *
  * @author Oliver Kleine
  */
 public class CoapServerPipelineFactory implements ChannelPipelineFactory {
@@ -49,7 +54,10 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
     private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
 
     private ObservableResourceHandler observableResourceHandler;
-    
+
+    /**
+     * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     */
     public CoapServerPipelineFactory(ScheduledExecutorService executorService){
 
         this.executionHandler = new ExecutionHandler(executorService);
@@ -81,6 +89,10 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         return pipeline;
     }
 
+    /**
+     * Returns the {@link ObservableResourceHandler} which is part of each pipline from this factory
+     * @return the {@link ObservableResourceHandler} which is part of each pipline from this factory
+     */
     public ObservableResourceHandler getObservableResourceHandler(){
         return this.observableResourceHandler;
     }

@@ -28,14 +28,22 @@ import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
+
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.handler.execution.ExecutionHandler;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 
+/**
+ * Factory to provide the {@link ChannelPipeline} for newly created {@link DatagramChannel}s via
+ * {@link CoapClientDatagramChannelFactory}.
+ *
+ * @author Oliver Kleine
+ */
 public class CoapClientPipelineFactory implements ChannelPipelineFactory {
 
     private ExecutionHandler executionHandler;
@@ -51,7 +59,9 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
     //Blockwise
     private BlockwiseTransferHandler blockwiseTransferHandler;
 
-
+    /**
+     * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     */
     public CoapClientPipelineFactory(ScheduledExecutorService executorService){
         executionHandler = new ExecutionHandler(executorService);
 
