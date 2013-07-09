@@ -1,15 +1,18 @@
 Java implementation of the CoAP protocol (draft 08) (see: http://tools.ietf.org/html/draft-ietf-core-coap-08)
 usable for both clients and servers including extensions:
 
-<h3>CoAP observe (draft 06)</h3>
+CoAP observe (draft 06)
+=======================
 see: http://tools.ietf.org/html/draft-ietf-core-observe-06
 
-<h3> CoAP block-transfer (draft 04, partially)</h3>
-see: http://tools.ietf.org/html/draft-ietf-core-block-04<br>
-<br>
+CoAP block-transfer (draft 04, partially)
+=========================================
+see: http://tools.ietf.org/html/draft-ietf-core-block-04
+
 For now, the blockwise transfer only works for clients receiving blockwise responses
 
-<h3>Documentation</h3>
+Documentation
+=============
 
 The API documentation is available at http://media.itm.uni-luebeck.de/people/kleine/ncoap-1.0-snapshot/apidoc/.
 
