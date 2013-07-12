@@ -16,7 +16,7 @@
     <repositories>
         <repository>
             <id>repository.jboss.org</id>
-            <url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
+            <url>https://repository.jboss.org/nexus/content/repositories/releases</url>
         </repository>
     </repositories>
 
@@ -24,12 +24,12 @@
         <repository>
             <id>itm-maven-repository-releases</id>
             <name>ITM Maven Releases Repository</name>
-            <url>http://maven.itm.uni-luebeck.de/content/repositories/releases/</url>
+            <url>http://maven.itm.uni-luebeck.de/content/repositories/releases</url>
         </repository>
         <snapshotRepository>
             <id>itm-maven-repository-snapshots</id>
             <name>ITM Maven Snapshots Repository</name>
-            <url>http://maven.itm.uni-luebeck.de/content/repositories/snapshots/</url>
+            <url>http://maven.itm.uni-luebeck.de/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -62,6 +62,25 @@
                     <execution>
                         <goals>
                             <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.mycila.maven-license-plugin</groupId>
+                <artifactId>maven-license-plugin</artifactId>
+                <version>1.9.0</version>
+                <configuration>
+                    <header>${basedir}/license.txt</header>
+                    <includes>
+                        <include>src/**</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>format</goal>
                         </goals>
                     </execution>
                 </executions>
