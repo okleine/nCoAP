@@ -33,12 +33,19 @@ import org.jboss.netty.channel.MessageEvent;
 import java.net.InetSocketAddress;
 import java.util.*;
 
+/**
+ * Simple extension to {@link CoapServerApplication} that apart from the inherited functionality does nothing
+ * but store the reception times of {@link CoapRequest}s.
+ *
+ * @author Oliver Kleine
+ */
 public class CoapTestServer extends CoapServerApplication {
-
-    private HashBasedTable<InetSocketAddress, ByteArrayWrapper, Long> timeoutMessages = HashBasedTable.create();
 
     private Map<Integer, Long> requestReceptionTimes = Collections.synchronizedMap(new TreeMap<Integer, Long>());
 
+    /**
+     * @param serverPort the port the server is supposed to listen at
+     */
     public CoapTestServer(int serverPort){
         super(serverPort);
     }
@@ -53,6 +60,13 @@ public class CoapTestServer extends CoapServerApplication {
 
     }
 
+    /**
+     * Returns a {@link Map} containing all received {@link CoapRequest}s, i.e. their message IDs as keys and the
+     * reception time as values.
+     *
+     * @return  a {@link Map} containing all received {@link CoapRequest}s, i.e. their message IDs as keys and the
+     * reception time as values.
+     */
     public Map<Integer, Long> getRequestReceptionTimes(){
         return this.requestReceptionTimes;
     }

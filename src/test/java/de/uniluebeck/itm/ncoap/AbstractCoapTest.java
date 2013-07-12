@@ -27,17 +27,15 @@ package de.uniluebeck.itm.ncoap;
 import org.apache.log4j.*;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 28.06.13
- * Time: 17:09
- * To change this template use File | Settings | File Templates.
+ * Abstract class to be extended by all nCoAP tests to get proper logging
+ *
+ * @author Oliver Kleine
  */
 public abstract class AbstractCoapTest {
 
     private static boolean isLoggingConfigured = false;
 
-    public AbstractCoapTest(){
+    protected AbstractCoapTest(){
         try{
             if(!isLoggingConfigured){
                 initializeLogging();
@@ -51,7 +49,7 @@ public abstract class AbstractCoapTest {
 
     }
 
-    public static void initializeLogging(){
+    private static void initializeLogging(){
         if(!isLoggingConfigured){
             //Output pattern
             String pattern = "%-23d{yyyy-MM-dd HH:mm:ss,SSS} | %-32.32t | %-35.35c{1} | %-5p | %m%n";

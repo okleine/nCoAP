@@ -42,7 +42,7 @@ import java.util.concurrent.Executors;
 
 /**
  * Receives and sends CoAP Messages for testing purposes. A {@link CoapTestEndpoint} has no automatic functionality
- * besides encoding pf incoming and decoding of outgoing messages.
+ * besides encoding of incoming and decoding of outgoing messages.
  *
  * @author Oliver Kleine, Stefan Hueske
 */

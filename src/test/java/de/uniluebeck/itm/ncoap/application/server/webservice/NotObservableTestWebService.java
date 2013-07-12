@@ -39,12 +39,10 @@ import java.nio.charset.Charset;
 import static org.junit.Assert.fail;
 
 /**
-* Created with IntelliJ IDEA.
-* User: olli
-* Date: 09.04.13
-* Time: 15:50
-* To change this template use File | Settings | File Templates.
-*/
+ * Simple implementation of {@link NotObservableWebService} to handle incoming {@link CoapRequest}s.
+ *
+ * @author Oliver Kleine
+ */
 public class NotObservableTestWebService extends NotObservableWebService<String>{
 
     private static Logger log = LoggerFactory.getLogger(NotObservableTestWebService.class.getName());
@@ -80,6 +78,7 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
             response.setPayload(ChannelBuffers.wrappedBuffer(getResourceStatus().getBytes(Charset.forName("UTF-8"))));
         } catch (MessageDoesNotAllowPayloadException e) {
             log.error("This should never happen.", e);
+            fail("This should never happen.");
         }
 
         log.debug("Created response for resource {}: {}.", getPath(), response);

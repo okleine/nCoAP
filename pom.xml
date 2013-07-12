@@ -9,9 +9,9 @@
     <groupId>de.uniluebeck.itm</groupId>
     <artifactId>ncoap</artifactId>
     <packaging>jar</packaging>
-    <version>1.0</version>
+    <version>1.0.1</version>
     <name>nCoAP</name>
-    <url>http://media.itm.uni-luebeck.de/people/kleine/ncoap-1.0/apidoc/</url>
+    <url>http://media.itm.uni-luebeck.de/people/kleine/maven/${project.artifactId}/${project.version}</url>
 
     <repositories>
         <repository>
@@ -31,6 +31,10 @@
             <name>ITM Maven Snapshots Repository</name>
             <url>http://maven.itm.uni-luebeck.de/content/repositories/snapshots</url>
         </snapshotRepository>
+        <site>
+            <id>kleine-maven-site</id>
+            <url>scpexe://itm01.itm.uni-luebeck.de/www/itm-media/people/kleine/maven/${project.artifactId}/${project.version}</url>
+        </site>
     </distributionManagement>
 
     <reporting>
@@ -88,7 +92,6 @@
             </plugin>
         </plugins>
 
-
         <extensions>
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
@@ -96,7 +99,6 @@
                 <version>1.0</version>
             </extension>
         </extensions>
-
     </build>
 
     <pluginRepositories>
@@ -111,12 +113,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.6.6</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.netty</groupId>
@@ -135,19 +131,17 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.10</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
             <version>2.1</version>
             <scope>test</scope>
         </dependency>
-
-        <!--
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.8</version>
-        </dependency>
-        -->
     </dependencies>
 
 </project>

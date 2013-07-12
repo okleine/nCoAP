@@ -18,7 +18,7 @@ For now, the blockwise transfer only works for clients receiving blockwise respo
 Maven
 =====
 
-To use the nCoAP Maven artifact add the following to your pom.xml
+To use the latest released nCoAP Maven artifact add the following to your pom.xml
 
 <repositories>
 ...
@@ -45,6 +45,6 @@ To use the nCoAP Maven artifact add the following to your pom.xml
 Documentation
 =============
 
-The API documentation is available at http://media.itm.uni-luebeck.de/people/kleine/ncoap-1.0/apidoc/.
+The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap/
 
 To get started with using the nCoAP framework I refer to https://github.com/okleine/SimpleCoapApplications.

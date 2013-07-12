@@ -34,11 +34,10 @@ import org.apache.log4j.*;
 import org.junit.AfterClass;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 14.04.13
- * Time: 21:04
- * To change this template use File | Settings | File Templates.
+ * Abstract class to be extended by all tests classes to test communication functionality, i.e. all
+ * tests using at least one of {@link CoapClientApplication}, {@link CoapServerApplication}.
+ *
+ * @author Oliver Kleine
  */
 public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
 

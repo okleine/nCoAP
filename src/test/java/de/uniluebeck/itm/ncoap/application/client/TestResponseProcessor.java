@@ -26,16 +26,15 @@ package de.uniluebeck.itm.ncoap.application.client;
 
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import org.apache.log4j.Logger;
 
 import java.util.*;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 21.06.13
- * Time: 11:24
- * To change this template use File | Settings | File Templates.
+ * Instance of {@link CoapResponseProcessor} additionally implementing {@link RetransmissionTimeoutProcessor},
+ * {@link EmptyAcknowledgementProcessor}, and {@link RetransmissionTimeoutProcessor} to handle all possible
+ * events related to a sent {@link CoapRequest}.
  */
 public class TestResponseProcessor implements CoapResponseProcessor, RetransmissionTimeoutProcessor,
         EmptyAcknowledgementProcessor, RetransmissionProcessor {
@@ -74,6 +73,12 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
         emptyAcknowledgements.add(new Object[]{message, System.currentTimeMillis()});
     }
 
+    /**
+     * Returns a {@link List} containing all received {@link CoapResponse} instances. The elements in the list are
+     * ordered according to the time of reception (first element = first received {@link CoapResponse}).
+     *
+     * @return all received {@link CoapResponse} instances
+     */
     public List<CoapResponse> getCoapResponses(){
         List<CoapResponse> result = new ArrayList<CoapResponse>();
         for(Object[] object : responses){
@@ -81,16 +86,38 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
         }
         return result;
     }
-    
+
+    /**
+     * Returns the time at which a particular {@link CoapResponse} was received
+     *
+     * @param index the index of the {@link CoapResponse} the time should be returned for. The index is given
+     *              by the position in the list of responses returned by {@link #getCoapResponses()}.
+     *
+     * @return the time at which a particular {@link CoapResponse} was received
+     */
     public Long getCoapResponseReceptionTime(int index){
         return (Long) (responses.get(index))[1];   
     }
 
+    /**
+     * Returns a particular {@link CoapResponse} according to its index
+     *
+     * @param index the index of the {@link CoapResponse} the time should be returned for. The index is given
+     *              by the position in the list of responses returned by {@link #getCoapResponses()}.
+     *
+     * @return a particular {@link CoapResponse} according to its index
+     */
     public CoapResponse getCoapResponse(int index){
         return (CoapResponse) (responses.get(index))[0];
     }
 
-
+    /**
+     * Returns a {@link List} containing all received {@link InternalEmptyAcknowledgementReceivedMessage}s.
+     * The elements in the list are ordered according to the time of reception (first element = first received
+     * {@link InternalEmptyAcknowledgementReceivedMessage}).
+     *
+     * @return a {@link List} containing all received {@link InternalEmptyAcknowledgementReceivedMessage}s.
+     */
     public List<InternalEmptyAcknowledgementReceivedMessage> getEmptyAcknowledgementReceivedMessages(){
         List<InternalEmptyAcknowledgementReceivedMessage> result = new ArrayList<InternalEmptyAcknowledgementReceivedMessage>();
         for(Object[] object : emptyAcknowledgements){
@@ -99,14 +126,39 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
         return result;
     }
 
+    /**
+     * Returns the time at which a particular {@link InternalEmptyAcknowledgementReceivedMessage} was received
+     *
+     * @param index the index of the {@link InternalEmptyAcknowledgementReceivedMessage} the time should be returned
+     *              for. The index is given by the position in the list of responses returned by
+     *              {@link #getEmptyAcknowledgementReceivedMessages()}).
+     *
+     * @return the time at which a particular {@link InternalEmptyAcknowledgementReceivedMessage} was received
+     */
     public Long getEmptyAcknowledgementeReceptionTime(int index){
         return (Long) (emptyAcknowledgements.get(index))[1];
     }
 
+    /**
+     * Returns a particular {@link InternalEmptyAcknowledgementReceivedMessage} according to its index
+     *
+     * @param index the index of the {@link InternalEmptyAcknowledgementReceivedMessage} the time should be returned
+     *              for. The index is given by the position in the list of responses returned by
+     *              {@link #getEmptyAcknowledgementReceivedMessages()}.
+     *
+     * @return a particular {@link InternalEmptyAcknowledgementReceivedMessage} according to its index
+     */
     public InternalEmptyAcknowledgementReceivedMessage getEmptyAcknowledgementReceivedMessage(int index){
         return (InternalEmptyAcknowledgementReceivedMessage) (responses.get(index))[0];
     }
 
+    /**
+     * Returns a {@link List} containing all received {@link InternalRetransmissionTimeoutMessage} instances. The
+     * elements in the list are ordered according to the time of reception (first element = first received
+     * {@link InternalRetransmissionTimeoutMessage}).
+     *
+     * @return all received {@link InternalRetransmissionTimeoutMessage} instances
+     */
     public List<InternalRetransmissionTimeoutMessage> getRetransmissionTimeoutMessages(){
         List<InternalRetransmissionTimeoutMessage> result = new ArrayList<InternalRetransmissionTimeoutMessage>();
         for(Object[] object : timeoutMessages){
@@ -115,14 +167,39 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
         return result;
     }
 
+    /**
+     * Returns the time at which a particular {@link InternalRetransmissionTimeoutMessage} was received
+     *
+     * @param index the index of the {@link InternalRetransmissionTimeoutMessage} the time should be returned
+     *              for. The index is given by the position in the list of responses returned by
+     *              {@link #getRetransmissionTimeoutMessages()}).
+     *
+     * @return the time at which a particular {@link InternalRetransmissionTimeoutMessage} was received
+     */
     public Long getRetransmissionTimeoutTime(int index){
         return (Long) (timeoutMessages.get(index))[1];
     }
 
+    /**
+     * Returns a particular {@link InternalRetransmissionTimeoutMessage} according to its index
+     *
+     * @param index the index of the {@link InternalRetransmissionTimeoutMessage} the time should be returned for.
+     *              The index is given by the position in the list of responses returned by
+     *              {@link #getRetransmissionTimeoutMessages()}.
+     *
+     * @return a particular {@link InternalRetransmissionTimeoutMessage} according to its index
+     */
     public InternalRetransmissionTimeoutMessage getRetransmissionTimeoutMessage(int index){
         return (InternalRetransmissionTimeoutMessage) (timeoutMessages.get(index))[0];
     }
 
+    /**
+     * Returns a {@link List} containing all times the {@link CoapRequest} related to the {@link CoapResponse}(s) this
+     * {@link TestResponseProcessor} is supposed to handle was sent (incl. retransmission times).
+     *
+     * @return a {@link List} containing all times the {@link CoapRequest} related to the {@link CoapResponse}(s) this
+     * {@link TestResponseProcessor} is supposed to handle was sent (incl. retransmission times).
+     */
     public List<Long> getRequestSentTimes() {
         return requestSentTimes;
     }

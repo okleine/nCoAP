@@ -48,6 +48,8 @@ import static org.junit.Assert.fail;
  * {@link #getResourceStatus()} is 1, 2, 3, 4 or 5. The payload contained in a the {@link CoapResponse}
  * produced by {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} is "Status 1",
  * "Status 2", ..., "Status 5".
+ *
+ * @author Oliver Kleine
  */
 public class ObservableTestWebService extends ObservableWebService<Integer>{
 
@@ -63,7 +65,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
      * @param initialStatus the initial internal status
      * @param artificalDelay the artificial delay in milliseconds to simulate a longer processing time for incoming
      *                       requests
-     * @param updateInterval the time passing between two status updates
+     * @param updateInterval the time passing between two status updates (in milliseconds)
      */
     public ObservableTestWebService(String path, int initialStatus, long artificalDelay, final long updateInterval){
         super(path, initialStatus);
