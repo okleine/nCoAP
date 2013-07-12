@@ -10,8 +10,8 @@
     <artifactId>ncoap</artifactId>
     <packaging>jar</packaging>
     <version>1.0</version>
-    <name>nCoap</name>
-    <url>http://maven.apache.org</url>
+    <name>nCoAP</name>
+    <url>http://media.itm.uni-luebeck.de/people/kleine/ncoap-1.0/apidoc/</url>
 
     <repositories>
         <repository>
@@ -75,6 +75,7 @@
                     <includes>
                         <include>src/**</include>
                     </includes>
+                    <strictCheck>true</strictCheck>
                 </configuration>
                 <executions>
                     <execution>
