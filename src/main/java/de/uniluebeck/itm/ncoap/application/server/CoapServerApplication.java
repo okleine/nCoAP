@@ -68,7 +68,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
     private DatagramChannel channel;
 
-    //This map holds all registered webServices (key: URI path, value: WebService instance)
+    //This map holds all registered webservice (key: URI path, value: WebService instance)
     private HashMap<String, WebService> registeredServices = new HashMap<String, WebService>();
 
     private ListeningExecutorService listeningExecutorService;
@@ -255,7 +255,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      */
     public void shutdown() throws InterruptedException {
 
-        //remove all webServices
+        //remove all webservice
         WebService[] services;
         synchronized (this){
             services = new WebService[registeredServices.values().size()];
