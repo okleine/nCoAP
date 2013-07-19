@@ -58,8 +58,7 @@ import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +80,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
     private static Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class.getName());
 
     @Override
-    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
+    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws InvalidHeaderException,
+            EncodingFailedException, ToManyOptionsException {
 
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
         if(!(obj instanceof ChannelBuffer)){
@@ -109,7 +109,12 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         log.debug("Header created: {}", header);
 
         //Create OptionList
-        OptionList optionList = decodeOptionList(buffer, optionCount, Code.getCodeFromNumber(codeNumber), header);
+        OptionList optionList;
+        try {
+            optionList = decodeOptionList(buffer, optionCount, Code.getCodeFromNumber(codeNumber), header);
+        } catch (InvalidOptionException e) {
+            return new InvalidOptionException(header, e.getOptionNumber(), "Invalid option found while decoding.");
+        }
 
         //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
         //at the same position (buf.readableBytes() == 0).

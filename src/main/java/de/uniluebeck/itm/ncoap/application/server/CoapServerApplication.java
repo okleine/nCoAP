@@ -34,6 +34,9 @@ import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.header.Code;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
+import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -130,12 +133,35 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     public void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         log.debug("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(!(me.getMessage() instanceof CoapRequest)){
+        if(!(me.getMessage() instanceof CoapRequest) && !(me.getMessage() instanceof InvalidOptionException)){
             ctx.sendUpstream(me);
             return;
         }
 
         me.getFuture().setSuccess();
+
+        //Handle InvalidOptionException that occured while decoding
+        if(me.getMessage() instanceof InvalidOptionException){
+            InvalidOptionException exception = (InvalidOptionException) me.getMessage();
+
+            CoapResponse coapResponse = new CoapResponse(Code.BAD_OPTION_402);
+            if(exception.getMessageHeader().getMsgType() == MsgType.CON)
+                coapResponse.getHeader().setMsgType(MsgType.ACK);
+            else
+                coapResponse.getHeader().setMsgType(MsgType.NON);
+
+            try{
+                coapResponse.setMessageID(exception.getMessageHeader().getMsgID());
+            } catch (InvalidHeaderException e) {
+                log.error("This should never happen.", e);
+            }
+
+            sendCoapResponse(coapResponse, (InetSocketAddress) me.getRemoteAddress());
+            return;
+        }
+
+        //Create settable future to wait for response
+        final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
 
         final CoapRequest coapRequest = (CoapRequest) me.getMessage();
         final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
@@ -162,7 +188,6 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         }
 
 
-        final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
         webService.processCoapRequest(responseFuture, coapRequest, remoteAddress);
 
         responseFuture.addListener(new Runnable(){
@@ -173,6 +198,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                     coapResponse = responseFuture.get();
 
                     if(coapResponse.getCode().isErrorMessage()){
+                        coapResponse.setMessageID(coapRequest.getMessageID());
                         sendCoapResponse(coapResponse, remoteAddress);
                         return;
                     }
@@ -243,7 +269,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
-        log.error("Exception while processing I/O task.", e.getCause());
+        log.error("Unexpected Exception while processing I/O task.", e.getCause());
     }
 
     /**
