@@ -177,7 +177,13 @@ public enum Code {
      * corresponds to CoAPs numerical message code 133
      */
     METHOD_NOT_ALLOWED_405(133, new OptionRegistry.OptionName[]{OptionRegistry.OptionName.MAX_AGE,
-                                                 OptionRegistry.OptionName.TOKEN}),
+            OptionRegistry.OptionName.TOKEN}),
+
+    /**
+     * corresponds to CoAPs numerical message code 134
+     */
+    NOT_ACCEPTABLE(134, new OptionRegistry.OptionName[]{OptionRegistry.OptionName.MAX_AGE,
+            OptionRegistry.OptionName.TOKEN}),
 
     /**
      * corresponds to CoAPs numerical message code 140
