@@ -279,10 +279,12 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             }
             else{
                 log.debug("No callback found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
+                tokenFactory.passBackToken(coapResponse.getToken());
             }
 
             //pass the token back
-            tokenFactory.passBackToken(coapResponse.getToken());
+            if(!coapResponse.isUpdateNotification())
+                tokenFactory.passBackToken(coapResponse.getToken());
 
             me.getFuture().setSuccess();
         }
