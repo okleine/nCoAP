@@ -209,9 +209,10 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                     try {
                         coapResponse = responseFuture.get();
 
-                        openRequests.remove(me.getRemoteAddress(), coapRequest.getMessageID());
-                        log.warn("Remove message ID {} from {} from list of open requests!",
-                                me.getRemoteAddress(), coapRequest.getMessageID());
+                        if(openRequests.remove(me.getRemoteAddress(), coapRequest)){
+                            log.warn("Remove message {} from {} from list of open requests!",
+                                coapRequest, me.getRemoteAddress());
+                        }
 
                         if(coapResponse.getCode().isErrorMessage()){
                             coapResponse.setMessageID(coapRequest.getMessageID());
