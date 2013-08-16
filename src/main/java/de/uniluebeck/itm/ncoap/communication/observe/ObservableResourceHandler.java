@@ -118,8 +118,8 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
      *         {@link InternalUpdateNotificationRetransmissionMessage#getServicePath()}.
      *     </li>
      *     <li>
-     *         {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage}: Stop all observations of the observer that did not confirm
-     *         a confirmable update notification
+     *         {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage}:
+     *         Stop all observations of the observer that did not confirm a confirmable update notification
      *     </li>
      *     <li>
      *         {@link CoapRequest}: Add {@link MessageEvent#getRemoteAddress()} as observer for

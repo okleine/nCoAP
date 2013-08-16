@@ -121,7 +121,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                     future.addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
-                            log.info("Sent to to {}:{}: {}",
+                            log.info("Sent to {}:{}: {}",
                                     new Object[]{rcptSocketAddress.getAddress().getHostAddress(),
                                             rcptSocketAddress.getPort(), coapRequest});
 

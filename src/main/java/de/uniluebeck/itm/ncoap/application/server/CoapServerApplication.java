@@ -24,6 +24,9 @@
  */
 package de.uniluebeck.itm.ncoap.application.server;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.util.concurrent.*;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebService;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WebService;
@@ -47,6 +50,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.*;
 
@@ -70,6 +74,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private DatagramChannel channel;
+    private Multimap<InetSocketAddress, CoapRequest> openRequests =
+            Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, CoapRequest>create());
 
     //This map holds all registered webservice (key: URI path, value: WebService instance)
     private HashMap<String, WebService> registeredServices = new HashMap<String, WebService>();
@@ -187,59 +193,73 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             return;
         }
 
+        //Avoid duplicate request processing!
+        if(!openRequests.containsEntry(me.getRemoteAddress(), coapRequest)){
 
-        webService.processCoapRequest(responseFuture, coapRequest, remoteAddress);
+            openRequests.put((InetSocketAddress) me.getRemoteAddress(), coapRequest);
+            log.warn("Add request from {} to list of open requests: {}",
+                    me.getRemoteAddress(), coapRequest);
 
-        responseFuture.addListener(new Runnable(){
-            @Override
-            public void run() {
-                CoapResponse coapResponse;
-                try {
-                    coapResponse = responseFuture.get();
+            webService.processCoapRequest(responseFuture, coapRequest, remoteAddress);
 
-                    if(coapResponse.getCode().isErrorMessage()){
-                        coapResponse.setMessageID(coapRequest.getMessageID());
-                        sendCoapResponse(coapResponse, remoteAddress);
-                        return;
-                    }
-
-                    coapResponse.setMaxAge(webService.getMaxAge());
-                    coapResponse.setServicePath(webService.getPath());
-
-                    //Set message ID and token to match the request
-                    coapResponse.setMessageID(coapRequest.getMessageID());
-                    if(coapRequest.getToken().length > 0){
-                        coapResponse.setToken(coapRequest.getToken());
-                    }
-
-                    //Set content type if there is payload but no content type
-                    if(coapResponse.getPayload().readableBytes() > 0 && coapResponse.getContentType() == null)
-                        coapResponse.setContentType(MediaType.TEXT_PLAIN_UTF8);
-
-                    //Set observe response option if requested
-                    if(webService instanceof ObservableWebService && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
-                        if(!coapResponse.getCode().isErrorMessage())
-                            coapResponse.setObserveOptionValue(0);
-                }
-                catch (Exception ex) {
-                    coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);
+            responseFuture.addListener(new Runnable(){
+                @Override
+                public void run() {
+                    CoapResponse coapResponse;
                     try {
-                        coapResponse.setMessageID(coapRequest.getMessageID());
-                        coapResponse.setToken(coapRequest.getToken());
+                        coapResponse = responseFuture.get();
+
+                        openRequests.remove(me.getRemoteAddress(), coapRequest.getMessageID());
+                        log.warn("Remove message ID {} from {} from list of open requests!",
+                                me.getRemoteAddress(), coapRequest.getMessageID());
+
+                        if(coapResponse.getCode().isErrorMessage()){
+                            coapResponse.setMessageID(coapRequest.getMessageID());
+                            sendCoapResponse(coapResponse, remoteAddress);
+                            return;
+                        }
+
+                        coapResponse.setMaxAge(webService.getMaxAge());
                         coapResponse.setServicePath(webService.getPath());
-                        StringWriter errors = new StringWriter();
-                        ex.printStackTrace(new PrintWriter(errors));
-                        coapResponse.setPayload(errors.toString().getBytes(Charset.forName("UTF-8")));
-                    } catch (Exception e) {
-                        log.error("This should never happen.", e);
+
+                        //Set message ID and token to match the request
+                        coapResponse.setMessageID(coapRequest.getMessageID());
+                        if(coapRequest.getToken().length > 0){
+                            coapResponse.setToken(coapRequest.getToken());
+                        }
+
+                        //Set content type if there is payload but no content type
+                        if(coapResponse.getPayload().readableBytes() > 0 && coapResponse.getContentType() == null)
+                            coapResponse.setContentType(MediaType.TEXT_PLAIN_UTF8);
+
+                        //Set observe response option if requested
+                        if(webService instanceof ObservableWebService && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
+                            if(!coapResponse.getCode().isErrorMessage())
+                                coapResponse.setObserveOptionValue(0);
                     }
+                    catch (Exception ex) {
+                        coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);
+                        try {
+                            coapResponse.setMessageID(coapRequest.getMessageID());
+                            coapResponse.setToken(coapRequest.getToken());
+                            coapResponse.setServicePath(webService.getPath());
+                            StringWriter errors = new StringWriter();
+                            ex.printStackTrace(new PrintWriter(errors));
+                            coapResponse.setPayload(errors.toString().getBytes(Charset.forName("UTF-8")));
+                        } catch (Exception e) {
+                            log.error("This should never happen.", e);
+                        }
+                    }
+
+                    //Send the response
+                    sendCoapResponse(coapResponse, remoteAddress);
                 }
-
-                //Send the response
-                sendCoapResponse(coapResponse, remoteAddress);
-            }
-        }, listeningExecutorService);
-
+            }, listeningExecutorService);
+        }
+        else{
+            log.warn("A request from  {} with message ID {} is already in progess! IGNORE!",
+                    me.getRemoteAddress(), coapRequest.getMessageID());
+        }
     }
 
     private void sendCoapResponse(final CoapResponse coapResponse, final InetSocketAddress remoteAddress){
@@ -281,7 +301,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      */
     public void shutdown() throws InterruptedException {
 
-        //remove all webservice
+        //remove all webservices
         WebService[] services;
         synchronized (this){
             services = new WebService[registeredServices.values().size()];

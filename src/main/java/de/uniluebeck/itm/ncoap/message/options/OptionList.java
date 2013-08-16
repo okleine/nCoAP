@@ -212,7 +212,7 @@ public class OptionList {
         if(options.entries().isEmpty())
             return result + "no options";
 
-        for(Option option : options.values()){
+        for(Object option : options.values().toArray()){
             result += option + ", ";
         }
 
