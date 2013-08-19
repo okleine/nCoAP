@@ -87,7 +87,7 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
      * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      */
     public CoapClientPipelineFactory(ScheduledExecutorService executorService){
-        executionHandler = new ExecutionHandler(executorService);
+        //executionHandler = new ExecutionHandler(executorService);
 
         encoder = new CoapMessageEncoder();
         decoder = new CoapMessageDecoder();
@@ -102,7 +102,7 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
-        pipeline.addLast("Execution Handler", executionHandler);
+        //pipeline.addLast("Execution Handler", executionHandler);
         pipeline.addLast("CoAP Message Encoder", encoder);
         pipeline.addLast("CoAP Message Decoder", decoder);
         pipeline.addLast("Outgoing Message Reliability Handler", outgoingMessageReliabilityHandler);

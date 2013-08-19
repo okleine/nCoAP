@@ -52,11 +52,11 @@ import static org.junit.Assert.assertTrue;
  * Time: 14:58
  * To change this template use File | Settings | File Templates.
  */
-public class Test1000ParallelRequests extends AbstractCoapCommunicationTest {
+public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     private static CoapClientApplication client;
 
-    private static final int NUMBER_OF_PARALLEL_REQUESTS = 1000;
+    private static final int NUMBER_OF_PARALLEL_REQUESTS = 100;
 
     private static TestResponseProcessor[] responseProcessors =
             new TestResponseProcessor[NUMBER_OF_PARALLEL_REQUESTS];
@@ -67,7 +67,7 @@ public class Test1000ParallelRequests extends AbstractCoapCommunicationTest {
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.Test1000ParallelRequests").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.TestParallelRequests").setLevel(Level.DEBUG);
         Logger.getLogger("de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor").setLevel(Level.DEBUG);
     }
 
