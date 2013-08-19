@@ -47,6 +47,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapRequest}s. By
@@ -76,7 +77,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     public CoapClientApplication(){
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Client I/O Thread#%d").build();
         this.executorService =
-                Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), threadFactory);
+                Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 2, threadFactory);
 
         CoapClientDatagramChannelFactory factory = new CoapClientDatagramChannelFactory(executorService);
 
@@ -99,12 +100,16 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     public void writeCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor)
             throws ToManyOptionsException, InvalidOptionException {
 
-        executorService.submit(new Runnable(){
+        log.info("Write CoAP request 2: {}", coapRequest);
+
+        executorService.schedule(new Runnable(){
 
             @Override
             public void run() {
                 try {
+                    log.info("START!");
                     coapRequest.setToken(tokenFactory.getNextToken());
+                    log.info("Write CoAP request: {}", coapRequest);
 
                     int targetPort = coapRequest.getTargetUri().getPort();
                     if(targetPort == -1)
@@ -134,7 +139,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                     log.error("Exception while trying to send message.", e);
                 }
             }
-        });
+        }, 0, TimeUnit.MILLISECONDS);
 
     }
 
@@ -295,5 +300,9 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         }
     }
 
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ee){
+        log.error("Exception: ", ee.getCause());
+    }
 
 }

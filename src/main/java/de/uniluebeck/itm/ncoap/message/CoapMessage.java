@@ -601,6 +601,12 @@ public abstract class CoapMessage {
         return header;
     }
 
+    //TODO: Improve hash code
+    @Override
+    public int hashCode(){
+        return toString().hashCode() + payload.hashCode();
+    }
+
     /**
      * Returns <code>true</code> if and only if the given object is an instance of {@link CoapMessage} and if
      * the {@link Header}, the {@link OptionList} and the payload of both instances equal.

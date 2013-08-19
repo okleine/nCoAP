@@ -25,10 +25,14 @@
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -41,7 +45,8 @@ import java.util.*;
  */
 public class CoapTestServer extends CoapServerApplication {
 
-    private Map<Integer, Long> requestReceptionTimes = Collections.synchronizedMap(new TreeMap<Integer, Long>());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private Multimap<Integer, Long> requestReceptionTimes = HashMultimap.create();
 
     /**
      * @param serverPort the port the server is supposed to listen at
@@ -53,7 +58,11 @@ public class CoapTestServer extends CoapServerApplication {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
         if(me.getMessage() instanceof CoapRequest){
-           requestReceptionTimes.put(((CoapRequest) me.getMessage()).getMessageID(), System.currentTimeMillis());
+            synchronized (requestReceptionTimes){
+                requestReceptionTimes.put(((CoapRequest) me.getMessage()).getMessageID(), System.currentTimeMillis());
+            }
+            log.info("Incoming request #{} for {}", requestReceptionTimes.size(),
+                    ((CoapRequest) me.getMessage()).getTargetUri());
         }
 
         super.messageReceived(ctx, me);
@@ -61,13 +70,13 @@ public class CoapTestServer extends CoapServerApplication {
     }
 
     /**
-     * Returns a {@link Map} containing all received {@link CoapRequest}s, i.e. their message IDs as keys and the
+     * Returns a {@link Multimap} containing all received {@link CoapRequest}s, i.e. their message IDs as keys and the
      * reception time as values.
      *
-     * @return  a {@link Map} containing all received {@link CoapRequest}s, i.e. their message IDs as keys and the
+     * @return  a {@link Multimap} containing all received {@link CoapRequest}s, i.e. their message IDs as keys and the
      * reception time as values.
      */
-    public Map<Integer, Long> getRequestReceptionTimes(){
+    public Multimap<Integer, Long> getRequestReceptionTimes(){
         return this.requestReceptionTimes;
     }
 }

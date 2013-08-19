@@ -166,6 +166,7 @@ public class Header {
         return msgID;
     }
 
+
     /**
      * Returns true if and only if the given Object is an instance of {@link Header} and if all all
      * its components (version, message type, code and message ID) match.

@@ -81,7 +81,8 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
 
     @Override
     public void shutdownComponents() throws Exception {
-        //To change body of implemented methods use File | Settings | File Templates.
+        server.shutdown();
+        endpoint.shutdown();
     }
 
     @Override

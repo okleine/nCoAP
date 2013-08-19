@@ -194,11 +194,16 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         }
 
         //Avoid duplicate request processing!
+        log.debug("Contains key: {}", openRequests.containsKey(me.getRemoteAddress()));
+        log.debug("Contains value: {}", openRequests.containsValue(coapRequest));
+
         if(!openRequests.containsEntry(me.getRemoteAddress(), coapRequest)){
 
-            openRequests.put((InetSocketAddress) me.getRemoteAddress(), coapRequest);
-            log.warn("Add request from {} to list of open requests: {}",
-                    me.getRemoteAddress(), coapRequest);
+            boolean added = openRequests.put((InetSocketAddress) me.getRemoteAddress(), coapRequest);
+            if(added)
+                log.warn("Added request from {} to list of open requests: {}", me.getRemoteAddress(), coapRequest);
+            else
+                log.error("NOT ADDED!");
 
             webService.processCoapRequest(responseFuture, coapRequest, remoteAddress);
 
@@ -216,6 +221,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
                         if(coapResponse.getCode().isErrorMessage()){
                             coapResponse.setMessageID(coapRequest.getMessageID());
+                            coapResponse.setToken(coapRequest.getToken());
                             sendCoapResponse(coapResponse, remoteAddress);
                             return;
                         }
@@ -266,6 +272,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     private void sendCoapResponse(final CoapResponse coapResponse, final InetSocketAddress remoteAddress){
         //Write response
         ChannelFuture future = channel.write(coapResponse, remoteAddress);
+        log.info("Write response to {}: {}", remoteAddress, coapResponse);
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
