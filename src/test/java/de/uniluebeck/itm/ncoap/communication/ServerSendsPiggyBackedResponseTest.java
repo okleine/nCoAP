@@ -57,13 +57,6 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
     private static CoapRequest coapRequest;
 
     private static CoapTestEndpoint endpoint;
-    static{
-        try{
-
-        } catch (Exception e) {
-            fail("This should never happen!");
-        }
-    }
 
     @Override
     public void setupComponents() throws Exception {

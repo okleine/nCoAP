@@ -24,12 +24,12 @@
         <repository>
             <id>itm-maven-repository-releases</id>
             <name>ITM Maven Releases Repository</name>
-            <url>http://maven.itm.uni-luebeck.de/content/repositories/releases</url>
+            <url>https://maven.itm.uni-luebeck.de/content/repositories/releases</url>
         </repository>
         <snapshotRepository>
             <id>itm-maven-repository-snapshots</id>
             <name>ITM Maven Snapshots Repository</name>
-            <url>http://maven.itm.uni-luebeck.de/content/repositories/snapshots</url>
+            <url>https://maven.itm.uni-luebeck.de/content/repositories/snapshots</url>
         </snapshotRepository>
         <site>
             <id>kleine-maven-site</id>

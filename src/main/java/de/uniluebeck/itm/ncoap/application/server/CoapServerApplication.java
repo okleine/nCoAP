@@ -83,28 +83,39 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     private ListeningExecutorService listeningExecutorService;
     private ScheduledExecutorService scheduledExecutorService;
 
+    public CoapServerApplication(InetSocketAddress... listeningSockets){
+
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Server I/O Thread#%d").build();
+
+        int numberOfThreads = Runtime.getRuntime().availableProcessors() * 2;
+        log.info("Number of I/O Threads: {}", numberOfThreads);
+
+        ScheduledExecutorService ioExecutorService =
+                Executors.newScheduledThreadPool(numberOfThreads, threadFactory);
+
+        for(InetSocketAddress listeningSocket : listeningSockets){
+            CoapServerDatagramChannelFactory factory =
+                    new CoapServerDatagramChannelFactory(ioExecutorService, listeningSocket);
+
+            channel = factory.getChannel();
+            channel.getPipeline().addLast("Server Application", this);
+
+            this.scheduledExecutorService = ioExecutorService;
+            this.listeningExecutorService = MoreExecutors.listeningDecorator(scheduledExecutorService);
+
+            registerService(new WellKnownCoreResource(registeredServices));
+
+            log.info("New server created. Listening on port {}.", getServerPort());
+        }
+    }
+
+
     /**
      * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on the given port
      * and already provides the default <code>.well-known/core</code> resource
      */
     public CoapServerApplication(int serverPort){
-
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Server I/O Thread#%d").build();
-
-        ScheduledExecutorService ioExecutorService =
-                Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), threadFactory);
-
-        CoapServerDatagramChannelFactory factory = new CoapServerDatagramChannelFactory(ioExecutorService, serverPort);
-        channel = factory.getChannel();
-
-        channel.getPipeline().addLast("Server Application", this);
-
-        this.scheduledExecutorService = ioExecutorService;
-        this.listeningExecutorService = MoreExecutors.listeningDecorator(scheduledExecutorService);
-
-        registerService(new WellKnownCoreResource(registeredServices));
-
-        log.info("New server created. Listening on port {}.", getServerPort());
+        this(new InetSocketAddress(serverPort));
     }
 
     /**

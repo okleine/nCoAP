@@ -48,11 +48,16 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import de.uniluebeck.itm.ncoap.communication.observe.InternalStopObservationMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +84,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     //Remote socket address, message ID, acknowledgement status for incoming confirmable requests
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> acknowledgementStates
             = HashBasedTable.create();
+
+    private final Multimap<InetSocketAddress, ByteArrayWrapper> waitingForResponse
+            = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, ByteArrayWrapper>create());
 
     private ScheduledExecutorService executorService;
 
@@ -137,9 +145,23 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 log.debug("Scheduled empty ACK for {}.", coapMessage);
             }
 
-            if(coapMessage instanceof CoapResponse)
-                writeEmptyAcknowledgement(ctx, remoteAddress, coapMessage.getMessageID());
-
+            if(coapMessage instanceof CoapResponse){
+                ByteArrayWrapper token = new ByteArrayWrapper(coapMessage.getToken());
+                if(!waitingForResponse.containsEntry(me.getRemoteAddress(), token)){
+                    log.info("Received response without open request (remote {}, token {}). Write RST.",
+                            me.getRemoteAddress(), token);
+                    writeReset(ctx, (InetSocketAddress) me.getRemoteAddress(), coapMessage.getMessageID(),
+                            coapMessage.getToken());
+                }
+                else if(!((CoapResponse) coapMessage).isUpdateNotification()){
+                    log.info("Received response for open request (remote {}, token {})",
+                            me.getRemoteAddress(), token);
+                    waitingForResponse.remove(me.getRemoteAddress(), token);
+                }
+                else{
+                    writeEmptyAcknowledgement(ctx, remoteAddress, coapMessage.getMessageID());
+                }
+            }
         }
 
         ctx.sendUpstream(me);
@@ -161,18 +183,39 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(!(me.getMessage() instanceof CoapResponse)){
-            ctx.sendDownstream(me);
-            return;
+        if(me.getMessage() instanceof CoapResponse){
+            CoapResponse coapResponse = (CoapResponse) me.getMessage();
+
+            //Check if this is a response on a confirmable request and set the message type properly (CON or ACK)
+            if(coapResponse.getMessageType() == null){
+                setMessageType(coapResponse,
+                        removeAcknowledgementStatus((InetSocketAddress) me.getRemoteAddress(),
+                                coapResponse.getMessageID()));
+            }
         }
+        else if(me.getMessage() instanceof CoapRequest){
+            CoapRequest coapRequest = (CoapRequest) me.getMessage();
+            if(coapRequest.isObservationRequest()){
+                waitingForResponse.put((InetSocketAddress) me.getRemoteAddress(),
+                        new ByteArrayWrapper(coapRequest.getToken()));
+            }
+        }
+        else if(me.getMessage() instanceof InternalStopObservationMessage){
+            InternalStopObservationMessage stopObservationMessage = (InternalStopObservationMessage) me.getMessage();
+            boolean observationStopped = waitingForResponse.remove(stopObservationMessage.getRemoteAddress(),
+                    new ByteArrayWrapper(stopObservationMessage.getToken()));
 
-        CoapResponse coapResponse = (CoapResponse) me.getMessage();
+            if(observationStopped)
+                log.info("Next incoming update notification from {} with token {} will be answered with RST.",
+                        stopObservationMessage.getRemoteAddress(),
+                        new ByteArrayWrapper(stopObservationMessage.getToken()));
+            else
+                log.error("No running observation on {} with token {}.",
+                        stopObservationMessage.getRemoteAddress(),
+                        new ByteArrayWrapper(stopObservationMessage.getToken()));
 
-        //Check if this is a response on a confirmable request and set the message type properly (CON or ACK)
-        if(coapResponse.getMessageType() == null){
-            setMessageType(coapResponse,
-                    removeAcknowledgementStatus((InetSocketAddress) me.getRemoteAddress(),
-                            coapResponse.getMessageID()));
+            me.getFuture().setSuccess();
+            return;
         }
 
         ctx.sendDownstream(me);
@@ -257,6 +300,22 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 log.info("Empty ACK for message ID {} succesfully sent to {}.", messageID, remoteAddress);
+            }
+        });
+    }
+
+    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,
+                                           final int messageID, final byte[] token){
+        CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
+
+        ChannelFuture future = Channels.future(ctx.getChannel());
+        Channels.write(ctx, future, resetMessage, remoteAddress);
+
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                log.info("RST for message ID {} and token {} succesfully sent to {}.", new Object[]{messageID,
+                        new ByteArrayWrapper(token), remoteAddress});
             }
         });
     }

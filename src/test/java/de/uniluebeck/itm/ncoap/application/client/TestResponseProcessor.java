@@ -24,12 +24,15 @@
  */
 package de.uniluebeck.itm.ncoap.application.client;
 
+import com.google.common.util.concurrent.SettableFuture;
+import de.uniluebeck.itm.ncoap.communication.observe.ObservationTimeoutProcessor;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import org.apache.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Instance of {@link CoapResponseProcessor} additionally implementing {@link RetransmissionTimeoutProcessor},
@@ -37,7 +40,7 @@ import java.util.*;
  * events related to a sent {@link CoapRequest}.
  */
 public class TestResponseProcessor implements CoapResponseProcessor, RetransmissionTimeoutProcessor,
-        EmptyAcknowledgementProcessor, RetransmissionProcessor {
+        EmptyAcknowledgementProcessor, RetransmissionProcessor, ObservationTimeoutProcessor {
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -48,6 +51,8 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
     private ArrayList<Object[]>  timeoutMessages = new ArrayList<Object[]>();
 
     private ArrayList<Long> requestSentTimes = new ArrayList<Long>();
+
+    private boolean observationTimedOut = false;
 
     @Override
     public void processCoapResponse(CoapResponse coapResponse) {
@@ -71,6 +76,21 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
     public void processEmptyAcknowledgement(InternalEmptyAcknowledgementReceivedMessage message) {
         log.info("Received empty ACK: " + message);
         emptyAcknowledgements.add(new Object[]{message, System.currentTimeMillis()});
+    }
+
+    @Override
+    public void processObservationTimeout(SettableFuture<CoapRequest> continueObservation) {
+        log.info("Observation timed out!");
+        setObservationTimedOut(true);
+        continueObservation.set(null);
+    }
+
+    protected void setObservationTimedOut(boolean observationTimedOut){
+        this.observationTimedOut = observationTimedOut;
+    }
+
+    public boolean isObservationTimedOut(){
+        return this.observationTimedOut;
     }
 
     /**
@@ -167,6 +187,10 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
         return result;
     }
 
+    protected void resetRetransmissionCounter(){
+        requestSentTimes.clear();
+    }
+
     /**
      * Returns the time at which a particular {@link InternalRetransmissionTimeoutMessage} was received
      *
@@ -203,4 +227,6 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
     public List<Long> getRequestSentTimes() {
         return requestSentTimes;
     }
+
+
 }

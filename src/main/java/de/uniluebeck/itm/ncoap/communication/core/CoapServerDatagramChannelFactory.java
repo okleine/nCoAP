@@ -30,6 +30,7 @@ import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
+import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,18 +51,18 @@ public class CoapServerDatagramChannelFactory {
     private DatagramChannel datagramChannel;
 
     /**
-     * @param executorService the {@link ScheduledExecutorService} to provide the threads for I/O
-     * @param serverPort the local port the {@link DatagramChannel} of this factory is bound to.
+     * @param ioExecutorService the {@link ScheduledExecutorService} to provide the threads for I/O
+     * @param serverSocket the local socket the {@link DatagramChannel} of this factory is bound to.
      */
-    public CoapServerDatagramChannelFactory(ScheduledExecutorService executorService, int serverPort){
+    public CoapServerDatagramChannelFactory(ScheduledExecutorService ioExecutorService, InetSocketAddress serverSocket){
         ChannelFactory channelFactory =
-                new NioDatagramChannelFactory(executorService);
+                new OioDatagramChannelFactory(ioExecutorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        CoapServerPipelineFactory pipelineFactory = new CoapServerPipelineFactory(executorService);
+        CoapServerPipelineFactory pipelineFactory = new CoapServerPipelineFactory(ioExecutorService);
         bootstrap.setPipelineFactory(pipelineFactory);
 
-        datagramChannel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(serverPort));
+        datagramChannel = (DatagramChannel) bootstrap.bind(serverSocket);
 
         pipelineFactory.getObservableResourceHandler().setChannel(datagramChannel);
 

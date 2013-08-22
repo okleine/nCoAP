@@ -57,19 +57,19 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
     private ObservableResourceHandler observableResourceHandler;
 
     /**
-     * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     * @param ioExecutorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      */
-    public CoapServerPipelineFactory(ScheduledExecutorService executorService){
+    public CoapServerPipelineFactory(ScheduledExecutorService ioExecutorService){
 
-        this.executionHandler = new ExecutionHandler(executorService);
+        this.executionHandler = new ExecutionHandler(ioExecutorService);
 
         this.encoder = new CoapMessageEncoder();
         this.decoder = new CoapMessageDecoder();
 
-        this.outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
-        this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
+        this.outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(ioExecutorService);
+        this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(ioExecutorService);
 
-        this.observableResourceHandler = new ObservableResourceHandler(executorService);
+        this.observableResourceHandler = new ObservableResourceHandler(ioExecutorService);
     }
 
 

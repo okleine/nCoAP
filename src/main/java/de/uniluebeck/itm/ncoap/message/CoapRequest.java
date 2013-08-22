@@ -365,4 +365,11 @@ public class CoapRequest extends CoapMessage {
             throw e;
         }
     }
+
+    public boolean isObservationRequest(){
+        if(this.getOption(OBSERVE_REQUEST).isEmpty())
+            return false;
+        else
+            return true;
+    }
 }

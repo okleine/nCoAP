@@ -25,10 +25,13 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceivedMessage;
 import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceivedMessageProcessor;
 import de.uniluebeck.itm.ncoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.ncoap.communication.observe.InternalStopObservationMessage;
+import de.uniluebeck.itm.ncoap.communication.observe.ObservationTimeoutProcessor;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -42,12 +45,8 @@ import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.Inet6Address;
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapRequest}s. By
@@ -66,9 +65,12 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     private HashBasedTable<ByteArrayWrapper, InetSocketAddress, CoapResponseProcessor> responseProcessors =
             HashBasedTable.create();
 
+    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, ScheduledFuture> observationTimeouts =
+            HashBasedTable.create();
+
     private DatagramChannel datagramChannel;
 
-    private ScheduledExecutorService executorService;
+    private ScheduledExecutorService scheduledExecutorService;
 
     /**
      * Creates a new instance of {@link CoapClientApplication} which is bound to a local socket and provides all
@@ -76,10 +78,10 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
      */
     public CoapClientApplication(){
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Client I/O Thread#%d").build();
-        this.executorService =
+        this.scheduledExecutorService =
                 Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 2, threadFactory);
 
-        CoapClientDatagramChannelFactory factory = new CoapClientDatagramChannelFactory(executorService);
+        CoapClientDatagramChannelFactory factory = new CoapClientDatagramChannelFactory(scheduledExecutorService);
 
         datagramChannel = factory.getChannel();
         datagramChannel.getPipeline().addLast("Client Application", this);
@@ -100,19 +102,16 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     public void writeCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor)
             throws ToManyOptionsException, InvalidOptionException {
 
-        log.info("Write CoAP request 2: {}", coapRequest);
-
-        executorService.schedule(new Runnable(){
+        scheduledExecutorService.schedule(new Runnable() {
 
             @Override
             public void run() {
                 try {
-                    log.info("START!");
                     coapRequest.setToken(tokenFactory.getNextToken());
                     log.info("Write CoAP request: {}", coapRequest);
 
                     int targetPort = coapRequest.getTargetUri().getPort();
-                    if(targetPort == -1)
+                    if (targetPort == -1)
                         targetPort = OptionRegistry.COAP_PORT_DEFAULT;
 
 
@@ -130,7 +129,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                                     new Object[]{rcptSocketAddress.getAddress().getHostAddress(),
                                             rcptSocketAddress.getPort(), coapRequest});
 
-                            if(coapResponseProcessor instanceof RetransmissionProcessor)
+                            if (coapResponseProcessor instanceof RetransmissionProcessor)
                                 ((RetransmissionProcessor) coapResponseProcessor).requestSent();
                         }
                     });
@@ -140,7 +139,6 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 }
             }
         }, 0, TimeUnit.MILLISECONDS);
-
     }
 
     /**
@@ -166,7 +164,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
                 log.info("Client channel closed (port: " + closedChannel.getLocalAddress().getPort() + ").");
 
-                executorService.shutdownNow();
+                scheduledExecutorService.shutdownNow();
 
                 datagramChannel.getFactory().releaseExternalResources();
                 log.info("External resources released. Shutdown completed.");
@@ -200,7 +198,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
      * @param me The {@link MessageEvent} containing the {@link CoapMessage}
      */
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
+    public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
         log.debug("Received: {}.", me.getMessage());
 
         if(me.getMessage() instanceof InternalEmptyAcknowledgementReceivedMessage){
@@ -264,17 +262,88 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         }
 
         if(me.getMessage() instanceof CoapResponse){
-            CoapResponse coapResponse = (CoapResponse) me.getMessage();
+            final CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             log.debug("Response received: {}.", coapResponse);
-            log.debug("Remote address is IPv6: {}",
-                    ((InetSocketAddress) me.getRemoteAddress()).getAddress() instanceof Inet6Address);
-            log.debug("InetAddress: {}.", ((InetSocketAddress) me.getRemoteAddress()).getAddress().toString());
 
-            CoapResponseProcessor callback;
+            final CoapResponseProcessor callback;
 
-            if(coapResponse.isUpdateNotification())
-                callback = responseProcessors.get(new ByteArrayWrapper(coapResponse.getToken()), me.getRemoteAddress());
+            if(coapResponse.isUpdateNotification()){
+                final ByteArrayWrapper token = new ByteArrayWrapper(coapResponse.getToken());
+                final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+
+                //Stop observation timeout
+                ScheduledFuture oldObservationTimeoutFuture = observationTimeouts.get(token, remoteSocketAddress);
+                if(oldObservationTimeoutFuture != null){
+                    if(oldObservationTimeoutFuture.cancel(false)){
+                        log.debug("Observation timeout canceled for token {} from {}.",
+                                token, remoteSocketAddress);
+                    }
+                    else{
+                        log.info("Observation timeout could not be canceled for token {} from {}.",
+                                token, remoteSocketAddress);
+                    }
+                }
+
+                callback = responseProcessors.get(token, remoteSocketAddress);
+
+                //Schedule observation timeout after max-age!
+                ScheduledFuture newObservationTimeoutFuture = scheduledExecutorService.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        log.info("No update-notification from {} for token {} within max-age. Stop observation!.",
+                                remoteSocketAddress, token);
+
+                        removeResponseCallback(coapResponse.getToken(), remoteSocketAddress);
+
+                        InternalStopObservationMessage stopObservationMessage =
+                                new InternalStopObservationMessage((InetSocketAddress) me.getRemoteAddress(),
+                                        coapResponse.getToken());
+
+                        ChannelFuture future = Channels.write(ctx.getChannel(), stopObservationMessage);
+                        future.addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(ChannelFuture future) throws Exception {
+                                log.info("Observation on {} with token {} successfully stopped.",
+                                        me.getRemoteAddress(), new ByteArrayWrapper(coapResponse.getToken()));
+                            }
+                        });
+
+                        //Notify response processor about the observation timeout
+                        if(callback instanceof ObservationTimeoutProcessor){
+                            final SettableFuture<CoapRequest> continueObservationFuture = SettableFuture.create();
+                            ((ObservationTimeoutProcessor) callback).processObservationTimeout(continueObservationFuture);
+
+                            continueObservationFuture.addListener(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        CoapRequest newObservationRequest = continueObservationFuture.get();
+                                        if(newObservationRequest != null){
+                                            log.info("Restart observation after observation timeout because of "
+                                                    + "max-age expiry!");
+                                            CoapClientApplication.this.writeCoapRequest(newObservationRequest, callback);
+                                        }
+                                        else{
+                                            log.info("Observation wont be restarted!");
+                                        }
+                                    }
+                                    catch (Exception e) {
+                                        log.error("Exception while restarting observation after max-age expiry.", e);
+                                    }
+                                }
+                            }, scheduledExecutorService);
+
+                        }
+
+                        //Pass back the token for the timed out observation
+                        tokenFactory.passBackToken(coapResponse.getToken());
+
+                    }
+                }, coapResponse.getMaxAge() + 5, TimeUnit.SECONDS);
+
+                observationTimeouts.put(token, remoteSocketAddress, newObservationTimeoutFuture);
+            }
             else
                 callback = removeResponseCallback(coapResponse.getToken(), (InetSocketAddress) me.getRemoteAddress());
 
@@ -283,11 +352,11 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 callback.processCoapResponse(coapResponse);
             }
             else{
-                log.debug("No callback found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
-                tokenFactory.passBackToken(coapResponse.getToken());
+                log.info("No callback found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
+                //tokenFactory.passBackToken(coapResponse.getToken());
             }
 
-            //pass the token back
+            //pass the token back if it's a normal response (no update-notification)
             if(!coapResponse.isUpdateNotification())
                 tokenFactory.passBackToken(coapResponse.getToken());
 

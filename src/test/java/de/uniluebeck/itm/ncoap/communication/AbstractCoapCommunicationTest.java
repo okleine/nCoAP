@@ -62,6 +62,11 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
     public abstract void setupComponents() throws Exception;
 
     /**
+     * This method is supposed to define all communication to create the scenario the test method do their testing on
+     */
+    public abstract void createTestScenario() throws Exception;
+
+    /**
      * This method is to shutdown all existing instances of {@link CoapClientApplication},
      * {@link CoapServerApplication} and {@link CoapTestEndpoint}.
      *
@@ -69,10 +74,7 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
      */
     public abstract void shutdownComponents() throws Exception;
 
-    /**
-     * This method is supposed to define all communication to create the scenario the test method do their testing on
-     */
-    public abstract void createTestScenario() throws Exception;
+
 
 
     public AbstractCoapCommunicationTest(){
