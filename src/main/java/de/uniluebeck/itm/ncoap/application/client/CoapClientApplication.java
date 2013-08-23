@@ -36,6 +36,7 @@ import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.ncoap.message.options.ToManyOptionsException;
@@ -273,7 +274,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
             log.debug("Response received: {}.", coapResponse);
 
-            final CoapResponseProcessor callback;
+            final CoapResponseProcessor responseProcessor;
 
             if(coapResponse.isUpdateNotification()){
                 final ByteArrayWrapper token = new ByteArrayWrapper(coapResponse.getToken());
@@ -292,74 +293,27 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                     }
                 }
 
-                callback = responseProcessors.get(token, remoteSocketAddress);
+                responseProcessor = responseProcessors.get(token, remoteSocketAddress);
 
                 //Schedule observation timeout after max-age!
-                ScheduledFuture newObservationTimeoutFuture = scheduledExecutorService.schedule(new Runnable() {
-                    @Override
-                    public void run() {
-                        log.info("No update-notification from {} for token {} within max-age. Stop observation!.",
-                                remoteSocketAddress, token);
-
-                        removeResponseCallback(coapResponse.getToken(), remoteSocketAddress);
-
-                        InternalStopObservationMessage stopObservationMessage =
-                                new InternalStopObservationMessage((InetSocketAddress) me.getRemoteAddress(),
-                                        coapResponse.getToken());
-
-                        ChannelFuture future = Channels.write(ctx.getChannel(), stopObservationMessage);
-                        future.addListener(new ChannelFutureListener() {
-                            @Override
-                            public void operationComplete(ChannelFuture future) throws Exception {
-                                log.info("Observation on {} with token {} successfully stopped.",
-                                        me.getRemoteAddress(), new ByteArrayWrapper(coapResponse.getToken()));
-                            }
-                        });
-
-                        //Notify response processor about the observation timeout
-                        if(callback instanceof ObservationTimeoutProcessor){
-                            final SettableFuture<CoapRequest> continueObservationFuture = SettableFuture.create();
-                            ((ObservationTimeoutProcessor) callback).processObservationTimeout(continueObservationFuture);
-
-                            continueObservationFuture.addListener(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        CoapRequest newObservationRequest = continueObservationFuture.get();
-                                        if(newObservationRequest != null){
-                                            log.info("Restart observation after observation timeout because of "
-                                                    + "max-age expiry!");
-                                            CoapClientApplication.this.writeCoapRequest(newObservationRequest, callback);
-                                        }
-                                        else{
-                                            log.info("Observation wont be restarted!");
-                                        }
-                                    }
-                                    catch (Exception e) {
-                                        log.error("Exception while restarting observation after max-age expiry.", e);
-                                    }
-                                }
-                            }, scheduledExecutorService);
-
-                        }
-
-                        //Pass back the token for the timed out observation
-                        tokenFactory.passBackToken(coapResponse.getToken());
-
-                    }
-                }, coapResponse.getMaxAge() + 5, TimeUnit.SECONDS);
+                ScheduledFuture newObservationTimeoutFuture =
+                        scheduledExecutorService.schedule(new ObservationTimeoutTask(ctx.getChannel(),
+                                remoteSocketAddress, coapResponse.getToken(), responseProcessor),
+                                coapResponse.getMaxAge() + 5, TimeUnit.SECONDS);
 
                 observationTimeouts.put(token, remoteSocketAddress, newObservationTimeoutFuture);
             }
-            else
-                callback = removeResponseCallback(coapResponse.getToken(), (InetSocketAddress) me.getRemoteAddress());
+            else {
+                responseProcessor = removeResponseCallback(coapResponse.getToken(),
+                        (InetSocketAddress) me.getRemoteAddress());
+            }
 
-            if(callback != null){
+            if(responseProcessor != null){
                 log.debug("Callback found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
-                callback.processCoapResponse(coapResponse);
+                responseProcessor.processCoapResponse(coapResponse);
             }
             else{
-                log.info("No callback found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
+                log.info("No responseProcessor found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
                 //tokenFactory.passBackToken(coapResponse.getToken());
             }
 
@@ -369,7 +323,6 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
             me.getFuture().setSuccess();
         }
-
         else{
             me.getFuture().setFailure(new RuntimeException("Could not deal with message "
                     + me.getMessage().getClass().getName()));
@@ -381,4 +334,84 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         log.error("Exception: ", ee.getCause());
     }
 
+
+    private class ObservationTimeoutTask implements Runnable{
+
+        private Channel channel;
+        private InetSocketAddress remoteSocketAddress;
+        private byte[] token;
+        private CoapResponseProcessor responseProcessor;
+
+        public ObservationTimeoutTask(Channel channel, InetSocketAddress remoteSocketAddress, byte[] token,
+                                      CoapResponseProcessor responseProcessor){
+            this.channel = channel;
+            this.remoteSocketAddress = remoteSocketAddress;
+            this.token = token;
+            this.responseProcessor = responseProcessor;
+        }
+
+        @Override
+        public void run() {
+            log.info("No update-notification from {} for token {} within max-age. Stop observation!.",
+                    remoteSocketAddress, token);
+
+            removeResponseCallback(token, remoteSocketAddress);
+
+            InternalStopObservationMessage stopObservationMessage =
+                    new InternalStopObservationMessage(remoteSocketAddress, token);
+
+            ChannelFuture future = Channels.write(channel, stopObservationMessage);
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    log.info("Observation on {} with token {} successfully stopped.",
+                           remoteSocketAddress, new ByteArrayWrapper(token));
+                }
+            });
+
+            //Notify response processor about the observation timeout
+            final SettableFuture<CoapRequest> continueObservationFuture = SettableFuture.create();
+            if(responseProcessor instanceof ObservationTimeoutProcessor){
+                ((ObservationTimeoutProcessor) responseProcessor).processObservationTimeout(continueObservationFuture);
+
+                RestartObservationTask restartObservationTask =
+                        new RestartObservationTask(continueObservationFuture, responseProcessor);
+                continueObservationFuture.addListener(restartObservationTask, scheduledExecutorService);
+            }
+
+            //Pass back the token for the timed out observation
+            tokenFactory.passBackToken(token);
+        }
+    }
+
+    private class RestartObservationTask implements Runnable{
+
+        private SettableFuture<CoapRequest> continueObservationFuture;
+        private CoapResponseProcessor coapResponseProcessor;
+
+        public RestartObservationTask(SettableFuture<CoapRequest> continueObservationFuture,
+                                      CoapResponseProcessor coapResponseProcessor){
+            this.continueObservationFuture = continueObservationFuture;
+            this.coapResponseProcessor = coapResponseProcessor;
+        }
+
+        @Override
+        public void run() {
+            try {
+                CoapRequest newObservationRequest = continueObservationFuture.get();
+                if(newObservationRequest != null){
+                    log.info("Restart observation after observation timeout because of "
+                            + "max-age expiry!");
+                    newObservationRequest.setMessageID(Header.MESSAGE_ID_UNDEFINED);
+                    CoapClientApplication.this.writeCoapRequest(newObservationRequest, coapResponseProcessor);
+                }
+                else{
+                    log.info("Observation wont be restarted!");
+                }
+            }
+            catch (Exception e) {
+                log.error("Exception while restarting observation after max-age expiry.", e);
+            }
+        }
+    }
 }

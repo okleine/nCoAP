@@ -36,7 +36,7 @@ import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
  *
  * @author Oliver Kleine
  */
-public interface ObservationTimeoutProcessor {
+public interface ObservationTimeoutProcessor extends CoapResponseProcessor{
 
     /**
      * This method is automatically invoked by the nCoap framework if an observerd resource did
