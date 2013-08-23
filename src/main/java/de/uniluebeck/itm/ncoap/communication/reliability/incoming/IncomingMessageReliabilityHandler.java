@@ -72,8 +72,11 @@ import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.
 /**
  * This class is the first {@link ChannelUpstreamHandler} to deal with incoming decoded {@link CoapMessage}s. If the
  * incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty acknowledgement to the
- * sender if there wasn't a piggy-backed response within a period of 2 seconds. If the incoming message is
- * confirmable {@link CoapResponse} it immediately sends a proper acknowledgement.
+ * sender if there wasn't a piggy-backed response within a period of 2 seconds.
+ *
+ * If the incoming message is a confirmable {@link CoapResponse} it immediately sends a proper acknowledgement if there
+ * was an open request waiting for a seperate response or update-notification. It immediately sends an RST
+ * if there was no such response expected.
  *
  * @author Oliver Kleine
  */
@@ -101,11 +104,15 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     /**
      * If the incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty
      * acknowledgement to the sender if there wasn't a piggy-backed response within a period of 2 seconds.
-     * If the incoming message is a confirmable {@link CoapResponse} it immediately sends a proper acknowledgement.
      *
-     * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
+     * If the incoming message is a confirmable {@link CoapResponse} it immediately sends a proper acknowledgement if there
+     * was an open request waiting for a seperate response or update-notification. It immediately sends an RST
+     * if there was no such response expected.
+     *
+     * @param ctx The {@link ChannelHandlerContext} relating this handler (which implements the
      * {@link ChannelUpstreamHandler} interface) to the datagramChannel that received the message.
      * @param me the {@link MessageEvent} containing the actual message
+     *
      * @throws Exception if an error occured
      */
     @Override
@@ -176,6 +183,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
      * {@link ChannelUpstreamHandler} interface) to the datagramChannel that received the message.
      * @param me the {@link MessageEvent} containing the actual message
+     *
      * @throws Exception if an error occured
      */
     @Override
