@@ -176,13 +176,20 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
     private synchronized void addResponseCallback(byte[] token, InetSocketAddress remoteAddress,
                                                   CoapResponseProcessor coapResponseProcessor){
-        responseProcessors.put(new ByteArrayWrapper(token), remoteAddress, coapResponseProcessor);
+
+        ByteArrayWrapper wrappedToken = new ByteArrayWrapper(token);
+        responseProcessors.put(wrappedToken, remoteAddress, coapResponseProcessor);
+        log.debug("Added response processor for token {} from {}.", wrappedToken, remoteAddress);
         log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
     }
 
 
     private synchronized CoapResponseProcessor removeResponseCallback(byte[] token, InetSocketAddress remoteAddress){
-        CoapResponseProcessor result = responseProcessors.remove(new ByteArrayWrapper(token), remoteAddress);
+        ByteArrayWrapper wrappedToken = new ByteArrayWrapper(token);
+        CoapResponseProcessor result = responseProcessors.remove(wrappedToken, remoteAddress);
+        if(result != null)
+            log.debug("Removed response processor for token {} from {}.", wrappedToken, remoteAddress);
+
         log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
         return result;
     }

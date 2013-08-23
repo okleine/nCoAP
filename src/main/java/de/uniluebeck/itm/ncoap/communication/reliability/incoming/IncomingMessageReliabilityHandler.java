@@ -152,15 +152,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                             me.getRemoteAddress(), token);
                     writeReset(ctx, (InetSocketAddress) me.getRemoteAddress(), coapMessage.getMessageID(),
                             coapMessage.getToken());
+                    return;
                 }
                 else if(!((CoapResponse) coapMessage).isUpdateNotification()){
                     log.info("Received response for open request (remote {}, token {})",
                             me.getRemoteAddress(), token);
                     waitingForResponse.remove(me.getRemoteAddress(), token);
                 }
-                else{
-                    writeEmptyAcknowledgement(ctx, remoteAddress, coapMessage.getMessageID());
-                }
+                writeEmptyAcknowledgement(ctx, remoteAddress, coapMessage.getMessageID());
             }
         }
 
@@ -195,10 +194,10 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         }
         else if(me.getMessage() instanceof CoapRequest){
             CoapRequest coapRequest = (CoapRequest) me.getMessage();
-            if(coapRequest.isObservationRequest()){
+//            if(coapRequest.isObservationRequest()){
                 waitingForResponse.put((InetSocketAddress) me.getRemoteAddress(),
                         new ByteArrayWrapper(coapRequest.getToken()));
-            }
+//            }
         }
         else if(me.getMessage() instanceof InternalStopObservationMessage){
             InternalStopObservationMessage stopObservationMessage = (InternalStopObservationMessage) me.getMessage();

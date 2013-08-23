@@ -77,7 +77,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler implements Observer {
 
-    private static Logger log = LoggerFactory.getLogger(OutgoingMessageReliabilityHandler.class.getName());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     /**
      * The maximum number of retransmission attempts for outgoing {@link CoapMessage}s with {@link MsgType#CON}.

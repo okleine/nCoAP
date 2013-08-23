@@ -126,8 +126,9 @@ public class ObservationTimesOutWithRestart extends AbstractCoapCommunicationTes
         //Await observation timeout and restart of observation
         Thread.sleep(16000);
 
-        updateNotification3.setMessageID(receivedRequest.getMessageID());
-        updateNotification3.setToken(receivedRequest.getToken());
+        CoapRequest receivedRequest2 = (CoapRequest) coapEndpoint.getReceivedMessages().values().toArray()[2];
+        updateNotification3.setMessageID(receivedRequest2.getMessageID());
+        updateNotification3.setToken(receivedRequest2.getToken());
 
         coapEndpoint.writeMessage(updateNotification3, new InetSocketAddress("localhost", coapClient.getClientPort()));
 
@@ -167,11 +168,11 @@ public class ObservationTimesOutWithRestart extends AbstractCoapCommunicationTes
     }
 
     @Test
-    public void testClientReceived2UpdateNotifications(){
+    public void testClientReceived3UpdateNotifications(){
         List<CoapResponse> updateNotifications = responseProcessor.getCoapResponses();
 
         //There should be 2 update notifications received
-        assertEquals(2, updateNotifications.size());
+        assertEquals(3, updateNotifications.size());
 
         //First update notification is ACK
         assertTrue("First update notification should be an ACK",
