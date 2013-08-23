@@ -77,14 +77,14 @@ public class CoapClientDatagramChannelFactory {
     private DatagramChannel datagramChannel;
 
     /**
-     * @param executorService The {@link ScheduledExecutorService} to provide the threads for I/O operations.
+     * @param scheduledExecutorService The {@link ScheduledExecutorService} to provide the threads for I/O operations.
      */
-    public CoapClientDatagramChannelFactory(ScheduledExecutorService executorService){
+    public CoapClientDatagramChannelFactory(ScheduledExecutorService scheduledExecutorService){
 
-        ChannelFactory channelFactory = new OioDatagramChannelFactory(executorService);
+        ChannelFactory channelFactory = new OioDatagramChannelFactory(scheduledExecutorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(new CoapClientPipelineFactory(executorService));
+        bootstrap.setPipelineFactory(new CoapClientPipelineFactory(scheduledExecutorService));
 
         datagramChannel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
 

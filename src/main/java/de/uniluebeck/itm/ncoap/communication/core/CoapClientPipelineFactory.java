@@ -70,8 +70,6 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class CoapClientPipelineFactory implements ChannelPipelineFactory {
 
-    private ExecutionHandler executionHandler;
-
     //Encoding
     private CoapMessageEncoder encoder;
     private CoapMessageDecoder decoder;
@@ -84,16 +82,15 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
     private BlockwiseTransferHandler blockwiseTransferHandler;
 
     /**
-     * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     * @param scheduledExecutorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      */
-    public CoapClientPipelineFactory(ScheduledExecutorService executorService){
-        //executionHandler = new ExecutionHandler(executorService);
+    public CoapClientPipelineFactory(ScheduledExecutorService scheduledExecutorService){
 
         encoder = new CoapMessageEncoder();
         decoder = new CoapMessageDecoder();
 
-        outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(executorService);
-        incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(executorService);
+        outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(scheduledExecutorService);
+        incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(scheduledExecutorService);
 
         blockwiseTransferHandler = new BlockwiseTransferHandler();
     }

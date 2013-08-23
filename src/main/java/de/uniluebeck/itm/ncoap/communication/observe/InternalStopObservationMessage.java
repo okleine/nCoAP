@@ -25,29 +25,42 @@
 package de.uniluebeck.itm.ncoap.communication.observe;
 
 import java.net.InetSocketAddress;
+import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 22.08.13
- * Time: 17:53
- * To change this template use File | Settings | File Templates.
+ * Internal message to be sent downstream, e.g. from the {@link CoapClientApplication}  if an observation timed out,
+ * i.e. there was no follow-up update notification from the observed resource within the max-age period of the
+ * previous update-notification.
+ *
+ * @author Oliver Kleine
  */
 public class InternalStopObservationMessage {
 
     private InetSocketAddress remoteAddress;
     private byte[] token;
 
+    /**
+     * @param remoteAddress the {@link InetSocketAddress} of the host that hosts the observed service
+     * @param token the token to relate update-notifications with observations
+     */
     public InternalStopObservationMessage(InetSocketAddress remoteAddress, byte[] token){
         this.remoteAddress = remoteAddress;
 
         this.token = token;
     }
 
+    /**
+     * Returns the {@link InetSocketAddress} of the host that hosts the observed service
+     * @return the {@link InetSocketAddress} of the host that hosts the observed service
+     */
     public InetSocketAddress getRemoteAddress() {
         return remoteAddress;
     }
 
+    /**
+     * Returns the token for the timed-out observation
+     * @return the token for the timed-out observation
+     */
     public byte[] getToken() {
         return token;
     }
