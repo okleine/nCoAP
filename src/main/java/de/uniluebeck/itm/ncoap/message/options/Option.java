@@ -169,7 +169,7 @@ public abstract class Option{
      * @param uri The URI to be added as Proxy URI option(s)
      * @return The amount of options added to the list
      * @throws URISyntaxException  if the URI to be added is not absolute
-     * @throws InvalidOptionException if one of the proxyservicemanagement URI options to be created is not valid
+     * @throws InvalidOptionException if one of the gateways URI options to be created is not valid
      */
     public static Collection<Option> createProxyUriOptions(URI uri) throws InvalidOptionException, URISyntaxException {
         uri = uri.normalize();

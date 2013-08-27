@@ -35,9 +35,6 @@ import java.util.*;
  * The TokenFactory generates tokens to match incoming responses with open requests and enable the
  * {@link CoapClientApplication} to invoke the correct callback method.
  *
- * Since there are 2^64 possibilities for a token
- * and the generation is randomized, it is rather unlikely to get the same token within the usual time to wait for
- * a response. That's why we pass on memorizing tokens currently in use.
  *
  * @author Oliver Kleine
  */

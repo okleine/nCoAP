@@ -70,10 +70,10 @@ public final class WellKnownCoreResource extends ObservableWebService<Map<String
      * payload is always formatted in {@link MediaType#APP_LINK_FORMAT}. If the request contains an
      * {@link OptionName#ACCEPT} option requesting another payload format, this option is ignored.
      *
+     * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
+     *                       the list of available services in CoRE link format.
      * @param request The {@link CoapRequest} to be processed by the {@link WebService} instance
      * @param remoteAddress The address of the sender of the request
-     * @return the list of all paths of services registered at the same {@link CoapServerApplication} instance as
-     * this service is registered at.
      */
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest request,

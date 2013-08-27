@@ -239,9 +239,9 @@ public class CoapRequest extends CoapMessage {
     }
 
     /**
-     * Returns the proxyservicemanagement URI constructed from the proxyservicemanagement URI related options contained in this {@link CoapRequest}.
+     * Returns the gateways URI constructed from the gateways URI related options contained in this {@link CoapRequest}.
      *
-     * @return  the messages proxyservicemanagement URI (if any) or null otherwise
+     * @return  the messages gateways URI (if any) or null otherwise
      * @throws {@link URISyntaxException} if the reconstruction of the URI from the options contained in this
      * {@link CoapRequest} fails
      */
@@ -261,13 +261,13 @@ public class CoapRequest extends CoapMessage {
     }
 
      /**
-     * Adds an appropriate number of proxyservicemanagement URI options to the list. This causes eventually already contained
-     * proxyservicemanagement URI options to be removed from the list even in case of an exception.
+     * Adds an appropriate number of gateways URI options to the list. This causes eventually already contained
+     * gateways URI options to be removed from the list even in case of an exception.
      *
-     * @param proxyURI The proxyservicemanagement URI to be added as options
+     * @param proxyURI The gateways URI to be added as options
      * @throws InvalidOptionException if at least one of the options to be added is invalid
      * @throws java.net.URISyntaxException if the given URI is not valid
-     * @throws ToManyOptionsException if adding all proxyservicemanagement URI options would exceed the maximum number of options per
+     * @throws ToManyOptionsException if adding all gateways URI options would exceed the maximum number of options per
      * message.
      */
     public void setProxyURI(URI proxyURI) throws InvalidOptionException, URISyntaxException, ToManyOptionsException {

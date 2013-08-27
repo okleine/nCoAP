@@ -25,11 +25,16 @@
 package de.uniluebeck.itm.ncoap.communication.core;
 
 /**
- * Abstract class for
+ * Abstract base class for all Exceptions defined in the nCoAP package
+ *
  * @author Oliver Kleine
  */
 public abstract class CoapException extends Exception{
 
+    /**
+     * The message to describe the reason for this Exception
+     * @param msg message to describe the reason for this Exception
+     */
     public CoapException(String msg) {
             super(msg);
     }
