@@ -36,7 +36,7 @@ To use the latest released nCoAP Maven artifact add the following to your pom.xm
     <dependency>
         <groupId>de.uniluebeck.itm</groupId>
         <artifactId>ncoap</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </dependency>
 ...
 </dependencies>
