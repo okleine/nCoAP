@@ -68,7 +68,7 @@ public class StringOption extends Option{
             value =  value.toLowerCase(Locale.ENGLISH);
         }
         setValue(optionName,
-                 convertToByteArrayWithoutPercentEncoding(optionName, value.toLowerCase(Locale.ENGLISH)));
+                 convertToByteArrayWithoutPercentEncoding(optionName, value));
     }
 
     //Sets the options value after checking option specific constraints
