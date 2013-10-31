@@ -99,7 +99,7 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
-        //pipeline.addLast("Execution Handler", executionHandler);
+        //channels.addLast("Execution Handler", executionHandler);
         pipeline.addLast("CoAP Message Encoder", encoder);
         pipeline.addLast("CoAP Message Decoder", decoder);
         pipeline.addLast("Outgoing Message Reliability Handler", outgoingMessageReliabilityHandler);

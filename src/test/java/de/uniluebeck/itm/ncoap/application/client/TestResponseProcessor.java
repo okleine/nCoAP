@@ -31,6 +31,7 @@ import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import org.apache.log4j.Logger;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,10 +80,10 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
     }
 
     @Override
-    public void processObservationTimeout(SettableFuture<CoapRequest> continueObservation) {
+    public void processObservationTimeout(InetSocketAddress remoteAddress) {
         log.info("Observation timed out!");
         setObservationTimedOut(true);
-        continueObservation.set(null);
+        //continueObservation.set(null);
     }
 
     protected void setObservationTimedOut(boolean observationTimedOut){

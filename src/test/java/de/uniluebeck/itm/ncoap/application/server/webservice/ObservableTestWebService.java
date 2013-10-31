@@ -145,7 +145,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
                 payload = getSerializedResourceStatus(MediaType.TEXT_PLAIN_UTF8);
             }
             catch (MediaTypeNotSupportedException e) {
-                log.error("Unsupported media type {}.", e.getMediaType());
+                log.error("Unsupported media type");
             }
         }
         else{
@@ -154,7 +154,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
                     payload = getSerializedResourceStatus(mediaType);
                 }
                 catch (MediaTypeNotSupportedException e) {
-                    log.debug("Unsupported media type {}.", e.getMediaType());
+                    log.debug("Unsupported media type");
                 }
                 if(payload != null)
                     break;

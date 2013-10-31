@@ -24,9 +24,9 @@
  */
 package de.uniluebeck.itm.ncoap.communication.observe;
 
-import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+
+import java.net.InetSocketAddress;
 
 /**
  * Interface to be implemented by instances of {@link CoapResponseProcessor} to get informed if an running
@@ -42,12 +42,8 @@ public interface ObservationTimeoutProcessor extends CoapResponseProcessor{
      * This method is automatically invoked by the nCoap framework if an observerd resource did
      * not send a follow-up update notification after max-age expiry of the previous update notification
      *
-     * @param continueObservationFuture a {@link SettableFuture} to indicate if the observation should be
-     *                                  restarted automatically or not. Implementations of this interface, i.e. this
-     *                                  method, must set the future with a proper {@link CoapRequest} to
-     *                                  restart the observation. If the observation is not supposed to continue, resp.
-     *                                  to be restarted, the future must be set with <code>null</code>.
+     * @param remoteAddress the {@link InetSocketAddress} of the host of the observed webservice
      */
-    public void  processObservationTimeout(SettableFuture<CoapRequest> continueObservationFuture);
+    public void processObservationTimeout(InetSocketAddress remoteAddress);
 
 }

@@ -73,14 +73,10 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
     private ScheduledExecutorService scheduledExecutorService;
 
-    /**
-     * Creates a new instance of {@link CoapClientApplication} which is bound to a local socket and provides all
-     * functionality to send {@link CoapRequest}s and receive {@link CoapResponse}s.
-     */
-    public CoapClientApplication(){
+    public CoapClientApplication(int numberOfThreads){
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Client I/O Thread#%d").build();
         this.scheduledExecutorService =
-                Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 2, threadFactory);
+                Executors.newScheduledThreadPool(numberOfThreads, threadFactory);
 
         CoapClientDatagramChannelFactory factory = new CoapClientDatagramChannelFactory(scheduledExecutorService);
 
@@ -89,6 +85,14 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
 
         log.info("New CoAP client on port {}.", datagramChannel.getLocalAddress().getPort());
+    }
+
+    /**
+     * Creates a new instance of {@link CoapClientApplication} which is bound to a local socket and provides all
+     * functionality to send {@link CoapRequest}s and receive {@link CoapResponse}s.
+     */
+    public CoapClientApplication(){
+     this(Runtime.getRuntime().availableProcessors() * 2);
     }
 
     /**
@@ -270,6 +274,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         }
 
         if(me.getMessage() instanceof CoapResponse){
+
             final CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             log.debug("Response received: {}.", coapResponse);
@@ -288,7 +293,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                                 token, remoteSocketAddress);
                     }
                     else{
-                        log.info("Observation timeout could not be canceled for token {} from {}.",
+                        log.error("Observation timeout could not be canceled for token {} from {}.",
                                 token, remoteSocketAddress);
                     }
                 }
@@ -372,11 +377,11 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             //Notify response processor about the observation timeout
             final SettableFuture<CoapRequest> continueObservationFuture = SettableFuture.create();
             if(responseProcessor instanceof ObservationTimeoutProcessor){
-                ((ObservationTimeoutProcessor) responseProcessor).processObservationTimeout(continueObservationFuture);
-
-                RestartObservationTask restartObservationTask =
-                        new RestartObservationTask(continueObservationFuture, responseProcessor);
-                continueObservationFuture.addListener(restartObservationTask, scheduledExecutorService);
+                ((ObservationTimeoutProcessor) responseProcessor).processObservationTimeout(remoteSocketAddress);
+//
+//                RestartObservationTask restartObservationTask =
+//                        new RestartObservationTask(continueObservationFuture, responseProcessor);
+//                continueObservationFuture.addListener(restartObservationTask, scheduledExecutorService);
             }
 
             //Pass back the token for the timed out observation
@@ -384,34 +389,34 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         }
     }
 
-    private class RestartObservationTask implements Runnable{
-
-        private SettableFuture<CoapRequest> continueObservationFuture;
-        private CoapResponseProcessor coapResponseProcessor;
-
-        public RestartObservationTask(SettableFuture<CoapRequest> continueObservationFuture,
-                                      CoapResponseProcessor coapResponseProcessor){
-            this.continueObservationFuture = continueObservationFuture;
-            this.coapResponseProcessor = coapResponseProcessor;
-        }
-
-        @Override
-        public void run() {
-            try {
-                CoapRequest newObservationRequest = continueObservationFuture.get();
-                if(newObservationRequest != null){
-                    log.info("Restart observation after observation timeout because of "
-                            + "max-age expiry!");
-                    newObservationRequest.setMessageID(Header.MESSAGE_ID_UNDEFINED);
-                    CoapClientApplication.this.writeCoapRequest(newObservationRequest, coapResponseProcessor);
-                }
-                else{
-                    log.info("Observation wont be restarted!");
-                }
-            }
-            catch (Exception e) {
-                log.error("Exception while restarting observation after max-age expiry.", e);
-            }
-        }
-    }
+//    private class RestartObservationTask implements Runnable{
+//
+//        private SettableFuture<CoapRequest> continueObservationFuture;
+//        private CoapResponseProcessor coapResponseProcessor;
+//
+//        public RestartObservationTask(SettableFuture<CoapRequest> continueObservationFuture,
+//                                      CoapResponseProcessor coapResponseProcessor){
+//            this.continueObservationFuture = continueObservationFuture;
+//            this.coapResponseProcessor = coapResponseProcessor;
+//        }
+//
+//        @Override
+//        public void run() {
+//            try {
+//                CoapRequest newObservationRequest = continueObservationFuture.get();
+//                if(newObservationRequest != null){
+//                    log.info("Restart observation after observation timeout because of "
+//                            + "max-age expiry!");
+//                    newObservationRequest.setMessageID(Header.MESSAGE_ID_UNDEFINED);
+//                    CoapClientApplication.this.writeCoapRequest(newObservationRequest, coapResponseProcessor);
+//                }
+//                else{
+//                    log.info("Observation wont be restarted!");
+//                }
+//            }
+//            catch (Exception e) {
+//                log.error("Exception while restarting observation after max-age expiry.", e);
+//            }
+//        }
+//    }
 }

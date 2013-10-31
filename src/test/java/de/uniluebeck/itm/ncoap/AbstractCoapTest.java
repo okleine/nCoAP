@@ -46,7 +46,6 @@ public abstract class AbstractCoapTest {
         catch (Exception e) {
             throw new RuntimeException("Could not create test scenario. ", e);
         }
-
     }
 
     private static void initializeLogging(){

@@ -81,7 +81,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws InvalidHeaderException,
-            EncodingFailedException, ToManyOptionsException {
+            EncodingFailedException, ToManyOptionsException, InvalidOptionException {
 
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
         if(!(obj instanceof ChannelBuffer)){
@@ -110,11 +110,11 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         //Create OptionList
         OptionList optionList;
-        try {
+//        try {
             optionList = decodeOptionList(buffer, optionCount, Code.getCodeFromNumber(codeNumber), header);
-        } catch (InvalidOptionException e) {
-            return new InvalidOptionException(header, e.getOptionNumber(), "Invalid option found while decoding.");
-        }
+//        } catch (InvalidOptionException e) {
+//            return new InvalidOptionException(header, e.getOptionNumber(), "Invalid option found while decoding.");
+//        }
 
         //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
         //at the same position (buf.readableBytes() == 0).
@@ -194,6 +194,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             try{
                 Option newOption = decodeOption(buffer, prevOptionNumber, header);
                  //Add new Option to the list
+                log.debug("Option with number 0x{} to be created.", newOption.getOptionNumber());
                 OptionName optionName = OptionName.getByNumber(newOption.getOptionNumber());
                 log.debug("Option " + optionName + " to be created.");
                 result.addOption(code, optionName, newOption);
@@ -237,6 +238,10 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         }
 
         OptionName optionName = OptionName.getByNumber(optionNumber);
+        log.debug("Option name of number {} is {}", optionNumber, optionName);
+
+        if(optionName == OptionName.UNKNOWN)
+            throw new InvalidOptionException(optionNumber, "Unknown option number " + optionNumber);
 
         //Option optionNumber 21 is "If-none-match" and must not contain any value. This is e.g. useful for
         //PUT requests not being supposed to overwrite existing resources

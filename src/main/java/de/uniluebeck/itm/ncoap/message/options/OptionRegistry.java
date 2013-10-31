@@ -385,8 +385,8 @@ public class OptionRegistry {
      * @return <code>true</code> if the given number is even, <code>false</code> if the given number is odd
      */
     static boolean isCritical(int optionNumber){
-        //Options with even numbers are critial, odd numbers refer to elective options
-        return (optionNumber % 2 == 0);
+        //Options with odd numbers are critial, even numbers refer to elective options
+        return (optionNumber % 2 == 1);
     }
 
 

@@ -22,42 +22,16 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.server.webservice;
-
-import de.uniluebeck.itm.ncoap.communication.core.CoapException;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
-
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
+package de.uniluebeck.itm.ncoap.application.client;
 
 /**
- * Exception to {@link MediaTypeNotSupportedException} indicate that a requested {@link MediaType} is not provided by a
- * {@link WebService} instance.
- *
- * @author Oliver Kleine
+ * Created with IntelliJ IDEA.
+ * User: olli
+ * Date: 02.10.13
+ * Time: 15:40
+ * To change this template use File | Settings | File Templates.
  */
-public class MediaTypeNotSupportedException extends CoapException {
+public interface CoapUpdateNotificationProcessor extends CoapResponseProcessor {
 
-    private Set<MediaType> unsupportedMediaTypes;
-
-    /**
-     * @param mediaTypes the {@link MediaType}s that are not supported
-     */
-    public MediaTypeNotSupportedException(MediaType... mediaTypes){
-        super("Mediatype(s) not supported: " + mediaTypes);
-
-        unsupportedMediaTypes = new HashSet<MediaType>();
-        for(MediaType mediaType : mediaTypes){
-            this.unsupportedMediaTypes.add(mediaType);
-        }
-    }
-
-    /**
-     * Returns the {@link MediaType} that caused the exception
-     * @return the {@link MediaType} that caused the exception
-     */
-    public Set<MediaType> getUnsupportedMediaTypes() {
-        return this.unsupportedMediaTypes;
-    }
+    public boolean continueObservation();
 }

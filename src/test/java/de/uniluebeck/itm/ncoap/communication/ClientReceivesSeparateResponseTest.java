@@ -108,7 +108,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         requestSentTime = System.currentTimeMillis();
 
         //wait for responses from server (one empty ACK and one CON response afterwards)
-        Thread.sleep(3100);
+        Thread.sleep(3400);
 
         //let testEndpoint write empty ACK to acknowledge seperate response
         int messageID = endpoint.getReceivedMessages()

@@ -399,11 +399,19 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
                 }
                 catch(Exception e){
-                    if(e instanceof MediaTypeNotSupportedException)
-                        log.info("Media type {} not anymore supported by service {}.",
-                                ((MediaTypeNotSupportedException) e).getMediaType(), webService.getPath());
-                    else
+                    if(e instanceof MediaTypeNotSupportedException){
+                        MediaTypeNotSupportedException exception = (MediaTypeNotSupportedException) e;
+                        String message = "Media type(s)";
+                        for(MediaType unsupportedMediaType : exception.getUnsupportedMediaTypes()){
+                            message += (" " + unsupportedMediaType);
+                        }
+                        message += " not anymore supported by service " + webService.getPath();
+
+                        log.warn(message);
+                    }
+                    else{
                         log.error("This should never happen.", e);
+                    }
 
                     //cancel observation due to error
                     removeObservation(observerAddress, webService.getPath());
