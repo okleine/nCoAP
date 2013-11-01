@@ -48,13 +48,10 @@
 package de.uniluebeck.itm.ncoap.communication.encoding;
 
 import com.google.common.primitives.UnsignedBytes;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
+import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -104,16 +101,16 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         int msgID = ((encHeader << 16) >>> 16);
 
         Header header =
-                new Header(MsgType.getMsgTypeFromNumber(msgTypeNumber), Code.getCodeFromNumber(codeNumber), msgID);
+                new Header(MessageType.getMessageTypeFromNumber(msgTypeNumber), MessageCode.getCodeFromNumber(codeNumber), msgID);
 
         log.debug("Header created: {}", header);
 
         //Create OptionList
         OptionList optionList;
 //        try {
-            optionList = decodeOptionList(buffer, optionCount, Code.getCodeFromNumber(codeNumber), header);
+            optionList = decodeOptionList(buffer, optionCount, MessageCode.getCodeFromNumber(codeNumber), header);
 //        } catch (InvalidOptionException e) {
-//            return new InvalidOptionException(header, e.getOptionNumber(), "Invalid option found while decoding.");
+//            return new InvalidOptionException(header, e.getNumber(), "Invalid option found while decoding.");
 //        }
 
         //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
@@ -122,18 +119,18 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         CoapMessage result;
 
-        if(header.getCode().isRequest()){
+        if(header.getMessageCode().isRequest()){
             result = new CoapRequest(header, optionList, buffer);
             log.debug("Decoded CoapRequest.");
         }
-        else if (header.getCode().isResponse()){
+        else if (header.getMessageCode().isResponse()){
             result = new CoapResponse(header, optionList, buffer);
             log.debug("Decoded CoapResponse.");
         }
-        else if(header.getCode() == Code.EMPTY){
-            if(header.getMsgType() == MsgType.ACK)
+        else if(header.getMessageCode() == MessageCode.EMPTY){
+            if(header.getMessageType() == MessageType.ACK)
                 result = CoapMessage.createEmptyAcknowledgement(header.getMsgID());
-            else if(header.getMsgType() == MsgType.RST)
+            else if(header.getMessageType() == MessageType.RST)
                 result = CoapMessage.createEmptyReset(header.getMsgID());
 
             else
@@ -170,7 +167,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
      *
      * @param buffer the {@link ChannelBuffer} containing the options to be decoded
      * @param optionCount the number of options to be decoded
-     * @param code the {@link Code} of the message that is intended to include the new OptionList
+     * @param messageCode the {@link de.uniluebeck.itm.ncoap.message.MessageCode} of the message that is intended to include the new OptionList
      * @param header the {@link Header} of the message to be decoded
      *
      * @return An {@link OptionList} instance containing the decoded options
@@ -178,7 +175,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
      * @throws InvalidOptionException if a critical option is malformed, e.g. size is out of defined bounds
      * @throws ToManyOptionsException if there are too many options contained in the list
      */
-    private OptionList decodeOptionList(ChannelBuffer buffer, int optionCount, Code code, Header header)
+    private OptionList decodeOptionList(ChannelBuffer buffer, int optionCount, MessageCode messageCode, Header header)
             throws InvalidOptionException, ToManyOptionsException {
 
         if(optionCount > 15){
@@ -197,7 +194,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                 log.debug("Option with number 0x{} to be created.", newOption.getOptionNumber());
                 OptionName optionName = OptionName.getByNumber(newOption.getOptionNumber());
                 log.debug("Option " + optionName + " to be created.");
-                result.addOption(code, optionName, newOption);
+                result.addOption(messageCode, optionName, newOption);
                 prevOptionNumber = Math.abs(newOption.getOptionNumber()); //double datatype for observe option hack
             }
             catch(InvalidOptionException e){
@@ -233,7 +230,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         int optionNumber = (UnsignedBytes.toInt(firstByte) >>> 4) +  prevOptionNumber;
 
         // Small hack, due to two types of the observe option
-        if(!header.getCode().isRequest() && optionNumber == OBSERVE_REQUEST.getNumber()) {
+        if(!header.getMessageCode().isRequest() && optionNumber == OBSERVE_REQUEST.getNumber()) {
             optionNumber = OBSERVE_RESPONSE.getNumber();
         }
 

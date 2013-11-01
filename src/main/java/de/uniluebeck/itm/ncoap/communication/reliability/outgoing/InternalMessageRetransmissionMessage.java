@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import java.net.InetSocketAddress;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
@@ -37,7 +37,7 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 public class InternalMessageRetransmissionMessage {
 
     private InetSocketAddress remoteAddress;
-    private ByteArrayWrapper token;
+    private Token token;
 
     /**
      * @param remoteAddress the recipient of the retransmitted message
@@ -45,7 +45,7 @@ public class InternalMessageRetransmissionMessage {
      */
     public InternalMessageRetransmissionMessage(InetSocketAddress remoteAddress, byte[] token) {
         this.remoteAddress = remoteAddress;
-        this.token = new ByteArrayWrapper(token);
+        this.token = new Token(token);
     }
 
     /**
@@ -60,7 +60,7 @@ public class InternalMessageRetransmissionMessage {
      * Returns the token of the retransmitted message
      * @return the token of the retransmitted message
      */
-    public ByteArrayWrapper getToken() {
+    public Token getToken() {
         return token;
     }
 

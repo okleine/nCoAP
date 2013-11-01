@@ -28,7 +28,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
@@ -119,23 +119,23 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 
 
     /**
-     * Returns whether update notifications should be sent with {@link MsgType#CON} or {@link MsgType#NON}
-     * @return {@link MsgType#CON} if update notifications should be sent confirmable or {@link MsgType#NON}
-     * otherwise. Default, i.e. if not set otherwise, is {@link MsgType#CON}.
+     * Returns whether update notifications should be sent with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} or {@link de.uniluebeck.itm.ncoap.message.MessageType#NON}
+     * @return {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} if update notifications should be sent confirmable or {@link de.uniluebeck.itm.ncoap.message.MessageType#NON}
+     * otherwise. Default, i.e. if not set otherwise, is {@link de.uniluebeck.itm.ncoap.message.MessageType#CON}.
      */
-    public final MsgType getMessageTypeForUpdateNotifications(){
+    public final MessageType getMessageTypeForUpdateNotifications(){
         if(isUpdateNotificationConfirmable)
-            return MsgType.CON;
+            return MessageType.CON;
         else
-            return MsgType.NON;
+            return MessageType.NON;
     }
 
 
     /**
-     * Sets the {@link MsgType} of update notifications
-     * @param isConfirmable <code>true</code> if update notifications should be sent with {@link MsgType#CON} or
-     *                      <code>false</code> for {@link MsgType#NON}. Default, i.e. if not set otherwise, is
-     *                      {@link MsgType#CON}.
+     * Sets the {@link de.uniluebeck.itm.ncoap.message.MessageType} of update notifications
+     * @param isConfirmable <code>true</code> if update notifications should be sent with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} or
+     *                      <code>false</code> for {@link de.uniluebeck.itm.ncoap.message.MessageType#NON}. Default, i.e. if not set otherwise, is
+     *                      {@link de.uniluebeck.itm.ncoap.message.MessageType#CON}.
      */
     public final void setUpdateNotificationConfirmable(boolean isConfirmable){
         this.isUpdateNotificationConfirmable = isConfirmable;

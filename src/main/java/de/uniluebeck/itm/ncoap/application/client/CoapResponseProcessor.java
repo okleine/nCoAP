@@ -25,7 +25,6 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceivedMessage;
 
@@ -63,7 +62,7 @@ public interface CoapResponseProcessor {
 
     /**
      * Method invoked by the {@link CoapClientApplication} for an incoming response (which is of any type but
-     * empty {@link MsgType#ACK} or {@link MsgType#RST}).
+     * empty {@link de.uniluebeck.itm.ncoap.message.MessageType#ACK} or {@link de.uniluebeck.itm.ncoap.message.MessageType#RST}).
      *
      * @param coapResponse the response message
      */

@@ -27,11 +27,9 @@ package de.uniluebeck.itm.ncoap.communication;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+
 import java.net.InetSocketAddress;
 
 //import de.uniluebeck.itm.ncoap.communication.utils.receiver.MessageReceiverResponse;
@@ -69,7 +67,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         responseProcessor = new TestResponseProcessor();
 
         URI targetUri =  new URI("coap://localhost:" + endpoint.getPort());
-        coapRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
     }
 
     @Override
@@ -129,8 +127,8 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
 
 
     private static CoapResponse createResponse(int messageID, byte[] token) throws Exception {
-        CoapResponse coapResponse = new CoapResponse(Code.CONTENT_205);
-        coapResponse.getHeader().setMsgType(MsgType.ACK);
+        CoapResponse coapResponse = new CoapResponse(MessageCode.CONTENT_205);
+        coapResponse.getHeader().setMessageType(MessageType.ACK);
         coapResponse.setMessageID(messageID);
         coapResponse.setToken(token);
         coapResponse.setPayload(PAYLOAD.getBytes("UTF-8"));

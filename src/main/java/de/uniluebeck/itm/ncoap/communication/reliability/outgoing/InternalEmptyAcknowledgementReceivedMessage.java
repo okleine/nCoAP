@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,21 +39,21 @@ public class InternalEmptyAcknowledgementReceivedMessage {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private ByteArrayWrapper token;
+    private Token token;
 
     /**
      * @param token the token of the confirmed message
      */
     public InternalEmptyAcknowledgementReceivedMessage(byte[] token){
-        this.token = new ByteArrayWrapper(token);
-        log.debug("Internal acknowledgement message created for token {}.", new ByteArrayWrapper(token));
+        this.token = new Token(token);
+        log.debug("Internal acknowledgement message created for token {}.", new Token(token));
     }
 
     /**
      * Returns the token of the confirmed message
      * @return the token of the confirmed message
      */
-    public ByteArrayWrapper getToken(){
+    public Token getToken(){
         return token;
     }
 

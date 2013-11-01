@@ -45,7 +45,7 @@
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package de.uniluebeck.itm.ncoap.communication.core;
+package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.communication.blockwise.BlockwiseTransferHandler;
 import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageDecoder;
@@ -57,7 +57,6 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.DatagramChannel;
-import org.jboss.netty.handler.execution.ExecutionHandler;
 
 import java.util.concurrent.ScheduledExecutorService;
 

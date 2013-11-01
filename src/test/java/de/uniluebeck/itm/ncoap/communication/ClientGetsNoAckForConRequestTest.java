@@ -29,8 +29,8 @@ import de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -73,7 +73,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
         client = new CoapClientApplication();
         responseProcessor = new TestResponseProcessor();
         URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
-        request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
     }
 
     @Override

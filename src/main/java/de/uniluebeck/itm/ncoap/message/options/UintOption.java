@@ -26,12 +26,11 @@ package de.uniluebeck.itm.ncoap.message.options;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionType;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static de.uniluebeck.itm.ncoap.message.options.OptionName.MAX_AGE;
+import static de.uniluebeck.itm.ncoap.message.options.OptionName.URI_PORT;
 /**
  * This class contains all specific functionality for {@link Option} instances of {@link OptionType#UINT}. If there is
  * any need to access {@link Option} instances directly, e.g. to retrieve its value, one could either cast the option
@@ -40,16 +39,28 @@ import org.slf4j.LoggerFactory;
  *
  * @author Oliver Kleine
  */
-public class UintOption extends Option{
+public class UintOption extends Option<Long>{
 
     private static Logger log = LoggerFactory.getLogger(UintOption.class.getName());
 
+    public static final int MAX_AGE_DEFAULT = 60;
+    public static final int URI_PORT_DEFAULT = 5683;
+
+
     //constructor with encoded value should only be used for incoming messages
-    UintOption(OptionName optionName, byte[] value) throws InvalidOptionException{
-        super(optionName);
+    public UintOption(OptionName optionName, long value) throws InvalidOptionException{
+        if(optionName == URI_PORT && )
+        super(optionName, value);
         setValue(optionName, value);
 
-        log.debug("{} option with value {} created.", optionName, new ByteArrayWrapper(value));
+        log.debug("{} option with value {} created.", optionName, new Token(value));
+
+        ByteBuffer.
+    }
+
+    @Override
+    public Long getValue() {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     //constructor with decoded value should only be used for outgoing messages
@@ -57,7 +68,7 @@ public class UintOption extends Option{
         super(optionName);
         setValue(optionName, value);
 
-        log.debug("{} option with value {} created.", optionName, new ByteArrayWrapper(this.value));
+        log.debug("{} option with value {} created.", optionName, new Token(this.encodedValue));
     }
 
     private void setValue(OptionName optionName, byte[] bytes) throws InvalidOptionException {
@@ -69,7 +80,7 @@ public class UintOption extends Option{
             throw new InvalidOptionException(optionNumber, msg);
         }
 
-        this.value = ByteArrayWrapper.removeLeadingZerosFromByteArray(bytes);
+        this.encodedValue = Token.removeLeadingZerosFromByteArray(bytes);
     }
 
     //Sets the options value after checking its correctness
@@ -85,7 +96,7 @@ public class UintOption extends Option{
         }
 
         //Set value if there was no Exception thrown so far
-        this.value = ByteArrayWrapper.removeLeadingZerosFromByteArray(Longs.toByteArray(value));
+        this.encodedValue = Token.removeLeadingZerosFromByteArray(Longs.toByteArray(value));
     }
 
     /**
@@ -94,7 +105,7 @@ public class UintOption extends Option{
      */
     @Override
     public Long getDecodedValue(){
-        return Longs.fromByteArray(Bytes.concat(new byte[8-value.length], value));
+        return Longs.fromByteArray(Bytes.concat(new byte[8- encodedValue.length], encodedValue));
     }
 
     /**

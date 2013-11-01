@@ -24,90 +24,86 @@
  */
 package de.uniluebeck.itm.ncoap.message.options;
 
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Locale;
 
+import static de.uniluebeck.itm.ncoap.message.options.OptionName.URI_HOST;
+
 /**
- * This class contains all specific functionality for {@link Option} instances of {@link OptionType#STRING}. If there is
- * any need to access {@link Option} instances directly, e.g. to retrieve its value, one could either cast the option
- * to {@link StringOption} and call {@link #getDecodedValue()} or one could all {@link Option#getDecodedValue()} and
- * cast the return value to {@link String}.
- *
  * @author Oliver Kleine
  */
-public class StringOption extends Option{
+public class StringOption extends Option<String>{
 
     private static Logger log = LoggerFactory.getLogger(StringOption.class.getName());
 
-    //Constructor with encoded value should only be used for incoming messages
-    StringOption(OptionName opt_name, byte[] value) throws InvalidOptionException{
-        super(opt_name);
-        setValue(opt_name, value);
+    public static final Charset CHARSET = Charset.forName("UTF-8");
 
-        try {
-            log.debug("New Option (" + opt_name + ") created (value: " + new String(this.value, CHARSET) +
-                    ", encoded length: " + this.value.length + ")");
-        } catch (UnsupportedEncodingException e) {
-            log.debug("This should never happen:\n" + e);
-        }
+    public StringOption(OptionName optionName, String value) throws InvalidOptionException{
+        super(optionName,
+                optionName == URI_HOST ?
+                        value.toLowerCase(Locale.ENGLISH).getBytes(CHARSET) :
+                            convertToByteArrayWithoutPercentEncoding(optionName, value));
     }
 
-    //Constructor with decoded value to be used for outgoing messages
-    StringOption(OptionName optionName, String value) throws InvalidOptionException{
-        super(optionName);
-        //URI Host option must not contain upper case letters
-        if(optionName == OptionName.URI_HOST){
-            value =  value.toLowerCase(Locale.ENGLISH);
-        }
-        setValue(optionName,
-                 convertToByteArrayWithoutPercentEncoding(optionName, value));
+    public StringOption(OptionName optionName, byte[] value) throws InvalidOptionException {
+        super(optionName, value);
     }
 
-    //Sets the options value after checking option specific constraints
-    private void setValue(OptionName optionName, byte[] bytes) throws InvalidOptionException{
-
-        int min_length = OptionRegistry.getMinLength(optionName);
-        int max_length = OptionRegistry.getMaxLength(optionName);
-
-
-        //Check whether length constraints are fulfilled
-        if(bytes.length < min_length || bytes.length > max_length){
-            String msg = "[StringOption] Value length for " + optionName + " option must be between " +
-                    min_length + " and " +  max_length + " but is " + bytes.length;
-            throw new InvalidOptionException(optionNumber, msg);
-        }
-
-        //Set value if there was no Exception thrown so far
-        this.value = bytes;
+    @Override
+    public String getValue() {
+        return new String(value, CHARSET);
     }
+
+//    //Constructor with decoded value to be used for outgoing messages
+//    StringOption(OptionName optionName, String value) throws InvalidOptionException{
+//        super(optionName, optionName == OptionName.URI_HOST);
+//        //URI Host option must not contain upper case letters
+//        if(optionName == OptionName.URI_HOST){
+//            value =  value.toLowerCase(Locale.ENGLISH);
+//        }
+//        setValue(optionName,
+//                 convertToByteArrayWithoutPercentEncoding(optionName, value));
+//    }
+
+//    //Sets the options value after checking option specific constraints
+//    private void setValue(OptionName optionName, byte[] bytes) throws InvalidOptionException{
+//
+//        int min_length = OptionRegistry.getMinLength(optionName);
+//        int max_length = OptionRegistry.getMaxLength(optionName);
+//
+//
+//        //Check whether length constraints are fulfilled
+//        if(bytes.length < min_length || bytes.length > max_length){
+//            String msg = "[StringOption] Value length for " + optionName + " option must be between " +
+//                    min_length + " and " +  max_length + " but is " + bytes.length;
+//            throw new InvalidOptionException(optionNumber, msg);
+//        }
+//
+//        //Set value if there was no Exception thrown so far
+//        this.encodedValue = bytes;
+//    }
     
     //Replaces percent-encoding from ASCII Strings with UTF-8 encoding
     private static byte[] convertToByteArrayWithoutPercentEncoding(OptionName optionName, String s)
             throws InvalidOptionException {
 
-        ByteArrayInputStream in = null;
-        try {
-            in = new ByteArrayInputStream(s.getBytes(CHARSET));
-        } catch (UnsupportedEncodingException e) {
-            log.debug("This should never happen: \n", e);
-        }
+        ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(CHARSET));;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         int i;
         do{
             i = in.read();
             //-1 indicates end of stream
-            if(i == -1){
+            if(i == -1)
                 break;
-            }
+
             //0x25 = '%'
             if(i == 0x25){
                 //Character.digit returns the integer value encoded as in.read(). Since we know that percent encoding
@@ -120,40 +116,40 @@ public class StringOption extends Option{
                     throw new InvalidOptionException(optionName.getNumber(), "Invalid percent encoding in: " + s);
                 }
 
-                //Write decoded value to Outputstream (e.g. sequence [0x02, 0x00] results into byte 0x20
+                //Write decoded value to output stream (e.g. sequence [0x02, 0x00] results into byte 0x20
                 out.write((d1 << 4) | d2);
             }
             else{
                 out.write(i);
             }
-        } while(i != -1);
+        } while(true);
 
         return out.toByteArray();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if(!(o instanceof StringOption)){
-            return false;
-        }
-        StringOption opt = (StringOption) o;
-        if((this.optionNumber == opt.optionNumber) && Arrays.equals(this.value, opt.value)){
-            return true;
-        }
-        return false;
-    }
+//    @Override
+//    public boolean equals(Object o) {
+//        if(!(o instanceof StringOption)){
+//            return false;
+//        }
+//        StringOption opt = (StringOption) o;
+//        if((this.optionNumber == opt.optionNumber) && Arrays.equals(this.encodedValue, opt.encodedValue)){
+//            return true;
+//        }
+//        return false;
+//    }
 
-    /**
-     * Returns the options value as decoded String assuming the value to be UTF-8 encoded
-     * @return the options value as decoded String assuming the value to be UTF-8 encoded
-     */
-    public String getDecodedValue() {
-        String result = null;
-        try {
-            result = new String(value, CHARSET);
-        } catch (UnsupportedEncodingException e) {
-           log.debug("This should never happen:\n", e);
-        }
-        return result;
-    }
+//    /**
+//     * Returns the options value as decoded String assuming the value to be UTF-8 encoded
+//     * @return the options value as decoded String assuming the value to be UTF-8 encoded
+//     */
+//    public String getDecodedValue() {
+//        String result = null;
+//        try {
+//            result = new String(encodedValue, CHARSET);
+//        } catch (UnsupportedEncodingException e) {
+//           log.debug("This should never happen:\n", e);
+//        }
+//        return result;
+//    }
 }

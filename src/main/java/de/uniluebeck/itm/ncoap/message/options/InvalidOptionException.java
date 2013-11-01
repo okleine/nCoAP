@@ -29,7 +29,6 @@
 
 package de.uniluebeck.itm.ncoap.message.options;
 
-import de.uniluebeck.itm.ncoap.communication.core.CoapException;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 
@@ -38,7 +37,7 @@ import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
  *
  * @author Oliver Kleine
  */
-public class InvalidOptionException extends CoapException {
+public class InvalidOptionException extends Exception {
 
     private Header messageHeader;
     private int optionNumber;

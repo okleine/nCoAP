@@ -25,14 +25,10 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
 import de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -75,27 +71,27 @@ public class ObservationTimesOutWithoutRestart extends AbstractCoapCommunication
         coapClient = new CoapClientApplication();
         URI serviceUri = new URI("coap", null, "localhost", coapEndpoint.getPort(), "/observable", null, null);
 
-        coapRequest = new CoapRequest(MsgType.CON, Code.GET, serviceUri);
+        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, serviceUri);
         coapRequest.setObserveOptionRequest();
 
         responseProcessor = new TestResponseProcessor();
 
-        updateNotification1 = new CoapResponse(Code.CONTENT_205);
-        updateNotification1.getHeader().setMsgType(MsgType.ACK);
+        updateNotification1 = new CoapResponse(MessageCode.CONTENT_205);
+        updateNotification1.getHeader().setMessageType(MessageType.ACK);
         updateNotification1.setContentType(OptionRegistry.MediaType.TEXT_PLAIN_UTF8);
         updateNotification1.setPayload("Status 1".getBytes(Charset.forName("UTF-8")));
         updateNotification1.setMaxAge(MAX_AGE);
         updateNotification1.setObserveOptionValue(1);
 
-        updateNotification2 = new CoapResponse(Code.CONTENT_205);
-        updateNotification2.getHeader().setMsgType(MsgType.CON);
+        updateNotification2 = new CoapResponse(MessageCode.CONTENT_205);
+        updateNotification2.getHeader().setMessageType(MessageType.CON);
         updateNotification2.setContentType(OptionRegistry.MediaType.TEXT_PLAIN_UTF8);
         updateNotification2.setPayload("Status 2".getBytes(Charset.forName("UTF-8")));
         updateNotification2.setMaxAge(MAX_AGE);
         updateNotification2.setObserveOptionValue(2);
 
-        updateNotification3 = new CoapResponse(Code.CONTENT_205);
-        updateNotification3.getHeader().setMsgType(MsgType.CON);
+        updateNotification3 = new CoapResponse(MessageCode.CONTENT_205);
+        updateNotification3.getHeader().setMessageType(MessageType.CON);
         updateNotification3.setContentType(OptionRegistry.MediaType.TEXT_PLAIN_UTF8);
         updateNotification3.setPayload("Status 3".getBytes(Charset.forName("UTF-8")));
         updateNotification3.setMaxAge(MAX_AGE);
@@ -178,11 +174,11 @@ public class ObservationTimesOutWithoutRestart extends AbstractCoapCommunication
         assertTrue(receivedMessages.next() instanceof CoapRequest);
 
         //2nd message is the ACK for the first update notification
-        assertEquals(MsgType.ACK, receivedMessages.next().getMessageType());
+        assertEquals(MessageType.ACK, receivedMessages.next().getMessageType());
 
         //3rd message is the ACK for the second update notification, even though the observation timed out.
         //This is to avoid retransmissions of unexpected CON messages by the remote host.
-        assertEquals(MsgType.RST, receivedMessages.next().getMessageType());
+        assertEquals(MessageType.RST, receivedMessages.next().getMessageType());
 
         //There should be no more messages!
         assertFalse("There should be no more messages!", receivedMessages.hasNext());
@@ -197,11 +193,11 @@ public class ObservationTimesOutWithoutRestart extends AbstractCoapCommunication
 
         //First update notification is ACK
          assertTrue("First update notification should be an ACK",
-                 updateNotifications.get(0).getMessageType() == MsgType.ACK);
+                 updateNotifications.get(0).getMessageType() == MessageType.ACK);
 
         //Second update notification is CON
         assertTrue("Second update notification should be CON",
-                updateNotifications.get(1).getMessageType() == MsgType.CON);
+                updateNotifications.get(1).getMessageType() == MessageType.CON);
     }
 
     @Test

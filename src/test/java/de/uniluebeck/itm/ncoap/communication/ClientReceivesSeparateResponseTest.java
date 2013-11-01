@@ -30,8 +30,9 @@ import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableTestWe
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.MessageType;
+
 import java.net.InetSocketAddress;
 
 import org.apache.log4j.Level;
@@ -78,7 +79,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
         endpoint = new CoapTestEndpoint();
         URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
-        request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
         request.getHeader().setMsgID(12345);
     }
 
@@ -140,8 +141,8 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         CoapMessage receivedMessage = receivedMessages.get(emptyAckReceptionTime);
         String message = "First received message is not an EMPTY ACK";
 
-        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
-        assertEquals(message, Code.EMPTY, receivedMessage.getCode());
+        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
+        assertEquals(message, MessageCode.EMPTY, receivedMessage.getMessageCode());
     }
 
     @Test
@@ -166,7 +167,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response code is not CONTENT 205";
-        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
     }
 
     @Test
@@ -182,6 +183,6 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response Msg Type is not CON";
-        assertEquals(message, MsgType.CON, receivedMessage.getMessageType());
+        assertEquals(message, MessageType.CON, receivedMessage.getMessageType());
     }
 }

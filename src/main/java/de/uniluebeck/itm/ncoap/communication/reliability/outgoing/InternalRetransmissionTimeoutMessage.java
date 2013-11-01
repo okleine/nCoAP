@@ -25,13 +25,13 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
+
 import java.net.InetSocketAddress;
 
 /**
  * Instances of {@link InternalRetransmissionTimeoutMessage} are sent upstream by the
- * {@link OutgoingMessageReliabilityHandler} if a {@link CoapMessage} of type {@link MsgType#CON} was not
+ * {@link OutgoingMessageReliabilityHandler} if a {@link CoapMessage} of type {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} was not
  * acknowledged despite the maximum number of retransmission attempts.
  *
  * @author Oliver Kleine
@@ -73,6 +73,6 @@ public class InternalRetransmissionTimeoutMessage {
     @Override
     public String toString(){
         return "InternalRetransmissionTimeoutMessage: " + remoteAddress + " (remote address), "
-                + new ByteArrayWrapper(token) + " (token)";
+                + new Token(token) + " (token)";
     }
 }

@@ -24,9 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.message.header.Code;
 import de.uniluebeck.itm.ncoap.message.header.Header;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -49,18 +47,18 @@ public class CoapResponse extends CoapMessage {
     private String servicePath;
 
     /**
-     * This is the constructor supposed to be used to create {@link CoapResponse} instances. The {@link MsgType} is
+     * This is the constructor supposed to be used to create {@link CoapResponse} instances. The {@link MessageType} is
      * automatically set by the nCoAP framework.
      *
-     * @param code The {@link Code} of the response
+     * @param messageCode The {@link MessageCode} of the response
      */
-    public CoapResponse(Code code){
-        super(code);
+    public CoapResponse(MessageCode messageCode){
+        super(messageCode);
     }
 
     /**
      * This is the constructor basically supposed to be used internally, in particular with the decoding process of
-     * incoming {@link CoapResponse}s. In other cases it is recommended to use {@link #CoapResponse(Code)} and
+     * incoming {@link CoapResponse}s. In other cases it is recommended to use {@link #CoapResponse(MessageCode)} and
      * set options and payload by invoking the appropriate methods and let the nCoAP framework do the rest.
      *
      * @param header the {@link Header} of the {@link CoapResponse}
@@ -85,7 +83,7 @@ public class CoapResponse extends CoapMessage {
      * OptionRegistry.MAX_AGE_DEFAULT
      */
     public boolean setMaxAge(long maxAge) throws InvalidOptionException, ToManyOptionsException {
-        optionList.removeAllOptions(MAX_AGE);
+        options.removeAllOptions(MAX_AGE);
 
         if(maxAge == OptionRegistry.MAX_AGE_DEFAULT){
             return false;
@@ -93,17 +91,17 @@ public class CoapResponse extends CoapMessage {
 
         try{
             Option option = Option.createUintOption(MAX_AGE, maxAge);
-            optionList.addOption(header.getCode(), MAX_AGE, option);
+            options.addOption(header.getMessageCode(), MAX_AGE, option);
             return true;
         }
         catch(InvalidOptionException e){
             log.debug("Elective option (" + MAX_AGE + ") could not be added.", e);
-            optionList.removeAllOptions(MAX_AGE);
+            options.removeAllOptions(MAX_AGE);
             return false;
         }
         catch(ToManyOptionsException e){
             log.debug("Elective option (" + MAX_AGE + ") could not be added.", e);
-            optionList.removeAllOptions(MAX_AGE);
+            options.removeAllOptions(MAX_AGE);
             return false;
         }
     }
@@ -119,21 +117,21 @@ public class CoapResponse extends CoapMessage {
      * options per message.
      */
     public void setLocationURI(URI locationURI) throws InvalidOptionException, ToManyOptionsException {
-        optionList.removeLocationURI();
+        options.removeLocationURI();
         try{
             Collection<Option> locationUriOptions = Option.createLocationUriOptions(locationURI);
             for(Option option : locationUriOptions){
                 OptionName optionName = OptionName.getByNumber(option.getOptionNumber());
-                optionList.addOption(header.getCode(), optionName, option);
+                options.addOption(header.getMessageCode(), optionName, option);
             }
         }
         catch (ToManyOptionsException e) {
-            optionList.removeLocationURI();
+            options.removeLocationURI();
             log.debug("Critical option for location URI could not be added.", e);
             throw e;
         }
         catch (InvalidOptionException e) {
-            optionList.removeLocationURI();
+            options.removeLocationURI();
             log.debug("Critical option for location URI could not be added.", e);
             throw e;
         }
@@ -147,7 +145,7 @@ public class CoapResponse extends CoapMessage {
      * @throws {@link java.net.URISyntaxException} if the URI to be reconstructed from options is invalid
      */
     public URI getLocationURI() throws URISyntaxException {
-        Collection<Option> options = optionList.getOption(LOCATION_PATH);
+        Collection<Option> options = this.options.getOption(LOCATION_PATH);
         if(options.isEmpty()){
             return null;
         }
@@ -156,7 +154,7 @@ public class CoapResponse extends CoapMessage {
             result += ("/" + option.getDecodedValue());
         }
 
-        options = optionList.getOption((LOCATION_QUERY));
+        options = this.options.getOption((LOCATION_QUERY));
         if(!options.isEmpty()){
             result += "?";
             for(Option option : options){
@@ -182,15 +180,15 @@ public class CoapResponse extends CoapMessage {
      * options per message.
      */
     public void setObserveOptionValue(long sequenceNumber) throws ToManyOptionsException {
-        optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+        options.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
         try{
             Option option = Option.createUintOption(OptionRegistry.OptionName.OBSERVE_RESPONSE, sequenceNumber);
-            optionList.addOption(header.getCode(), OptionRegistry.OptionName.OBSERVE_RESPONSE, option);
+            options.addOption(header.getMessageCode(), OptionRegistry.OptionName.OBSERVE_RESPONSE, option);
         } catch (InvalidOptionException e) {
-            optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+            options.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
             log.error("This should never happen!", e);
         } catch (ToManyOptionsException e) {
-            optionList.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+            options.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
             log.debug("Critical option (" + OptionRegistry.OptionName.OBSERVE_RESPONSE + ") could not be added.", e);
             throw e;
         }

@@ -29,18 +29,17 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceivedMessage;
 import de.uniluebeck.itm.ncoap.communication.blockwise.InternalNextBlockReceivedMessageProcessor;
-import de.uniluebeck.itm.ncoap.communication.core.CoapClientDatagramChannelFactory;
+import de.uniluebeck.itm.ncoap.communication.CoapClientDatagramChannelFactory;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalStopObservationMessage;
 import de.uniluebeck.itm.ncoap.communication.observe.ObservationTimeoutProcessor;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.ncoap.message.options.ToManyOptionsException;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -63,10 +62,10 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private TokenFactory tokenFactory = new TokenFactory();
-    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, CoapResponseProcessor> responseProcessors =
+    private HashBasedTable<Token, InetSocketAddress, CoapResponseProcessor> responseProcessors =
             HashBasedTable.create();
 
-    private HashBasedTable<ByteArrayWrapper, InetSocketAddress, ScheduledFuture> observationTimeouts =
+    private HashBasedTable<Token, InetSocketAddress, ScheduledFuture> observationTimeouts =
             HashBasedTable.create();
 
     private DatagramChannel datagramChannel;
@@ -182,7 +181,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     private synchronized void addResponseCallback(byte[] token, InetSocketAddress remoteAddress,
                                                   CoapResponseProcessor coapResponseProcessor){
 
-        ByteArrayWrapper wrappedToken = new ByteArrayWrapper(token);
+        Token wrappedToken = new Token(token);
         responseProcessors.put(wrappedToken, remoteAddress, coapResponseProcessor);
         log.debug("Added response processor for token {} from {}.", wrappedToken, remoteAddress);
         log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
@@ -190,7 +189,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
 
     private synchronized CoapResponseProcessor removeResponseCallback(byte[] token, InetSocketAddress remoteAddress){
-        ByteArrayWrapper wrappedToken = new ByteArrayWrapper(token);
+        Token wrappedToken = new Token(token);
         CoapResponseProcessor result = responseProcessors.remove(wrappedToken, remoteAddress);
         if(result != null)
             log.debug("Removed response processor for token {} from {}.", wrappedToken, remoteAddress);
@@ -282,7 +281,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             final CoapResponseProcessor responseProcessor;
 
             if(coapResponse.isUpdateNotification()){
-                final ByteArrayWrapper token = new ByteArrayWrapper(coapResponse.getToken());
+                final Token token = new Token(coapResponse.getToken());
                 final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
 
                 //Stop observation timeout
@@ -314,11 +313,11 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             }
 
             if(responseProcessor != null){
-                log.debug("Callback found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
+                log.debug("Callback found for token {}.", new Token(coapResponse.getToken()));
                 responseProcessor.processCoapResponse(coapResponse);
             }
             else{
-                log.info("No responseProcessor found for token {}.", new ByteArrayWrapper(coapResponse.getToken()));
+                log.info("No responseProcessor found for token {}.", new Token(coapResponse.getToken()));
                 //tokenFactory.passBackToken(coapResponse.getToken());
             }
 
@@ -370,7 +369,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     log.info("Observation on {} with token {} successfully stopped.",
-                           remoteSocketAddress, new ByteArrayWrapper(token));
+                           remoteSocketAddress, new Token(token));
                 }
             });
 

@@ -45,12 +45,15 @@
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package de.uniluebeck.itm.ncoap.message.header;
+package de.uniluebeck.itm.ncoap.message;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Oliver Kleine
  */
-public enum MsgType {
+public enum MessageType {
 
     /**
      * corresponds to CoAPs numerical message type 0 (Confirmable message)
@@ -72,21 +75,26 @@ public enum MsgType {
      */
     RST(3);
 
-    /**
-     * The corresponding numerical CoAP message type
-     */
-    public final int number;
+    private static Logger log = LoggerFactory.getLogger(MessageType.class.getName());
 
-    MsgType(int number){
+    private int number;
+
+    private MessageType(int number){
         this.number = number;
     }
 
-    public static MsgType getMsgTypeFromNumber(int number) throws InvalidHeaderException{
-        for(MsgType t : MsgType.values()){
+    public int getNumber(){
+        return number;
+    }
+
+    public static MessageType getMessageTypeFromNumber(int number){
+        for(MessageType t : MessageType.values()){
             if(t.number == number){
                 return t;
             }
         }
-        throw new InvalidHeaderException("Unknown message type (no. " + number + ")");
+
+        log.warn("No MessageType found for number: {}", number);
+        return null;
     }
 }

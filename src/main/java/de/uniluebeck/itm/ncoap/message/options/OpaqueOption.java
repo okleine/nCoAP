@@ -26,7 +26,7 @@ package de.uniluebeck.itm.ncoap.message.options;
 
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionType;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ class OpaqueOption extends Option{
 
         setValue(optionName, value);
 
-        log.debug("{} option with value {} created.", optionName, new ByteArrayWrapper(value));
+        log.debug("{} option with value {} created.", optionName, new Token(value));
     }
 
     private void setValue(OptionName optionName, byte[] value) throws InvalidOptionException{
@@ -71,18 +71,18 @@ class OpaqueOption extends Option{
         }
 
         //Set value if there was no Exception thrown so far
-        this.value = value;
+        this.encodedValue = value;
     }
 
     /**
      * This method is just to implement the satisfy the {@link Option} abstract method from {@link Option}.
-     * The return value is exactly the same as {@link #getValue()}.
+     * The return value is exactly the same as {@link #getEncodedValue()}.
      *
      * @return the byte[] containing the options value
      */
     @Override
     public byte[] getDecodedValue(){
-       return getValue();
+       return getEncodedValue();
     }
 
     @Override
@@ -91,7 +91,7 @@ class OpaqueOption extends Option{
             return false;
         }
         OpaqueOption opt = (OpaqueOption) o;
-        if((optionNumber == opt.optionNumber) && Arrays.equals(this.value, opt.value)){
+        if((optionNumber == opt.optionNumber) && Arrays.equals(this.encodedValue, opt.encodedValue)){
             return true;
         }
         return false;
@@ -99,6 +99,6 @@ class OpaqueOption extends Option{
 
     @Override
     public String toString(){
-        return new ByteArrayWrapper(getValue()).toString() + " (" + OptionName.getByNumber(optionNumber) + ")";
+        return new Token(getEncodedValue()).toString() + " (" + OptionName.getByNumber(optionNumber) + ")";
     }
 }

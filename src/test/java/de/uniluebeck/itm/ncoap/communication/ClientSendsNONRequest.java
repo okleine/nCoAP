@@ -27,11 +27,9 @@ package de.uniluebeck.itm.ncoap.communication;
 import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableTestWebService;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+
 import java.net.InetSocketAddress;
 
 import org.apache.log4j.Level;
@@ -75,7 +73,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
 
         endpoint = new CoapTestEndpoint();
         URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
-        request = new CoapRequest(MsgType.NON, Code.GET, targetUri);
+        request = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri);
         request.getHeader().setMsgID(54321);
     }
 
@@ -138,7 +136,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response code is not CONTENT 205";
-        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
     }
 
     @Test
@@ -154,6 +152,6 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response Msg Type is not NON";
-        assertEquals(message, MsgType.NON, receivedMessage.getMessageType());
+        assertEquals(message, MessageType.NON, receivedMessage.getMessageType());
     }
 }

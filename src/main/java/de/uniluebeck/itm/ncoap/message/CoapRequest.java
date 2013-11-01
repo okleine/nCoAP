@@ -24,13 +24,11 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.message.header.Code;
 import de.uniluebeck.itm.ncoap.message.header.Header;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,22 +55,22 @@ public class CoapRequest extends CoapMessage {
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
      * and initial option list with target URI-related options set.
      *
-     * @param msgType  A {@link MsgType}
-     * @param code A {@link Code}
+     * @param messageType  A {@link MessageType}
+     * @param messageCode A {@link MessageCode}
      * @param targetUri the recipients URI
      *
      * @throws InvalidOptionException if one of the target URI options to be created is not valid
      * @throws URISyntaxException if the URI is not appropriate for a CoAP message.
      * @throws ToManyOptionsException if the target URI needs more than the maximum number of options per message
-     * @throws InvalidMessageException if the given code is not suitable for a request
+     * @throws InvalidMessageException if the given messageCode is not suitable for a request
      */
-    public CoapRequest(MsgType msgType, Code code, URI targetUri)
+    public CoapRequest(MessageType messageType, MessageCode messageCode, URI targetUri)
             throws InvalidMessageException, ToManyOptionsException, InvalidOptionException, URISyntaxException {
 
-        super(msgType, code);
+        super(messageType, messageCode);
 
-        if(!code.isRequest()){
-            throw new InvalidMessageException("Code " + code + " is no request code!");
+        if(!messageCode.isRequest()){
+            throw new InvalidMessageException("MessageCode " + messageCode + " is no request messageCode!");
         }
 
         setTargetURI(targetUri);
@@ -83,7 +81,7 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * This is the constructor basically supposed to be used internally, in particular with the decoding process of
-     * incoming {@link CoapResponse}s. In other cases it is recommended to use {@link #CoapRequest(MsgType, Code, URI)} and
+     * incoming {@link CoapResponse}s. In other cases it is recommended to use {@link #CoapRequest(MessageType, MessageCode, URI)} and
      * set options and payload by invoking the appropriate methods and let the nCoAP framework do the rest.
      *
      * @param header the {@link Header} of the {@link CoapRequest}
@@ -153,7 +151,7 @@ public class CoapRequest extends CoapMessage {
      * of options per message.
      */
     public void setTargetURI(URI targetUri) throws URISyntaxException, InvalidOptionException, ToManyOptionsException {
-        optionList.removeTargetURI();
+        options.removeTargetURI();
         try{
             //Create collection of target URI related options
             Collection<Option> targetUriOptions = Option.createTargetURIOptions(targetUri);
@@ -162,15 +160,15 @@ public class CoapRequest extends CoapMessage {
             for(Option option : targetUriOptions){
 
                 log.debug("Add {} option with value {}.", OptionName.getByNumber(option.getOptionNumber()),
-                        new ByteArrayWrapper(option.getValue()));
+                        new Token(option.getEncodedValue()));
 
 
                 OptionRegistry.OptionName optionName = OptionName.getByNumber(option.getOptionNumber());
-                optionList.addOption(header.getCode(), optionName, option);
+                options.addOption(header.getMessageCode(), optionName, option);
             }
 
             //Try to determine the receipients IP address if there was no URI host option set
-            if(optionList.getOption(URI_HOST).isEmpty()){
+            if(options.getOption(URI_HOST).isEmpty()){
                 try{
                     rcptAddress = InetAddress.getByName(targetUri.getHost());
                 } catch (UnknownHostException e) {
@@ -179,14 +177,14 @@ public class CoapRequest extends CoapMessage {
             }
         }
         catch(InvalidOptionException e){
-            optionList.removeTargetURI();
+            options.removeTargetURI();
 
             log.debug("Critical option for target URI could not be added.", e);
 
             throw e;
         }
         catch(ToManyOptionsException e){
-            optionList.removeTargetURI();
+            options.removeTargetURI();
             log.debug("Critical option for target URI could not be added.", e);
             throw e;
         }
@@ -204,21 +202,21 @@ public class CoapRequest extends CoapMessage {
      * meaningful with the message code and thus silently ignored
      */
     public boolean setAccept(OptionRegistry.MediaType... mediaTypes) {
-        optionList.removeAllOptions(ACCEPT);
+        options.removeAllOptions(ACCEPT);
         try{
             for(OptionRegistry.MediaType mediaType : mediaTypes){
                 Option option = Option.createUintOption(ACCEPT, mediaType.number);
-                optionList.addOption(header.getCode(), ACCEPT, option);
+                options.addOption(header.getMessageCode(), ACCEPT, option);
             }
             return true;
         }
         catch (InvalidOptionException e) {
-            optionList.removeAllOptions(ACCEPT);
+            options.removeAllOptions(ACCEPT);
             log.debug("Elective option (" + ACCEPT + ") could not be added.", e);
             return false;
         }
         catch (ToManyOptionsException e) {
-            optionList.removeAllOptions(ACCEPT);
+            options.removeAllOptions(ACCEPT);
             log.debug("Elective option (" + ACCEPT + ") could not be added.", e);
             return false;
         }
@@ -231,7 +229,7 @@ public class CoapRequest extends CoapMessage {
     public Set<MediaType> getAcceptedMediaTypes(){
         EnumSet<MediaType> result = EnumSet.noneOf(MediaType.class);
 
-        for(Option option : optionList.getOption(ACCEPT)){
+        for(Option option : options.getOption(ACCEPT)){
             result.add(MediaType.getByNumber((Long) option.getDecodedValue()));
         }
 
@@ -246,7 +244,7 @@ public class CoapRequest extends CoapMessage {
      * {@link CoapRequest} fails
      */
     public URI getProxyURI() throws URISyntaxException {
-        Collection<Option> options = optionList.getOption(PROXY_URI);
+        Collection<Option> options = this.options.getOption(PROXY_URI);
 
         if(options.isEmpty()){
             return null;
@@ -271,21 +269,21 @@ public class CoapRequest extends CoapMessage {
      * message.
      */
     public void setProxyURI(URI proxyURI) throws InvalidOptionException, URISyntaxException, ToManyOptionsException {
-        optionList.removeAllOptions(PROXY_URI);
+        options.removeAllOptions(PROXY_URI);
         try{
             Collection<Option> options = Option.createProxyUriOptions(proxyURI);
             for(Option option : options){
-                optionList.addOption(header.getCode(), PROXY_URI, option);
+                this.options.addOption(header.getMessageCode(), PROXY_URI, option);
             }
         }
         catch(InvalidOptionException e){
-            optionList.removeAllOptions(PROXY_URI);
+            options.removeAllOptions(PROXY_URI);
             log.debug("Critical option (" + PROXY_URI + ") could not be added.", e);
 
             throw e;
         }
         catch(ToManyOptionsException e){
-            optionList.removeAllOptions(PROXY_URI);
+            options.removeAllOptions(PROXY_URI);
             log.debug("Critical option (" + PROXY_URI + ") could not be added.", e);
 
             throw e;
@@ -303,20 +301,20 @@ public class CoapRequest extends CoapMessage {
      * options per message.
      */
     public void setIfMatch(byte[]... etags) throws InvalidOptionException, ToManyOptionsException {
-        optionList.removeAllOptions(IF_MATCH);
+        options.removeAllOptions(IF_MATCH);
         try{
             for(byte[] etag : etags){
                 Option option = Option.createOpaqueOption(IF_MATCH, etag);
-                optionList.addOption(header.getCode(), IF_MATCH, option);
+                options.addOption(header.getMessageCode(), IF_MATCH, option);
             }
         }
         catch (InvalidOptionException e) {
-            optionList.removeAllOptions(IF_MATCH);
+            options.removeAllOptions(IF_MATCH);
             log.debug("Critical option (" + IF_MATCH + ") could not be added.", e);
             throw e;
         }
         catch (ToManyOptionsException e) {
-            optionList.removeAllOptions(IF_MATCH);
+            options.removeAllOptions(IF_MATCH);
             log.debug("Critical option (" + IF_MATCH + ") could not be added.", e);
             throw e;
         }
@@ -330,15 +328,15 @@ public class CoapRequest extends CoapMessage {
      * options per message.
      */
     public void setIfNoneMatch() throws ToManyOptionsException {
-        optionList.removeAllOptions(IF_NONE_MATCH);
+        options.removeAllOptions(IF_NONE_MATCH);
         try{
             Option option = Option.createEmptyOption(IF_NONE_MATCH);
-            optionList.addOption(header.getCode(), IF_NONE_MATCH, option);
+            options.addOption(header.getMessageCode(), IF_NONE_MATCH, option);
         } catch (InvalidOptionException e) {
-            optionList.removeAllOptions(IF_NONE_MATCH);
+            options.removeAllOptions(IF_NONE_MATCH);
             log.error("This should never happen!", e);
         } catch (ToManyOptionsException e) {
-            optionList.removeAllOptions(IF_NONE_MATCH);
+            options.removeAllOptions(IF_NONE_MATCH);
             log.debug("Critical option (" + IF_NONE_MATCH + ") could not be added.", e);
             throw e;
         }
@@ -352,15 +350,15 @@ public class CoapRequest extends CoapMessage {
      * options per message.
      */
     public void setObserveOptionRequest() throws ToManyOptionsException {
-        optionList.removeAllOptions(OBSERVE_REQUEST);
+        options.removeAllOptions(OBSERVE_REQUEST);
         try{
             Option option = Option.createEmptyOption(OBSERVE_REQUEST);
-            optionList.addOption(header.getCode(), OBSERVE_REQUEST, option);
+            options.addOption(header.getMessageCode(), OBSERVE_REQUEST, option);
         } catch (InvalidOptionException e) {
-            optionList.removeAllOptions(OBSERVE_REQUEST);
+            options.removeAllOptions(OBSERVE_REQUEST);
             log.error("This should never happen!", e);
         } catch (ToManyOptionsException e) {
-            optionList.removeAllOptions(OBSERVE_REQUEST);
+            options.removeAllOptions(OBSERVE_REQUEST);
             log.debug("Critical option (" + OBSERVE_REQUEST + ") could not be added.", e);
             throw e;
         }

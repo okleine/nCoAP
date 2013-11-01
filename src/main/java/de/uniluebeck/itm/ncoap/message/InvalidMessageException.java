@@ -47,12 +47,10 @@
 
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.communication.core.CoapException;
-
 /**
  * @author Oliver Kleine
  */
-public class InvalidMessageException extends CoapException {
+public class InvalidMessageException extends Exception {
 
     public InvalidMessageException(String msg) {
         super(msg);

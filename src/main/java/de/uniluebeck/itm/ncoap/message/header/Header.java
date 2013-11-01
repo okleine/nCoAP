@@ -47,6 +47,8 @@
 
 package de.uniluebeck.itm.ncoap.message.header;
 
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,24 +66,24 @@ public class Header {
      */
     public static int MESSAGE_ID_UNDEFINED = -1;
 
-    private MsgType msgType;
-    private Code code;
+    private MessageType messageType;
+    private MessageCode messageCode;
     private int msgID = MESSAGE_ID_UNDEFINED;
 
     /**
-     * @param code a {@link Code}
+     * @param messageCode a {@link de.uniluebeck.itm.ncoap.message.MessageCode}
      */
-    public Header(Code code){
-        setCode(code);
+    public Header(MessageCode messageCode){
+        setMessageCode(messageCode);
     }
 
     /**
-     * @param msgType a {@link MsgType}
-     * @param code a {@link Code}
+     * @param messageType a {@link de.uniluebeck.itm.ncoap.message.MessageType}
+     * @param messageCode a {@link de.uniluebeck.itm.ncoap.message.MessageCode}
      */
-    public Header(MsgType msgType, Code code) {
-        this(code);
-        setMsgType(msgType);
+    public Header(MessageType messageType, MessageCode messageCode) {
+        this(messageCode);
+        setMessageType(messageType);
     }
 
     /**
@@ -89,14 +91,14 @@ public class Header {
      * external applications. However, it is rather unlikely that an application needs to create a new instance of
      * {@link Header} anyway.
      *
-     * @param msgType a {@link MsgType}
-     * @param code a {@link Code}
+     * @param messageType a {@link MessageType}
+     * @param messageCode a {@link de.uniluebeck.itm.ncoap.message.MessageCode}
      * @param msgID an integer value
      *
      * @throws InvalidHeaderException
      */
-    public Header(MsgType msgType, Code code, int msgID) throws InvalidHeaderException {
-        this(msgType, code);
+    public Header(MessageType messageType, MessageCode messageCode, int msgID) throws InvalidHeaderException {
+        this(messageType, messageCode);
         setMsgID(msgID);
     }
 
@@ -109,35 +111,35 @@ public class Header {
     }
 
     /**
-     * Sets the {@link MsgType} of the message this {@link Header} is part of
-     * @param msgType a {@link MsgType}
+     * Sets the {@link de.uniluebeck.itm.ncoap.message.MessageType} of the message this {@link Header} is part of
+     * @param messageType a {@link de.uniluebeck.itm.ncoap.message.MessageType}
      */
-    public void setMsgType(MsgType msgType){
-        this.msgType = msgType;
+    public void setMessageType(MessageType messageType){
+        this.messageType = messageType;
     }
 
     /**
-     * Returns the {@link MsgType} set for this {@link Header}
-     * @return the {@link MsgType} set for this {@link Header}
+     * Returns the {@link de.uniluebeck.itm.ncoap.message.MessageType} set for this {@link Header}
+     * @return the {@link de.uniluebeck.itm.ncoap.message.MessageType} set for this {@link Header}
      */
-    public MsgType getMsgType(){
-        return msgType;
+    public MessageType getMessageType(){
+        return messageType;
     }
 
     /**
-     * Sets the {@link Code} of the message this {@link Header} is part of
-     * @param code a {@link Code}
+     * Sets the {@link de.uniluebeck.itm.ncoap.message.MessageCode} of the message this {@link Header} is part of
+     * @param messageCode a {@link de.uniluebeck.itm.ncoap.message.MessageCode}
      */
-    public void setCode(Code code){
-        this.code = code;
+    public void setMessageCode(MessageCode messageCode){
+        this.messageCode = messageCode;
     }
 
     /**
-     * Returns the {@link Code} set for this {@link Header}
-     * @return the {@link Code} set for this {@link Header}
+     * Returns the {@link de.uniluebeck.itm.ncoap.message.MessageCode} set for this {@link Header}
+     * @return the {@link de.uniluebeck.itm.ncoap.message.MessageCode} set for this {@link Header}
      */
-    public Code getCode(){
-        return code;
+    public MessageCode getMessageCode(){
+        return messageCode;
     }
 
     /**
@@ -169,11 +171,11 @@ public class Header {
 
     /**
      * Returns true if and only if the given Object is an instance of {@link Header} and if all all
-     * its components (version, message type, code and message ID) match.
+     * its components (version, message type, messageCode and message ID) match.
      *
      * @param other any other instance of {@link Object}
-     * @return <code>true</code> if and only if the given Object is an instance of {@link Header} and if all all
-     * its components (version, message type, code and message ID) match. It returns <code>false</code>
+     * @return <messageCode>true</messageCode> if and only if the given Object is an instance of {@link Header} and if all all
+     * its components (version, message type, messageCode and message ID) match. It returns <messageCode>false</messageCode>
      * otherwise.
      */
     @Override
@@ -185,14 +187,14 @@ public class Header {
         Header otherHeader = (Header) other;
 
         return this.getVersion() == otherHeader.getVersion() &&
-               this.code == otherHeader.getCode() &&
+               this.messageCode == otherHeader.getMessageCode() &&
                this.msgID == otherHeader.getMsgID() &&
-               this.msgType == otherHeader.getMsgType();
+               this.messageType == otherHeader.getMessageType();
     }
 
     @Override
     public String toString(){
-        return "[HEADER] " + getVersion() + " (version), " + msgType + " (type), " + code + " (code), "
+        return "[HEADER] " + getVersion() + " (version), " + messageType + " (type), " + messageCode + " (messageCode), "
                 + msgID + " (message ID)";
     }
 }

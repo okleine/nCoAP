@@ -27,14 +27,10 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.message.MessageDoesNotAllowPayloadException;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.ncoap.message.options.ToManyOptionsException;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,10 +58,10 @@ public final class WellKnownCoreResource extends ObservableWebService<Map<String
     }
 
     /**
-     * The .well-known/core resource only allows requests with {@link Code#GET}. Any other out of {@link Code#POST},
-     * {@link Code#PUT} or {@link Code#DELETE} returns a {@link CoapResponse} with {@link Code#METHOD_NOT_ALLOWED_405}.
+     * The .well-known/core resource only allows requests with {@link de.uniluebeck.itm.ncoap.message.MessageCode#GET}. Any other out of {@link de.uniluebeck.itm.ncoap.message.MessageCode#POST},
+     * {@link de.uniluebeck.itm.ncoap.message.MessageCode#PUT} or {@link de.uniluebeck.itm.ncoap.message.MessageCode#DELETE} returns a {@link CoapResponse} with {@link de.uniluebeck.itm.ncoap.message.MessageCode#METHOD_NOT_ALLOWED_405}.
      *
-     * In case of a request with {@link Code#GET} it returns a {@link CoapResponse} with {@link Code#CONTENT_205} and
+     * In case of a request with {@link de.uniluebeck.itm.ncoap.message.MessageCode#GET} it returns a {@link CoapResponse} with {@link de.uniluebeck.itm.ncoap.message.MessageCode#CONTENT_205} and
      * with a payload listing all paths to the available resources (i.e. {@link WebService} instances}). The
      * payload is always formatted in {@link MediaType#APP_LINK_FORMAT}. If the request contains an
      * {@link OptionName#ACCEPT} option requesting another payload format, this option is ignored.
@@ -79,12 +75,12 @@ public final class WellKnownCoreResource extends ObservableWebService<Map<String
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest request,
                                    InetSocketAddress remoteAddress) {
 
-        if(request.getCode() != Code.GET){
-            responseFuture.set(new CoapResponse(Code.METHOD_NOT_ALLOWED_405));
+        if(request.getMessageCode() != MessageCode.GET){
+            responseFuture.set(new CoapResponse(MessageCode.METHOD_NOT_ALLOWED_405));
             return;
         }
 
-        CoapResponse response = new CoapResponse(Code.CONTENT_205);
+        CoapResponse response = new CoapResponse(MessageCode.CONTENT_205);
 
         try {
             byte[] payload = getSerializedResourceStatus(MediaType.APP_LINK_FORMAT);

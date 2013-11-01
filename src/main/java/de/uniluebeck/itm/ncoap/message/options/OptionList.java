@@ -25,10 +25,10 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
 import com.google.common.collect.LinkedListMultimap;
-import de.uniluebeck.itm.ncoap.message.header.Code;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionOccurence;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,15 +40,14 @@ import java.util.List;
 public class OptionList {
 
     private static Logger log = LoggerFactory.getLogger(OptionList.class.getName());
-    public static int MAX_NUMBER_OF_OPTIONS = 15;
 
 
     //list of options to be included
     private LinkedListMultimap<OptionName, Option> options;
 
     /**
-     * Creates a new empty {@link OptionList}. The paramter {@link Code} is to ensure that only meaningful options
-     * are included in the list. If an {@link Option} is meaningful or not depends on the {@link Code}.
+     * Creates a new empty {@link OptionList}. The paramter {@link de.uniluebeck.itm.ncoap.message.MessageCode} is to ensure that only meaningful options
+     * are included in the list. If an {@link Option} is meaningful or not depends on the {@link de.uniluebeck.itm.ncoap.message.MessageCode}.
      */
     public OptionList(){
         options = LinkedListMultimap.create(0);
@@ -56,12 +55,12 @@ public class OptionList {
 
     /**
      * This method is to add a new {@link Option} to the {@link OptionList}. The Option will only be added if it
-     * satisfies some constraints. It must be meaningful with the {@link Code}, given as method parameter.
+     * satisfies some constraints. It must be meaningful with the {@link de.uniluebeck.itm.ncoap.message.MessageCode}, given as method parameter.
      * If the OptionList already contains an Option with the same type (i.e. {@link OptionName}),
      * the new Option will be added if and only if it may occur multiple times in a message with the abovementioned
-     * code.
+     * messageCode.
      *
-     * @param code the message code
+     * @param messageCode the message messageCode
      * @param optionName the name of the option to be added
      * @param option The option to be added
      *
@@ -70,20 +69,20 @@ public class OptionList {
      * @throws ToManyOptionsException if adding the option to the list would exceed the maximum number of
      * options per message
      */
-    public void addOption(Code code, OptionName optionName, Option option)
+    public void addOption(MessageCode messageCode, OptionName optionName, Option option)
             throws InvalidOptionException, ToManyOptionsException {
 
-        OptionOccurence allowed_occurence = OptionRegistry.getAllowedOccurence(code, optionName);
+        OptionOccurence allowed_occurence = OptionRegistry.getAllowedOccurence(messageCode, optionName);
 
         if(allowed_occurence == OptionRegistry.OptionOccurence.NONE){
             String msg = "[OptionList] " + optionName + " option has no meaning with"
-                            + " a message with code " + code + ".";
+                            + " a message with messageCode " + messageCode + ".";
             throw new InvalidOptionException(option.getOptionNumber(), msg);
         }
         else if(allowed_occurence == OptionRegistry.OptionOccurence.ONCE){
             if(options.containsKey(optionName)){
                 String msg = "[OptionList] " + optionName + " option may not occur multiple times"
-                                + " in a message with code " + code + ".";
+                                + " in a message with messageCode " + messageCode + ".";
                 if(optionName == OptionName.URI_HOST){
                     StringOption host = (StringOption) (options.get(OptionName.URI_HOST).get(0));
                     msg = msg + " Current value: " + host.getDecodedValue();
@@ -105,7 +104,7 @@ public class OptionList {
             throw new InvalidOptionException(option.getOptionNumber(), msg);
         }
 
-        log.debug("{} option with value {} added to option list.", optionName, new ByteArrayWrapper(option.getValue()));
+        log.debug("{} option with value {} added to option list.", optionName, new Token(option.getEncodedValue()));
     }
 
     /**

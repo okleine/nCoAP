@@ -27,8 +27,8 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageDoesNotAllowPayloadException;
-import de.uniluebeck.itm.ncoap.message.header.Code;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.*;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -137,7 +137,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
         }
 
         //Create response 
-        CoapResponse response = new CoapResponse(Code.CONTENT_205);
+        CoapResponse response = new CoapResponse(MessageCode.CONTENT_205);
 
         byte[] payload = null;
         if(coapRequest.getAcceptedMediaTypes().isEmpty()){

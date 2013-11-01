@@ -47,7 +47,6 @@
 
 package de.uniluebeck.itm.ncoap.communication.encoding;
 
-import de.uniluebeck.itm.ncoap.communication.core.CoapException;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
@@ -55,7 +54,7 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
  *
  * @author Oliver Kleine
  */
-public class EncodingFailedException extends CoapException {
+public class EncodingFailedException extends Exception {
 
     /**
      * @param message A string representation of the reason that caused the exception

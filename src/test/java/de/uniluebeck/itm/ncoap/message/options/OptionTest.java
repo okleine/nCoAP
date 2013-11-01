@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -26,7 +26,7 @@ package de.uniluebeck.itm.ncoap.message.options;
 
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.header.Code;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.toolbox.ByteTestTools;
@@ -173,10 +173,10 @@ public class OptionTest extends AbstractCoapTest{
 
             @Override
             URI runTest(Option[] input) throws Exception {
-                Header header = new Header(Code.GET);
+                Header header = new Header(MessageCode.GET);
                 OptionList optionList = new OptionList();
                 for (Option option : input) {
-                    optionList.addOption(Code.GET, OptionName.getByNumber(option.optionNumber), option);
+                    optionList.addOption(MessageCode.GET, OptionName.getByNumber(option.optionNumber), option);
                 }
                 InetAddress inetAddress = InetAddress.getLocalHost();
                 CoapRequest coapRequest = new CoapRequest(header, optionList, ChannelBuffers.EMPTY_BUFFER);
@@ -257,7 +257,7 @@ public class OptionTest extends AbstractCoapTest{
         } else if (option instanceof EmptyOption) {
             return "(empty)";
         } else if (option instanceof OpaqueOption) {
-            return "0x" + ByteTestTools.getBytesAsString(((OpaqueOption) option).getValue());
+            return "0x" + ByteTestTools.getBytesAsString(((OpaqueOption) option).getEncodedValue());
         }
         throw new InternalError("Is there a new option? Please add it here.");
     }

@@ -24,16 +24,12 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import com.google.common.annotations.Beta;
+import com.google.common.collect.TreeMultimap;
 import com.google.common.net.InetAddresses;
-import de.uniluebeck.itm.ncoap.communication.blockwise.Blocksize;
-import de.uniluebeck.itm.ncoap.message.header.Code;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.*;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
@@ -45,8 +41,6 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.*;
-
 /**
  * This class is the base class for inheriting subtypes, i.e. requests and responses. This abstract class provides the
  * cut-set in terms of functionality of {@link CoapRequest} and {@link CoapResponse}.
@@ -57,45 +51,32 @@ public abstract class CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
+    public static final String CHARSET = "UTF-8";
+
     protected InetAddress rcptAddress;
 
-    protected Header header;
-    protected OptionList optionList;
+    private MessageType messageType;
+    private MessageCode messageCode;
+    private int messageID;
+    private long token;
+    private TreeMultimap<Integer, Option> options;
     private ChannelBuffer payload;
 
-    private CoapMessage(){
-        this.optionList = new OptionList();
-        this.payload = ChannelBuffers.buffer(0);
-    }
 
-    protected CoapMessage(Code code){
-        this();
-        this.header = new Header(code);
-
-    }
-
-    protected CoapMessage(MsgType msgType, Code code) {
-        this();
-        this.header = new Header(msgType, code);
-    }
-
-    protected CoapMessage(Header header, OptionList optionList, ChannelBuffer payload){
-        this.header = header;
-        this.optionList = optionList;
-        this.payload = payload;
-    }
+    protected CoapMessage(MessageType messageType, MessageCode messageCode, int messageID, long token,
+                          TreeMultimap<Integer, Option> options, )
 
     /**
      * Method to create an empty reset message which is strictly speaking neither a request nor a response
      * @param messageID the message ID of the reset message.
      *
-     * @return an instance of {@link CoapMessage} with {@link MsgType#RST}
+     * @return an instance of {@link CoapMessage} with {@link MessageType#RST}
      */
     public static CoapMessage createEmptyReset(int messageID){
-        CoapMessage emptyRST = new CoapMessage(){};
+        CoapMessage emptyRST = new CoapMessage(new byte[0]){};
 
         try {
-            emptyRST.header = new Header(MsgType.RST, Code.EMPTY, messageID);
+            emptyRST.header = new Header(MessageType.RST, MessageCode.EMPTY, messageID);
         } catch (InvalidHeaderException e) {
             log.error("This should never happen.", e);
         }
@@ -107,13 +88,13 @@ public abstract class CoapMessage {
      * Method to create an empty acknowledgement message which is strictly speaking neither a request nor a response
      * @param messageID the message ID of the acknowledgement message.
      *
-     * @return an instance of {@link CoapMessage} with {@link MsgType#ACK}
+     * @return an instance of {@link CoapMessage} with {@link MessageType#ACK}
      */
     public static CoapMessage createEmptyAcknowledgement(int messageID){
-        CoapMessage emptyACK = new CoapMessage(){};
+        CoapMessage emptyACK = new CoapMessage(new byte[0]){};
 
         try {
-            emptyACK.header = new Header(MsgType.ACK, Code.EMPTY, messageID);
+            emptyACK.header = new Header(MessageType.ACK, MessageCode.EMPTY, messageID);
         } catch (InvalidHeaderException e) {
             log.error("This should never happen.", e);
         }
@@ -138,37 +119,29 @@ public abstract class CoapMessage {
     }
 
     /**
-     * Returns the {@link MsgType} of this message
-     * @return the {@link MsgType} of this message
+     * This is a shortcut for {@link #getHeader().getMessageType()}
+     * @return the {@link MessageType} of this message
      */
-    public MsgType getMessageType() {
-        return header.getMsgType();
+    public MessageType getMessageType() {
+        return header.getMessageType();
     }
 
     /**
-     * Returns the number of {@link de.uniluebeck.itm.ncoap.message.options.Option} instances contained in the option list. Note that only options with
-     * non-default values are contained in the option list.
-     * @return the number of options contained in the messages option list
+     * This is a shortcut for {@link #getHeader().getCode()}
+     * @return the {@link MessageCode} of this message
      */
-    public int getOptionCount(){
-        return optionList.getOptionCount();
+    public MessageCode getMessageCode() {
+        return header.getMessageCode();
     }
 
     /**
-     * Returns the {@link Code} (method code for requests, status code for responses or empty)
-     * @return the {@link Code} of this message
-     */
-    public Code getCode() {
-        return header.getCode();
-    }
-
-    /**
-     * Returns the value of the token option or an empty byte array b with <code>(b.length == 0) == true</code>.
+     * Returns the value of the token option or an empty byte array b with <messageCode>(b.length == 0) == true</messageCode>.
      * @return the value of the messages token option
      */
-    public byte[] getToken() {
+    public Token getToken() {
+        return token;
         try{
-            return optionList.getOption(TOKEN)
+            return options.getOption(TOKEN)
                          .get(0)
                          .getValue();
         }
@@ -204,8 +177,8 @@ public abstract class CoapMessage {
      * @return the {@link MediaType} contained as {@link OptionName#CONTENT_TYPE} option or null if the option is not set.
      */
     public MediaType getContentType(){
-        if(!optionList.getOption(CONTENT_TYPE).isEmpty()){
-            return MediaType.getByNumber((Long) optionList.getOption(CONTENT_TYPE).get(0).getDecodedValue());
+        if(!options.getOption(CONTENT_TYPE).isEmpty()){
+            return MediaType.getByNumber((Long) options.getOption(CONTENT_TYPE).get(0).getDecodedValue());
         }
         return null;
     }
@@ -220,21 +193,21 @@ public abstract class CoapMessage {
      * message
      */
     public void setContentType(MediaType mediaType) throws InvalidOptionException, ToManyOptionsException {
-        optionList.removeAllOptions(CONTENT_TYPE);
+        options.removeAllOptions(CONTENT_TYPE);
 
         try{
             Option option = Option.createUintOption(CONTENT_TYPE, mediaType.number);
-            optionList.addOption(header.getCode(), CONTENT_TYPE, option);
+            options.addOption(header.getMessageCode(), CONTENT_TYPE, option);
         }
         catch(InvalidOptionException e){
-            optionList.removeAllOptions(CONTENT_TYPE);
+            options.removeAllOptions(CONTENT_TYPE);
 
             log.debug("Critical option (" + CONTENT_TYPE + ") could not be added.", e);
 
             throw e;
         }
         catch(ToManyOptionsException e){
-            optionList.removeAllOptions(CONTENT_TYPE);
+            options.removeAllOptions(CONTENT_TYPE);
 
             log.debug("Critical option (" + CONTENT_TYPE + ") could not be added.", e);
 
@@ -250,28 +223,28 @@ public abstract class CoapMessage {
      * @throws InvalidOptionException if at least one of the options to be added is invalid
      * @throws ToManyOptionsException if adding all ETAG options would exceed the maximum number of options per
      * message
-     * @return <code>true</code> if ETAGs were succesfully set, <code>false</code> if ETAG option is not
-     * meaningful with the message code and thus silently ignored
+     * @return <messageCode>true</messageCode> if ETAGs were succesfully set, <messageCode>false</messageCode> if ETAG option is not
+     * meaningful with the message messageCode and thus silently ignored
      */
     public boolean setETAG(byte[]... etags) throws InvalidOptionException, ToManyOptionsException {
-        optionList.removeAllOptions(ETAG);
+        options.removeAllOptions(ETAG);
         try{
             for(byte[] etag : etags){
                 Option option = Option.createOpaqueOption(ETAG, etag);
-                optionList.addOption(header.getCode(), ETAG, option);
+                options.addOption(header.getMessageCode(), ETAG, option);
             }
             return true;
         }
         catch(InvalidOptionException e){
             log.debug("Elective option (" + MAX_AGE + ") could not be added.", e);
 
-            optionList.removeAllOptions(ETAG);
+            options.removeAllOptions(ETAG);
             return false;
         }
         catch(ToManyOptionsException e){
             log.debug("Elective option (" + MAX_AGE + ") could not be added.", e);
 
-            optionList.removeAllOptions(ETAG);
+            options.removeAllOptions(ETAG);
             return false;
         }
     }
@@ -286,19 +259,19 @@ public abstract class CoapMessage {
      * options per message.
      */
     public void setToken(byte[] token) throws InvalidOptionException, ToManyOptionsException {
-        optionList.removeAllOptions(TOKEN);
+        options.removeAllOptions(TOKEN);
         try{
             Option option = Option.createOpaqueOption(TOKEN, token);
-            optionList.addOption(header.getCode(), TOKEN, option);
+            options.addOption(header.getMessageCode(), TOKEN, option);
         }
         catch (InvalidOptionException e) {
-            optionList.removeAllOptions(TOKEN);
+            options.removeAllOptions(TOKEN);
             log.debug("Critical option " + TOKEN + " could not be added.", e);
 
             throw e;
         }
         catch (ToManyOptionsException e) {
-            optionList.removeAllOptions(TOKEN);
+            options.removeAllOptions(TOKEN);
             log.debug("Critical option " + TOKEN + " could not be added.", e);
 
             throw e;
@@ -338,7 +311,7 @@ public abstract class CoapMessage {
      *
      * @param optionName One of BLOCK_1 or BLOCK_2
      * @param blockNumber The number of the requested block
-     * @param isLastBlock <code>true</code> if the requested/contained block is the last block, <code>false</code>
+     * @param isLastBlock <messageCode>true</messageCode> if the requested/contained block is the last block, <messageCode>false</messageCode>
      *                    otherwise.
      * @param blocksize The blocksize
      * @throws InvalidOptionException
@@ -348,7 +321,7 @@ public abstract class CoapMessage {
     public void setBlockOption(OptionName optionName, long blockNumber, boolean isLastBlock,
                                Blocksize blocksize) throws InvalidOptionException, ToManyOptionsException {
 
-        optionList.removeAllOptions(optionName);
+        options.removeAllOptions(optionName);
 
         if(optionName != BLOCK_1 && optionName != BLOCK_2){
             String msg = "Option " + optionName + " is not a block option and thus not set.";
@@ -366,12 +339,12 @@ public abstract class CoapMessage {
         log.debug("Add block option " + optionName + " with value: " + value);
 
         Option option = Option.createUintOption(optionName, value);
-        optionList.addOption(getCode(), optionName, option);
+        options.addOption(getMessageCode(), optionName, option);
     }
 
     /**
      * Returns the blocksize for requests, i.e. {@link OptionName#BLOCK_1}.
-     * @return the blocksize for requests, i.e. {@link OptionName#BLOCK_1} or <code>null</code> if option is not set
+     * @return the blocksize for requests, i.e. {@link OptionName#BLOCK_1} or <messageCode>null</messageCode> if option is not set
      */
     @Beta
     public Blocksize getMaxBlocksizeForRequest(){
@@ -385,7 +358,7 @@ public abstract class CoapMessage {
 
     /**
      * Returns the blocksize for responses, i.e. {@link OptionName#BLOCK_2}.
-     * @return the blocksize for responses, i.e. {@link OptionName#BLOCK_2} or <code>null</code> if option is not set
+     * @return the blocksize for responses, i.e. {@link OptionName#BLOCK_2} or <messageCode>null</messageCode> if option is not set
      */
     @Beta
     public Blocksize getMaxBlocksizeForResponse(){
@@ -407,10 +380,10 @@ public abstract class CoapMessage {
             throw e;
         }
 
-        List<Option> tmp = optionList.getOption(optionName);
+        List<Option> tmp = options.getOption(optionName);
 
         if(tmp.size() > 0){
-            long exponent = (Long) optionList.getOption(optionName).get(0).getDecodedValue() & 7;
+            long exponent = (Long) options.getOption(optionName).get(0).getDecodedValue() & 7;
 
             Blocksize result = Blocksize.getByExponent(exponent);
 
@@ -433,7 +406,7 @@ public abstract class CoapMessage {
      *
      * @param optionName one of {@link OptionName#BLOCK_1} or {@link OptionName#BLOCK_2}
      *
-     * @return <code>true</code> if this messages contains the last block, <code>false</code> otherwise
+     * @return <messageCode>true</messageCode> if this messages contains the last block, <messageCode>false</messageCode> otherwise
      *
      * @throws InvalidOptionException if the given {@link OptionName} is neither {@link OptionName#BLOCK_1} nor
      * {@link OptionName#BLOCK_2}
@@ -449,7 +422,7 @@ public abstract class CoapMessage {
                 throw e;
             }
 
-            long value = (Long) optionList.getOption(optionName).get(0).getDecodedValue() >> 3 & 1;
+            long value = (Long) options.getOption(optionName).get(0).getDecodedValue() >> 3 & 1;
             return value == 0;
 
     }
@@ -494,11 +467,11 @@ public abstract class CoapMessage {
      */
     public int setPayload(ChannelBuffer buf) throws MessageDoesNotAllowPayloadException {
         payload = null;
-        if(header.getCode().allowsPayload()){
+        if(header.getMessageCode().allowsPayload()){
             payload = buf;
             return payload.readableBytes();
         }
-        String msg = "Message Type " + header.getMsgType() + " does not allow payload.";
+        String msg = "Message Type " + header.getMessageType() + " does not allow payload.";
         throw new MessageDoesNotAllowPayloadException(msg);
     }
 
@@ -527,8 +500,8 @@ public abstract class CoapMessage {
      *
      * @return the {@link OptionList} instance containing all contained with options non-default values
      */
-    public OptionList getOptionList(){
-        return optionList;
+    public OptionList getOptions(){
+        return options;
     }
 
     /**
@@ -542,7 +515,7 @@ public abstract class CoapMessage {
     public List<Option> getOption(OptionName optionName){
         try{
 
-            List<Option> result = optionList.getOption(optionName);
+            List<Option> result = options.getOption(optionName);
 
             if(!result.isEmpty()){
                return result;
@@ -601,19 +574,19 @@ public abstract class CoapMessage {
         return header;
     }
 
-    //TODO: Improve hash code
+    //TODO: Improve hash messageCode
     @Override
     public int hashCode(){
         return toString().hashCode() + payload.hashCode();
     }
 
     /**
-     * Returns <code>true</code> if and only if the given object is an instance of {@link CoapMessage} and if
+     * Returns <messageCode>true</messageCode> if and only if the given object is an instance of {@link CoapMessage} and if
      * the {@link Header}, the {@link OptionList} and the payload of both instances equal.
      *
      * @param object another object to compare this {@link CoapMessage} with
      *
-     * @return <code>true</code> if and only if the given object is an instance of {@link CoapMessage} and if
+     * @return <messageCode>true</messageCode> if and only if the given object is an instance of {@link CoapMessage} and if
      * the {@link Header}, the {@link OptionList} and the payload of both instances equal.
      */
     @Override
@@ -624,13 +597,13 @@ public abstract class CoapMessage {
 
         CoapMessage msg = (CoapMessage) object;
         return this.getHeader().equals(msg.getHeader())
-            && optionList.equals(msg.getOptionList())
+            && options.equals(msg.getOptions())
             && payload.equals(msg.getPayload());
     }
 
     @Override
     public String toString(){
-        String result =  "CoAP message: " + getHeader() + " | " + getOptionList() + " | ";
+        String result =  "CoAP message: " + getHeader() + " | " + getOptions() + " | ";
 
         long payloadLength = getPayload().readableBytes();
         if(payloadLength == 0)

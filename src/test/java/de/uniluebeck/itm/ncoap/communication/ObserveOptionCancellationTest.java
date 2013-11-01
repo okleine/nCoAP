@@ -31,8 +31,8 @@ import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableTestWebSe
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -92,15 +92,15 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
 
         URI targetURI = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
 
-        observationRequest1 = new CoapRequest(MsgType.CON, Code.GET, targetURI);
+        observationRequest1 = new CoapRequest(MessageType.CON, MessageCode.GET, targetURI);
         observationRequest1.setObserveOptionRequest();
         observationRequest1.getHeader().setMsgID(123);
         observationRequest1.setToken(new byte[]{1,2,3,4});
 
-        normalRequest = new CoapRequest(MsgType.CON, Code.GET, targetURI);
+        normalRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetURI);
         normalRequest.getHeader().setMsgID(456);
 
-        observationRequest2 = new CoapRequest(MsgType.CON, Code.GET, targetURI);
+        observationRequest2 = new CoapRequest(MessageType.CON, MessageCode.GET, targetURI);
         observationRequest2.setObserveOptionRequest();
         observationRequest2.getHeader().setMsgID(789);
         observationRequest2.setToken(new byte[]{5,6,7,8});
@@ -186,11 +186,11 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 
-        String message = "1st notification: MsgType is not ACK";
-        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
+        String message = "1st notification: MessageType is not ACK";
+        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
 
-        message = "1st notification: Code is not 2.05 (Content)";
-        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+        message = "1st notification: MessageCode is not 2.05 (Content)";
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "1st notification: Payload does not match";
         assertEquals(message, "Status #1",receivedMessage.getPayload().toString(Charset.forName("UTF-8")));
@@ -205,10 +205,10 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
 
         String message = "Message type is not NON";
-        assertEquals(message, MsgType.NON, receivedMessage.getMessageType());
+        assertEquals(message, MessageType.NON, receivedMessage.getMessageType());
 
-        message = "Simple ACK response: Code is not 2.05 (Content)";
-        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+        message = "Simple ACK response: MessageCode is not 2.05 (Content)";
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Payload does not match.";
 
@@ -225,10 +225,10 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
         CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
 
         String message = "Message type is not ACK.";
-        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
+        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
 
-        message = "Code is not 2.05 (Content)";
-        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+        message = "MessageCode is not 2.05 (Content)";
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Payload does not match.";
         assertEquals(message, "Status #2", receivedMessage.getPayload().toString(Charset.forName("UTF-8")));
@@ -244,11 +244,11 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
 
         CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
 
-        String message = "MsgType is not ACK";
-        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
+        String message = "MessageType is not ACK";
+        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
 
-        message = "Code is not 2.05 (Content)";
-        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+        message = "MessageCode is not 2.05 (Content)";
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Payload does not match";
         assertEquals(message, "Status #4", receivedMessage.getPayload().toString(Charset.forName("UTF-8")));
@@ -265,11 +265,11 @@ public class ObserveOptionCancellationTest extends AbstractCoapCommunicationTest
 
         CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
 
-        String message = "MsgType is not NON";
-        assertEquals(message, MsgType.NON, receivedMessage.getMessageType());
+        String message = "MessageType is not NON";
+        assertEquals(message, MessageType.NON, receivedMessage.getMessageType());
 
-        message = "Code is not 2.05 (Content)";
-        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+        message = "MessageCode is not 2.05 (Content)";
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Payload does not match";
         assertEquals(message, "Status #5", receivedMessage.getPayload().toString(Charset.forName("UTF-8")));

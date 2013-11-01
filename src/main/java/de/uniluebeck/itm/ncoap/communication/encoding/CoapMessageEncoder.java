@@ -52,7 +52,7 @@ import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import de.uniluebeck.itm.ncoap.message.options.OptionList;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -85,7 +85,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
         ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
         encodeHeader(buffer, coapMessage.getHeader(), coapMessage.getOptionCount());
-        encodeOptions(buffer, coapMessage.getOptionList());
+        encodeOptions(buffer, coapMessage.getOptions());
 
         ChannelBuffer buf = ChannelBuffers.wrappedBuffer(buffer, coapMessage.getPayload());
 
@@ -96,9 +96,9 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
     private void encodeHeader(ChannelBuffer buffer, Header header, int optionCount){
         int encodedHeader = (header.getVersion() << 30) |
-                (header.getMsgType().number << 28) |
+                (header.getMessageType().number << 28) |
                 (optionCount << 24) |
-                (header.getCode().number << 16) |
+                (header.getMessageCode().codeNumber << 16) |
                 (header.getMsgID());
 
         buffer.writeInt(encodedHeader);
@@ -130,7 +130,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
                     prevNumber = optionName.getNumber();
                 }
 
-                log.debug("Encoded {}: {}", optionName, new ByteArrayWrapper(option.getValue()));
+                log.debug("Encoded {}: {}", optionName, new Token(option.getEncodedValue()));
             }
         }
     }
@@ -164,18 +164,18 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         }
 
         //Write option delta and value length
-        if(option.getValue().length <= MAX_OPTION_DELTA){
+        if(option.getEncodedValue().length <= MAX_OPTION_DELTA){
            //4 bits for the 'option delta' and 4 bits for the 'value length'
-           buffer.writeByte(((optionName.getNumber() - prevNumber) << 4) | option.getValue().length);
+           buffer.writeByte(((optionName.getNumber() - prevNumber) << 4) | option.getEncodedValue().length);
         }
         else{
            //4 bits for the 'option delta', 4 bits (1111) to indicate a 'value length'
            //more then 14 and 1 byte for the actual 'value length' - 15
            buffer.writeByte(((optionName.getNumber() - prevNumber) << 4) | 15);
-           buffer.writeByte(option.getValue().length - 15);
+           buffer.writeByte(option.getEncodedValue().length - 15);
         }
 
         //Write value
-        buffer.writeBytes(option.getValue());
+        buffer.writeBytes(option.getEncodedValue());
     }
 }

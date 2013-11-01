@@ -25,7 +25,6 @@
 package de.uniluebeck.itm.ncoap.message;
 
 import com.google.common.base.Charsets;
-import de.uniluebeck.itm.ncoap.message.header.Code;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import static org.junit.Assert.assertArrayEquals;
@@ -41,17 +40,17 @@ public class CoapMessageTest {
     
     @Test(expected=MessageDoesNotAllowPayloadException.class)
     public void testSetPayloadForGET() throws Exception {
-        new CoapMessage(Code.GET) {}.setPayload("testpayload".getBytes("UTF8"));
+        new CoapMessage(MessageCode.GET) {}.setPayload("testpayload".getBytes("UTF8"));
     }
     
     @Test(expected=MessageDoesNotAllowPayloadException.class)
     public void testSetPayloadForDELETE() throws Exception {
-        new CoapMessage(Code.DELETE) {}.setPayload("testpayload".getBytes("UTF8"));
+        new CoapMessage(MessageCode.DELETE) {}.setPayload("testpayload".getBytes("UTF8"));
     }
     
     @Test
     public void testgetPayloadAsByteArray() throws MessageDoesNotAllowPayloadException {
-        CoapMessage message = new CoapMessage(Code.CONTENT_205) {};
+        CoapMessage message = new CoapMessage(MessageCode.CONTENT_205) {};
         byte[] payload = "testpayload".getBytes(Charsets.UTF_8);
         message.setPayload(ChannelBuffers.wrappedBuffer(payload));
         assertArrayEquals(payload, getPayloadAsByteArray(message.getPayload()));

@@ -24,18 +24,13 @@
  */
 package de.uniluebeck.itm.ncoap.application.server;
 
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.*;
 
 /**
  * Simple extension to {@link CoapServerApplication} that apart from the inherited functionality does nothing

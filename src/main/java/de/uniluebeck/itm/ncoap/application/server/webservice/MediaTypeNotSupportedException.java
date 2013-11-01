@@ -24,10 +24,8 @@
  */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
-import de.uniluebeck.itm.ncoap.communication.core.CoapException;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
 
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,7 +35,7 @@ import java.util.Set;
  *
  * @author Oliver Kleine
  */
-public class MediaTypeNotSupportedException extends CoapException {
+public class MediaTypeNotSupportedException extends Exception {
 
     private Set<MediaType> unsupportedMediaTypes;
 

@@ -27,13 +27,10 @@ package de.uniluebeck.itm.ncoap.communication;
 import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableTestWebService;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -90,7 +87,7 @@ public class ObservableWebServiceStatusChangeDuringRetransmissionTest extends Ab
 
         //create observation request
         URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
-        observationRequest = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        observationRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
         observationRequest.getHeader().setMsgID(12345);
         observationRequest.setToken(new byte[]{0x12, 0x23, 0x34});
         observationRequest.setObserveOptionRequest();
@@ -158,7 +155,7 @@ public class ObservableWebServiceStatusChangeDuringRetransmissionTest extends Ab
         CoapMessage firstMessage =
                 endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().firstKey());
 
-        assertEquals("First received message was no ACK.", firstMessage.getMessageType(), MsgType.ACK);
+        assertEquals("First received message was no ACK.", firstMessage.getMessageType(), MessageType.ACK);
         assertTrue("First message is no update notification.", ((CoapResponse) firstMessage).isUpdateNotification());
         assertTrue("Token does not match.", Arrays.equals(firstMessage.getToken(), observationRequest.getToken()));
     }
@@ -176,10 +173,10 @@ public class ObservableWebServiceStatusChangeDuringRetransmissionTest extends Ab
         CoapMessage[] receivedMessages = new CoapMessage[6];
         receivedMessages = endpoint.getReceivedMessages().values().toArray(receivedMessages);
 
-        ByteArrayWrapper[] payloads = new ByteArrayWrapper[5];
+        Token[] payloads = new Token[5];
 
         for(int i = 1; i < 6; i++){
-            payloads[i-1] = new ByteArrayWrapper(receivedMessages[i].getPayload().copy().array());
+            payloads[i-1] = new Token(receivedMessages[i].getPayload().copy().array());
         }
 
         assertEquals("Original message and 1st retransmission do not match", payloads[0], payloads[1]);

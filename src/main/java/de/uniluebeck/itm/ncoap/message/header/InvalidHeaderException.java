@@ -47,15 +47,13 @@
 
 package de.uniluebeck.itm.ncoap.message.header;
 
-import de.uniluebeck.itm.ncoap.communication.core.CoapException;
-
 /**
  * Thrown instances of {@link InvalidHeaderException} indicate that there is something wrong with
  * the {@link Header}, e.g. the header of an incoming message that cannot be decoded.
  *
  * @author Oliver Kleine
  */
-public class InvalidHeaderException extends CoapException {
+public class InvalidHeaderException extends Exception {
 
     /**
      * @param msg The message to decribe the cause of this exception

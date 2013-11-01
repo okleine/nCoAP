@@ -30,8 +30,8 @@ import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableTestWebService;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -77,7 +77,7 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
         responseProcessor = new TestResponseProcessor();
 
         URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
-        request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
         request.setObserveOptionRequest();
     }
 
@@ -129,7 +129,7 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
     public void testFirstMessage(){
         CoapResponse response = responseProcessor.getCoapResponse(0);
 
-        assertEquals("Messagt type is not ACK", MsgType.ACK, response.getMessageType());
+        assertEquals("Messagt type is not ACK", MessageType.ACK, response.getMessageType());
 
         assertEquals("Content does not match.", "Status #1",
                 response.getPayload().toString(Charset.forName("UTF-8")));
@@ -139,7 +139,7 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
     public void testSecondMessage(){
         CoapResponse response = responseProcessor.getCoapResponse(1);
 
-        assertEquals("Messagt type is not CON", MsgType.CON, response.getMessageType());
+        assertEquals("Messagt type is not CON", MessageType.CON, response.getMessageType());
 
         assertEquals("Content does not match.", "Status #2",
                 response.getPayload().toString(Charset.forName("UTF-8")));
@@ -149,19 +149,19 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
     public void testThirdMessage(){
         CoapResponse response = responseProcessor.getCoapResponse(2);
 
-        assertEquals("Messagt type is not CON", MsgType.CON, response.getMessageType());
+        assertEquals("Messagt type is not CON", MessageType.CON, response.getMessageType());
 
-        assertEquals("Code is not 404", Code.NOT_FOUND_404, response.getCode());
+        assertEquals("MessageCode is not 404", MessageCode.NOT_FOUND_404, response.getMessageCode());
     }
 
 //    @Test
 //    public void testReceiverReceivedNotification1() {
 //        SortedMap<Long, CoapResponse> receivedMessages = testClient.getReceivedResponses();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
-//        String message = "1st notification: MsgType is not ACK";
-//        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
-//        message = "1st notification: Code is not 2.05 (Content)";
-//        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+//        String message = "1st notification: MessageType is not ACK";
+//        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
+//        message = "1st notification: MessageCode is not 2.05 (Content)";
+//        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 //        message = "1st notification: Payload does not match";
 //        assertEquals(message, expectedNotification1.getPayload(), receivedMessage.getPayload());
 //    }
@@ -172,10 +172,10 @@ public class ClientReceivesObserveNotification extends AbstractCoapCommunication
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
-//        String message = "2nd notification: MsgType is not ACK";
-//        assertEquals(message, MsgType.CON, receivedMessage.getMessageType());
-//        message = "2nd notification: Code is not 2.05 (Content)";
-//        assertEquals(message, Code.CONTENT_205, receivedMessage.getCode());
+//        String message = "2nd notification: MessageType is not ACK";
+//        assertEquals(message, MessageType.CON, receivedMessage.getMessageType());
+//        message = "2nd notification: MessageCode is not 2.05 (Content)";
+//        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 //        message = "2nd notification: Payload does not match";
 //        assertEquals(message, expectedNotification2.getPayload(), receivedMessage.getPayload());
 //    }

@@ -27,14 +27,11 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -56,7 +53,7 @@ public abstract class NotObservableWebService<T> implements WebService<T> {
     private ScheduledExecutorService scheduledExecutorService;
     private ListeningExecutorService listeningExecutorService;
 
-    private HashBasedTable<InetSocketAddress, ByteArrayWrapper, ListenableFuture<CoapResponse>> openRequests;
+    private HashBasedTable<InetSocketAddress, Token, ListenableFuture<CoapResponse>> openRequests;
 
     protected NotObservableWebService(String servicePath, T initialStatus){
         this.path = servicePath;

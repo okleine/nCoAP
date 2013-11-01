@@ -28,8 +28,8 @@ import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
 import de.uniluebeck.itm.ncoap.application.server.CoapTestServer;
 import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableTestWebService;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -62,11 +62,11 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
         endpoint = new CoapTestEndpoint();
 
         URI serviceURI = new URI("coap", null, "localhost", server.getServerPort(), "/path", null, null);
-        coapRequest1 = new CoapRequest(MsgType.NON, Code.GET, serviceURI);
+        coapRequest1 = new CoapRequest(MessageType.NON, MessageCode.GET, serviceURI);
         coapRequest1.setMessageID(1);
         coapRequest1.setToken(new byte[]{1, 2, 3, 4});
 
-        coapRequest2 = new CoapRequest(MsgType.NON, Code.GET, serviceURI);
+        coapRequest2 = new CoapRequest(MessageType.NON, MessageCode.GET, serviceURI);
         coapRequest2.setMessageID(1);
         coapRequest2.setToken(new byte[]{1, 2, 3, 4});
     }

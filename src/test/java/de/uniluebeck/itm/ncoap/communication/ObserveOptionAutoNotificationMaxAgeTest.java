@@ -29,8 +29,8 @@ import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableTestWebService;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.UintOption;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -43,7 +43,6 @@ import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
 import static junit.framework.Assert.assertEquals;
@@ -87,7 +86,7 @@ public class ObserveOptionAutoNotificationMaxAgeTest extends AbstractCoapCommuni
         endpoint = new CoapTestEndpoint();
 
         URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
-        request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
         request.getHeader().setMsgID(1111);
         request.setToken(new byte[]{0x13, 0x53, 0x34});
         request.setObserveOptionRequest();
@@ -177,9 +176,9 @@ public class ObserveOptionAutoNotificationMaxAgeTest extends AbstractCoapCommuni
         CoapMessage recNotification2 = receivedMessages.get(timeKeys.next());
 
         String message = "1st notification should be ACK";
-        assertEquals(message, MsgType.ACK, recNotification1.getMessageType());
+        assertEquals(message, MessageType.ACK, recNotification1.getMessageType());
         message = "2nd notification should be CON";
-        assertEquals(message, MsgType.CON, recNotification2.getMessageType());
+        assertEquals(message, MessageType.CON, recNotification2.getMessageType());
     }
 
     @Test

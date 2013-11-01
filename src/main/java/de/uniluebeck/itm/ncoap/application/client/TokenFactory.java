@@ -25,7 +25,7 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,25 +49,26 @@ class TokenFactory {
      * Returns the next token to be used
      * @return the next token to be used
      */
-    byte[] getNextToken(){
+    Long getNextToken(){
         //create new token
-        Long token;
+        Long nextToken;
         do
-            token = random.nextLong();
-        while(!usedTokens.add(token));
+            nextToken = random.nextLong();
+        while(!usedTokens.add(nextToken));
 
-        byte[] result = Longs.toByteArray(token);
-        log.debug("Added token: {} (Now {} tokens in use).", new ByteArrayWrapper(result), usedTokens.size());
+        Token result = new Token(Longs.toByteArray(nextToken));
+        log.debug("Added token: {} (Now {} tokens in use).", result, usedTokens.size());
 
-        return ByteArrayWrapper.removeLeadingZerosFromByteArray(result);
+        return result;
     }
 
     /**
      * Pass the token back to make it re-usable for upcoming requests
      * @param token the token not used anymore
      */
-    void passBackToken(byte[] token){
-        if(token.length < 8){
+    void passBackToken(Token token){
+        byte[] byteArray = token.getByteArray();
+        if(byteArray.length < 8){
             byte[] tmp = new byte[]{0,0,0,0,0,0,0,0};
             for(int i = 0; i < token.length; i++){
                 tmp[i + 8 - token.length] = token[i];
@@ -76,9 +77,9 @@ class TokenFactory {
         }
 
         if(usedTokens.remove(Longs.fromByteArray(token)))
-            log.debug("Passed back token: {} (Now {} tokens in use.)", new ByteArrayWrapper(token), usedTokens.size());
+            log.debug("Passed back token: {} (Now {} tokens in use.)", new Token(token), usedTokens.size());
         else
-            log.warn("Could not pass back token {}. Still {} tokens in use.", new ByteArrayWrapper(token),
+            log.warn("Could not pass back token {}. Still {} tokens in use.", new Token(token),
                     usedTokens.size());
     }
 

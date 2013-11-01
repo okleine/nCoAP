@@ -31,16 +31,16 @@ import com.google.common.util.concurrent.*;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebService;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WebService;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
-import de.uniluebeck.itm.ncoap.communication.core.CoapServerDatagramChannelFactory;
+import de.uniluebeck.itm.ncoap.communication.CoapServerDatagramChannelFactory;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableResourceRegistrationMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -50,7 +50,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.*;
 
@@ -161,11 +160,11 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         if(me.getMessage() instanceof InvalidOptionException){
             InvalidOptionException exception = (InvalidOptionException) me.getMessage();
 
-            CoapResponse coapResponse = new CoapResponse(Code.BAD_OPTION_402);
-            if(exception.getMessageHeader().getMsgType() == MsgType.CON)
-                coapResponse.getHeader().setMsgType(MsgType.ACK);
+            CoapResponse coapResponse = new CoapResponse(MessageCode.BAD_OPTION_402);
+            if(exception.getMessageHeader().getMessageType() == MessageType.CON)
+                coapResponse.getHeader().setMessageType(MessageType.ACK);
             else
-                coapResponse.getHeader().setMsgType(MsgType.NON);
+                coapResponse.getHeader().setMessageType(MessageType.NON);
 
             try{
                 coapResponse.setMessageID(exception.getMessageHeader().getMsgID());
@@ -192,7 +191,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                     coapRequest.getTargetUri().getPath(), me.getRemoteAddress());
 
             //Write error response if there is no such webservice instance registered at this server instance
-            CoapResponse coapResponse = new CoapResponse(Code.NOT_FOUND_404);
+            CoapResponse coapResponse = new CoapResponse(MessageCode.NOT_FOUND_404);
             coapResponse.setServicePath(coapRequest.getTargetUri().getPath());
             try {
                 if(coapRequest.getToken().length > 0)
@@ -231,7 +230,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                                 coapRequest, me.getRemoteAddress());
                         }
 
-                        if(coapResponse.getCode().isErrorMessage()){
+                        if(coapResponse.getMessageCode().isErrorMessage()){
                             coapResponse.setMessageID(coapRequest.getMessageID());
                             if(coapRequest.getToken().length > 0)
                                 coapResponse.setToken(coapRequest.getToken());
@@ -254,11 +253,11 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
                         //Set observe response option if requested
                         if(webService instanceof ObservableWebService && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
-                            if(!coapResponse.getCode().isErrorMessage())
+                            if(!coapResponse.getMessageCode().isErrorMessage())
                                 coapResponse.setObserveOptionValue(0);
                     }
                     catch (Exception ex) {
-                        coapResponse = new CoapResponse(Code.INTERNAL_SERVER_ERROR_500);
+                        coapResponse = new CoapResponse(MessageCode.INTERNAL_SERVER_ERROR_500);
                         try {
                             coapResponse.setMessageID(coapRequest.getMessageID());
                             if(coapRequest.getToken().length > 0)
@@ -291,7 +290,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 log.debug("Response for token {} successfully sent to recipient {}.",
-                        new ByteArrayWrapper(coapResponse.getToken()), remoteAddress);
+                        new Token(coapResponse.getToken()), remoteAddress);
             }
         });
     }

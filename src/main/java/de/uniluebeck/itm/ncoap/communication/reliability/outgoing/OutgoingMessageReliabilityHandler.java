@@ -51,10 +51,10 @@ import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalUpdateNotificationRejectedMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,9 +66,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This handler deals with outgoing {@link CoapMessage}s with {@link MsgType#CON}. It retransmits the outgoing
+ * This handler deals with outgoing {@link CoapMessage}s with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON}. It retransmits the outgoing
  * message in exponentially increasing intervals (up to {@link #MAX_RETRANSMITS} times) until was no corresponding
- * message with {@link MsgType#ACK} or {@link MsgType#RST} received.
+ * message with {@link de.uniluebeck.itm.ncoap.message.MessageType#ACK} or {@link de.uniluebeck.itm.ncoap.message.MessageType#RST} received.
  *
  * To relate incoming with outgoing messages this is the handler to set the message ID of outgoing {@link CoapMessage}s
  * if the message ID was not already set previously.
@@ -80,19 +80,19 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     /**
-     * The maximum number of retransmission attempts for outgoing {@link CoapMessage}s with {@link MsgType#CON}.
+     * The maximum number of retransmission attempts for outgoing {@link CoapMessage}s with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON}.
      */
     public static final int MAX_RETRANSMITS = 4;
 
     /**
      * The approximate number of milliseconds between the first transmission attempt for outgoing {@link CoapMessage}s
-     * with {@link MsgType#CON} and the first retransmission attempt.
+     * with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} and the first retransmission attempt.
      */
     public static final int FIRST_RETRANSMISSION_DELAY = 2000;
 
     /**
      * The approximate number of milliseconds between the last retransmission attempt for outgoing {@link CoapMessage}s
-     * with {@link MsgType#CON} and a timeout notification, i.e. invokation of
+     * with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} and a timeout notification, i.e. invokation of
      * {@link RetransmissionTimeoutProcessor#processRetransmissionTimeout(InternalRetransmissionTimeoutMessage)}.
      */
     public static final int TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION = 5000;
@@ -112,7 +112,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
     /**
      * @param executorService the {@link ScheduledExecutorService} to provide the thread(s) to retransmit outgoing
-     *                        {@link CoapMessage}s with {@link MsgType#CON}
+     *                        {@link CoapMessage}s with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON}
      */
     public OutgoingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
@@ -150,7 +150,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         }
 
         if(coapMessage instanceof CoapResponse && ((CoapResponse) coapMessage).isUpdateNotification() &&
-                (coapMessage.getMessageType() == MsgType.CON || coapMessage.getMessageType() == MsgType.NON)){
+                (coapMessage.getMessageType() == MessageType.CON || coapMessage.getMessageType() == MessageType.NON)){
 
             observations.put(coapMessage.getMessageID(), (InetSocketAddress) me.getRemoteAddress(),
                     ((CoapResponse) coapMessage).getServicePath());
@@ -159,7 +159,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                     coapMessage.getMessageID(), me.getRemoteAddress());
         }
 
-        if(coapMessage.getMessageType() == MsgType.CON){
+        if(coapMessage.getMessageType() == MessageType.CON){
             if (coapMessage instanceof CoapResponse && ((CoapResponse) coapMessage).isUpdateNotification()) {
                 //check all open CON messages to me.getObserverAddress() for retransmission with same token
                 long delayForNextRetransmission =
@@ -310,7 +310,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
         InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 
-        if(coapMessage.getMessageType() == MsgType.RST){
+        if(coapMessage.getMessageType() == MessageType.RST){
             if(observations.contains(coapMessage.getMessageID(), me.getRemoteAddress())){
                 String servicePath =
                         observations.get(coapMessage.getMessageID(), me.getRemoteAddress());
@@ -325,7 +325,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             }
         }
 
-       if (coapMessage.getMessageType() == MsgType.ACK || coapMessage.getMessageType() == MsgType.RST) {
+       if (coapMessage.getMessageType() == MessageType.ACK || coapMessage.getMessageType() == MessageType.RST) {
 
             //Look up remaining retransmissionSchedules
             RetransmissionSchedule retransmissionSchedule;
@@ -336,8 +336,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
             if(retransmissionSchedule != null){
                 retransmissionSchedule.stopScheduledTasks();
-                if(coapMessage.getCode() == Code.EMPTY){
-                    if(coapMessage.getMessageType() == MsgType.ACK){
+                if(coapMessage.getMessageCode() == MessageCode.EMPTY){
+                    if(coapMessage.getMessageType() == MessageType.ACK){
 
                         log.info("Empty ACK received for message ID " + coapMessage.getMessageID());
 

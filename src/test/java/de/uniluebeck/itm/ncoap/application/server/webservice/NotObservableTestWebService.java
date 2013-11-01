@@ -28,7 +28,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageDoesNotAllowPayloadException;
-import de.uniluebeck.itm.ncoap.message.header.Code;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +72,7 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
         }
 
         //create response
-        CoapResponse response = new CoapResponse(Code.CONTENT_205);
+        CoapResponse response = new CoapResponse(MessageCode.CONTENT_205);
 
         try {
             response.setPayload(ChannelBuffers.wrappedBuffer(getResourceStatus().getBytes(Charset.forName("UTF-8"))));

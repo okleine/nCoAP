@@ -27,11 +27,9 @@ package de.uniluebeck.itm.ncoap.communication;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor;
 import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
+import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+
 import java.net.InetSocketAddress;
 
 import org.apache.log4j.Level;
@@ -69,15 +67,15 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
     public void setupComponents() throws Exception {
         endpoint = new CoapTestEndpoint();
 
-        seperateResponse = new CoapResponse(Code.CONTENT_205);
+        seperateResponse = new CoapResponse(MessageCode.CONTENT_205);
         seperateResponse.setPayload("some arbitrary stuff...".getBytes(Charset.forName("UTF-8")));
-        seperateResponse.getHeader().setMsgType(MsgType.CON);
+        seperateResponse.getHeader().setMessageType(MessageType.CON);
         seperateResponse.setMessageID(12345);
 
         client = new CoapClientApplication();
 
         URI targetUri = new URI("coap://localhost:" + endpoint.getPort());
-        request = new CoapRequest(MsgType.CON, Code.GET, targetUri);
+        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
 
         responseProcessor = new TestResponseProcessor();
     }
@@ -161,7 +159,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Second received message is not an EMPTY ACK";
-        assertEquals(message, Code.EMPTY, receivedMessage.getCode());
-        assertEquals(message, MsgType.ACK, receivedMessage.getMessageType());
+        assertEquals(message, MessageCode.EMPTY, receivedMessage.getMessageCode());
+        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
     }
 }

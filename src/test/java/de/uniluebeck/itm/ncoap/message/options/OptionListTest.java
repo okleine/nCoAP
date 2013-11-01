@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message.options;
 
-import de.uniluebeck.itm.ncoap.message.header.Code;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,81 +42,81 @@ public class OptionListTest {
     List<CodeConstraints> codeConstraintsList = new LinkedList<CodeConstraints>();
     
     /**
-     * Fill codeConstraintsList with constraints for each code
+     * Fill codeConstraintsList with constraints for each messageCode
      */
     @Before
     public void fillCodeConstraintsList() {
         
-        codeConstraintsList.add(new CodeConstraints(Code.GET)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.GET)
                 .addOnceAllowed(TOKEN, URI_HOST, URI_PORT, OBSERVE_REQUEST)
                 .addNotAllowed(CONTENT_TYPE, MAX_AGE, LOCATION_PATH, 
                 LOCATION_QUERY, IF_MATCH, IF_NONE_MATCH, FENCEPOST));
         
-        codeConstraintsList.add(new CodeConstraints(Code.POST)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.POST)
                 .addOnceAllowed(TOKEN, URI_HOST, URI_PORT, CONTENT_TYPE)
                 .addNotAllowed(MAX_AGE, PROXY_URI,
                 ETAG, LOCATION_PATH, LOCATION_QUERY, ACCEPT,
                 IF_MATCH, FENCEPOST, IF_NONE_MATCH));
         
-        codeConstraintsList.add(new CodeConstraints(Code.PUT)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.PUT)
                 .addOnceAllowed(TOKEN, URI_HOST, URI_PORT, CONTENT_TYPE, IF_NONE_MATCH)
                 .addNotAllowed(MAX_AGE, PROXY_URI, ETAG, 
                 LOCATION_PATH, LOCATION_QUERY, ACCEPT, FENCEPOST));
         
-        codeConstraintsList.add(new CodeConstraints(Code.DELETE)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.DELETE)
                 .addOnceAllowed(TOKEN, URI_HOST, URI_PORT)
                 .addNotAllowed(CONTENT_TYPE, MAX_AGE, PROXY_URI, ETAG, 
                 LOCATION_PATH, LOCATION_QUERY, 
                 ACCEPT, IF_MATCH, FENCEPOST, IF_NONE_MATCH));
         
-        codeConstraintsList.add(new CodeConstraints(Code.CREATED_201)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.CREATED_201)
                 .addOnceAllowed(TOKEN, CONTENT_TYPE)
                 .addNotAllowed(MAX_AGE, PROXY_URI, ETAG, URI_HOST, URI_PORT, 
                 URI_PATH, ACCEPT, IF_MATCH, FENCEPOST, URI_QUERY, IF_NONE_MATCH));
         
-        codeConstraintsList.add(new CodeConstraints(Code.DELETED_202)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.DELETED_202)
                 .addOnceAllowed(TOKEN, CONTENT_TYPE)
                 .addNotAllowed(MAX_AGE, PROXY_URI, ETAG, URI_HOST, 
                 LOCATION_PATH, URI_PORT, LOCATION_QUERY, URI_PATH, ACCEPT, 
                 IF_MATCH, FENCEPOST, URI_QUERY, IF_NONE_MATCH));
         
-        codeConstraintsList.add(new CodeConstraints(Code.VALID_203)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.VALID_203)
                 .addOnceAllowed(TOKEN, MAX_AGE)
                 .addNotAllowed(CONTENT_TYPE, PROXY_URI, URI_HOST, 
                 LOCATION_PATH, URI_PORT, LOCATION_QUERY, URI_PATH, ACCEPT, 
                 IF_MATCH, FENCEPOST, URI_QUERY, IF_NONE_MATCH));
         
-        codeConstraintsList.add(new CodeConstraints(Code.CHANGED_204)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.CHANGED_204)
                 .addOnceAllowed(TOKEN, CONTENT_TYPE)
                 .addNotAllowed(MAX_AGE, PROXY_URI, ETAG, URI_HOST,
                 LOCATION_PATH, URI_PORT, LOCATION_QUERY, URI_PATH, ACCEPT,
                 IF_MATCH, FENCEPOST, URI_QUERY, IF_NONE_MATCH));
         
-        codeConstraintsList.add(new CodeConstraints(Code.CONTENT_205)
+        codeConstraintsList.add(new CodeConstraints(MessageCode.CONTENT_205)
                 .addOnceAllowed(TOKEN, CONTENT_TYPE, MAX_AGE, OBSERVE_RESPONSE)
                 .addNotAllowed(PROXY_URI, URI_HOST,
                 LOCATION_PATH, URI_PORT, LOCATION_QUERY, URI_PATH, ACCEPT,
                 IF_MATCH, FENCEPOST, URI_QUERY, IF_NONE_MATCH));
         
-        Code[] code4x5x = new Code[]{
-            Code.BAD_REQUEST_400,
-            Code.UNAUTHORIZED_401,
-            Code.BAD_OPTION_402,
-            Code.FORBIDDEN_403,
-            Code.NOT_FOUND_404,
-            Code.METHOD_NOT_ALLOWED_405,
-            Code.PRECONDITION_FAILED_412,
-            Code.REQUEST_ENTITY_TOO_LARGE_413,
-            Code.UNSUPPORTED_MEDIA_TYPE_415,
-            Code.INTERNAL_SERVER_ERROR_500,
-            Code.NOT_IMPLEMENTED_501,
-            Code.BAD_GATEWAY_502,
-            Code.SERVICE_UNAVAILABLE_503,
-            Code.GATEWAY_TIMEOUT_504,
-            Code.PROXYING_NOT_SUPPORTED_505};
+        MessageCode[] messageCode4x5x = new MessageCode[]{
+            MessageCode.BAD_REQUEST_400,
+            MessageCode.UNAUTHORIZED_401,
+            MessageCode.BAD_OPTION_402,
+            MessageCode.FORBIDDEN_403,
+            MessageCode.NOT_FOUND_404,
+            MessageCode.METHOD_NOT_ALLOWED_405,
+            MessageCode.PRECONDITION_FAILED_412,
+            MessageCode.REQUEST_ENTITY_TOO_LARGE_413,
+            MessageCode.UNSUPPORTED_MEDIA_TYPE_415,
+            MessageCode.INTERNAL_SERVER_ERROR_500,
+            MessageCode.NOT_IMPLEMENTED_501,
+            MessageCode.BAD_GATEWAY_502,
+            MessageCode.SERVICE_UNAVAILABLE_503,
+            MessageCode.GATEWAY_TIMEOUT_504,
+            MessageCode.PROXYING_NOT_SUPPORTED_505};
         
-        for (Code code : code4x5x) {
-            codeConstraintsList.add(new CodeConstraints(code)
+        for (MessageCode messageCode : messageCode4x5x) {
+            codeConstraintsList.add(new CodeConstraints(messageCode)
                 .addOnceAllowed(TOKEN, MAX_AGE)
                 .addNotAllowed(PROXY_URI, ETAG, URI_HOST, 
                 LOCATION_PATH, URI_PORT, LOCATION_QUERY, URI_PATH, ACCEPT, 
@@ -126,32 +126,32 @@ public class OptionListTest {
     
     /**
      * Tests if all expected exceptions will be thrown when trying to add a invalid
-     * option - code combination.
+     * option - messageCode combination.
      */
     @Test
     public void testAddOption() throws Exception {
         for(CodeConstraints codeConstraints : codeConstraintsList) {
-            //once allowed for this code
+            //once allowed for this messageCode
             for (OptionName optionName : codeConstraints.onceAllowed) {
                 OptionList optionList = new OptionList();
                 //exception here and test will fail
-                optionList.addOption(codeConstraints.code, optionName, getTestOption(optionName));
+                optionList.addOption(codeConstraints.messageCode, optionName, getTestOption(optionName));
                 try {
-                    optionList.addOption(codeConstraints.code, optionName, getTestOption(optionName));
+                    optionList.addOption(codeConstraints.messageCode, optionName, getTestOption(optionName));
                     //fail if exception does not occur
                     fail("Missing exception for multiple " + optionName 
-                            + " options with " + codeConstraints.code + " code.");
+                            + " options with " + codeConstraints.messageCode + " messageCode.");
                 } catch(InvalidOptionException e) { }
             }
             
-            //not allowed for this code
+            //not allowed for this messageCode
             for (OptionName optionName : codeConstraints.notAllowed) {
                  OptionList optionList = new OptionList();
                  try {
-                    optionList.addOption(codeConstraints.code, optionName, getTestOption(optionName));
+                    optionList.addOption(codeConstraints.messageCode, optionName, getTestOption(optionName));
                     //fail if exception does not occur
                     fail("Missing exception for " + optionName 
-                            + " option with " + codeConstraints.code + " code.");
+                            + " option with " + codeConstraints.messageCode + " messageCode.");
                 } catch(InvalidOptionException e) { }
             }
         }
@@ -187,7 +187,7 @@ public class OptionListTest {
     }
  
      class CodeConstraints {
-        Code code;
+        MessageCode messageCode;
 
         List<OptionName> onceAllowed = 
                 new LinkedList<OptionName>();
@@ -195,8 +195,8 @@ public class OptionListTest {
         List<OptionName> notAllowed = 
                 new LinkedList<OptionName>();
         
-        public CodeConstraints(Code code) {
-            this.code = code;
+        public CodeConstraints(MessageCode messageCode) {
+            this.messageCode = messageCode;
         }
         
         public CodeConstraints addOnceAllowed(OptionName... optionNames) {

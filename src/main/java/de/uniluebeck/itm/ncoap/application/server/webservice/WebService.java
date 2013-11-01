@@ -24,14 +24,11 @@
  */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.header.Code;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.*;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
@@ -164,8 +161,8 @@ public interface WebService<T> {
      * Implementing classes have to make sure that {@link SettableFuture<CoapResponse>#set(CoapResponse)} is invoked
      * after some time. Otherwise the {@link CoapServerApplication} will wait forever, even though non-blocking.
      *
-     * The way to process the incoming request is basically to be implemented based on the {@link Code},
-     * the {@link MsgType}, the contained {@link Option}s (if any) and (if any) the payload of the request.
+     * The way to process the incoming request is basically to be implemented based on the {@link de.uniluebeck.itm.ncoap.message.MessageCode},
+     * the {@link de.uniluebeck.itm.ncoap.message.MessageType}, the contained {@link Option}s (if any) and (if any) the payload of the request.
      *
      * @param responseFuture the {@link SettableFuture} instance to set the {@link CoapResponse} which is the result
      *                       of the incoming {@link CoapRequest}. Use

@@ -56,8 +56,8 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.header.Header;
-import de.uniluebeck.itm.ncoap.message.header.MsgType;
-import de.uniluebeck.itm.ncoap.toolbox.ByteArrayWrapper;
+import de.uniluebeck.itm.ncoap.message.MessageType;
+import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,8 +88,8 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     private final HashBasedTable<InetSocketAddress, Integer, Boolean> acknowledgementStates
             = HashBasedTable.create();
 
-    private final Multimap<InetSocketAddress, ByteArrayWrapper> waitingForResponse
-            = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, ByteArrayWrapper>create());
+    private final Multimap<InetSocketAddress, Token> waitingForResponse
+            = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, Token>create());
 
     private ScheduledExecutorService executorService;
 
@@ -129,7 +129,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
         final int messageID = coapMessage.getMessageID();
 
-        if(coapMessage.getMessageType() == MsgType.CON){
+        if(coapMessage.getMessageType() == MessageType.CON){
             if(coapMessage instanceof CoapRequest){
                 if(!addAcknowledgementStatus(remoteAddress, coapMessage)){
                     me.getFuture().setSuccess();
@@ -153,7 +153,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             }
 
             if(coapMessage instanceof CoapResponse){
-                ByteArrayWrapper token = new ByteArrayWrapper(coapMessage.getToken());
+                Token token = new Token(coapMessage.getToken());
                 if(!waitingForResponse.containsEntry(me.getRemoteAddress(), token)){
                     log.info("Received response without open request (remote {}, token {}). Write RST.",
                             me.getRemoteAddress(), token);
@@ -175,7 +175,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     /**
      * If the message to be written is a {@link CoapResponse} this method decides whether the message type is
-     * {@link MsgType#ACK} (if there wasn't an empty acknowledgement sent yet) or {@link MsgType#CON} (if there
+     * {@link de.uniluebeck.itm.ncoap.message.MessageType#ACK} (if there wasn't an empty acknowledgement sent yet) or {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} (if there
      * already was an empty acknowledgement sent). In the latter case it additionally cancels the sending of
      * an empty acknowledgement (which was scheduled by the <code>messageReceived</code> method when the request
      * was received).
@@ -204,22 +204,22 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             CoapRequest coapRequest = (CoapRequest) me.getMessage();
 //            if(coapRequest.isObservationRequest()){
                 waitingForResponse.put((InetSocketAddress) me.getRemoteAddress(),
-                        new ByteArrayWrapper(coapRequest.getToken()));
+                        new Token(coapRequest.getToken()));
 //            }
         }
         else if(me.getMessage() instanceof InternalStopObservationMessage){
             InternalStopObservationMessage stopObservationMessage = (InternalStopObservationMessage) me.getMessage();
             boolean observationStopped = waitingForResponse.remove(stopObservationMessage.getRemoteAddress(),
-                    new ByteArrayWrapper(stopObservationMessage.getToken()));
+                    new Token(stopObservationMessage.getToken()));
 
             if(observationStopped)
                 log.info("Next incoming update notification from {} with token {} will be answered with RST.",
                         stopObservationMessage.getRemoteAddress(),
-                        new ByteArrayWrapper(stopObservationMessage.getToken()));
+                        new Token(stopObservationMessage.getToken()));
             else
                 log.error("No running observation on {} with token {}.",
                         stopObservationMessage.getRemoteAddress(),
-                        new ByteArrayWrapper(stopObservationMessage.getToken()));
+                        new Token(stopObservationMessage.getToken()));
 
             me.getFuture().setSuccess();
             return;
@@ -233,7 +233,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         //the response is either on a NON request or is an update notification for observers
         if(acknowledgementSent == null && !coapResponse.isUpdateNotification()){
             coapResponse.getHeader().setMsgID(Header.MESSAGE_ID_UNDEFINED);
-            coapResponse.getHeader().setMsgType(MsgType.NON);
+            coapResponse.getHeader().setMessageType(MessageType.NON);
             return;
         }
 
@@ -243,10 +243,10 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 //remove message ID to make the OutgoingMessageReliabilityHandler set a new one
                 coapResponse.getHeader().setMsgID(Header.MESSAGE_ID_UNDEFINED);
             }
-            coapResponse.getHeader().setMsgType(MsgType.CON);
+            coapResponse.getHeader().setMessageType(MessageType.CON);
         }
         else{
-            coapResponse.getHeader().setMsgType(MsgType.ACK);
+            coapResponse.getHeader().setMessageType(MessageType.ACK);
         }
     }
 
@@ -322,7 +322,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 log.info("RST for message ID {} and token {} succesfully sent to {}.", new Object[]{messageID,
-                        new ByteArrayWrapper(token), remoteAddress});
+                        new Token(token), remoteAddress});
             }
         });
     }
