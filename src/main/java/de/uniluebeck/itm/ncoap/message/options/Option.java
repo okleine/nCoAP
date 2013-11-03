@@ -33,12 +33,13 @@ import org.slf4j.LoggerFactory;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static de.uniluebeck.itm.ncoap.message.options.OptionName.*;
+import static de.uniluebeck.itm.ncoap.message.options.OptionType.*;
+import static de.uniluebeck.itm.ncoap.message.options.OptionType.STRING;
+import static de.uniluebeck.itm.ncoap.message.options.OptionType.UINT;
+
 /**
 *
  * @author Oliver Kleine
@@ -47,18 +48,69 @@ public abstract class Option<T>{
 
     private static Logger log = LoggerFactory.getLogger(Option.class.getName());
 
+    private static HashMap<Integer, Integer[]> constraints = new HashMap<>();
+    static{
+        constraints.put(    IF_MATCH,       new Integer[]{OPAQUE,       0,      8       });
+        constraints.put(    URI_HOST,       new Integer[]{STRING,       1,      255     });
+        constraints.put(    ETAG,           new Integer[]{OPAQUE,       1,      8       });
+        constraints.put(    IF_NONE_MATCH,  new Integer[]{EMPTY,        0,      0       });
+        constraints.put(    URI_PORT,       new Integer[]{UINT,         0,      2       });
+        constraints.put(    LOCATION_PATH,  new Integer[]{STRING,       0,      255     });
+        constraints.put(    URI_PATH,       new Integer[]{STRING,       0,      255     });
+        constraints.put(    CONTENT_FORMAT, new Integer[]{UINT,         0,      2       });
+        constraints.put(    MAX_AGE,        new Integer[]{UINT,         0,      4       });
+        constraints.put(    URI_QUERY,      new Integer[]{STRING,       0,      255     });
+        constraints.put(    ACCEPT,         new Integer[]{UINT,         0,      2       });
+        constraints.put(    LOCATION_QUERY, new Integer[]{STRING,       0,      255     });
+        constraints.put(    PROXY_URI,      new Integer[]{STRING,       1,      1034    });
+        constraints.put(    PROXY_SCHEME,   new Integer[]{STRING,       1,      255     });
+        constraints.put(    SIZE_1,         new Integer[]{UINT,         0,      4       });
+    }
+
+
+    public static int getMinLength(int optionNumber){
+        return constraints.get(optionNumber)[1];
+    }
+
+    public static int getMaxLength(int optionNumber){
+        return constraints.get(optionNumber)[2];
+    }
+
+    /**
+     * Returns <code>true</code> if the option is critical and <code>false</code> if the option is elective
+     * @return <code>true</code> if the option is critical and <code>false</code> if the option is elective
+     */
+    public static boolean isCritical(int optionNumber){
+        return (optionNumber & 1) == 1;
+    }
+
+    /**
+     * Returns <code>true</code> if the option is unsafe-to-forward and <code>false</code> if the option is
+     * safe-to-forward by a proxy
+     * @return <code>true</code> if the option is unsafe-to-forward and <code>false</code> if the option is
+     * safe-to-forward by a proxy
+     */
+    public static boolean isUnsafe(int optionNumber){
+        return (optionNumber & 2) == 2;
+    }
+
+
+    public static boolean isNoCacheKey(int optionNumber){
+        return (optionNumber & 0x1e) == 0x1c;
+    }
+
     protected byte[] value;
 
-    protected Option(OptionName optionName, byte[] value) throws InvalidOptionException {
-        if(optionName.getMinLength() <= value.length && optionName.getMaxLength() >= value.length)
+
+    protected Option(int optionNumber, byte[] value) throws InvalidOptionException {
+        if(getMinLength(optionNumber) <= value.length && getMaxLength(optionNumber) >= value.length)
             this.value = value;
         else
-            throw new InvalidOptionException(optionName.getNumber(), "Invalid option length (Actual: " + value.length
-                + ", Minimum: " + optionName.getMinLength() + ", Maximum: " + optionName.getMaxLength() + ")");
+            throw new InvalidOptionException(optionNumber, "Invalid option length (Actual: " + value.length
+                + ", Minimum: " + getMinLength(optionNumber) + ", Maximum: " + getMaxLength(optionNumber) + ")");
     }
 
     public abstract T getValue();
-
 
 
 //    /**
@@ -173,25 +225,22 @@ public abstract class Option<T>{
             throw new URISyntaxException(uri.toString(), msg);
         }
 
-        byte[] encodedUri = new byte[0];
-        try {
-            encodedUri = uri.toString().getBytes(StringOption.CHARSET);
-        } catch (UnsupportedEncodingException e) {
-            log.debug("This should never happen:\n", e);
-        }
-        log.debug("Length of encoded proxy URI: " + encodedUri.length + " bytes.");
+        byte[] encodedUri = uri.toString().getBytes(StringOption.CHARSET);
+
+        log.debug("Length of encoded proxy URI: {} bytes.", encodedUri.length);
 
         int startPos = 0;
         while(startPos < encodedUri.length){
             //All but the last option must contain a payload of 270 bytes
-            int endPos = Math.min(startPos + OptionRegistry.getMaxLength(OptionName.PROXY_URI),
-                                   encodedUri.length);
+            int endPos = Math.min(startPos + PROXY_URI.getMaxLength(), encodedUri.length);
             proxyOptions.add(new StringOption(OptionName.PROXY_URI,
                     Arrays.copyOfRange(encodedUri, startPos, endPos)));
             startPos = endPos;
         }
         return proxyOptions;
     }
+
+    public static
 
     /**
      * Location path and location query options are used to define the path of a newly created resource in a response

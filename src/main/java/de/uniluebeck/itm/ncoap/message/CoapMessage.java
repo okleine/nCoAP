@@ -29,7 +29,6 @@ import com.google.common.net.InetAddresses;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.options.*;
-import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
@@ -41,6 +40,9 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import static de.uniluebeck.itm.ncoap.message.MessageType.*;
+import static de.uniluebeck.itm.ncoap.message.MessageCode.*;
+
 /**
  * This class is the base class for inheriting subtypes, i.e. requests and responses. This abstract class provides the
  * cut-set in terms of functionality of {@link CoapRequest} and {@link CoapResponse}.
@@ -51,6 +53,7 @@ public abstract class CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
+    public static final int VERSION = 1;
     public static final String CHARSET = "UTF-8";
 
     protected InetAddress rcptAddress;
@@ -58,13 +61,16 @@ public abstract class CoapMessage {
     private MessageType messageType;
     private MessageCode messageCode;
     private int messageID;
-    private long token;
+    private long token = 0;
     private TreeMultimap<Integer, Option> options;
     private ChannelBuffer payload;
 
 
-    protected CoapMessage(MessageType messageType, MessageCode messageCode, int messageID, long token,
-                          TreeMultimap<Integer, Option> options, )
+//    protected CoapMessage(MessageType messageType, MessageCode messageCode, int messageID,
+//                          TreeMultimap<Integer, Option> options, ChannelBuffer payload){
+//
+//    }
+
 
     /**
      * Method to create an empty reset message which is strictly speaking neither a request nor a response
@@ -73,14 +79,10 @@ public abstract class CoapMessage {
      * @return an instance of {@link CoapMessage} with {@link MessageType#RST}
      */
     public static CoapMessage createEmptyReset(int messageID){
-        CoapMessage emptyRST = new CoapMessage(new byte[0]){};
-
-        try {
-            emptyRST.header = new Header(MessageType.RST, MessageCode.EMPTY, messageID);
-        } catch (InvalidHeaderException e) {
-            log.error("This should never happen.", e);
-        }
-
+        CoapMessage emptyRST = new CoapMessage(){};
+        emptyRST.messageType = RST;
+        emptyRST.messageCode = EMPTY;
+        emptyRST.messageID = messageID;
         return emptyRST;
     }
 
@@ -91,14 +93,10 @@ public abstract class CoapMessage {
      * @return an instance of {@link CoapMessage} with {@link MessageType#ACK}
      */
     public static CoapMessage createEmptyAcknowledgement(int messageID){
-        CoapMessage emptyACK = new CoapMessage(new byte[0]){};
-
-        try {
-            emptyACK.header = new Header(MessageType.ACK, MessageCode.EMPTY, messageID);
-        } catch (InvalidHeaderException e) {
-            log.error("This should never happen.", e);
-        }
-
+        CoapMessage emptyACK = new CoapMessage(){};
+        emptyACK.messageType = ACK;
+        emptyACK.messageCode = EMPTY;
+        emptyACK.messageID = messageID;
         return emptyACK;
     }
 
@@ -107,7 +105,7 @@ public abstract class CoapMessage {
      * @return the CoAP protocol version used for this message
      */
     public int getVersion() {
-        return header.getVersion();
+        return VERSION;
     }
 
     /**
@@ -115,7 +113,7 @@ public abstract class CoapMessage {
      * @return the message ID
      */
     public int getMessageID() {
-        return header.getMsgID();
+        return messageID;
     }
 
     /**
@@ -123,7 +121,7 @@ public abstract class CoapMessage {
      * @return the {@link MessageType} of this message
      */
     public MessageType getMessageType() {
-        return header.getMessageType();
+        return messageType;
     }
 
     /**
@@ -131,23 +129,15 @@ public abstract class CoapMessage {
      * @return the {@link MessageCode} of this message
      */
     public MessageCode getMessageCode() {
-        return header.getMessageCode();
+        return messageCode;
     }
 
     /**
      * Returns the value of the token option or an empty byte array b with <messageCode>(b.length == 0) == true</messageCode>.
      * @return the value of the messages token option
      */
-    public Token getToken() {
+    public long getToken() {
         return token;
-        try{
-            return options.getOption(TOKEN)
-                         .get(0)
-                         .getValue();
-        }
-        catch(IndexOutOfBoundsException e){
-            return new byte[0];
-        }
     }
 
     /**

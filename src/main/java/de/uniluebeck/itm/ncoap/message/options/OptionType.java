@@ -7,11 +7,9 @@ package de.uniluebeck.itm.ncoap.message.options;
  * Time: 17:10
  * To change this template use File | Settings | File Templates.
  */
-public enum OptionType {
-
-    STRING,
-    UINT,
-    OPAQUE,
-    EMPTY;
-
+public abstract class OptionType {
+    public static final int EMPTY = 0;
+    public static final int STRING = 1;
+    public static final int UINT = 2;
+    public static final int OPAQUE = 3;
 }
