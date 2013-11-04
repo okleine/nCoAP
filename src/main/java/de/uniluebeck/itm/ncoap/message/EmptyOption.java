@@ -22,20 +22,30 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message.options;
-
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
+package de.uniluebeck.itm.ncoap.message;
 
 /**
- * Exception thrown by the nCoAP framework when there are to many options to be included in a
- * {@link CoapMessage}.
+ *
+ * @author Oliver Kleine
  */
-public class ToManyOptionsException extends Exception {
+public class EmptyOption extends Option<Object>{
+
+    //Constructor with package visibility
+    EmptyOption(int optionNumber) throws InvalidOptionException{
+        super(optionNumber, new byte[0]);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return (o instanceof EmptyOption);
+    }
 
     /**
-     * @param message A string representation of the reason that caused the excpetion
+     * This method is just to enable inheritance from {@link Option}. The return value is <code>null</code>.
+     * @return  <code>null</code> as there is no value
      */
-    public ToManyOptionsException(String message){
-        super(message);
+    @Override
+    public Object getValue() {
+        return null;
     }
 }

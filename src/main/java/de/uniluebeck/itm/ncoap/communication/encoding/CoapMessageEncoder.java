@@ -49,8 +49,8 @@ package de.uniluebeck.itm.ncoap.communication.encoding;
 
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.header.Header;
-import de.uniluebeck.itm.ncoap.message.options.Option;
-import de.uniluebeck.itm.ncoap.message.options.OptionList;
+import de.uniluebeck.itm.ncoap.message.Option;
+import de.uniluebeck.itm.ncoap.message.OptionList;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.buffer.ChannelBuffer;

@@ -24,12 +24,6 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.message.header.Header;
-import de.uniluebeck.itm.ncoap.message.options.*;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-import de.uniluebeck.itm.ncoap.toolbox.Token;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,12 +31,8 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.*;
 
 /**
  * @author Oliver Kleine
@@ -50,6 +40,7 @@ import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.
 public class CoapRequest extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapRequest.class.getName());
+    private InetAddress recipientAddress;
 
     /**
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
@@ -64,310 +55,402 @@ public class CoapRequest extends CoapMessage {
      * @throws ToManyOptionsException if the target URI needs more than the maximum number of options per message
      * @throws InvalidMessageException if the given messageCode is not suitable for a request
      */
-    public CoapRequest(MessageType messageType, MessageCode messageCode, URI targetUri)
-            throws InvalidMessageException, ToManyOptionsException, InvalidOptionException, URISyntaxException {
+    public CoapRequest(int messageType, int messageCode, URI targetUri) throws InvalidMessageException,
+            ToManyOptionsException, InvalidOptionException, URISyntaxException, UnknownHostException {
 
-        super(messageType, messageCode);
-
-        if(!messageCode.isRequest()){
-            throw new InvalidMessageException("MessageCode " + messageCode + " is no request messageCode!");
-        }
-
-        setTargetURI(targetUri);
+        this(messageType, messageCode);
+        setTargetUriOptions(targetUri);
+        this.recipientAddress = InetAddress.getByName(targetUri.getHost());
 
         log.debug("New request created: {}.", this);
-
     }
 
-    /**
-     * This is the constructor basically supposed to be used internally, in particular with the decoding process of
-     * incoming {@link CoapResponse}s. In other cases it is recommended to use {@link #CoapRequest(MessageType, MessageCode, URI)} and
-     * set options and payload by invoking the appropriate methods and let the nCoAP framework do the rest.
-     *
-     * @param header the {@link Header} of the {@link CoapRequest}
-     * @param optionList  the {@link OptionList} of the {@link CoapRequest}
-     * @param payload the {@link ChannelBuffer} containing the payload of the {@link CoapRequest}
-     */
-    public CoapRequest(Header header, OptionList optionList, ChannelBuffer payload){
-        super(header, optionList, payload);
+    public CoapRequest(int messageType, int messageCode, URI targetUri, InetAddress proxyAddress)
+            throws InvalidOptionException, InvalidMessageException {
+
+        this(messageType, messageCode);
+
+        setProxyURIOption(targetUri);
+        this.recipientAddress = proxyAddress;
+
+        log.debug("New request created: {}.", this);
     }
 
-     /**
-     * Returns the target URI of this {@link CoapRequest}.
-     * @return the target URI of this {@link CoapRequest}.
-     */
-    public URI getTargetUri() {
+    private CoapRequest(int messageType, int messageCode) throws InvalidMessageException {
+        super(messageType, messageCode);
 
-        try {
-            //add host
-            String host = (String) getOption(URI_HOST).get(0).getDecodedValue();
-
-            //add port
-            long port = (Long) getOption(URI_PORT).get(0).getDecodedValue();
-            if(port != OptionRegistry.COAP_PORT_DEFAULT)
-                host += ":" + port;
-
-            //add path
-            String path = "";
-            for(Option option : getOption(URI_PATH)){
-                 path += "/" + option.getDecodedValue();
-            }
-
-            //add query
-            List<Option> list = getOption(URI_QUERY);
-            String query = "";
-            if(!list.isEmpty()){
-                for(Option option : list){
-                    query += option.getDecodedValue() + "&";
-                }
-                //remove the last "&"
-                query = query.substring(0, query.length() - 1);
-            }
-
-            return new URI("coap", host, path, query == "" ? null : query, null);
-        }
-        catch (URISyntaxException e) {
-            log.error("This should never happen!", e);
-            return null;
-        }
+        if(!MessageCode.isRequest(messageCode))
+            throw new InvalidMessageException("MessageCode " + messageCode + " is not for requests.");
     }
 
-    /**
-     * This method sets all necessary target URI related options. This causes eventually already contained
-     * target URI related options to be removed from the list even in case of an exception.
-     *
-     * The URI host option will only be added if its not given
-     * as IP Address (IPv4 or IPv6). The URI port will only added if its not the CoAP standard port 5683. Nevertheless
-     * the methods {@link #getTargetUri()} and {@link #getOption(OptionName o)} both return the given target
-     * IP address, respective the target port using the reconstructing strategy defined in the CoAP draft. Not to add
-     * default values as actual options avoids unnecessary traffic on the network and enables more useful options
-     * to be set in the option list which has a maximum size of 15.
-     *
-     * @param targetUri The absolute {@link URI} of the recipients service
-     *
-     * @throws {@link URISyntaxException} if the given URI is not valid (e.g. not absolute)
-     * @throws {@link InvalidOptionException} if at least one of the options to be set is not valid.
-     * @throws {@link ToManyOptionsException} if adding all target URI options would exceed the maximum number
-     * of options per message.
-     */
-    public void setTargetURI(URI targetUri) throws URISyntaxException, InvalidOptionException, ToManyOptionsException {
-        options.removeTargetURI();
+    private void setProxyURIOption(URI targetUri) throws InvalidOptionException {
         try{
-            //Create collection of target URI related options
-            Collection<Option> targetUriOptions = Option.createTargetURIOptions(targetUri);
-
-            //Add options to the list
-            for(Option option : targetUriOptions){
-
-                log.debug("Add {} option with value {}.", OptionName.getByNumber(option.getOptionNumber()),
-                        new Token(option.getEncodedValue()));
-
-
-                OptionRegistry.OptionName optionName = OptionName.getByNumber(option.getOptionNumber());
-                options.addOption(header.getMessageCode(), optionName, option);
-            }
-
-            //Try to determine the receipients IP address if there was no URI host option set
-            if(options.getOption(URI_HOST).isEmpty()){
-                try{
-                    rcptAddress = InetAddress.getByName(targetUri.getHost());
-                } catch (UnknownHostException e) {
-                    log.debug("The target hostname {} could not be resolved.", targetUri.getHost());
-                }
-            }
+            this.addStringOption(OptionName.PROXY_URI, targetUri.toString());
         }
-        catch(InvalidOptionException e){
-            options.removeTargetURI();
-
-            log.debug("Critical option for target URI could not be added.", e);
-
-            throw e;
-        }
-        catch(ToManyOptionsException e){
-            options.removeTargetURI();
-            log.debug("Critical option for target URI could not be added.", e);
-            throw e;
+        catch (UnknownOptionException e) {
+            log.error("This should never happen.", e);
         }
     }
 
-    /**
-     * Set one option for each media type to be accepted as response payload. This causes eventually already contained
-     * accept options to be removed from the list even in case of an exception.
-     *
-     * @param mediaTypes the set of media types accepted as response payload
-     * @throws InvalidOptionException if at least one of the options to be added is not valid
-     * @throws ToManyOptionsException if adding all accept options would exceed the maximum number of
-     * options per message.
-     * @return <code>true</code> if accept options were succesfully set, <code>false</code> if accept option is not
-     * meaningful with the message code and thus silently ignored
-     */
-    public boolean setAccept(OptionRegistry.MediaType... mediaTypes) {
-        options.removeAllOptions(ACCEPT);
+    private void setTargetUriOptions(URI targetUri) throws URISyntaxException, InvalidOptionException {
+        targetUri = targetUri.normalize();
+
+        //URI must be absolute and thus contain a scheme part (must be one of "coap" or "coaps")
+        String scheme = targetUri.getScheme();
+        if(scheme == null)
+            throw new URISyntaxException(targetUri.toString(), "Scheme of target URI must not be null");
+
+        scheme = scheme.toLowerCase(Locale.ENGLISH);
+        if(!(scheme.equals("coap") || scheme.equals("coaps")))
+            throw new URISyntaxException(targetUri.toString(),
+                    "URI scheme must be either \"coap\" or \"coaps\" but is " + scheme);
+
+        //Target URI must not have fragment part
+        if(targetUri.getFragment() != null)
+            throw new URISyntaxException(targetUri.toString(), "Target URI must not have a fragment part.");
+
+        //Create target URI options
         try{
-            for(OptionRegistry.MediaType mediaType : mediaTypes){
-                Option option = Option.createUintOption(ACCEPT, mediaType.number);
-                options.addOption(header.getMessageCode(), ACCEPT, option);
+            addUriHostOption(targetUri.getHost());
+            addUriPortOption(targetUri.getPort());
+            addUriPathOptions(targetUri.getRawPath());
+            addUriQueryOptions(targetUri.getRawQuery());
+        }
+        catch (UnknownOptionException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+
+    private void addUriQueryOptions(String uriQuery) throws UnknownOptionException, InvalidOptionException {
+        if(uriQuery != null){
+            for(String queryComponent : uriQuery.split("&")){
+                this.addStringOption(OptionName.URI_QUERY, queryComponent);
+                log.debug("Added URI query option for {}", queryComponent);
             }
-            return true;
+        }
+    }
+
+
+    private void addUriPathOptions(String uriPath) throws UnknownOptionException, InvalidOptionException {
+        if(uriPath != null){
+            //Path must not start with "/" to be further processed
+            if(uriPath.startsWith("/"))
+                uriPath = uriPath.substring(1);
+
+            for(String pathComponent : uriPath.split("/")){
+                this.addStringOption(OptionName.URI_PATH, pathComponent);
+                log.debug("Added URI path option for {}", pathComponent);
+            }
+        }
+    }
+
+
+    private void addUriPortOption(int uriPort) throws UnknownOptionException, InvalidOptionException {
+        if(uriPort == -1)
+            this.addUintOption(OptionName.URI_PORT, Option.URI_PORT_DEFAULT);
+
+        if(uriPort > 0)
+            this.addUintOption(OptionName.URI_PORT, uriPort);
+    }
+
+
+    private void addUriHostOption(String uriHost) throws UnknownOptionException, InvalidOptionException {
+
+        addStringOption(OptionName.URI_HOST, uriHost);
+    }
+
+    /**
+     * Sets the If-Match options according to the given {@link Collection<byte[]>} containing ETAGs. If there were any
+     * If-Match options present in this {@link CoapRequest} prior to the invocation of this method, these options are
+     * removed.
+     *
+     * @param etags the ETAGs to be set as values for the If-Match options
+     *
+     * @throws InvalidOptionException if at least one of the given <code>byte[]</code> to be set as values for If-Match
+     * options is invalid.
+     */
+    public void setIfMatch(byte[]... etags) throws InvalidOptionException {
+
+        this.removeOptions(OptionName.IF_MATCH);
+
+        try{
+            for(byte[] etag : etags)
+                this.addOpaqueOption(OptionName.IF_MATCH, etag);
         }
         catch (InvalidOptionException e) {
-            options.removeAllOptions(ACCEPT);
-            log.debug("Elective option (" + ACCEPT + ") could not be added.", e);
-            return false;
+            this.removeOptions(OptionName.IF_MATCH);
+            throw e;
         }
-        catch (ToManyOptionsException e) {
-            options.removeAllOptions(ACCEPT);
-            log.debug("Elective option (" + ACCEPT + ") could not be added.", e);
-            return false;
+        catch (UnknownOptionException e) {
+            log.error("This should never happen.", e);
         }
     }
 
     /**
-     * Returns a {@link Set<MediaType>} reconstructed from the contained {@link OptionName#ACCEPT} options
-     * @return a {@link Set<MediaType>} reconstructed from the contained {@link OptionName#ACCEPT} options
+     * Returns a {@link Set<byte[]>} containing the values of the If-Match options or <code>null</code> if no such
+     * option is present in this {@link CoapRequest}.
+     *
+     * @return a {@link Set<byte[]>} containing the values of the If-Match options or <code>null</code> if no such
+     * option is present in this {@link CoapRequest}.
      */
-    public Set<MediaType> getAcceptedMediaTypes(){
-        EnumSet<MediaType> result = EnumSet.noneOf(MediaType.class);
+    public Set<byte[]> getIfMatch(){
 
-        for(Option option : options.getOption(ACCEPT)){
-            result.add(MediaType.getByNumber((Long) option.getDecodedValue()));
+        if(options.containsKey(OptionName.IF_MATCH)){
+            Set<byte[]> result = new HashSet<>();
+            Iterator<Option> iterator = options.get(OptionName.IF_MATCH).iterator();
+            while(iterator.hasNext())
+                result.add(((OpaqueOption) iterator.next()).getValue());
+
+            return result;
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the value of the URI host option or a literal representation of the recipients IP address if the URI
+     * host option is not present in this {@link CoapRequest}.
+     *
+     * @return the value of the URI host option or a literal representation of the recipients IP address if the URI
+     * host option is not present in this {@link CoapRequest}.
+     */
+    public String getUriHost(){
+
+        if(options.containsKey(OptionName.URI_HOST))
+            return ((StringOption) options.get(OptionName.URI_HOST).iterator().next()).getValue();
+
+        return recipientAddress.getHostAddress();
+    }
+
+    /**
+     * Sets the ETAG options of this {@link CoapRequest}. If there are any ETAG options present in this
+     * {@link CoapRequest} prior to the invocation of this method, those options are removed.
+     *
+     * @param etags the values for the ETAG options to be set
+     *
+     * @throws InvalidOptionException if at least one of the given ETAGs is not suitable to be the value of an ETAG
+     * option.
+     */
+    public void setEtags(byte[]... etags) throws InvalidOptionException {
+
+        this.removeOptions(OptionName.ETAG);
+
+        try{
+            for(byte[] etag : etags)
+                this.addOpaqueOption(OptionName.ETAG, etag);
+        }
+        catch(InvalidOptionException e){
+            this.removeOptions(OptionName.ETAG);
+            throw e;
+        }
+        catch(UnknownOptionException e){
+            log.error("This should never happen.", e);
+        }
+    }
+
+    /**
+     * Returns a {@link Set<byte[]>} containing the values of the ETAG options that are present in this
+     * {@link CoapRequest}. If there is no such option, then the returned set is empty.
+     *
+     * @return  a {@link Set<byte[]>} containing the values of the ETAG options that are present in this
+     * {@link CoapRequest}. If there is no such option, then the returned set is empty.
+     */
+    public Set<byte[]> getEtags(){
+        Set<byte[]> result = new HashSet<>();
+
+        if(options.containsKey(OptionName.ETAG)){
+            Iterator<Option> iterator = options.get(OptionName.ETAG).iterator();
+            while(iterator.hasNext())
+                result.add(((OpaqueOption) iterator.next()).getValue());
         }
 
         return result;
     }
 
     /**
-     * Returns the gateways URI constructed from the gateways URI related options contained in this {@link CoapRequest}.
+     * Sets the If-Non-Match option in this {@link CoapRequest}.
      *
-     * @return  the messages gateways URI (if any) or null otherwise
-     * @throws {@link URISyntaxException} if the reconstruction of the URI from the options contained in this
-     * {@link CoapRequest} fails
+     * @throws InvalidOptionException if the If-Non-Match option has no meaning with the {@link MessageCode} of this
+     * {{@link CoapRequest}}.
+     */
+    public void setIfNonMatch() throws InvalidOptionException {
+
+        try{
+            this.addEmptyOption(OptionName.IF_NONE_MATCH);
+        }
+        catch (UnknownOptionException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+    /**
+     * Returns <code>true</code> if the If-Non-Match option is present or <code>false</code> if there is
+     * no such option present in this {@link CoapRequest}.
+     *
+      * @return <code>true</code> if the If-Non-Match option is present or <code>false</code> if there is
+     * no such option present in this {@link CoapRequest}.
+     */
+    public boolean isIfNonMatchSet(){
+        return !options.get(OptionName.IF_NONE_MATCH).isEmpty();
+    }
+
+
+    /**
+     * Returns the value of the URI port option or {@link Option#URI_PORT_DEFAULT} if the URI port option is not
+     * present in this {@link CoapRequest}.
+     *
+     * @return the value of the URI port option or {@link Option#URI_PORT_DEFAULT} if the URI port option is not
+     * presentin this {@link CoapRequest}.
+     */
+    public long getUriPort(){
+        if(options.containsKey(OptionName.URI_PORT))
+            return ((UintOption) options.get(OptionName.URI_PORT).iterator().next()).getValue();
+
+        return Option.MAX_AGE_DEFAULT;
+    }
+
+
+    /**
+     * Returns the full path of the request URI reconstructed from the URI path options present in this
+     * {@link CoapRequest}.
+     *
+     * @return the full path of the request URI reconstructed from the URI path options present in this
+     * {@link CoapRequest}.
+     */
+    public String getUriPath(){
+        if(options.containsKey(OptionName.URI_PATH)){
+            StringBuffer result = new StringBuffer();
+            Iterator<Option> iterator = options.get(OptionName.URI_PATH).iterator();
+            while(iterator.hasNext())
+                result.append("/" + ((StringOption) iterator.next()).getValue());
+
+            return result.toString();
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the full query of the request URI reconstructed from the URI query options present in this
+     * {@link CoapRequest}.
+     *
+     * @return the full query of the request URI reconstructed from the URI query options present in this
+     * {@link CoapRequest}.
+     */
+    public String getUriQuery(){
+        if(options.containsKey(OptionName.URI_QUERY)){
+            StringBuffer result = new StringBuffer();
+            Iterator<Option> iterator = options.get(OptionName.URI_QUERY).iterator();
+            result.append(((StringOption) iterator.next()).getValue());
+            while(iterator.hasNext())
+                result.append("&" + ((StringOption) iterator.next()).getValue());
+
+            return result.toString();
+        }
+
+        return null;
+    }
+
+    /**
+     * Sets the content formats the client is willing to accept. See {@link ContentFormat} for a predefined set of such
+     * numbers.
+     *
+     * @param contentFormatNumbers a {@link Collection} containing the content formats the client is willing to accept.
+     *
+     * @throws InvalidOptionException if one of the given numbers is not capable to represent a content format
+     */
+    public void setAccept(long... contentFormatNumbers) throws InvalidOptionException {
+        options.removeAll(OptionName.ACCEPT);
+        try{
+            for(long contentFormatNumber : contentFormatNumbers)
+                this.addUintOption(OptionName.ACCEPT, contentFormatNumber);
+        }
+        catch (UnknownOptionException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+    /**
+     * Returns a {@link Set<Long>} containing the numbers representing the accepted content formats. See
+     * {@link ContentFormat} for a predefined set of such numbers. If no such option is present in this
+     * {@link CoapRequest}, then the returned set is empty.
+     *
+     * @return a {@link Set<Long>} containing the numbers representing the accepted content formats.
+     */
+    public Set<Long> getAcceptedContentFormats(){
+        Set<Long> result = new HashSet<>();
+
+        for(Option option : options.get(OptionName.ACCEPT))
+            result.add(((UintOption) option).getValue());
+
+        return result;
+    }
+
+    /**
+     * Returns the value of the Proxy URI option if such an option is present in this {@link CoapRequest}. If no such
+     * option is present but a Proxy Scheme option, then the returned {@link URI} is reconstructed from the
+     * Proxy Scheme option and the URI host, URI port, URI path and URI query options, resp. their default values if
+     * not explicitly set. If both options, Proxy URI and Proxy Scheme are not present in this {@link CoapRequest} this
+     * method returns <code>null</code>.
+     *
+     * @return the URI of the requested resource if this {@link CoapRequest} was (or is supposed to be) sent via a
+     * proxy or <code>null</code> if the request was (or is supposed to be) sent directly.
+     *
+     * @throws URISyntaxException if the value of the proxy URI option or the reconstruction from Proxy Scheme,
+     * URI host, URI port, URI path, and URI query options is invalid.
      */
     public URI getProxyURI() throws URISyntaxException {
-        Collection<Option> options = this.options.getOption(PROXY_URI);
+        if(options.containsKey(OptionName.PROXY_URI))
+            return new URI(((StringOption) options.get(OptionName.PROXY_URI).iterator().next()).getValue());
 
-        if(options.isEmpty()){
-            return null;
+        if(options.get(OptionName.PROXY_SCHEME).size() == 1){
+            String scheme = ((StringOption) options.get(OptionName.PROXY_SCHEME).iterator().next()).getValue();
+            String uriHost = getUriHost();
+            int uriPort = ((UintOption) options.get(OptionName.URI_PORT).iterator().next()).getValue().intValue();
+            String uriPath = getUriPath();
+            String uriQuery = getUriQuery();
+
+            return new URI(scheme, null, uriHost, uriPort == Option.URI_PORT_DEFAULT ? -1 : uriPort, uriPath, uriQuery,
+                    null);
         }
 
-        String result = "";
-        for(Option option : options){
-            result += option.getDecodedValue();
-        }
-        return new URI(result);
-
+        return null;
     }
 
-     /**
-     * Adds an appropriate number of gateways URI options to the list. This causes eventually already contained
-     * gateways URI options to be removed from the list even in case of an exception.
-     *
-     * @param proxyURI The gateways URI to be added as options
-     * @throws InvalidOptionException if at least one of the options to be added is invalid
-     * @throws java.net.URISyntaxException if the given URI is not valid
-     * @throws ToManyOptionsException if adding all gateways URI options would exceed the maximum number of options per
-     * message.
-     */
-    public void setProxyURI(URI proxyURI) throws InvalidOptionException, URISyntaxException, ToManyOptionsException {
-        options.removeAllOptions(PROXY_URI);
-        try{
-            Collection<Option> options = Option.createProxyUriOptions(proxyURI);
-            for(Option option : options){
-                this.options.addOption(header.getMessageCode(), PROXY_URI, option);
-            }
-        }
-        catch(InvalidOptionException e){
-            options.removeAllOptions(PROXY_URI);
-            log.debug("Critical option (" + PROXY_URI + ") could not be added.", e);
 
-            throw e;
-        }
-        catch(ToManyOptionsException e){
-            options.removeAllOptions(PROXY_URI);
-            log.debug("Critical option (" + PROXY_URI + ") could not be added.", e);
+//
+//    /**
+//     * Set the observe option. This causes eventually already contained observe options to be removed from
+//     * the list even in case of an exception.
+//     *
+//     * @throws {@link ToManyOptionsException} if adding an observe options would exceed the maximum number of
+//     * options per message.
+//     */
+//    public void setObserveOptionRequest() throws ToManyOptionsException {
+//        options.removeAllOptions(OBSERVE_REQUEST);
+//        try{
+//            Option option = Option.createEmptyOption(OBSERVE_REQUEST);
+//            options.addOption(header.getMessageCode(), OBSERVE_REQUEST, option);
+//        } catch (InvalidOptionException e) {
+//            options.removeAllOptions(OBSERVE_REQUEST);
+//            log.error("This should never happen!", e);
+//        } catch (ToManyOptionsException e) {
+//            options.removeAllOptions(OBSERVE_REQUEST);
+//            log.debug("Critical option (" + OBSERVE_REQUEST + ") could not be added.", e);
+//            throw e;
+//        }
+//    }
+//
+//    public boolean isObservationRequest(){
+//        if(this.getOption(OBSERVE_REQUEST).isEmpty())
+//            return false;
+//        else
+//            return true;
+//    }
 
-            throw e;
-        }
-    }
 
-    /**
-     * Set one option for each ETAG enabling the computing of this requests payload on the server. This causes
-     * eventually already contained if-match options to be removed from the list even in case of an exception.
-     *
-     * @param etags the set of ETAGs enabling the computing of this messages payload
-     *
-     * @throws {@link InvalidOptionException} if at least one of the options to be added is not valid
-     * @throws {@link ToManyOptionsException} if adding all if-match options would exceed the maximum number of
-     * options per message.
-     */
-    public void setIfMatch(byte[]... etags) throws InvalidOptionException, ToManyOptionsException {
-        options.removeAllOptions(IF_MATCH);
-        try{
-            for(byte[] etag : etags){
-                Option option = Option.createOpaqueOption(IF_MATCH, etag);
-                options.addOption(header.getMessageCode(), IF_MATCH, option);
-            }
-        }
-        catch (InvalidOptionException e) {
-            options.removeAllOptions(IF_MATCH);
-            log.debug("Critical option (" + IF_MATCH + ") could not be added.", e);
-            throw e;
-        }
-        catch (ToManyOptionsException e) {
-            options.removeAllOptions(IF_MATCH);
-            log.debug("Critical option (" + IF_MATCH + ") could not be added.", e);
-            throw e;
-        }
-    }
-
-    /**
-     * Set the if-non-match option. This causes eventually already contained if-non-match options to be removed from
-     * the list even in case of an exception.
-     *
-     * @throws {@link ToManyOptionsException} if adding an if-non-match options would exceed the maximum number of
-     * options per message.
-     */
-    public void setIfNoneMatch() throws ToManyOptionsException {
-        options.removeAllOptions(IF_NONE_MATCH);
-        try{
-            Option option = Option.createEmptyOption(IF_NONE_MATCH);
-            options.addOption(header.getMessageCode(), IF_NONE_MATCH, option);
-        } catch (InvalidOptionException e) {
-            options.removeAllOptions(IF_NONE_MATCH);
-            log.error("This should never happen!", e);
-        } catch (ToManyOptionsException e) {
-            options.removeAllOptions(IF_NONE_MATCH);
-            log.debug("Critical option (" + IF_NONE_MATCH + ") could not be added.", e);
-            throw e;
-        }
-    }
-
-    /**
-     * Set the observe option. This causes eventually already contained observe options to be removed from
-     * the list even in case of an exception.
-     *
-     * @throws {@link ToManyOptionsException} if adding an observe options would exceed the maximum number of
-     * options per message.
-     */
-    public void setObserveOptionRequest() throws ToManyOptionsException {
-        options.removeAllOptions(OBSERVE_REQUEST);
-        try{
-            Option option = Option.createEmptyOption(OBSERVE_REQUEST);
-            options.addOption(header.getMessageCode(), OBSERVE_REQUEST, option);
-        } catch (InvalidOptionException e) {
-            options.removeAllOptions(OBSERVE_REQUEST);
-            log.error("This should never happen!", e);
-        } catch (ToManyOptionsException e) {
-            options.removeAllOptions(OBSERVE_REQUEST);
-            log.debug("Critical option (" + OBSERVE_REQUEST + ") could not be added.", e);
-            throw e;
-        }
-    }
-
-    public boolean isObservationRequest(){
-        if(this.getOption(OBSERVE_REQUEST).isEmpty())
-            return false;
-        else
-            return true;
+    public InetAddress getRecipientAddress() {
+        return recipientAddress;
     }
 }

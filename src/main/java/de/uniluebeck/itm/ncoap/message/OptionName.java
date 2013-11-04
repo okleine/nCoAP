@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.ncoap.message.options;
+package de.uniluebeck.itm.ncoap.message;
 
 /**
  * Created with IntelliJ IDEA.

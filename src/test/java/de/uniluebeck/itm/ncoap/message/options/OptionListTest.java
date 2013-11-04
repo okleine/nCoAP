@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message.options;
 
-import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import java.util.LinkedList;
 import java.util.List;
@@ -107,7 +107,7 @@ public class OptionListTest {
             MessageCode.METHOD_NOT_ALLOWED_405,
             MessageCode.PRECONDITION_FAILED_412,
             MessageCode.REQUEST_ENTITY_TOO_LARGE_413,
-            MessageCode.UNSUPPORTED_MEDIA_TYPE_415,
+            MessageCode.UNSUPPORTED_CONTENT_FORMAT_415,
             MessageCode.INTERNAL_SERVER_ERROR_500,
             MessageCode.NOT_IMPLEMENTED_501,
             MessageCode.BAD_GATEWAY_502,

@@ -22,44 +22,20 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message.options;
+package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-
-import java.io.ByteArrayOutputStream;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
- *
- * @author Oliver Kleine
+ * Exception thrown by the nCoAP framework when there are to many options to be included in a
+ * {@link CoapMessage}.
  */
-public class EmptyOption extends Option{
+public class ToManyOptionsException extends Exception {
 
-    //Constructor with package visibility
-    EmptyOption(OptionName opt_name) throws InvalidOptionException{
-        super(opt_name);
-    }
-
-    static void encodeFencepostOptions (ByteArrayOutputStream baos, int number, int prevNumber){
-        baos.write((byte)((number - prevNumber) << 4));
-    }
-
-    @Override
-    public String getDecodedValue(){
-        return "NONE";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof EmptyOption)){
-            return false;
-        }
-
-        EmptyOption opt = (EmptyOption) o;
-        if(this.optionNumber == opt.optionNumber){
-            return true;
-        }
-        else{
-            return false;
-        }
+    /**
+     * @param message A string representation of the reason that caused the excpetion
+     */
+    public ToManyOptionsException(String message){
+        super(message);
     }
 }

@@ -24,46 +24,43 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import com.google.common.base.Charsets;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNull;
-import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
- * Test of CoapMessage class.
- * @author Stefan Hueske
+ * This class contains all specific functionality for {@link Option} instances of {@link OptionType#OPAQUE}.
+ *
+ * @author Oliver Kleine
  */
-public class CoapMessageTest {
-    
-    @Test(expected=MessageDoesNotAllowContentException.class)
-    public void testSetPayloadForGET() throws Exception {
-        new CoapMessage(MessageCode.GET) {}.setPayload("testpayload".getBytes("UTF8"));
+class OpaqueOption extends Option<byte[]>{
+
+    OpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+        super(optionNumber, value);
     }
-    
-    @Test(expected=MessageDoesNotAllowContentException.class)
-    public void testSetPayloadForDELETE() throws Exception {
-        new CoapMessage(MessageCode.DELETE) {}.setPayload("testpayload".getBytes("UTF8"));
+
+    /**
+     * Returns a {@link ByteBuffer} backed by the byte array that contains the value of this option.
+     * @return a {@link ByteBuffer} backed by the byte array that contains the value of this option.
+     */
+    @Override
+    public byte[] getValue() {
+        return this.value;
     }
-    
-    @Test
-    public void testgetPayloadAsByteArray() throws MessageDoesNotAllowContentException {
-        CoapMessage message = new CoapMessage(MessageCode.CONTENT_205) {};
-        byte[] payload = "testpayload".getBytes(Charsets.UTF_8);
-        message.setContent(ChannelBuffers.wrappedBuffer(payload));
-        assertArrayEquals(payload, getPayloadAsByteArray(message.getPayload()));
+
+    @Override
+    public boolean equals(Object object) {
+        if(!(object instanceof OpaqueOption))
+            return false;
+
+        return Arrays.equals(this.value, ((OpaqueOption) object).getValue());
     }
-    
-    public static byte[] getPayloadAsByteArray(ChannelBuffer payload){
-        if (payload == null) {
-            return null;
-        }
-        byte[] convertedByteArray = new byte[payload.readableBytes()];
-        for (int i = 0; payload.readable(); i++) {
-            convertedByteArray[i] = payload.readByte();
-        }        
-        return convertedByteArray;
+
+    @Override
+    public String toString(){
+        return new BigInteger(1, value).toString(16);
     }
 }

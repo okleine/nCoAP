@@ -25,8 +25,7 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.header.Header;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 import de.uniluebeck.itm.ncoap.toolbox.ByteTestTools;

@@ -24,7 +24,7 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication.observe;
 //
-//import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
+//import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.ContentFormat;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 //
@@ -39,7 +39,7 @@
 //    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 //
 //    private byte[] token;
-//    private MediaType acceptedMediaType;
+//    private ContentFormat acceptedMediaType;
 //    private int notificationCount = 0;
 //
 //    /**
@@ -50,12 +50,12 @@
 //    }
 //
 //    /**
-//     * Returns the {@link MediaType} for the observation. The payload of all update notifications for the
-//     * observer must have this {@link MediaType}.
+//     * Returns the {@link ContentFormat} for the observation. The payload of all update notifications for the
+//     * observer must have this {@link ContentFormat}.
 //     *
-//     * @return the {@link MediaType} for the observation
+//     * @return the {@link ContentFormat} for the observation
 //     */
-//    public MediaType getAcceptedMediaType() {
+//    public ContentFormat getAcceptedMediaType() {
 //        if(acceptedMediaType != null){
 //            return acceptedMediaType;
 //        }
@@ -63,12 +63,12 @@
 //    }
 //
 //    /**
-//     * Set the {@link MediaType} for the observation. The payload of all update notifications for the
-//     * observer must have this {@link MediaType}.
+//     * Set the {@link ContentFormat} for the observation. The payload of all update notifications for the
+//     * observer must have this {@link ContentFormat}.
 //     *
-//     * @param acceptedMediaType the {@link MediaType} for the observation
+//     * @param acceptedMediaType the {@link ContentFormat} for the observation
 //     */
-//    public void setAcceptedMediaType(MediaType acceptedMediaType){
+//    public void setAcceptedMediaType(ContentFormat acceptedMediaType){
 //        this.acceptedMediaType = acceptedMediaType;
 //    }
 //

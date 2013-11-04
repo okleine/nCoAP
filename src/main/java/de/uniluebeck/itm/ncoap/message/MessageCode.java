@@ -47,8 +47,6 @@
 
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
-
 /**
  * This enumeration contains all defined message codes (i.e. methods for requests and status for responses)
  * in CoAPs draft v7
@@ -56,145 +54,34 @@ import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
  * @author Oliver Kleine
 */
 
-public enum MessageCode {
+public abstract class MessageCode {
 
-    /**
-     * corresponds to CoAPs numerical message code 0
-     */
-    EMPTY(0),
-
-    /**
-     * corresponds to CoAPs numerical message code 1
-     */
-    GET(1),
-
-    /**
-     * corresponds to CoAPs numerical message code 2
-     */
-    POST(2),
-
-    /**
-     * corresponds to CoAPs numerical message code 3
-     */
-    PUT(3),
-
-    /**
-     * corresponds to CoAPs numerical message code 4
-     */
-    DELETE(4),
-
-    /**
-     * corresponds to CoAPs numerical message code 65
-     */
-    CREATED_201(65),
-
-    /**
-     * corresponds to CoAPs numerical message code 66
-     */
-    DELETED_202(66),
-
-    /**
-     * corresponds to CoAPs numerical message code 67
-     */
-    VALID_203(67),
-
-    /**
-     * corresponds to CoAPs numerical message code 68
-     */
-    CHANGED_204(68),
-
-    /**
-     * corresponds to CoAPs numerical message code 69
-     */
-    CONTENT_205(69),
-
-    /**
-     * corresponds to CoAPs numerical message code 128
-     */
-    BAD_REQUEST_400(128),
-
-    /**
-     * corresponds to CoAPs numerical message code 129
-     */
-    UNAUTHORIZED_401(129),
-
-    /**
-     * corresponds to CoAPs numerical message code 130
-     */
-    BAD_OPTION_402(130),
-
-    /**
-     * corresponds to CoAPs numerical message code 131
-     */
-    FORBIDDEN_403(131),
-
-    /**
-     * corresponds to CoAPs numerical message code 132
-     */
-    NOT_FOUND_404(132),
-
-    /**
-     * corresponds to CoAPs numerical message code 133
-     */
-    METHOD_NOT_ALLOWED_405(133),
-
-    /**
-     * corresponds to CoAPs numerical message code 134
-     */
-    NOT_ACCEPTABLE(134),
-
-    /**
-     * corresponds to CoAPs numerical message code 140
-     */
-    PRECONDITION_FAILED_412(140),
-    /**
-     * corresponds to CoAPs numerical message code 141
-     */
-    REQUEST_ENTITY_TOO_LARGE_413(141),
-
-    /**
-     * corresponds to CoAPs numerical message code 143
-     */
-    UNSUPPORTED_MEDIA_TYPE_415(143),
-
-    /**
-     * corresponds to CoAPs numerical message code 160
-     */
-    INTERNAL_SERVER_ERROR_500(160),
-
-    /**
-     * corresponds to CoAPs numerical message code 161
-     */
-    NOT_IMPLEMENTED_501(161),
-
-    /**
-     * corresponds to CoAPs numerical message code 162
-     */
-    BAD_GATEWAY_502(162),
-
-    /**
-     * corresponds to CoAPs numerical message code 163
-     */
-    SERVICE_UNAVAILABLE_503(163),
-
-    /**
-     * corresponds to CoAPs numerical message code 164
-     */
-    GATEWAY_TIMEOUT_504(164),
-
-    /**
-     * corresponds to CoAPs numerical message code 165
-     */
-    PROXYING_NOT_SUPPORTED_505(165);
-
-    /**
-     * The corresponding numerical CoAP message code
-     */
-    private final int codeNumber;
-
-    private MessageCode(int codeNumber){
-        this.codeNumber = codeNumber;
-    }
+    public static final int EMPTY                           = 0;
+    public static final int GET                             = 1;
+    public static final int POST                            = 2;
+    public static final int PUT                             = 3;
+    public static final int DELETE                          = 4;
+    public static final int CREATED_201                     = 65;
+    public static final int DELETED_202                     = 66;
+    public static final int VALID_203                       = 67;
+    public static final int CHANGED_204                     = 68;
+    public static final int CONTENT_205                     = 69;
+    public static final int BAD_REQUEST_400                 = 128;
+    public static final int UNAUTHORIZED_401                = 129;
+    public static final int BAD_OPTION_402                  = 130;
+    public static final int FORBIDDEN_403                   = 131;
+    public static final int NOT_FOUND_404                   = 132;
+    public static final int METHOD_NOT_ALLOWED_405          = 133;
+    public static final int NOT_ACCEPTABLE_406              = 134;
+    public static final int PRECONDITION_FAILED_412         = 140;
+    public static final int REQUEST_ENTITY_TOO_LARGE_413    = 141;
+    public static final int UNSUPPORTED_CONTENT_FORMAT_415  = 143;
+    public static final int INTERNAL_SERVER_ERROR_500       = 160;
+    public static final int NOT_IMPLEMENTED_501             = 161;
+    public static final int BAD_GATEWAY_502                 = 162;
+    public static final int SERVICE_UNAVAILABLE_503         = 163;
+    public static final int GATEWAY_TIMEOUT_504             = 164;
+    public static final int PROXYING_NOT_SUPPORTED_505      = 165;
 
     /**
      * This method indicates wheter the message code refers to a request.
@@ -204,7 +91,7 @@ public enum MessageCode {
      * @return <code>true</code> in case of a request code, <code>false</code> otherwise.
      *
      */
-    public boolean isRequest(){
+    public static boolean isRequest(int codeNumber){
         return (codeNumber > 0 && codeNumber < 5);
     }
 
@@ -215,7 +102,7 @@ public enum MessageCode {
      *
      * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
      */
-    public boolean isResponse(){
+    public static boolean isResponse(int codeNumber){
         return codeNumber >= 5;
     }
 
@@ -223,7 +110,7 @@ public enum MessageCode {
      * This method indicates wheter the message code refers to an error message
      * @return <code>true</code> in case of an error <code>false</code> otherwise
      */
-    public boolean isErrorMessage(){
+    public static boolean isErrorMessage(int codeNumber){
         return (codeNumber >= 128);
     }
 
@@ -231,18 +118,10 @@ public enum MessageCode {
      * This method indicates whether a message may contain payload
      * @return <code>true</code> if payload is allowed, <code>false</code> otherwise
      */
-    public boolean allowsPayload(){
-        return !(codeNumber == MessageCode.GET.codeNumber || codeNumber == MessageCode.DELETE.codeNumber);
+    public static boolean allowsContent(int codeNumber){
+        return !(codeNumber == GET || codeNumber == DELETE);
     }
 
 
-    public static MessageCode getCodeFromNumber(int number) throws InvalidHeaderException {
-        for(MessageCode c : MessageCode.values()){
-            if(c.codeNumber == number){
-                return c;
-            }
-        }
-        throw new InvalidHeaderException("Unknown code (no. " + number + ")");
-    }
 }
 

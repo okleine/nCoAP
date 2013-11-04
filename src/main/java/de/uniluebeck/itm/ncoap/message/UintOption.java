@@ -22,15 +22,16 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message.options;
+package de.uniluebeck.itm.ncoap.message;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static de.uniluebeck.itm.ncoap.message.options.OptionName.MAX_AGE;
-import static de.uniluebeck.itm.ncoap.message.options.OptionName.URI_PORT;
+import java.math.BigInteger;
+
+import static de.uniluebeck.itm.ncoap.message.OptionName.URI_PORT;
 /**
  * This class contains all specific functionality for {@link Option} instances of {@link OptionType#UINT}. If there is
  * any need to access {@link Option} instances directly, e.g. to retrieve its value, one could either cast the option
@@ -43,24 +44,24 @@ public class UintOption extends Option<Long>{
 
     private static Logger log = LoggerFactory.getLogger(UintOption.class.getName());
 
-    public static final int MAX_AGE_DEFAULT = 60;
-    public static final int URI_PORT_DEFAULT = 5683;
-
-
-    //constructor with encoded value should only be used for incoming messages
-    public UintOption(OptionName optionName, long value) throws InvalidOptionException{
-        if(optionName == URI_PORT && )
-        super(optionName, value);
-        setValue(optionName, value);
-
-        log.debug("{} option with value {} created.", optionName, new Token(value));
-
-        ByteBuffer.
+    UintOption(int optionNumber, byte[] value) throws InvalidOptionException {
+        super(optionNumber, value);
     }
+
+//    //constructor with encoded value should only be used for incoming messages
+//    public UintOption(OptionName optionName, long value) throws InvalidOptionException{
+//        if(optionName == URI_PORT && )
+//        super(optionName, value);
+//        setValue(optionName, value);
+//
+//        log.debug("{} option with value {} created.", optionName, new Token(value));
+//
+//        ByteBuffer.
+//    }
 
     @Override
     public Long getValue() {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        return new BigInteger(1, value).longValue();
     }
 
     //constructor with decoded value should only be used for outgoing messages

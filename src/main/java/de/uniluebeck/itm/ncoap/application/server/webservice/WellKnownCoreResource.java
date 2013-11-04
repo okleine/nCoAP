@@ -84,7 +84,7 @@ public final class WellKnownCoreResource extends ObservableWebService<Map<String
 
         try {
             byte[] payload = getSerializedResourceStatus(MediaType.APP_LINK_FORMAT);
-            response.setPayload(ChannelBuffers.wrappedBuffer(payload));
+            response.setContent(ChannelBuffers.wrappedBuffer(payload));
             response.setContentType(OptionRegistry.MediaType.APP_LINK_FORMAT);
 
         } catch (Exception e) {

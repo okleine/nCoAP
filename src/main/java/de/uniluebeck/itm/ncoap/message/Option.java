@@ -22,23 +22,22 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message.options;
+package de.uniluebeck.itm.ncoap.message;
 
 import com.google.common.net.InetAddresses;
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 
-import static de.uniluebeck.itm.ncoap.message.options.OptionName.*;
-import static de.uniluebeck.itm.ncoap.message.options.OptionType.*;
-import static de.uniluebeck.itm.ncoap.message.options.OptionType.STRING;
-import static de.uniluebeck.itm.ncoap.message.options.OptionType.UINT;
+import static de.uniluebeck.itm.ncoap.message.OptionName.*;
+import static de.uniluebeck.itm.ncoap.message.OptionType.*;
 
 /**
 *
@@ -48,36 +47,66 @@ public abstract class Option<T>{
 
     private static Logger log = LoggerFactory.getLogger(Option.class.getName());
 
-    private static HashMap<Integer, Integer[]> constraints = new HashMap<>();
+    public static final long MAX_AGE_DEFAULT = 60;
+    public static final long URI_PORT_DEFAULT = 5683;
+
+    public static final byte[] ENCODED_MAX_AGE_DEFAULT =
+            new BigInteger(1, Longs.toByteArray(MAX_AGE_DEFAULT)).toByteArray();
+
+    public static final byte[] ENCODED_URI_PORT_DEFAULT = new BigInteger(1, Longs.toByteArray(URI_PORT_DEFAULT)).toByteArray();
+
+    private static HashMap<Integer, Integer[]> characteristics = new HashMap<>();
     static{
-        constraints.put(    IF_MATCH,       new Integer[]{OPAQUE,       0,      8       });
-        constraints.put(    URI_HOST,       new Integer[]{STRING,       1,      255     });
-        constraints.put(    ETAG,           new Integer[]{OPAQUE,       1,      8       });
-        constraints.put(    IF_NONE_MATCH,  new Integer[]{EMPTY,        0,      0       });
-        constraints.put(    URI_PORT,       new Integer[]{UINT,         0,      2       });
-        constraints.put(    LOCATION_PATH,  new Integer[]{STRING,       0,      255     });
-        constraints.put(    URI_PATH,       new Integer[]{STRING,       0,      255     });
-        constraints.put(    CONTENT_FORMAT, new Integer[]{UINT,         0,      2       });
-        constraints.put(    MAX_AGE,        new Integer[]{UINT,         0,      4       });
-        constraints.put(    URI_QUERY,      new Integer[]{STRING,       0,      255     });
-        constraints.put(    ACCEPT,         new Integer[]{UINT,         0,      2       });
-        constraints.put(    LOCATION_QUERY, new Integer[]{STRING,       0,      255     });
-        constraints.put(    PROXY_URI,      new Integer[]{STRING,       1,      1034    });
-        constraints.put(    PROXY_SCHEME,   new Integer[]{STRING,       1,      255     });
-        constraints.put(    SIZE_1,         new Integer[]{UINT,         0,      4       });
-    }
-
-
-    public static int getMinLength(int optionNumber){
-        return constraints.get(optionNumber)[1];
-    }
-
-    public static int getMaxLength(int optionNumber){
-        return constraints.get(optionNumber)[2];
+        characteristics.put(    IF_MATCH,       new Integer[]{OPAQUE,       0,      8       });
+        characteristics.put(    URI_HOST,       new Integer[]{STRING,       1,      255     });
+        characteristics.put(    ETAG,           new Integer[]{OPAQUE,       1,      8       });
+        characteristics.put(    IF_NONE_MATCH,  new Integer[]{EMPTY,        0,      0       });
+        characteristics.put(    URI_PORT,       new Integer[]{UINT,         0,      2       });
+        characteristics.put(    LOCATION_PATH,  new Integer[]{STRING,       0,      255     });
+        characteristics.put(    URI_PATH,       new Integer[]{STRING,       0,      255     });
+        characteristics.put(    CONTENT_FORMAT, new Integer[]{UINT,         0,      2       });
+        characteristics.put(    MAX_AGE,        new Integer[]{UINT,         0,      4       });
+        characteristics.put(    URI_QUERY,      new Integer[]{STRING,       0,      255     });
+        characteristics.put(    ACCEPT,         new Integer[]{UINT,         0,      2       });
+        characteristics.put(    LOCATION_QUERY, new Integer[]{STRING,       0,      255     });
+        characteristics.put(    PROXY_URI,      new Integer[]{STRING,       1,      1034    });
+        characteristics.put(    PROXY_SCHEME,   new Integer[]{STRING,       1,      255     });
+        characteristics.put(    SIZE_1,         new Integer[]{UINT,         0,      4       });
     }
 
     /**
+     * Returns the minimum length for the given option number in bytes.
+     *
+     * @param optionNumber the option number to check the minimum length of
+     * @return the minimum length for the given option number in bytes
+     * @throws UnknownOptionException if the given option number refers to an unknown option
+     */
+    public static int getMinLength(int optionNumber) throws UnknownOptionException {
+        if(!characteristics.containsKey(optionNumber))
+            throw new UnknownOptionException(optionNumber);
+
+        return characteristics.get(optionNumber)[1];
+    }
+
+
+    /**
+     * Returns the maximum length for the given option number in bytes.
+     *
+     * @param optionNumber the option number to check the maximum length of
+     * @return the maximum length for the given option number in bytes
+     * @throws UnknownOptionException if the given option number refers to an unknown option
+     */
+    public static int getMaxLength(int optionNumber) throws UnknownOptionException {
+        if(!characteristics.containsKey(optionNumber))
+            throw new UnknownOptionException(optionNumber);
+
+        return characteristics.get(optionNumber)[2];
+    }
+
+
+    /**
      * Returns <code>true</code> if the option is critical and <code>false</code> if the option is elective
+     *
      * @return <code>true</code> if the option is critical and <code>false</code> if the option is elective
      */
     public static boolean isCritical(int optionNumber){
@@ -87,6 +116,7 @@ public abstract class Option<T>{
     /**
      * Returns <code>true</code> if the option is unsafe-to-forward and <code>false</code> if the option is
      * safe-to-forward by a proxy
+     *
      * @return <code>true</code> if the option is unsafe-to-forward and <code>false</code> if the option is
      * safe-to-forward by a proxy
      */
@@ -94,153 +124,55 @@ public abstract class Option<T>{
         return (optionNumber & 2) == 2;
     }
 
-
     public static boolean isNoCacheKey(int optionNumber){
         return (optionNumber & 0x1e) == 0x1c;
     }
 
+    /**
+     * Returns the integer value representing the type of the option the given option number refers to (see
+     * {@link OptionType} for constants)
+     *
+     * @param optionNumber the option number to return the type of
+     * @return the integer value representing the type of the option the given option number refers to
+     * @throws UnknownOptionException if the given option number refers to an unknown option
+     */
+    public static int getOptionType(int optionNumber) throws UnknownOptionException{
+        if(!characteristics.containsKey(optionNumber))
+            throw new UnknownOptionException(optionNumber);
+        else
+            return characteristics.get(optionNumber)[0];
+    }
+
+    public static boolean isDefaultValue(int optionNumber, byte[] value){
+        if(optionNumber == OptionName.URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT))
+            return true;
+
+        if(optionNumber == OptionName.MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT))
+            return true;
+
+        if(optionNumber == OptionName.URI_HOST && InetAddresses.isInetAddress(new String(value, CoapMessage.CHARSET)))
+            return true;
+
+        return false;
+    }
+
     protected byte[] value;
 
+    protected Option(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
 
-    protected Option(int optionNumber, byte[] value) throws InvalidOptionException {
-        if(getMinLength(optionNumber) <= value.length && getMaxLength(optionNumber) >= value.length)
-            this.value = value;
-        else
+        if(Option.isDefaultValue(optionNumber, value))
+            throw new InvalidOptionException(optionNumber, "The given value is the default value. No option created.");
+
+        if(getMinLength(optionNumber) > value.length || getMaxLength(optionNumber) < value.length)
             throw new InvalidOptionException(optionNumber, "Invalid option length (Actual: " + value.length
-                + ", Minimum: " + getMinLength(optionNumber) + ", Maximum: " + getMaxLength(optionNumber) + ")");
+                    + ", Minimum: " + getMinLength(optionNumber) + ", Maximum: " + getMaxLength(optionNumber) + ")");
+
+        this.value = value;
     }
 
     public abstract T getValue();
 
 
-//    /**
-//     * Creates all URI related options from the given URI
-//     * @param uri URI to extract the URI options from
-//     * @throws URISyntaxException if the URI is not absolute, has scheme which is not coap or coaps, or has a fragment
-//     * part
-//     * @throws InvalidOptionException if at least one of the target URI related options to be created does not
-//     * match the criteria defined for the option type
-//     * @return A collection containing the appropriate amount of target URI related options
-//     */
-//    public static List<Option> createTargetURIOptions(URI uri) throws URISyntaxException, InvalidOptionException {
-//        uri = uri.normalize();
-//
-//        ArrayList<Option> result = new ArrayList<>();
-//
-//        //URI must be absolute and thus contain a scheme part (must be one of "coap" or "coaps")
-//        String scheme = uri.getScheme();
-//        if(scheme == null){
-//            String msg = "URI must be absolute and " +
-//                    "scheme must be either \"coap\" or \"coaps\" but is " + scheme;
-//            throw new URISyntaxException(uri.toString(), msg);
-//        }
-//        else{
-//            scheme = scheme.toLowerCase();
-//            if(!(scheme.equals("coap") || scheme.equals("coaps"))){
-//                String msg = "URI scheme must be either \"coap\" or \"coaps\" but is " + scheme;
-//                throw new URISyntaxException(uri.toString(), msg);
-//            }
-//        }
-//
-//        //Target URI must not have fragment part
-//        if(uri.getFragment() != null){
-//            String msg = "Target URI must not have a fragment part.";
-//            throw new URISyntaxException(uri.toString(), msg);
-//        }
-//
-//        //Create URI-host option
-//        String host = uri.getHost();
-//        log.debug("Host: " + uri.getHost() + ", Path: " + uri.getPath() + ", Auth.: " + uri.getAuthority());
-//
-//        //Do only add an URI host option if the host is no IP-Address
-//        log.debug("Target URI host: " + host);
-//
-//        if(host.startsWith("[") && host.endsWith("]")){
-//            host = host.substring(1, host.length() - 1);
-//        }
-//
-//        if(!InetAddresses.isInetAddress(host)){
-//            result.add(new StringOption(URI_HOST, host));
-//            log.debug("URI-Host option added to result list.");
-//        }
-//        else{
-//            log.debug("URI-Host " + host + " is an IP literal and thus not added to the result list.");
-//        }
-//
-//        //Create URI-port option
-//        int uriPort = uri.getPort();
-//
-//        if(uriPort > 0 && uriPort != URI_PORT_DEFAULT){
-//            result.add(new UintOption(URI_PORT, uriPort));
-//            log.debug("Target URI-Port option ({}) added to result list.", uriPort);
-//        }
-//        else{
-//            log.debug("URI-Port {} is empty or default ({}) and thus not added as option.", uriPort, URI_PORT_DEFAULT);
-//        }
-//
-//        //Add URI-Path option(s)
-//        String uriPath = uri.getRawPath();
-//        if(uriPath != null){
-//            //Path must not start with "/" to be further processed
-//            if(uriPath.startsWith("/")){
-//                uriPath = uriPath.substring(1);
-//            }
-//
-//            //Each URI-path option to be added contains one fragment as payload. The fragments of the path
-//            //are the substrings of the full path seperated by "/"
-//            if(uriPath.length() > 0){
-//                result.addAll(createSeparatedOptions(OptionName.URI_PATH, "/", uriPath));
-//            }
-//        }
-//
-//        //Add URI-Query option(s)
-//        String query = uri.getRawQuery();
-//
-//        if(query != null){
-//            //Each URI-query option to be added contains one fragment as payload. The fragments of the query
-//            //are the substrings of the full query seperated by "&"
-//            result.addAll(createSeparatedOptions(OptionName.URI_QUERY, "&", query));
-//        }
-//
-//        return result;
-//    }
-
-
-    /**
-     * This method creates one or more Proxy-URI options. More than one option is created if the
-     * length of the encoded URI string is more than 270. All but the last created options payload has a length
-     * of 270 bytes. Note that only absolute URIs are allowed to be added as Proxy URI.
-     *
-     * @param uri The URI to be added as Proxy URI option(s)
-     * @return The amount of options added to the list
-     * @throws URISyntaxException  if the URI to be added is not absolute
-     * @throws InvalidOptionException if one of the gateways URI options to be created is not valid
-     */
-    public static Collection<Option> createProxyUriOptions(URI uri) throws InvalidOptionException, URISyntaxException {
-        uri = uri.normalize();
-        ArrayList<Option> proxyOptions = new ArrayList<Option>();
-
-        if(!uri.isAbsolute()){
-            String msg = "URI to be added as proxy URI (" + uri.toString() + ") is not absolute.";
-            throw new URISyntaxException(uri.toString(), msg);
-        }
-
-        byte[] encodedUri = uri.toString().getBytes(StringOption.CHARSET);
-
-        log.debug("Length of encoded proxy URI: {} bytes.", encodedUri.length);
-
-        int startPos = 0;
-        while(startPos < encodedUri.length){
-            //All but the last option must contain a payload of 270 bytes
-            int endPos = Math.min(startPos + PROXY_URI.getMaxLength(), encodedUri.length);
-            proxyOptions.add(new StringOption(OptionName.PROXY_URI,
-                    Arrays.copyOfRange(encodedUri, startPos, endPos)));
-            startPos = endPos;
-        }
-        return proxyOptions;
-    }
-
-    public static
 
     /**
      * Location path and location query options are used to define the path of a newly created resource in a response

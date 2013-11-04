@@ -39,7 +39,7 @@ import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.MessageType;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
+import de.uniluebeck.itm.ncoap.message.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.toolbox.Token;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;

@@ -27,7 +27,7 @@ package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalUpdateNotificationRetransmissionMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.options.ToManyOptionsException;
+import de.uniluebeck.itm.ncoap.message.ToManyOptionsException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;

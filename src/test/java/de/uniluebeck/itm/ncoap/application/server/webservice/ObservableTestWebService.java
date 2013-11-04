@@ -28,7 +28,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
-import de.uniluebeck.itm.ncoap.message.MessageDoesNotAllowPayloadException;
+import de.uniluebeck.itm.ncoap.message.MessageDoesNotAllowContentException;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.*;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -140,7 +140,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
         CoapResponse response = new CoapResponse(MessageCode.CONTENT_205);
 
         byte[] payload = null;
-        if(coapRequest.getAcceptedMediaTypes().isEmpty()){
+        if(coapRequest.getAcceptedContentFormats().isEmpty()){
             try {
                 payload = getSerializedResourceStatus(MediaType.TEXT_PLAIN_UTF8);
             }
@@ -149,7 +149,7 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
             }
         }
         else{
-            for(MediaType mediaType : coapRequest.getAcceptedMediaTypes()){
+            for(MediaType mediaType : coapRequest.getAcceptedContentFormats()){
                 try{
                     payload = getSerializedResourceStatus(mediaType);
                 }
@@ -162,9 +162,9 @@ public class ObservableTestWebService extends ObservableWebService<Integer>{
         }
 
         try {
-            response.setPayload(ChannelBuffers.wrappedBuffer(payload));
+            response.setContent(ChannelBuffers.wrappedBuffer(payload));
         }
-        catch (MessageDoesNotAllowPayloadException e) {
+        catch (MessageDoesNotAllowContentException e) {
             fail(e.getMessage());
         }
 

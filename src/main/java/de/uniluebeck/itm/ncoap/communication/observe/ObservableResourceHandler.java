@@ -41,7 +41,7 @@
 //import org.slf4j.LoggerFactory;
 //import de.uniluebeck.itm.ncoap.message.MessageType;
 //import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
-//import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.MediaType;
+//import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.ContentFormat;
 //import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
 //
 //import java.net.InetSocketAddress;
@@ -259,7 +259,7 @@
 //
 //                    if(parameter != null){
 //                        if(coapResponse.getContentType() != null){
-//                            log.info("Set MediaType {} for {} observing {}", new Object[]{coapResponse.getContentType(),
+//                            log.info("Set ContentFormat {} for {} observing {}", new Object[]{coapResponse.getContentType(),
 //                                    me.getRemoteAddress(), coapResponse.getServicePath()});
 //                            parameter.setAcceptedMediaType(coapResponse.getContentType());
 //                        }
@@ -362,14 +362,14 @@
 //
 //        @Override
 //        public void run() {
-//            final EnumMap<OptionRegistry.MediaType, ChannelBuffer> serializations =
-//                    new EnumMap<OptionRegistry.MediaType, ChannelBuffer>(OptionRegistry.MediaType.class);
+//            final EnumMap<OptionRegistry.ContentFormat, ChannelBuffer> serializations =
+//                    new EnumMap<OptionRegistry.ContentFormat, ChannelBuffer>(OptionRegistry.ContentFormat.class);
 //
 //            for(final InetSocketAddress observerAddress : observations.keySet()){
 //
 //                //get media type for the actual observation
 //                ObservationParameter parameter = observations.get(observerAddress);
-//                MediaType mediaType = parameter.getAcceptedMediaType();
+//                ContentFormat mediaType = parameter.getAcceptedMediaType();
 //
 //                //create update notification
 //                CoapResponse updateNotification;
@@ -388,7 +388,7 @@
 //                    updateNotification = new CoapResponse(MessageCode.CONTENT_205);
 //                    updateNotification.getHeader().setMessageType(webService.getMessageTypeForUpdateNotifications());
 //                    updateNotification.setContentType(mediaType);
-//                    updateNotification.setPayload(ChannelBuffers.copiedBuffer(serializations.get(mediaType)));
+//                    updateNotification.setContent(ChannelBuffers.copiedBuffer(serializations.get(mediaType)));
 //                    updateNotification.setMaxAge(webService.getMaxAge());
 //
 //                    //update notification count for observation
@@ -402,7 +402,7 @@
 //                    if(e instanceof MediaTypeNotSupportedException){
 //                        MediaTypeNotSupportedException exception = (MediaTypeNotSupportedException) e;
 //                        String message = "Media type(s)";
-//                        for(MediaType unsupportedMediaType : exception.getUnsupportedMediaTypes()){
+//                        for(ContentFormat unsupportedMediaType : exception.getUnsupportedMediaTypes()){
 //                            message += (" " + unsupportedMediaType);
 //                        }
 //                        message += " not anymore supported by service " + webService.getPath();

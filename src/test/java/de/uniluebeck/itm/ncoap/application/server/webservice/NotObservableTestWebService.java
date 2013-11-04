@@ -27,7 +27,7 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.MessageDoesNotAllowPayloadException;
+import de.uniluebeck.itm.ncoap.message.MessageDoesNotAllowContentException;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
@@ -75,8 +75,8 @@ public class NotObservableTestWebService extends NotObservableWebService<String>
         CoapResponse response = new CoapResponse(MessageCode.CONTENT_205);
 
         try {
-            response.setPayload(ChannelBuffers.wrappedBuffer(getResourceStatus().getBytes(Charset.forName("UTF-8"))));
-        } catch (MessageDoesNotAllowPayloadException e) {
+            response.setContent(ChannelBuffers.wrappedBuffer(getResourceStatus().getBytes(Charset.forName("UTF-8"))));
+        } catch (MessageDoesNotAllowContentException e) {
             log.error("This should never happen.", e);
             fail("This should never happen.");
         }

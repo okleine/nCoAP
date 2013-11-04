@@ -102,7 +102,7 @@
 //    /**
 //     * Enumeration containing the available media types
 //     */
-//    public static enum MediaType {
+//    public static enum ContentFormat {
 //        UNKNOWN(-1),
 //        TEXT_PLAIN_UTF8(0),
 //        APP_LINK_FORMAT(40),
@@ -117,18 +117,18 @@
 //
 //        public final int number;
 //
-//        MediaType(int number){
+//        ContentFormat(int number){
 //            this.number = number;
 //        }
 //
 //        /**
-//         * Returns the corresonding {@link MediaType} for the given number
+//         * Returns the corresonding {@link ContentFormat} for the given number
 //         *
-//         * @param number the number to look up the corresponding {@link MediaType}
-//         * @return the corresonding {@link MediaType} for the given number
+//         * @param number the number to look up the corresponding {@link ContentFormat}
+//         * @return the corresonding {@link ContentFormat} for the given number
 //         */
-//        public static MediaType getByNumber(Long number){
-//            for(MediaType mediaType : MediaType.values()){
+//        public static ContentFormat getByNumber(Long number){
+//            for(ContentFormat mediaType : ContentFormat.values()){
 //                if(mediaType.number == number){
 //                    return mediaType;
 //                }
@@ -145,7 +145,7 @@
 //    /**
 //     * The default value of the {@link OptionName#MAX_AGE} option (if not set different in a {@link CoapResponse})
 //     */
-//    public static int MAX_AGE_DEFAULT = 60;
+//    public static int ENCODED_MAX_AGE_DEFAULT = 60;
 //
 //
 //    private static final HashMap<OptionName, OptionSyntaxConstraints> syntaxConstraints
@@ -284,7 +284,7 @@
 //        allowedOptions.put(MessageCode.METHOD_NOT_ALLOWED_405, constraints4x5x);
 //        allowedOptions.put(MessageCode.PRECONDITION_FAILED_412, constraints4x5x);
 //        allowedOptions.put(MessageCode.REQUEST_ENTITY_TOO_LARGE_413, constraints4x5x);
-//        allowedOptions.put(MessageCode.UNSUPPORTED_MEDIA_TYPE_415, constraints4x5x);
+//        allowedOptions.put(MessageCode.UNSUPPORTED_CONTENT_FORMAT_415, constraints4x5x);
 //        allowedOptions.put(MessageCode.INTERNAL_SERVER_ERROR_500, constraints4x5x);
 //        allowedOptions.put(MessageCode.NOT_IMPLEMENTED_501, constraints4x5x);
 //        allowedOptions.put(MessageCode.BAD_GATEWAY_502, constraints4x5x);

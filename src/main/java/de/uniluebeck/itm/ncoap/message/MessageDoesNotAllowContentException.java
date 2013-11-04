@@ -50,26 +50,9 @@ package de.uniluebeck.itm.ncoap.message;
 /**
  * @author Oliver Kleine
  */
-public abstract class MessageType {
+public class MessageDoesNotAllowContentException extends Exception{
 
-    /**
-     * corresponds to CoAPs numerical message type 0 (Confirmable message)
-     */
-    public static final int CON = 0;
-
-    /**
-     * corresponds to CoAPs numerical message type 1 (Nonconfirmable message)
-     */
-    public static final int NON = 1;
-
-    /**
-     * corresponds to CoAPs numerical message type 2 (Acknowledgement)
-     */
-    public static final int ACK = 2;
-
-    /**
-     * corresponds to CoAPs numerical message type 3 (Reset message)
-     */
-    public static final int RST = 3;
-
+    public MessageDoesNotAllowContentException(String msg){
+        super(msg);
+    }
 }
