@@ -1,4 +1,6 @@
-package de.uniluebeck.itm.ncoap.message;
+package de.uniluebeck.itm.ncoap.message.options;
+
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 import java.math.BigInteger;
 

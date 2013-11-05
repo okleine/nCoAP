@@ -24,12 +24,14 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
+import de.uniluebeck.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
+
 
 
 /**
@@ -42,19 +44,24 @@ public class CoapResponse extends CoapMessage {
     private String servicePath;
 
     /**
-     * This is the constructor supposed to be used to create {@link CoapResponse} instances. The {@link MessageTypeNames} is
+     * This is the constructor supposed to be used to create {@link CoapResponse} instances. The {@link MessageType} is
      * automatically set by the nCoAP framework.
      *
-     * @param messageCode The {@link MessageCodeNames} of the response
+     * @param messageCode The {@link MessageCode} of the response
      */
     public CoapResponse(int messageCode){
         super(messageCode);
     }
 
+//    public CoapResponse(int messageType, int messageCode, int messageID, long token) throws InvalidMessageException {
+//
+//        super(messageType, messageCode, messageID, token);
+//
+//    }
 
     public void setEtag(byte[] etag) throws InvalidOptionException {
         try {
-            this.addOpaqueOption(OptionName.ETAG, etag);
+            this.addOpaqueOption(Option.Name.ETAG, etag);
         }
         catch (UnknownOptionException e) {
             log.error("This should never happen.", e);
@@ -63,8 +70,8 @@ public class CoapResponse extends CoapMessage {
 
 
     public byte[] getEtag(){
-        if(options.containsKey(OptionName.ETAG))
-            return ((OpaqueOption) options.get(OptionName.ETAG).iterator().next()).getDecodedValue();
+        if(options.containsKey(Option.Name.ETAG))
+            return ((OpaqueOption) options.get(Option.Name.ETAG).iterator().next()).getDecodedValue();
         else
             return null;
     }
@@ -77,12 +84,12 @@ public class CoapResponse extends CoapMessage {
      * @param locationURI The location URI of the newly created resource. The parts scheme, host, and port are
      * ignored anyway and thus may not be included in the URI object
      *
-     * @throws InvalidOptionException if at least one of the options to be added is not valid
+     * @throws de.uniluebeck.itm.ncoap.message.options.InvalidOptionException if at least one of the options to be added is not valid
      */
     public void setLocationURI(URI locationURI) throws InvalidOptionException {
 
-        options.removeAll(OptionName.LOCATION_PATH);
-        options.removeAll(OptionName.LOCATION_QUERY);
+        options.removeAll(Option.Name.LOCATION_PATH);
+        options.removeAll(Option.Name.LOCATION_QUERY);
 
         String locationPath = locationURI.getRawPath();
         String locationQuery = locationURI.getRawQuery();
@@ -94,17 +101,17 @@ public class CoapResponse extends CoapMessage {
                     locationPath = locationPath.substring(1);
 
                 for(String pathComponent : locationPath.split("/"))
-                    this.addStringOption(OptionName.URI_PATH, pathComponent);
+                    this.addStringOption(Option.Name.URI_PATH, pathComponent);
             }
 
             if(locationQuery != null){
                 for(String queryComponent : locationQuery.split("&"))
-                    this.addStringOption(OptionName.LOCATION_QUERY, queryComponent);
+                    this.addStringOption(Option.Name.LOCATION_QUERY, queryComponent);
             }
         }
         catch(InvalidOptionException e){
-            options.removeAll(OptionName.LOCATION_PATH);
-            options.removeAll(OptionName.LOCATION_QUERY);
+            options.removeAll(Option.Name.LOCATION_PATH);
+            options.removeAll(Option.Name.LOCATION_QUERY);
             throw e;
         }
         catch(UnknownOptionException e){
@@ -126,8 +133,8 @@ public class CoapResponse extends CoapMessage {
         //Reconstruct path
         StringBuffer locationPath = new StringBuffer();
 
-        if(options.containsKey(OptionName.LOCATION_PATH)){
-            Iterator<Option> pathComponentIterator = options.get(OptionName.LOCATION_PATH).iterator();
+        if(options.containsKey(Option.Name.LOCATION_PATH)){
+            Iterator<Option> pathComponentIterator = options.get(Option.Name.LOCATION_PATH).iterator();
             while(pathComponentIterator.hasNext())
                     locationPath.append("/" + ((StringOption) pathComponentIterator.next()).getDecodedValue());
         }
@@ -135,8 +142,8 @@ public class CoapResponse extends CoapMessage {
        //Reconstrut query
         StringBuffer locationQuery = new StringBuffer();
 
-        if(options.containsKey(OptionName.LOCATION_QUERY)){
-            Iterator<Option> queryComponentIterator = options.get(OptionName.LOCATION_QUERY).iterator();
+        if(options.containsKey(Option.Name.LOCATION_QUERY)){
+            Iterator<Option> queryComponentIterator = options.get(Option.Name.LOCATION_QUERY).iterator();
             locationQuery.append(((StringOption) queryComponentIterator.next()).getDecodedValue());
             while(queryComponentIterator.hasNext())
                 locationQuery.append("&" + ((StringOption) queryComponentIterator.next()).getDecodedValue());
@@ -158,37 +165,37 @@ public class CoapResponse extends CoapMessage {
 //     * options per message.
 //     */
 //    public void setObserveOptionValue(long sequenceNumber) throws ToManyOptionsException {
-//        options.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+//        options.removeAllOptions(OptionRegistry.Option.Name.OBSERVE_RESPONSE);
 //        try{
-//            Option option = Option.createUintOption(OptionRegistry.OptionName.OBSERVE_RESPONSE, sequenceNumber);
-//            options.addOption(header.getMessageCode(), OptionRegistry.OptionName.OBSERVE_RESPONSE, option);
+//            Option option = Option.createUintOption(OptionRegistry.Option.Name.OBSERVE_RESPONSE, sequenceNumber);
+//            options.addOption(header.getMessageCode(), OptionRegistry.Option.Name.OBSERVE_RESPONSE, option);
 //        } catch (InvalidOptionException e) {
-//            options.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
+//            options.removeAllOptions(OptionRegistry.Option.Name.OBSERVE_RESPONSE);
 //            log.error("This should never happen!", e);
 //        } catch (ToManyOptionsException e) {
-//            options.removeAllOptions(OptionRegistry.OptionName.OBSERVE_RESPONSE);
-//            log.debug("Critical option (" + OptionRegistry.OptionName.OBSERVE_RESPONSE + ") could not be added.", e);
+//            options.removeAllOptions(OptionRegistry.Option.Name.OBSERVE_RESPONSE);
+//            log.debug("Critical option (" + OptionRegistry.Option.Name.OBSERVE_RESPONSE + ") could not be added.", e);
 //            throw e;
 //        }
 //    }
 
 //    /**
-//     * Returns <code>true</code> if the {@link OptionName#OBSERVE_RESPONSE} option is set and <code>false</code>
+//     * Returns <code>true</code> if the {@link Name#OBSERVE_RESPONSE} option is set and <code>false</code>
 //     * otherwise
-//     * @return <code>true</code> if the {@link OptionName#OBSERVE_RESPONSE} option is set and <code>false</code>
+//     * @return <code>true</code> if the {@link Name#OBSERVE_RESPONSE} option is set and <code>false</code>
 //     * otherwise
 //     */
 //    public boolean isUpdateNotification(){
-//        return !(this.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).isEmpty());
+//        return !(this.getOption(OptionRegistry.Option.Name.OBSERVE_RESPONSE).isEmpty());
 //    }
 //
 //    /**
-//     * Returns the value of the {@link OptionName#OBSERVE_RESPONSE} option
-//     * @return the value of the {@link OptionName#OBSERVE_RESPONSE} option
-//     * @throws NullPointerException if this response does not contain an {@link OptionName#OBSERVE_RESPONSE} option
+//     * Returns the value of the {@link Name#OBSERVE_RESPONSE} option
+//     * @return the value of the {@link Name#OBSERVE_RESPONSE} option
+//     * @throws NullPointerException if this response does not contain an {@link Name#OBSERVE_RESPONSE} option
 //     */
 //    public long getObserveOptionValue() throws NullPointerException{
-//       return (Long) this.getOption(OptionRegistry.OptionName.OBSERVE_RESPONSE).get(0).getDecodedValue();
+//       return (Long) this.getOption(OptionRegistry.Option.Name.OBSERVE_RESPONSE).get(0).getDecodedValue();
 //    }
 
     public String getServicePath() {

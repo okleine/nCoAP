@@ -22,10 +22,13 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message;
+package de.uniluebeck.itm.ncoap.message.options;
 
 import com.google.common.net.InetAddresses;
 import com.google.common.primitives.Longs;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -37,6 +40,27 @@ import java.util.HashMap;
  */
 public abstract class Option<T>{
 
+    private static Logger log = LoggerFactory.getLogger(Option.class.getName());
+
+    public static class Name{
+        //Name          Number      OptionType  MinLength   MaxLength
+        public static final int IF_MATCH        = 1;
+        public static final int URI_HOST        = 3;
+        public static final int ETAG            = 4;
+        public static final int IF_NONE_MATCH   = 5;
+        public static final int URI_PORT        = 7;
+        public static final int LOCATION_PATH   = 8;
+        public static final int URI_PATH        = 11;
+        public static final int CONTENT_FORMAT  = 12;
+        public static final int MAX_AGE         = 14;
+        public static final int URI_QUERY       = 15;
+        public static final int ACCEPT          = 17;
+        public static final int LOCATION_QUERY  = 20;
+        public static final int PROXY_URI       = 35;
+        public static final int PROXY_SCHEME    = 39;
+        public static final int SIZE_1          = 60;
+    }
+    
     public static final long MAX_AGE_DEFAULT = 60;
     public static final long URI_PORT_DEFAULT = 5683;
 
@@ -47,21 +71,21 @@ public abstract class Option<T>{
 
     private static HashMap<Integer, Integer[]> characteristics = new HashMap<>();
     static{
-        characteristics.put(    OptionName.IF_MATCH,       new Integer[]{OptionType.OPAQUE,       0,      8       });
-        characteristics.put(    OptionName.URI_HOST,       new Integer[]{OptionType.STRING,       1,      255     });
-        characteristics.put(    OptionName.ETAG,           new Integer[]{OptionType.OPAQUE,       1,      8       });
-        characteristics.put(    OptionName.IF_NONE_MATCH,  new Integer[]{OptionType.EMPTY,        0,      0       });
-        characteristics.put(    OptionName.URI_PORT,       new Integer[]{OptionType.UINT,         0,      2       });
-        characteristics.put(    OptionName.LOCATION_PATH,  new Integer[]{OptionType.STRING,       0,      255     });
-        characteristics.put(    OptionName.URI_PATH,       new Integer[]{OptionType.STRING,       0,      255     });
-        characteristics.put(    OptionName.CONTENT_FORMAT, new Integer[]{OptionType.UINT,         0,      2       });
-        characteristics.put(    OptionName.MAX_AGE,        new Integer[]{OptionType.UINT,         0,      4       });
-        characteristics.put(    OptionName.URI_QUERY,      new Integer[]{OptionType.STRING,       0,      255     });
-        characteristics.put(    OptionName.ACCEPT,         new Integer[]{OptionType.UINT,         0,      2       });
-        characteristics.put(    OptionName.LOCATION_QUERY, new Integer[]{OptionType.STRING,       0,      255     });
-        characteristics.put(    OptionName.PROXY_URI,      new Integer[]{OptionType.STRING,       1,      1034    });
-        characteristics.put(    OptionName.PROXY_SCHEME,   new Integer[]{OptionType.STRING,       1,      255     });
-        characteristics.put(    OptionName.SIZE_1,         new Integer[]{OptionType.UINT,         0,      4       });
+        characteristics.put(    Name.IF_MATCH,       new Integer[]{OptionType.Name.OPAQUE,       0,      8       });
+        characteristics.put(    Name.URI_HOST,       new Integer[]{OptionType.Name.STRING,       1,      255     });
+        characteristics.put(    Name.ETAG,           new Integer[]{OptionType.Name.OPAQUE,       1,      8       });
+        characteristics.put(    Name.IF_NONE_MATCH,  new Integer[]{OptionType.Name.EMPTY,        0,      0       });
+        characteristics.put(    Name.URI_PORT,       new Integer[]{OptionType.Name.UINT,         0,      2       });
+        characteristics.put(    Name.LOCATION_PATH,  new Integer[]{OptionType.Name.STRING,       0,      255     });
+        characteristics.put(    Name.URI_PATH,       new Integer[]{OptionType.Name.STRING,       0,      255     });
+        characteristics.put(    Name.CONTENT_FORMAT, new Integer[]{OptionType.Name.UINT,         0,      2       });
+        characteristics.put(    Name.MAX_AGE,        new Integer[]{OptionType.Name.UINT,         0,      4       });
+        characteristics.put(    Name.URI_QUERY,      new Integer[]{OptionType.Name.STRING,       0,      255     });
+        characteristics.put(    Name.ACCEPT,         new Integer[]{OptionType.Name.UINT,         0,      2       });
+        characteristics.put(    Name.LOCATION_QUERY, new Integer[]{OptionType.Name.STRING,       0,      255     });
+        characteristics.put(    Name.PROXY_URI,      new Integer[]{OptionType.Name.STRING,       1,      1034    });
+        characteristics.put(    Name.PROXY_SCHEME,   new Integer[]{OptionType.Name.STRING,       1,      255     });
+        characteristics.put(    Name.SIZE_1,         new Integer[]{OptionType.Name.UINT,         0,      4       });
     }
 
     /**
@@ -144,13 +168,13 @@ public abstract class Option<T>{
      */
     public static boolean isDefaultValue(int optionNumber, byte[] value){
 
-        if(optionNumber == OptionName.URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT))
+        if(optionNumber == Name.URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT))
             return true;
 
-        if(optionNumber == OptionName.MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT))
+        if(optionNumber == Name.MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT))
             return true;
 
-        if(optionNumber == OptionName.URI_HOST){
+        if(optionNumber == Name.URI_HOST){
             String hostName = new String(value, CoapMessage.CHARSET);
             if(hostName.startsWith("[") && hostName.endsWith("]"))
                 hostName = hostName.substring(1, hostName.length() - 1);
@@ -162,6 +186,24 @@ public abstract class Option<T>{
         return false;
     }
 
+    public static Option createOption(int optionNumber, byte[] value) throws UnknownOptionException,
+            InvalidOptionException {
+
+        switch(Option.getOptionType(optionNumber)){
+            case OptionType.Name.STRING:
+                return new StringOption(optionNumber, value);
+            case OptionType.Name.UINT:
+                return new UintOption(optionNumber, value);
+            case OptionType.Name.OPAQUE:
+                return new OpaqueOption(optionNumber, value);
+            case OptionType.Name.EMPTY:
+                return new EmptyOption(optionNumber);
+            default:
+                log.error("This should never happen!");
+                throw new UnknownOptionException(optionNumber);
+        }
+    }
+    
     protected byte[] value;
 
     protected Option(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {

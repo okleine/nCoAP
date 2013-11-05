@@ -23,10 +23,13 @@
 
 package de.uniluebeck.itm.ncoap.communication.encoding;
 
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
+import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedBytes;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.InvalidOptionException;
-import de.uniluebeck.itm.ncoap.message.Option;
+import de.uniluebeck.itm.ncoap.message.options.*;
 import de.uniluebeck.itm.ncoap.message.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
@@ -36,7 +39,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.Collection;
+import java.util.TreeMap;
 
 
 /**
@@ -49,7 +56,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
     private static Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class.getName());
 
     @Override
-    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object object) throws DecodingFailedException {
+    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object object) throws DecodingFailedException, InvalidOptionException, InvalidMessageException {
 
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
         if(!(object instanceof ChannelBuffer)){
@@ -78,56 +85,91 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         log.debug("Decoded Header: (T) {}, (TKL) {}, (C) {}, (ID) {}",
                 new Object[]{messageType, tokenLength, messageCode, messageID});
 
-
         //Decode the token
         byte[] token = new byte[tokenLength];
         buffer.readBytes(token);
 
-        //Decode the options
-        byte firstByte = buffer.readByte();
-        while(firstByte != -128){
-            int optionDelta = firstByte <<
-        }
+        //Create CoAP message object
+        CoapMessage coapMessage = CoapMessage.createCoapMessage(messageType, messageCode, messageID, token);
 
-
-
+        //Decode and set the options
+        setOptions(coapMessage, buffer);
 
         //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
         //at the same position (buf.readableBytes() == 0).
         buffer.discardReadBytes();
-
+        coapMessage.setContent(buffer);
         CoapMessage result;
-
-        if(header.getMessageCode().isRequest()){
-            result = new CoapRequest(header, optionList, buffer);
-            log.debug("Decoded CoapRequest.");
-        }
-        else if (header.getMessageCode().isResponse()){
-            result = new CoapResponse(header, optionList, buffer);
-            log.debug("Decoded CoapResponse.");
-        }
-        else if(header.getMessageCode() == MessageCode.EMPTY){
-            if(header.getMessageType() == MessageType.ACK)
-                result = CoapMessage.createEmptyAcknowledgement(header.getMsgID());
-            else if(header.getMessageType() == MessageType.RST)
-                result = CoapMessage.createEmptyReset(header.getMsgID());
-
-            else
-                throw new EncodingFailedException("Not decodable header: " + header);
-        }
-        else{
-            throw new EncodingFailedException("Not decodable header: " + header);
-        }
 
         //TODO Set IP address of local socket (currently [0::] for wildcard address)
         InetAddress rcptAddress = ((InetSocketAddress) channel.getLocalAddress()).getAddress();
-        result.setRcptAdress(rcptAddress);
+        coapMessage.setR.setRcptAdress(rcptAddress);
 
         log.debug("Set receipient address to: " + rcptAddress);
         log.info("Decoded payload: {}", result.getContent().toString(Charset.forName("UTF-8")));
         log.info("Decoded payload size: {}", result.getContent().readableBytes());
         log.info("Decoded: " + result);
         return result;
+    }
+
+
+    private void setOptions(CoapMessage coapMessage, ChannelBuffer buffer) throws InvalidOptionException {
+
+//        SetMultimap<Integer, Option> options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<Option>>(),
+//                LinkedHashSetSupplier.getInstance());
+
+        //Decode the options
+        int previousOption = 0;
+        int firstByte = buffer.readByte() & 0xFF;
+        log.debug("First byte: {}", firstByte);
+
+        while(firstByte != 255 && buffer.readableBytes() >= 0){
+            int optionDelta = (firstByte & 0xFF) >>> 4;
+            int optionLength = firstByte & 0x0F;
+
+            if(optionDelta == 13)
+                optionDelta += buffer.readByte() & 0xFF;
+
+            else if(optionDelta == 14){
+                optionDelta += (buffer.readByte() << 8) & 0xFF00;
+                optionDelta += buffer.readByte() & 0xFF;
+            }
+
+            if(optionLength == 13)
+                optionLength += buffer.readByte() & 0xFF;
+
+            else if(optionLength == 14){
+                optionLength += (buffer.readByte() << 8) & 0xFF00;
+                optionLength += buffer.readByte() & 0xFF;
+            }
+
+            int optionNumber = previousOption + optionDelta;
+
+            try {
+                byte[] optionValue = new byte[optionLength];
+                buffer.readBytes(optionValue);
+                coapMessage.addOption(optionNumber, Option.createOption(optionNumber, optionValue));
+            }
+            catch (UnknownOptionException e) {
+                if(Option.isCritical(optionNumber)){
+                    String message = "Could not decode unsupported option no. " + optionNumber;
+                    log.warn(message);
+                    throw new InvalidOptionException(optionNumber, message);
+                }
+
+                log.debug("Silently ignored unsupported elective option no. {}", optionNumber);
+
+            }
+            catch (InvalidOptionException e) {
+                if(Option.isCritical(optionNumber)){
+                    String message = "Could not decode unsupported option no. " + optionNumber;
+                    log.warn(message);
+                    throw new InvalidOptionException(optionNumber, message);
+                }
+
+                log.debug("Silently ignored malformed elective option no. {}", optionNumber);
+            }
+        }
     }
 
     /**
@@ -198,7 +240,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
      *                         (or ZERO if there is no)
      * @param header the {@link Header} of the message to be decoded
      *
-     * @return The decoded {@link de.uniluebeck.itm.ncoap.message.Option}
+     * @return The decoded {@link de.uniluebeck.itm.ncoap.message.options.Option}
      *
      * @throws InvalidOptionException if the option to be decoded is invalid
      */

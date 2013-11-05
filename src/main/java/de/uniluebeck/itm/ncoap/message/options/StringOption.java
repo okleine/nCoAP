@@ -22,8 +22,9 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message;
+package de.uniluebeck.itm.ncoap.message.options;
 
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,12 +47,12 @@ public class StringOption extends Option<String>{
 //                            convertToByteArrayWithoutPercentEncoding(optionName, value));
 //    }
 
-    StringOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+    public StringOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, value);
     }
 
-    StringOption(int optionNumber, String value) throws InvalidOptionException, UnknownOptionException {
-        this(optionNumber, optionNumber == OptionName.URI_HOST ?
+    public StringOption(int optionNumber, String value) throws InvalidOptionException, UnknownOptionException {
+        this(optionNumber, optionNumber == Option.Name.URI_HOST ?
                 convertToByteArrayWithoutPercentEncoding(optionNumber, value.toLowerCase(Locale.ENGLISH)) :
                 convertToByteArrayWithoutPercentEncoding(optionNumber, value));
     }

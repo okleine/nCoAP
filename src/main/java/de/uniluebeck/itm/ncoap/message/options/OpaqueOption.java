@@ -22,24 +22,46 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message;
+package de.uniluebeck.itm.ncoap.message.options;
+
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 03.11.13
- * Time: 15:56
- * To change this template use File | Settings | File Templates.
+ * This class contains all specific functionality for {@link Option} instances of {@link OptionType.Name#OPAQUE}.
+ *
+ * @author Oliver Kleine
  */
-public abstract class ContentFormat {
-    public static final long    TEXT_PLAIN_UTF8     = 0;
-    public static final long    APP_LINK_FORMAT     = 40;
-    public static final long    APP_XML             = 41;
-    public static final long    APP_OCTET_STREAM    = 42;
-    public static final long    APP_EXI             = 47;
-    public static final long    APP_JSON            = 50;
-    public static final long    APP_RDF_XML         = 201;
-    public static final long    APP_TURTLE          = 202;
-    public static final long    APP_N3              = 203;
-    public static final long    APP_SHDT            = 205;
+public class OpaqueOption extends Option<byte[]>{
+
+    public OpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+        super(optionNumber, value);
+    }
+
+    /**
+     * Returns a {@link ByteBuffer} backed by the byte array that contains the value of this option.
+     * @return a {@link ByteBuffer} backed by the byte array that contains the value of this option.
+     */
+    @Override
+    public byte[] getDecodedValue() {
+        return this.value;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if(!(object instanceof OpaqueOption))
+            return false;
+
+        OpaqueOption other = (OpaqueOption) object;
+        return Arrays.equals(this.getDecodedValue(), other.getDecodedValue());
+    }
+
+    @Override
+    public String toString(){
+        if(this.value.length == 0)
+            return "<empty>";
+        else
+            return new BigInteger(1, value).toString(16);
+    }
 }

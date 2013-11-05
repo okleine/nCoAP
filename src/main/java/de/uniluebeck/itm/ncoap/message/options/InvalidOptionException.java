@@ -22,43 +22,42 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message;
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
 
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+package de.uniluebeck.itm.ncoap.message.options;
 
 /**
- * This class contains all specific functionality for {@link Option} instances of {@link OptionType#OPAQUE}.
  *
  * @author Oliver Kleine
  */
-public class OpaqueOption extends Option<byte[]>{
+public class InvalidOptionException extends Exception {
 
-    OpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
-        super(optionNumber, value);
+    private int optionNumber;
+
+    public InvalidOptionException(int optionNumber, String msg){
+        super(msg);
+        this.optionNumber = optionNumber;
     }
 
     /**
-     * Returns a {@link ByteBuffer} backed by the byte array that contains the value of this option.
-     * @return a {@link ByteBuffer} backed by the byte array that contains the value of this option.
+     * Returns true if this Exception has been caused by a critical option. Otherwise (in case of elective options)
+     * it returns false.
+     *
+     * @return whether the Exception was caused by a critical option
      */
-    @Override
-    public byte[] getDecodedValue() {
-        return this.value;
+    public boolean isCritical(){
+       return Option.isCritical(this.optionNumber);
     }
 
-    @Override
-    public boolean equals(Object object) {
-        if(!(object instanceof OpaqueOption))
-            return false;
-
-        OpaqueOption other = (OpaqueOption) object;
-        return Arrays.equals(this.getDecodedValue(), other.getDecodedValue());
+    /**
+     * Returns the number of the option that caused the exception
+     * @return the number of the option that caused the exception
+     */
+    public int getOptionNumber() {
+        return this.optionNumber;
     }
 
-    @Override
-    public String toString(){
-        return new BigInteger(1, value).toString(16);
-    }
 }

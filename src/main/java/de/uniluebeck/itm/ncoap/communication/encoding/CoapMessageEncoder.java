@@ -48,8 +48,7 @@
 package de.uniluebeck.itm.ncoap.communication.encoding;
 
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.InvalidMessageException;
-import de.uniluebeck.itm.ncoap.message.Option;
+import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;

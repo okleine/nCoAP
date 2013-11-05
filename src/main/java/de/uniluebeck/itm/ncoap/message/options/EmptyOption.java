@@ -22,42 +22,30 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
-package de.uniluebeck.itm.ncoap.message;
+package de.uniluebeck.itm.ncoap.message.options;
 
 /**
  *
  * @author Oliver Kleine
  */
-public class InvalidOptionException extends Exception {
+public class EmptyOption extends Option<Object>{
 
-    private int optionNumber;
+    //Constructor with package visibility
+    public EmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
+        super(optionNumber, new byte[0]);
+    }
 
-    public InvalidOptionException(int optionNumber, String msg){
-        super(msg);
-        this.optionNumber = optionNumber;
+    @Override
+    public boolean equals(Object o) {
+        return (o instanceof EmptyOption);
     }
 
     /**
-     * Returns true if this Exception has been caused by a critical option. Otherwise (in case of elective options)
-     * it returns false.
-     *
-     * @return whether the Exception was caused by a critical option
+     * This method is just to enable inheritance from {@link Option}. The return value is <code>null</code>.
+     * @return  <code>null</code> as there is no value
      */
-    public boolean isCritical(){
-       return Option.isCritical(this.optionNumber);
+    @Override
+    public Object getDecodedValue() {
+        return null;
     }
-
-    /**
-     * Returns the number of the option that caused the exception
-     * @return the number of the option that caused the exception
-     */
-    public int getOptionNumber() {
-        return this.optionNumber;
-    }
-
 }

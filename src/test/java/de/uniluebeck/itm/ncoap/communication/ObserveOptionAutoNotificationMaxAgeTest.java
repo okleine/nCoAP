@@ -55,7 +55,7 @@
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
 //import de.uniluebeck.itm.ncoap.message.MessageType;
-//import de.uniluebeck.itm.ncoap.message.UintOption;
+//import de.uniluebeck.itm.ncoap.message.options.UintOption;
 //import org.apache.log4j.Level;
 //import org.apache.log4j.Logger;
 //import org.junit.Test;

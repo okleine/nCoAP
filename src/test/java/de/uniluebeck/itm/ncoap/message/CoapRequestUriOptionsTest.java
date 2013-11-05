@@ -8,7 +8,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -61,7 +60,7 @@ public class CoapRequestUriOptionsTest extends AbstractCoapTest{
     public void testUriHostOption() throws Exception{
 
         //URI targetURI = new URI(uriScheme, null, uriHost, uriPort, uriPath, uriQuery, null);
-        CoapRequest coapRequest = new CoapRequest(MessageTypeNames.CON, MessageCodeNames.GET, uri);
+        CoapRequest coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, uri);
         assertEquals(uri.getHost(), coapRequest.getUriHost());
 
 

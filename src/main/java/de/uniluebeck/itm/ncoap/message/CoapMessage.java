@@ -24,12 +24,12 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Longs;
+import de.uniluebeck.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
@@ -40,10 +40,6 @@ import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.*;
 
-import static de.uniluebeck.itm.ncoap.message.MessageCodeNames.*;
-import static de.uniluebeck.itm.ncoap.message.MessageTypeNames.ACK;
-import static de.uniluebeck.itm.ncoap.message.MessageTypeNames.RST;
-import static de.uniluebeck.itm.ncoap.message.OptionName.*;
 
 /**
  * This class is the base class for inheriting subtypes, i.e. requests and responses. This abstract class provides the
@@ -51,7 +47,7 @@ import static de.uniluebeck.itm.ncoap.message.OptionName.*;
  *
  * @author Oliver Kleine
  */
-public abstract class CoapMessage {
+public class CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
@@ -65,75 +61,82 @@ public abstract class CoapMessage {
     private static HashBasedTable<Integer, Integer, Integer> optionOccurenceConstraints = HashBasedTable.create();
     static{
         //Requests
-        optionOccurenceConstraints.put(GET,      URI_HOST,           ONCE);
-        optionOccurenceConstraints.put(GET,      URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(GET,      URI_PATH,           MULTIPLE);
-        optionOccurenceConstraints.put(GET,      URI_QUERY,          MULTIPLE);
-        optionOccurenceConstraints.put(GET,      ACCEPT,             MULTIPLE);
-        optionOccurenceConstraints.put(GET,      ETAG,               MULTIPLE);
-        optionOccurenceConstraints.put(POST,     URI_HOST,           ONCE);
-        optionOccurenceConstraints.put(POST,     URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(POST,     URI_PATH,           MULTIPLE);
-        optionOccurenceConstraints.put(POST,     URI_QUERY,          MULTIPLE);
-        optionOccurenceConstraints.put(POST,     CONTENT_FORMAT,     ONCE);
-        optionOccurenceConstraints.put(PUT,      URI_HOST,           ONCE);
-        optionOccurenceConstraints.put(PUT,      URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(PUT,      URI_PATH,           MULTIPLE);
-        optionOccurenceConstraints.put(PUT,      URI_QUERY,          MULTIPLE);
-        optionOccurenceConstraints.put(PUT,      CONTENT_FORMAT,     ONCE);
-        optionOccurenceConstraints.put(PUT,      IF_MATCH,           ONCE);
-        optionOccurenceConstraints.put(PUT,      IF_NONE_MATCH,      ONCE);
-        optionOccurenceConstraints.put(DELETE,   URI_HOST,           ONCE);
-        optionOccurenceConstraints.put(DELETE,   URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(DELETE,   URI_PATH,           MULTIPLE);
-        optionOccurenceConstraints.put(DELETE,   URI_QUERY,          MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET,      Option.Name.URI_HOST,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET,      Option.Name.URI_PORT,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET,      Option.Name.URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET,      Option.Name.URI_QUERY,          MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET,      Option.Name.ACCEPT,             MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET,      Option.Name.ETAG,               MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST,     Option.Name.URI_HOST,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST,     Option.Name.URI_PORT,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST,     Option.Name.URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST,     Option.Name.URI_QUERY,          MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST,     Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT,      Option.Name.URI_HOST,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT,      Option.Name.URI_PORT,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT,      Option.Name.URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT,      Option.Name.URI_QUERY,          MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT,      Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT,      Option.Name.IF_MATCH,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT,      Option.Name.IF_NONE_MATCH,      ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE,   Option.Name.URI_HOST,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE,   Option.Name.URI_PORT,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE,   Option.Name.URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE,   Option.Name.URI_QUERY,          MULTIPLE);
 
         //Response success (2.x)
-        optionOccurenceConstraints.put(CREATED_201,  LOCATION_PATH,      MULTIPLE);
-        optionOccurenceConstraints.put(CREATED_201,  LOCATION_QUERY,     MULTIPLE);
-        optionOccurenceConstraints.put(VALID_203,    ETAG,               ONCE);
-        optionOccurenceConstraints.put(VALID_203,    MAX_AGE,            ONCE);
-        optionOccurenceConstraints.put(CONTENT_205,  CONTENT_FORMAT,     ONCE);
-        optionOccurenceConstraints.put(CONTENT_205,  MAX_AGE,            ONCE);
-        optionOccurenceConstraints.put(CONTENT_205,  ETAG,               ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201,  Option.Name.LOCATION_PATH,      MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201,  Option.Name.LOCATION_QUERY,     MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203,    Option.Name.ETAG,               ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203,    Option.Name.MAX_AGE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205,  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205,  Option.Name.MAX_AGE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205,  Option.Name.ETAG,               ONCE);
 
         //Client errors (4.x)
-        optionOccurenceConstraints.put(BAD_REQUEST_400,                  MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(UNAUTHORIZED_401,                 MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(BAD_OPTION_402,                   MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(FORBIDDEN_403,                    MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(NOT_FOUND_404,                    MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(METHOD_NOT_ALLOWED_405,           MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(NOT_ACCEPTABLE_406,               MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(PRECONDITION_FAILED_412,          MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(REQUEST_ENTITY_TOO_LARGE_413,     MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(REQUEST_ENTITY_TOO_LARGE_413,     SIZE_1,     ONCE);
-        optionOccurenceConstraints.put(UNSUPPORTED_CONTENT_FORMAT_415,   MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400,                  Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401,                 Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402,                   Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403,                    Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404,                    Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405,           Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406,               Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412,          Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413,     Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413,     Option.Name.SIZE_1,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415,   Option.Name.MAX_AGE,    ONCE);
         
         //Server errors (5.x)
-        optionOccurenceConstraints.put(INTERNAL_SERVER_ERROR_500,    MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(NOT_IMPLEMENTED_501,          MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(BAD_GATEWAY_502,              MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(GATEWAY_TIMEOUT_504,          MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(PROXYING_NOT_SUPPORTED_505,   MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500,    Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501,          Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502,              Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504,          Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505,   Option.Name.MAX_AGE,   ONCE);
     }
 
-    private static Supplier linkedHashSetSupplier = new Supplier<LinkedHashSet<Option>>() {
-        @Override
-        public LinkedHashSet<Option> get() {
-            return new LinkedHashSet<>();
-        }
-    };
+
 
     protected InetAddress recipientAddress;
 
     private int messageType;
     private int messageCode;
     private int messageID;
-    private long token;
+    private byte[] token;
     protected SetMultimap<Integer, Option> options;
     private ChannelBuffer content;
 
+    public static CoapMessage createCoapMessage(int messageType, int messageCode, int messageID, byte[] token)
+            throws InvalidMessageException {
+
+        return new CoapMessage(messageType, messageCode, messageID, token);
+
+    }
+
+    protected CoapMessage(int messageType, int messageCode, int messageID, byte[] token) throws InvalidMessageException {
+        this(messageType, messageCode);
+        this.setMessageID(messageID);
+        this.setToken(token);
+    }
 
     protected CoapMessage(int messageType, int messageCode){
         this();
@@ -147,11 +150,11 @@ public abstract class CoapMessage {
         this.messageCode = messageCode;
     }
 
-
     private CoapMessage(){
-        this.options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<Option>>(), linkedHashSetSupplier);
+        this.options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<Option>>(),
+                LinkedHashSetSupplier.getInstance());
         this.messageID = UNDEFINED;
-        this.token = 0;
+        this.token = new byte[0];
         this.content = ChannelBuffers.EMPTY_BUFFER;
     }
 
@@ -159,12 +162,12 @@ public abstract class CoapMessage {
      * Method to create an empty reset message which is strictly speaking neither a request nor a response
      * @param messageID the message ID of the reset message.
      *
-     * @return an instance of {@link CoapMessage} with {@link MessageTypeNames#RST}
+     * @return an instance of {@link CoapMessage} with {@link MessageType.Name#RST}
      */
     public static CoapMessage createEmptyReset(int messageID){
         CoapMessage emptyRST = new CoapMessage(){};
-        emptyRST.messageType = RST;
-        emptyRST.messageCode = EMPTY;
+        emptyRST.messageType = MessageType.Name.RST;
+        emptyRST.messageCode = MessageCode.Name.EMPTY;
         emptyRST.messageID = messageID;
         return emptyRST;
     }
@@ -173,63 +176,67 @@ public abstract class CoapMessage {
      * Method to create an empty acknowledgement message which is strictly speaking neither a request nor a response
      * @param messageID the message ID of the acknowledgement message.
      *
-     * @return an instance of {@link CoapMessage} with {@link MessageTypeNames#ACK}
+     * @return an instance of {@link CoapMessage} with {@link MessageType.Name#ACK}
      */
     public static CoapMessage createEmptyAcknowledgement(int messageID){
         CoapMessage emptyACK = new CoapMessage(){};
-        emptyACK.messageType = ACK;
-        emptyACK.messageCode = EMPTY;
+        emptyACK.messageType = MessageType.Name.ACK;
+        emptyACK.messageCode = MessageCode.Name.EMPTY;
         emptyACK.messageID = messageID;
         return emptyACK;
+    }
+
+    public void setRecipientAddress(InetAddress recipientAddress){
+        this.recipientAddress = recipientAddress;
+    }
+
+    public void addOption(int optionNumber, Option option) throws InvalidOptionException {
+        this.checkOptionPermission(optionNumber);
+        options.put(optionNumber, option);
+
+        log.debug("Added option (number: {}, value: {})", optionNumber, option.toString());
     }
 
     protected void addStringOption(int optionNumber, String value) throws UnknownOptionException,
             InvalidOptionException {
 
         this.checkOptionPermission(optionNumber);
-        if(!(Option.getOptionType(optionNumber) == OptionType.STRING))
+        if(!(Option.getOptionType(optionNumber) == OptionType.Name.STRING))
             throw new InvalidOptionException(optionNumber, "Option number {} is no string-option.");
 
         //Add new option to option list
         StringOption option = new StringOption(optionNumber, value);
-        options.put(optionNumber, option);
+        addOption(optionNumber, option);
 
-        log.debug("Added option (number: {}, value: {})", optionNumber, option.getDecodedValue());
     }
 
 
     protected void addUintOption(int optionNumber, long value) throws UnknownOptionException, InvalidOptionException {
 
-        this.checkOptionPermission(optionNumber);
-        if(!(Option.getOptionType(optionNumber) == OptionType.UINT))
+        if(!(Option.getOptionType(optionNumber) == OptionType.Name.UINT))
             throw new InvalidOptionException(optionNumber, "Option number {} is no uint-option.");
 
         //Add new option to option list
         UintOption option = new UintOption(optionNumber, new BigInteger(1, Longs.toByteArray(value)).toByteArray());
-        options.put(optionNumber, option);
+        addOption(optionNumber, option);
 
-        log.debug("Added option (number: {}, value: {})", optionNumber, option.getDecodedValue());
     }
 
     protected void addOpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
 
-        this.checkOptionPermission(optionNumber);
-
-        if(!(Option.getOptionType(optionNumber) == OptionType.OPAQUE))
+        if(!(Option.getOptionType(optionNumber) == OptionType.Name.OPAQUE))
             throw new InvalidOptionException(optionNumber, "Option number {} is no opaque option.");
 
         //Add new option to option list
         OpaqueOption option = new OpaqueOption(optionNumber, value);
-        options.put(optionNumber, option);
+        addOption(optionNumber, option);
 
-        log.debug("Added option (number: {}, value: {})", optionNumber,
-                new BigInteger(1, option.getDecodedValue()).toString(16));
     }
 
     protected void addEmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
 
         this.checkOptionPermission(optionNumber);
-        if(!(Option.getOptionType(optionNumber) == OptionType.EMPTY))
+        if(!(Option.getOptionType(optionNumber) == OptionType.Name.EMPTY))
             throw new InvalidOptionException(optionNumber, "Option number {} is no empty option.");
 
         //Add new option to option list
@@ -312,10 +319,9 @@ public abstract class CoapMessage {
      * @throws InvalidOptionException if the token does not match the token constraints
      * options per message.
      */
-    public void setToken(long token) throws InvalidMessageException{
-        BigInteger tmpToken = new BigInteger(1, Longs.toByteArray(token));
-        if(tmpToken.toByteArray().length > 8)
-            throw new InvalidMessageException("Token is too long (" + tmpToken.toString(16) + ").");
+    public void setToken(byte[] token) throws InvalidMessageException{
+        if(token.length > 8)
+            throw new InvalidMessageException("Token is too long (" + token.length + " bytes).");
 
         this.token = token;
     }
@@ -325,22 +331,19 @@ public abstract class CoapMessage {
      * @return the value of the messages token option
      */
     public byte[] getToken() {
-        if(token == 0)
-            return new byte[0];
-        else
-            return new BigInteger(1, Longs.toByteArray(token)).toByteArray();
+        return this.token;
     }
 
     /**
      * Returns the number representing the format of the content or {@link CoapMessage#UNDEFINED} if no such option is
-     * present in this {@link CoapMessage}. See {@link ContentFormat} for some constants for predefined numbers.
+     * present in this {@link CoapMessage}. See {@link de.uniluebeck.itm.ncoap.message.options.ContentFormat} for some constants for predefined numbers.
      *
      * @return the number representing the format of the content or <code>null</code> if no such option is present
      * in this {@link CoapMessage}.
      */
     public long getContentFormat(){
-        if(options.containsKey(OptionName.CONTENT_FORMAT))
-            return ((UintOption) options.get(OptionName.CONTENT_FORMAT).iterator().next()).getDecodedValue();
+        if(options.containsKey(Option.Name.CONTENT_FORMAT))
+            return ((UintOption) options.get(Option.Name.CONTENT_FORMAT).iterator().next()).getDecodedValue();
 
         return CoapMessage.UNDEFINED;
     }
@@ -354,8 +357,8 @@ public abstract class CoapMessage {
      */
     public void setMaxAge(long maxAge) throws InvalidOptionException {
         try{
-            this.options.removeAll(OptionName.MAX_AGE);
-            this.addUintOption(OptionName.MAX_AGE, maxAge);
+            this.options.removeAll(Option.Name.MAX_AGE);
+            this.addUintOption(Option.Name.MAX_AGE, maxAge);
         }
         catch (UnknownOptionException e) {
             log.error("This should never happen.", e);
@@ -370,8 +373,8 @@ public abstract class CoapMessage {
      * returns {@link Option#MAX_AGE_DEFAULT}.
      */
     public long getMaxAge(){
-        if(options.containsKey(OptionName.MAX_AGE))
-            return ((UintOption) options.get(OptionName.MAX_AGE).iterator().next()).getDecodedValue();
+        if(options.containsKey(Option.Name.MAX_AGE))
+            return ((UintOption) options.get(Option.Name.MAX_AGE).iterator().next()).getDecodedValue();
         else
             return Option.MAX_AGE_DEFAULT;
     }
@@ -386,7 +389,7 @@ public abstract class CoapMessage {
      */
     public void setContent(ChannelBuffer content) throws InvalidMessageException {
 
-        if(MessageCodeNames.allowsContent(this.messageCode)){
+        if(MessageCode.allowsContent(this.messageCode)){
             this.content = content;
         }
 
@@ -407,12 +410,12 @@ public abstract class CoapMessage {
             InvalidOptionException {
 
         try {
-            this.addUintOption(OptionName.CONTENT_FORMAT, contentFormat);
+            this.addUintOption(Option.Name.CONTENT_FORMAT, contentFormat);
             setContent(content);
         }
         catch (InvalidOptionException | InvalidMessageException e) {
             this.content = ChannelBuffers.EMPTY_BUFFER;
-            this.removeOptions(OptionName.CONTENT_FORMAT);
+            this.removeOptions(Option.Name.CONTENT_FORMAT);
             throw e;
         }
         catch (UnknownOptionException e) {

@@ -53,7 +53,7 @@
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
 //import de.uniluebeck.itm.ncoap.message.CoapResponse;
-//import de.uniluebeck.itm.ncoap.message.Option;
+//import de.uniluebeck.itm.ncoap.message.options.Option;
 //import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.*;
 //import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
 //

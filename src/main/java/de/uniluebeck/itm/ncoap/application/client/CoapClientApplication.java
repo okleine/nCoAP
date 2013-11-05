@@ -30,7 +30,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.InvalidOptionException;
+import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;

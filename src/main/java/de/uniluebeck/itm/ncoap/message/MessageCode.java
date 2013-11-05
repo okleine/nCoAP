@@ -54,39 +54,41 @@ package de.uniluebeck.itm.ncoap.message;
  * @author Oliver Kleine
 */
 
-public abstract class MessageCodeNames {
+public abstract class MessageCode {
 
-    public static final int EMPTY                           = 0;
-    public static final int GET                             = 1;
-    public static final int POST                            = 2;
-    public static final int PUT                             = 3;
-    public static final int DELETE                          = 4;
-    public static final int CREATED_201                     = 65;
-    public static final int DELETED_202                     = 66;
-    public static final int VALID_203                       = 67;
-    public static final int CHANGED_204                     = 68;
-    public static final int CONTENT_205                     = 69;
-    public static final int BAD_REQUEST_400                 = 128;
-    public static final int UNAUTHORIZED_401                = 129;
-    public static final int BAD_OPTION_402                  = 130;
-    public static final int FORBIDDEN_403                   = 131;
-    public static final int NOT_FOUND_404                   = 132;
-    public static final int METHOD_NOT_ALLOWED_405          = 133;
-    public static final int NOT_ACCEPTABLE_406              = 134;
-    public static final int PRECONDITION_FAILED_412         = 140;
-    public static final int REQUEST_ENTITY_TOO_LARGE_413    = 141;
-    public static final int UNSUPPORTED_CONTENT_FORMAT_415  = 143;
-    public static final int INTERNAL_SERVER_ERROR_500       = 160;
-    public static final int NOT_IMPLEMENTED_501             = 161;
-    public static final int BAD_GATEWAY_502                 = 162;
-    public static final int SERVICE_UNAVAILABLE_503         = 163;
-    public static final int GATEWAY_TIMEOUT_504             = 164;
-    public static final int PROXYING_NOT_SUPPORTED_505      = 165;
+    public static class Name{
+        public static final int EMPTY                           = 0;
+        public static final int GET                             = 1;
+        public static final int POST                            = 2;
+        public static final int PUT                             = 3;
+        public static final int DELETE                          = 4;
+        public static final int CREATED_201                     = 65;
+        public static final int DELETED_202                     = 66;
+        public static final int VALID_203                       = 67;
+        public static final int CHANGED_204                     = 68;
+        public static final int CONTENT_205                     = 69;
+        public static final int BAD_REQUEST_400                 = 128;
+        public static final int UNAUTHORIZED_401                = 129;
+        public static final int BAD_OPTION_402                  = 130;
+        public static final int FORBIDDEN_403                   = 131;
+        public static final int NOT_FOUND_404                   = 132;
+        public static final int METHOD_NOT_ALLOWED_405          = 133;
+        public static final int NOT_ACCEPTABLE_406              = 134;
+        public static final int PRECONDITION_FAILED_412         = 140;
+        public static final int REQUEST_ENTITY_TOO_LARGE_413    = 141;
+        public static final int UNSUPPORTED_CONTENT_FORMAT_415  = 143;
+        public static final int INTERNAL_SERVER_ERROR_500       = 160;
+        public static final int NOT_IMPLEMENTED_501             = 161;
+        public static final int BAD_GATEWAY_502                 = 162;
+        public static final int SERVICE_UNAVAILABLE_503         = 163;
+        public static final int GATEWAY_TIMEOUT_504             = 164;
+        public static final int PROXYING_NOT_SUPPORTED_505      = 165;
+    }
 
     /**
      * This method indicates wheter the message code refers to a request.
      *
-     * <b>Note:</b> Messages of MessageCode {@link MessageCodeNames#EMPTY} are considered neither a response nor a request
+     * <b>Note:</b> Messages of MessageCode {@link Name#EMPTY} are considered neither a response nor a request
      *
      * @return <code>true</code> in case of a request code, <code>false</code> otherwise.
      *
@@ -98,7 +100,7 @@ public abstract class MessageCodeNames {
     /**
      * This method indicates wheter the message code refers to a response.
      *
-     * <b>Note:</b> Messages of MessageCode {@link MessageCodeNames#EMPTY} are considered neither a response nor a request.
+     * <b>Note:</b> Messages of MessageCode {@link Name#EMPTY} are considered neither a response nor a request.
      *
      * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
      */
@@ -119,7 +121,7 @@ public abstract class MessageCodeNames {
      * @return <code>true</code> if payload is allowed, <code>false</code> otherwise
      */
     public static boolean allowsContent(int codeNumber){
-        return !(codeNumber == GET || codeNumber == DELETE);
+        return !(codeNumber == Name.GET || codeNumber == Name.DELETE);
     }
 
 

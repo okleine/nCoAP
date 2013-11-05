@@ -22,18 +22,46 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message;
+package de.uniluebeck.itm.ncoap.message.options;
+
+import com.google.common.primitives.Longs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.math.BigInteger;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 01.11.13
- * Time: 17:10
- * To change this template use File | Settings | File Templates.
+ * This class contains all specific functionality for {@link Option} instances of {@link OptionType#UINT}. If there is
+ * any need to access {@link Option} instances directly, e.g. to retrieve its value, one could either cast the option
+ * to {@link UintOption} and call {@link #getDecodedValue()} or one could all {@link Option#getDecodedValue()} and
+ * cast the return value to {@link Long}.
+ *
+ * @author Oliver Kleine
  */
-public abstract class OptionType {
-    public static final int EMPTY = 0;
-    public static final int STRING = 1;
-    public static final int UINT = 2;
-    public static final int OPAQUE = 3;
+public class UintOption extends Option<Long>{
+
+    private static Logger log = LoggerFactory.getLogger(UintOption.class.getName());
+
+    public UintOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+        super(optionNumber, value);
+    }
+
+    public UintOption(int optionNumber, long value) throws InvalidOptionException, UnknownOptionException {
+        this(optionNumber, new BigInteger(1, Longs.toByteArray(value)).toByteArray());
+    }
+
+    @Override
+    public Long getDecodedValue() {
+        return new BigInteger(1, value).longValue();
+    }
+
+
+    @Override
+    public boolean equals(Object object) {
+        if(!(object instanceof UintOption))
+            return false;
+
+        UintOption other = (UintOption) object;
+        return this.getDecodedValue() == other.getDecodedValue();
+    }
 }
