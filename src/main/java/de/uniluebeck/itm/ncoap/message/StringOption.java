@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -46,22 +46,29 @@ public class StringOption extends Option<String>{
 //                            convertToByteArrayWithoutPercentEncoding(optionName, value));
 //    }
 
-    StringOption(int optionNumber, byte[] value) throws InvalidOptionException{
+    StringOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, value);
     }
 
-    StringOption(int optionNumber, String value) throws InvalidOptionException{
+    StringOption(int optionNumber, String value) throws InvalidOptionException, UnknownOptionException {
         this(optionNumber, optionNumber == OptionName.URI_HOST ?
                 convertToByteArrayWithoutPercentEncoding(optionNumber, value.toLowerCase(Locale.ENGLISH)) :
                 convertToByteArrayWithoutPercentEncoding(optionNumber, value));
     }
 
     @Override
-    public String getValue() {
+    public String getDecodedValue() {
         return new String(value, CoapMessage.CHARSET);
     }
 
+    @Override
+    public boolean equals(Object object) {
+        if(!(object instanceof StringOption))
+            return false;
 
+        StringOption other = (StringOption) object;
+        return this.getDecodedValue().equals(other.getDecodedValue());
+    }
 
 
 //    @Override

@@ -1,28 +1,4 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
- * All rights reserved
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
- *    disclaimer.
- *
- *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
- *    following disclaimer in the documentation and/or other materials provided with the distribution.
- *
- *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
- *    products derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-/**
 * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
 * All rights reserved.
 *
@@ -49,10 +25,9 @@ package de.uniluebeck.itm.ncoap.communication.encoding;
 
 import com.google.common.primitives.UnsignedBytes;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.MessageCode;
-import de.uniluebeck.itm.ncoap.message.header.Header;
-import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
+import de.uniluebeck.itm.ncoap.message.InvalidOptionException;
+import de.uniluebeck.itm.ncoap.message.Option;
+import de.uniluebeck.itm.ncoap.message.OptionName;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
@@ -63,54 +38,59 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 
-import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
-import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.OBSERVE_REQUEST;
 
 /**
- * A {@link CoapMessageDecoder} de-serializes incoming messages.
- *
- * @author Oliver Kleine
- */
+* A {@link CoapMessageDecoder} de-serializes incoming messages.
+*
+* @author Oliver Kleine
+*/
 public class CoapMessageDecoder extends OneToOneDecoder{
 
     private static Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class.getName());
 
     @Override
-    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object obj) throws InvalidHeaderException,
-            EncodingFailedException, ToManyOptionsException, InvalidOptionException {
+    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object object) throws DecodingFailedException {
 
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
-        if(!(obj instanceof ChannelBuffer)){
-            return obj;
+        if(!(object instanceof ChannelBuffer)){
+            return object;
         }
 
-        ChannelBuffer buffer = (ChannelBuffer) obj;
+        ChannelBuffer buffer = (ChannelBuffer) object;
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4){
             String msg = "Buffer must contain at least readable 4 bytes (but has " + buffer.readableBytes() + ")";
-            throw new InvalidHeaderException(msg);
+            throw new DecodingFailedException(msg);
         }
 
-        //Decode the header values (version: 2 bits, msgType: 2 bits, optionCount: 4 bits, code: 4 bits, msgID: 8 bits)
-        int encHeader = buffer.readInt();
-        int msgTypeNumber = ((encHeader << 2) >>> 30);
-        int optionCount = ((encHeader << 4) >>> 28);
-        int codeNumber = ((encHeader << 8) >>> 24);
-        int msgID = ((encHeader << 16) >>> 16);
+        //Decode the header values
+        int encodedHeader = buffer.readInt();
+        int version = encodedHeader >>> 30;
+        if(version != 1)
+            throw new DecodingFailedException("Unsupported CoAP protocol version: " + version);
 
-        Header header =
-                new Header(MessageType.getMessageTypeFromNumber(msgTypeNumber), MessageCode.getCodeFromNumber(codeNumber), msgID);
+        int messageType = encodedHeader << 2 >>> 30;
+        int tokenLength = encodedHeader << 4 >>> 28;
+        int messageCode = encodedHeader << 8 >>> 24;
+        int messageID = encodedHeader << 16 >>> 16;
 
-        log.debug("Header created: {}", header);
+        log.debug("Decoded Header: (T) {}, (TKL) {}, (C) {}, (ID) {}",
+                new Object[]{messageType, tokenLength, messageCode, messageID});
 
-        //Create OptionList
-        OptionList optionList;
-//        try {
-            optionList = decodeOptionList(buffer, optionCount, MessageCode.getCodeFromNumber(codeNumber), header);
-//        } catch (InvalidOptionException e) {
-//            return new InvalidOptionException(header, e.getNumber(), "Invalid option found while decoding.");
-//        }
+
+        //Decode the token
+        byte[] token = new byte[tokenLength];
+        buffer.readBytes(token);
+
+        //Decode the options
+        byte firstByte = buffer.readByte();
+        while(firstByte != -128){
+            int optionDelta = firstByte <<
+        }
+
+
+
 
         //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
         //at the same position (buf.readableBytes() == 0).
@@ -144,8 +124,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         result.setRcptAdress(rcptAddress);
 
         log.debug("Set receipient address to: " + rcptAddress);
-        log.info("Decoded payload: {}", result.getPayload().toString(Charset.forName("UTF-8")));
-        log.info("Decoded payload size: {}", result.getPayload().readableBytes());
+        log.info("Decoded payload: {}", result.getContent().toString(Charset.forName("UTF-8")));
+        log.info("Decoded payload size: {}", result.getContent().readableBytes());
         log.info("Decoded: " + result);
         return result;
     }
@@ -218,7 +198,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
      *                         (or ZERO if there is no)
      * @param header the {@link Header} of the message to be decoded
      *
-     * @return The decoded {@link Option}
+     * @return The decoded {@link de.uniluebeck.itm.ncoap.message.Option}
      *
      * @throws InvalidOptionException if the option to be decoded is invalid
      */

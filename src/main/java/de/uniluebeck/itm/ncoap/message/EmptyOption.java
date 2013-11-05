@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -31,7 +31,7 @@ package de.uniluebeck.itm.ncoap.message;
 public class EmptyOption extends Option<Object>{
 
     //Constructor with package visibility
-    EmptyOption(int optionNumber) throws InvalidOptionException{
+    EmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, new byte[0]);
     }
 
@@ -45,7 +45,7 @@ public class EmptyOption extends Option<Object>{
      * @return  <code>null</code> as there is no value
      */
     @Override
-    public Object getValue() {
+    public Object getDecodedValue() {
         return null;
     }
 }

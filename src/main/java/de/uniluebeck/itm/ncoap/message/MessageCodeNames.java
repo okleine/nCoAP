@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -54,7 +54,7 @@ package de.uniluebeck.itm.ncoap.message;
  * @author Oliver Kleine
 */
 
-public abstract class MessageCode {
+public abstract class MessageCodeNames {
 
     public static final int EMPTY                           = 0;
     public static final int GET                             = 1;
@@ -86,7 +86,7 @@ public abstract class MessageCode {
     /**
      * This method indicates wheter the message code refers to a request.
      *
-     * <b>Note:</b> Messages of MessageCode {@link MessageCode#EMPTY} are considered neither a response nor a request
+     * <b>Note:</b> Messages of MessageCode {@link MessageCodeNames#EMPTY} are considered neither a response nor a request
      *
      * @return <code>true</code> in case of a request code, <code>false</code> otherwise.
      *
@@ -98,7 +98,7 @@ public abstract class MessageCode {
     /**
      * This method indicates wheter the message code refers to a response.
      *
-     * <b>Note:</b> Messages of MessageCode {@link MessageCode#EMPTY} are considered neither a response nor a request.
+     * <b>Note:</b> Messages of MessageCode {@link MessageCodeNames#EMPTY} are considered neither a response nor a request.
      *
      * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
      */

@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -24,13 +24,11 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
+import com.google.common.net.InetAddresses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
 
 
@@ -40,23 +38,21 @@ import java.util.*;
 public class CoapRequest extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapRequest.class.getName());
-    private InetAddress recipientAddress;
 
     /**
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
      * and initial option list with target URI-related options set.
      *
-     * @param messageType  A {@link MessageType}
-     * @param messageCode A {@link MessageCode}
+     * @param messageType  A {@link MessageTypeNames}
+     * @param messageCode A {@link MessageCodeNames}
      * @param targetUri the recipients URI
      *
      * @throws InvalidOptionException if one of the target URI options to be created is not valid
      * @throws URISyntaxException if the URI is not appropriate for a CoAP message.
-     * @throws ToManyOptionsException if the target URI needs more than the maximum number of options per message
      * @throws InvalidMessageException if the given messageCode is not suitable for a request
      */
     public CoapRequest(int messageType, int messageCode, URI targetUri) throws InvalidMessageException,
-            ToManyOptionsException, InvalidOptionException, URISyntaxException, UnknownHostException {
+            InvalidOptionException, URISyntaxException, UnknownHostException {
 
         this(messageType, messageCode);
         setTargetUriOptions(targetUri);
@@ -79,7 +75,7 @@ public class CoapRequest extends CoapMessage {
     private CoapRequest(int messageType, int messageCode) throws InvalidMessageException {
         super(messageType, messageCode);
 
-        if(!MessageCode.isRequest(messageCode))
+        if(!MessageCodeNames.isRequest(messageCode))
             throw new InvalidMessageException("MessageCode " + messageCode + " is not for requests.");
     }
 
@@ -147,17 +143,14 @@ public class CoapRequest extends CoapMessage {
 
 
     private void addUriPortOption(int uriPort) throws UnknownOptionException, InvalidOptionException {
-        if(uriPort == -1)
-            this.addUintOption(OptionName.URI_PORT, Option.URI_PORT_DEFAULT);
-
-        if(uriPort > 0)
+        if(uriPort > 0 && uriPort != Option.URI_PORT_DEFAULT)
             this.addUintOption(OptionName.URI_PORT, uriPort);
     }
 
 
     private void addUriHostOption(String uriHost) throws UnknownOptionException, InvalidOptionException {
-
-        addStringOption(OptionName.URI_HOST, uriHost);
+        if(!Option.isDefaultValue(OptionName.URI_HOST, uriHost.getBytes(CoapMessage.CHARSET)))
+            addStringOption(OptionName.URI_HOST, uriHost);
     }
 
     /**
@@ -188,11 +181,11 @@ public class CoapRequest extends CoapMessage {
     }
 
     /**
-     * Returns a {@link Set<byte[]>} containing the values of the If-Match options or <code>null</code> if no such
-     * option is present in this {@link CoapRequest}.
+     * Returns a {@link Set<byte[]>} containing the values of the If-Match options. If no such option is present in
+     * this {@link CoapRequest} the returned set is empty.
      *
-     * @return a {@link Set<byte[]>} containing the values of the If-Match options or <code>null</code> if no such
-     * option is present in this {@link CoapRequest}.
+     * @return a {@link Set<byte[]>} containing the values of the If-Match options. If no such option is present in
+     * this {@link CoapRequest} the returned set is empty.
      */
     public Set<byte[]> getIfMatch(){
 
@@ -200,12 +193,12 @@ public class CoapRequest extends CoapMessage {
             Set<byte[]> result = new HashSet<>();
             Iterator<Option> iterator = options.get(OptionName.IF_MATCH).iterator();
             while(iterator.hasNext())
-                result.add(((OpaqueOption) iterator.next()).getValue());
+                result.add(((OpaqueOption) iterator.next()).getDecodedValue());
 
             return result;
         }
 
-        return null;
+        return new HashSet<>(0);
     }
 
     /**
@@ -218,9 +211,9 @@ public class CoapRequest extends CoapMessage {
     public String getUriHost(){
 
         if(options.containsKey(OptionName.URI_HOST))
-            return ((StringOption) options.get(OptionName.URI_HOST).iterator().next()).getValue();
+            return ((StringOption) options.get(OptionName.URI_HOST).iterator().next()).getDecodedValue();
 
-        return recipientAddress.getHostAddress();
+        return InetAddresses.toUriString(recipientAddress);
     }
 
     /**
@@ -262,7 +255,7 @@ public class CoapRequest extends CoapMessage {
         if(options.containsKey(OptionName.ETAG)){
             Iterator<Option> iterator = options.get(OptionName.ETAG).iterator();
             while(iterator.hasNext())
-                result.add(((OpaqueOption) iterator.next()).getValue());
+                result.add(((OpaqueOption) iterator.next()).getDecodedValue());
         }
 
         return result;
@@ -271,7 +264,7 @@ public class CoapRequest extends CoapMessage {
     /**
      * Sets the If-Non-Match option in this {@link CoapRequest}.
      *
-     * @throws InvalidOptionException if the If-Non-Match option has no meaning with the {@link MessageCode} of this
+     * @throws InvalidOptionException if the If-Non-Match option has no meaning with the {@link MessageCodeNames} of this
      * {{@link CoapRequest}}.
      */
     public void setIfNonMatch() throws InvalidOptionException {
@@ -305,9 +298,9 @@ public class CoapRequest extends CoapMessage {
      */
     public long getUriPort(){
         if(options.containsKey(OptionName.URI_PORT))
-            return ((UintOption) options.get(OptionName.URI_PORT).iterator().next()).getValue();
+            return ((UintOption) options.get(OptionName.URI_PORT).iterator().next()).getDecodedValue();
 
-        return Option.MAX_AGE_DEFAULT;
+        return Option.URI_PORT_DEFAULT;
     }
 
 
@@ -323,12 +316,12 @@ public class CoapRequest extends CoapMessage {
             StringBuffer result = new StringBuffer();
             Iterator<Option> iterator = options.get(OptionName.URI_PATH).iterator();
             while(iterator.hasNext())
-                result.append("/" + ((StringOption) iterator.next()).getValue());
+                result.append("/" + ((StringOption) iterator.next()).getDecodedValue());
 
             return result.toString();
         }
 
-        return null;
+        return "/";
     }
 
     /**
@@ -342,14 +335,14 @@ public class CoapRequest extends CoapMessage {
         if(options.containsKey(OptionName.URI_QUERY)){
             StringBuffer result = new StringBuffer();
             Iterator<Option> iterator = options.get(OptionName.URI_QUERY).iterator();
-            result.append(((StringOption) iterator.next()).getValue());
+            result.append(((StringOption) iterator.next()).getDecodedValue());
             while(iterator.hasNext())
-                result.append("&" + ((StringOption) iterator.next()).getValue());
+                result.append("&" + ((StringOption) iterator.next()).getDecodedValue());
 
             return result.toString();
         }
 
-        return null;
+        return "";
     }
 
     /**
@@ -382,7 +375,7 @@ public class CoapRequest extends CoapMessage {
         Set<Long> result = new HashSet<>();
 
         for(Option option : options.get(OptionName.ACCEPT))
-            result.add(((UintOption) option).getValue());
+            result.add(((UintOption) option).getDecodedValue());
 
         return result;
     }
@@ -402,12 +395,12 @@ public class CoapRequest extends CoapMessage {
      */
     public URI getProxyURI() throws URISyntaxException {
         if(options.containsKey(OptionName.PROXY_URI))
-            return new URI(((StringOption) options.get(OptionName.PROXY_URI).iterator().next()).getValue());
+            return new URI(((StringOption) options.get(OptionName.PROXY_URI).iterator().next()).getDecodedValue());
 
         if(options.get(OptionName.PROXY_SCHEME).size() == 1){
-            String scheme = ((StringOption) options.get(OptionName.PROXY_SCHEME).iterator().next()).getValue();
+            String scheme = ((StringOption) options.get(OptionName.PROXY_SCHEME).iterator().next()).getDecodedValue();
             String uriHost = getUriHost();
-            int uriPort = ((UintOption) options.get(OptionName.URI_PORT).iterator().next()).getValue().intValue();
+            int uriPort = ((UintOption) options.get(OptionName.URI_PORT).iterator().next()).getDecodedValue().intValue();
             String uriPath = getUriPath();
             String uriQuery = getUriQuery();
 

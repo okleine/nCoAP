@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -24,9 +24,6 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -36,7 +33,7 @@ import java.util.Arrays;
  *
  * @author Oliver Kleine
  */
-class OpaqueOption extends Option<byte[]>{
+public class OpaqueOption extends Option<byte[]>{
 
     OpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, value);
@@ -47,7 +44,7 @@ class OpaqueOption extends Option<byte[]>{
      * @return a {@link ByteBuffer} backed by the byte array that contains the value of this option.
      */
     @Override
-    public byte[] getValue() {
+    public byte[] getDecodedValue() {
         return this.value;
     }
 
@@ -56,7 +53,8 @@ class OpaqueOption extends Option<byte[]>{
         if(!(object instanceof OpaqueOption))
             return false;
 
-        return Arrays.equals(this.value, ((OpaqueOption) object).getValue());
+        OpaqueOption other = (OpaqueOption) object;
+        return Arrays.equals(this.getDecodedValue(), other.getDecodedValue());
     }
 
     @Override

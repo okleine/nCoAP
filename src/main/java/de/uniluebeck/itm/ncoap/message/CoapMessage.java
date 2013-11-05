@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -26,26 +26,23 @@ package de.uniluebeck.itm.ncoap.message;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
-import com.google.common.net.InetAddresses;
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.ncoap.message.header.Header;
-import de.uniluebeck.itm.ncoap.message.header.InvalidHeaderException;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.*;
 
-import static de.uniluebeck.itm.ncoap.message.MessageCode.*;
-import static de.uniluebeck.itm.ncoap.message.MessageType.ACK;
-import static de.uniluebeck.itm.ncoap.message.MessageType.RST;
+import static de.uniluebeck.itm.ncoap.message.MessageCodeNames.*;
+import static de.uniluebeck.itm.ncoap.message.MessageTypeNames.ACK;
+import static de.uniluebeck.itm.ncoap.message.MessageTypeNames.RST;
 import static de.uniluebeck.itm.ncoap.message.OptionName.*;
 
 /**
@@ -60,6 +57,7 @@ public abstract class CoapMessage {
 
     public static final int VERSION = 1;
     public static final Charset CHARSET = Charset.forName("UTF-8");
+    public static final int UNDEFINED = -1;
 
     private static final int ONCE       = 1;
     private static final int MULTIPLE   = 2;
@@ -69,26 +67,26 @@ public abstract class CoapMessage {
         //Requests
         optionOccurenceConstraints.put(GET,      URI_HOST,           ONCE);
         optionOccurenceConstraints.put(GET,      URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(GET,      URI_PATH,           ONCE);
-        optionOccurenceConstraints.put(GET,      URI_QUERY,          ONCE);
+        optionOccurenceConstraints.put(GET,      URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(GET,      URI_QUERY,          MULTIPLE);
         optionOccurenceConstraints.put(GET,      ACCEPT,             MULTIPLE);
         optionOccurenceConstraints.put(GET,      ETAG,               MULTIPLE);
         optionOccurenceConstraints.put(POST,     URI_HOST,           ONCE);
         optionOccurenceConstraints.put(POST,     URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(POST,     URI_PATH,           ONCE);
-        optionOccurenceConstraints.put(POST,     URI_QUERY,          ONCE);
+        optionOccurenceConstraints.put(POST,     URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(POST,     URI_QUERY,          MULTIPLE);
         optionOccurenceConstraints.put(POST,     CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(PUT,      URI_HOST,           ONCE);
         optionOccurenceConstraints.put(PUT,      URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(PUT,      URI_PATH,           ONCE);
-        optionOccurenceConstraints.put(PUT,      URI_QUERY,          ONCE);
+        optionOccurenceConstraints.put(PUT,      URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(PUT,      URI_QUERY,          MULTIPLE);
         optionOccurenceConstraints.put(PUT,      CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(PUT,      IF_MATCH,           ONCE);
         optionOccurenceConstraints.put(PUT,      IF_NONE_MATCH,      ONCE);
         optionOccurenceConstraints.put(DELETE,   URI_HOST,           ONCE);
         optionOccurenceConstraints.put(DELETE,   URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(DELETE,   URI_PATH,           ONCE);
-        optionOccurenceConstraints.put(DELETE,   URI_QUERY,          ONCE);
+        optionOccurenceConstraints.put(DELETE,   URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(DELETE,   URI_QUERY,          MULTIPLE);
 
         //Response success (2.x)
         optionOccurenceConstraints.put(CREATED_201,  LOCATION_PATH,      MULTIPLE);
@@ -127,14 +125,15 @@ public abstract class CoapMessage {
         }
     };
 
-    protected InetAddress rcptAddress;
+    protected InetAddress recipientAddress;
 
     private int messageType;
     private int messageCode;
     private int messageID;
-    private long token = 0;
+    private long token;
     protected SetMultimap<Integer, Option> options;
-    private ChannelBuffer payload;
+    private ChannelBuffer content;
+
 
     protected CoapMessage(int messageType, int messageCode){
         this();
@@ -150,14 +149,17 @@ public abstract class CoapMessage {
 
 
     private CoapMessage(){
-        options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<Option>>(), linkedHashSetSupplier);
+        this.options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<Option>>(), linkedHashSetSupplier);
+        this.messageID = UNDEFINED;
+        this.token = 0;
+        this.content = ChannelBuffers.EMPTY_BUFFER;
     }
 
     /**
      * Method to create an empty reset message which is strictly speaking neither a request nor a response
      * @param messageID the message ID of the reset message.
      *
-     * @return an instance of {@link CoapMessage} with {@link MessageType#RST}
+     * @return an instance of {@link CoapMessage} with {@link MessageTypeNames#RST}
      */
     public static CoapMessage createEmptyReset(int messageID){
         CoapMessage emptyRST = new CoapMessage(){};
@@ -171,7 +173,7 @@ public abstract class CoapMessage {
      * Method to create an empty acknowledgement message which is strictly speaking neither a request nor a response
      * @param messageID the message ID of the acknowledgement message.
      *
-     * @return an instance of {@link CoapMessage} with {@link MessageType#ACK}
+     * @return an instance of {@link CoapMessage} with {@link MessageTypeNames#ACK}
      */
     public static CoapMessage createEmptyAcknowledgement(int messageID){
         CoapMessage emptyACK = new CoapMessage(){};
@@ -192,7 +194,7 @@ public abstract class CoapMessage {
         StringOption option = new StringOption(optionNumber, value);
         options.put(optionNumber, option);
 
-        log.debug("Added option (number: {}, value: {})", optionNumber, option.getValue());
+        log.debug("Added option (number: {}, value: {})", optionNumber, option.getDecodedValue());
     }
 
 
@@ -206,7 +208,7 @@ public abstract class CoapMessage {
         UintOption option = new UintOption(optionNumber, new BigInteger(1, Longs.toByteArray(value)).toByteArray());
         options.put(optionNumber, option);
 
-        log.debug("Added option (number: {}, value: {})", optionNumber, option.getValue());
+        log.debug("Added option (number: {}, value: {})", optionNumber, option.getDecodedValue());
     }
 
     protected void addOpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
@@ -221,7 +223,7 @@ public abstract class CoapMessage {
         options.put(optionNumber, option);
 
         log.debug("Added option (number: {}, value: {})", optionNumber,
-                new BigInteger(1, option.getValue()).toString(16));
+                new BigInteger(1, option.getDecodedValue()).toString(16));
     }
 
     protected void addEmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
@@ -272,13 +274,12 @@ public abstract class CoapMessage {
      * overwritten) automatically by the nCoAP framework.
      *
      * @param messageID the message ID for the message
-     * @throws InvalidHeaderException if the message ID to be set is invalid
      */
 
-    public void setMessageID(int messageID) throws InvalidHeaderException {
+    public void setMessageID(int messageID) throws InvalidMessageException {
 
-        if(messageID < -1 || messageID > 65535)
-            throw new InvalidHeaderException("Message ID must not be negative or greater than 65535");
+        if(messageID < 0 || messageID > 65535)
+            throw new InvalidMessageException("Message ID " + messageID + " is either negative or greater than 65535");
 
         this.messageID = messageID;
     }
@@ -292,18 +293,12 @@ public abstract class CoapMessage {
         return messageID;
     }
 
-    /**
-     * This is a shortcut for {@link #getHeader().getMessageType()}
-     * @return the {@link MessageType} of this message
-     */
+
     public int getMessageType() {
         return messageType;
     }
 
-    /**
-     * This is a shortcut for {@link #getHeader().getCode()}
-     * @return the {@link MessageCode} of this message
-     */
+
     public int getMessageCode() {
         return messageCode;
     }
@@ -313,11 +308,15 @@ public abstract class CoapMessage {
      * token options to be removed from the list even in case of an exception.
      *
      * @param token the messages token
+     *
      * @throws InvalidOptionException if the token does not match the token constraints
-     * @throws ToManyOptionsException if adding the token option would exceed the maximum number of
      * options per message.
      */
-    public void setToken(long token) throws InvalidOptionException, ToManyOptionsException {
+    public void setToken(long token) throws InvalidMessageException{
+        BigInteger tmpToken = new BigInteger(1, Longs.toByteArray(token));
+        if(tmpToken.toByteArray().length > 8)
+            throw new InvalidMessageException("Token is too long (" + tmpToken.toString(16) + ").");
+
         this.token = token;
     }
 
@@ -326,244 +325,235 @@ public abstract class CoapMessage {
      * @return the value of the messages token option
      */
     public byte[] getToken() {
-        return new BigInteger(1, Longs.toByteArray(token)).toByteArray();
+        if(token == 0)
+            return new byte[0];
+        else
+            return new BigInteger(1, Longs.toByteArray(token)).toByteArray();
     }
 
     /**
-     * Returns the number representing the format of the payload or <code>null</code> if no such option is present
-     * in this {@link CoapMessage}
-     * @return
+     * Returns the number representing the format of the content or {@link CoapMessage#UNDEFINED} if no such option is
+     * present in this {@link CoapMessage}. See {@link ContentFormat} for some constants for predefined numbers.
+     *
+     * @return the number representing the format of the content or <code>null</code> if no such option is present
+     * in this {@link CoapMessage}.
      */
-    public Long getContentFormat(){
+    public long getContentFormat(){
         if(options.containsKey(OptionName.CONTENT_FORMAT))
-            return ((UintOption) options.get(OptionName.CONTENT_FORMAT).iterator().next()).getValue();
+            return ((UintOption) options.get(OptionName.CONTENT_FORMAT).iterator().next()).getDecodedValue();
 
-        return null;
+        return CoapMessage.UNDEFINED;
     }
 
-//    /**
-//     * Sets the recipients IP address. Usually there is no need to set this value manually. It is only used to
-//     * define the default value of the URI host option and is invoked automatically during construction if necessary.
-//     *
-//     * @param rcptAddress The recipients IP address
-//     */
-//    public void setRcptAdress(InetAddress rcptAddress){
-//        this.rcptAddress = rcptAddress;
-//    }
-
-
-
-//    /**
-//     * Returns the {@link ContentFormat} contained as {@link OptionName#CONTENT_TYPE} option in this {@link CoapMessage} instance.
-//     * @return the {@link ContentFormat} contained as {@link OptionName#CONTENT_TYPE} option or null if the option is not set.
-//     */
-//    public ContentFormat getContentType(){
-//        if(!options.getOption(OptionName.CONTENT_TYPE).isEmpty()){
-//            return ContentFormat.getByNumber((Long) options.getOption(CONTENT_TYPE).get(0).getDecodedValue());
-//        }
-//        return null;
-//    }
-
-    public void
-
-
-
     /**
-     * Adds the option representing the content type to the option list. This causes an eventually already contained
-     * content type option to be removed from the list even in case of an exception.
+     * Sets the Max-Age option of this {@link CoapMessage}. If there was a Max-Age option set prior to the
+     * invocation of this method, the previous value is overwritten.
      *
-     * @param contentFormat The media type of the content
-     * @throws InvalidOptionException if there is a content type option already contained in the option list.
-     * @throws ToManyOptionsException if adding this option would exceed the maximum number of allowed options per
-     * message
+     * @param maxAge the value for the Max-Age option to be set
+     * @throws InvalidOptionException
      */
-    public void setContentType(ContentFormat contentFormat) throws InvalidOptionException, ToManyOptionsException {
-        options.removeAllOptions(CONTENT_TYPE);
-
+    public void setMaxAge(long maxAge) throws InvalidOptionException {
         try{
-            Option option = Option.createUintOption(CONTENT_TYPE, contentFormat.number);
-            options.addOption(header.getMessageCode(), CONTENT_TYPE, option);
+            this.options.removeAll(OptionName.MAX_AGE);
+            this.addUintOption(OptionName.MAX_AGE, maxAge);
         }
-        catch(InvalidOptionException e){
-            options.removeAllOptions(CONTENT_TYPE);
-
-            log.debug("Critical option (" + CONTENT_TYPE + ") could not be added.", e);
-
-            throw e;
-        }
-        catch(ToManyOptionsException e){
-            options.removeAllOptions(CONTENT_TYPE);
-
-            log.debug("Critical option (" + CONTENT_TYPE + ") could not be added.", e);
-
-            throw e;
-        }
-    }
-
-    /**
-     * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
-     * method, the previous content is removed.
-     *
-     * @param content ChannelBuffer containing the message content
-     *
-     * @throws InvalidMessageException if the messages code does not allow content
-     *
-     * @return the size of the content as number of bytes
-     */
-    public int setContent(ChannelBuffer content) throws InvalidMessageException {
-        if(MessageCode.allowsContent(this.messageCode)){
-            this.payload = content;
-            return this.payload.readableBytes();
-        }
-
-        throw new InvalidMessageException("Message Code " + this.messageCode + " does not allow payload.");
-    }
-
-    /**
-     * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
-     * method, the previous content is removed.
-     *
-     * @param content ChannelBuffer containing the message content
-     *
-     * @throws InvalidMessageException if the messages code does not allow content
-     *
-     * @return the size of the content as number of bytes
-     */
-    public int setPayload(byte[] content) throws InvalidMessageException {
-        return setContent(ChannelBuffers.wrappedBuffer(content));
-    }
-
-
-
-    /**
-     * Returns the messages payload
-     * @return the messages payload as {@link ChannelBuffer} or null if there is no payload
-     */
-    public ChannelBuffer getPayload(){
-        return payload;
-    }
-
-    /**
-     * Returns the message option list. Note that the option list does only contain options having non-default values.
-     * If e.g. the target URI port is 5683 which is the default value, there will be no URI port option contained
-     * in the list. Use getOption(OptionName.URI_PORT) to get the actual value.
-     *
-     * @return the {@link OptionList} instance containing all contained with options non-default values
-     */
-    public OptionList getOptions(){
-        return options;
-    }
-
-    /**
-     * Returns the set of {@link Option} instances of the given {@link OptionName} contained in the messages
-     * {@link OptionList} or an eventual default value if there is no matching option contained. The set is empty
-     * if there is neither an Option instance contained in the OptionList or a default value for the OptionName.
-     *
-     * @param optionName The name of the option to be looked up.
-     * @return The set of Option instances for the message matching the given OptionName
-     */
-    public List<Option> getOption(OptionName optionName){
-        try{
-
-            List<Option> result = options.getOption(optionName);
-
-            if(!result.isEmpty()){
-               return result;
-            }
-
-            //Default values to be assumed when explicitly defined options are missing
-            switch(optionName){
-                case URI_HOST:
-                    result = new ArrayList<Option>(1);
-                    String targetIP = rcptAddress.getHostAddress();
-                    try{
-                        if(InetAddresses.forString(targetIP) instanceof Inet6Address){
-                           targetIP = "[" + targetIP + "]";
-                        }
-                     }
-                    catch (IllegalArgumentException e){
-                        log.debug("No IP address: " + targetIP, e);
-                    }
-                    result.add(Option.createStringOption(URI_HOST, targetIP));
-                    break;
-                case URI_PORT:
-                    result = new ArrayList<Option>(1);
-                    result.add(Option.createUintOption(URI_PORT, OptionRegistry.COAP_PORT_DEFAULT));
-                    break;
-                case MAX_AGE:
-                    result = new ArrayList<Option>(1);
-                    result.add(Option.createUintOption(MAX_AGE, OptionRegistry.MAX_AGE_DEFAULT));
-                    break;
-                case TOKEN:
-                    result = new ArrayList<Option>(1);
-                    result.add(Option.createOpaqueOption(TOKEN, new byte[0]));
-                    break;
-                case BLOCK_1:
-                    result = new ArrayList<Option>(1);
-                    result.add(Option.createUintOption(BLOCK_1, 0));
-                    break;
-                case BLOCK_2:
-                    result = new ArrayList<Option>(1);
-                    result.add(Option.createUintOption(BLOCK_2, 0));
-                    break;
-            }
-
-            return result;
-        }
-        catch(InvalidOptionException e){
+        catch (UnknownOptionException e) {
             log.error("This should never happen.", e);
-            return null;
         }
     }
 
     /**
-     * Returns the messages {@link Header}
-     * @return the messages {@link Header}
+     * Returns the value of the Max-Age option of this {@link CoapMessage}. If no such option exists, this method
+     * returns {@link Option#MAX_AGE_DEFAULT}.
+     *
+     * @return the value of the Max-Age option of this {@link CoapMessage}. If no such option exists, this method
+     * returns {@link Option#MAX_AGE_DEFAULT}.
      */
-    public Header getHeader(){
-        return header;
+    public long getMaxAge(){
+        if(options.containsKey(OptionName.MAX_AGE))
+            return ((UintOption) options.get(OptionName.MAX_AGE).iterator().next()).getDecodedValue();
+        else
+            return Option.MAX_AGE_DEFAULT;
     }
 
-    //TODO: Improve hash messageCode
+    /**
+     * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
+     * method, the previous content is removed.
+     *
+     * @param content ChannelBuffer containing the message content
+     *
+     * @throws InvalidMessageException if the messages code does not allow content
+     */
+    public void setContent(ChannelBuffer content) throws InvalidMessageException {
+
+        if(MessageCodeNames.allowsContent(this.messageCode)){
+            this.content = content;
+        }
+
+        throw new InvalidMessageException("Message Code " + this.messageCode + " does not allow content.");
+    }
+
+    /**
+     * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
+     * method, the previous content is removed.
+     *
+     * @param content ChannelBuffer containing the message content
+     * @param contentFormat a long value representing the format of the content
+     *
+     * @throws InvalidMessageException if the messages code does not allow content
+     * @throws InvalidOptionException if the content format option could not be set
+     */
+    public void setContent(ChannelBuffer content, long contentFormat) throws InvalidMessageException,
+            InvalidOptionException {
+
+        try {
+            this.addUintOption(OptionName.CONTENT_FORMAT, contentFormat);
+            setContent(content);
+        }
+        catch (InvalidOptionException | InvalidMessageException e) {
+            this.content = ChannelBuffers.EMPTY_BUFFER;
+            this.removeOptions(OptionName.CONTENT_FORMAT);
+            throw e;
+        }
+        catch (UnknownOptionException e) {
+            log.error("This should never happen.", e);
+        }
+
+    }
+
+
+    /**
+     * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
+     * method, the previous content is removed.
+     *
+     * @param content ChannelBuffer containing the message content
+     *
+     * @throws InvalidMessageException if the messages code does not allow content
+     */
+    public void setContent(byte[] content) throws InvalidMessageException {
+
+        setContent(ChannelBuffers.wrappedBuffer(content));
+
+    }
+
+
+    /**
+     * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
+     * method, the previous content is removed.
+     *
+     * @param content ChannelBuffer containing the message content
+     * @param contentFormat a long value representing the format of the content
+     *
+     * @throws InvalidMessageException if the messages code does not allow content
+     * @throws InvalidOptionException if the content format option could not be set
+     */
+    public void setContent(byte[] content, long contentFormat) throws InvalidMessageException,
+            InvalidOptionException {
+
+        setContent(ChannelBuffers.wrappedBuffer(content), contentFormat);
+
+    }
+
+    /**
+     * Returns the messages content. If the message does not contain any content, this method returns an empty
+     * {@link ChannelBuffer} ({@link ChannelBuffers#EMPTY_BUFFER}).
+     *
+     * @return Returns the messages content.
+     */
+    public ChannelBuffer getContent(){
+        return content;
+    }
+
+
+    /**
+     * Returns a {@link Multimap<Integer, Option>} with the option numbers as keys and {@link Option}s as values.
+     * The returned multimap does not contain options with default values.
+     *
+     * @return a {@link Multimap<Integer, Option>} with the option numbers as keys and {@link Option}s as values.
+     */
+    public Multimap<Integer, Option> getAllOptions(){
+        return this.options;
+    }
+
+
+    /**
+     * Returns a {@link Set<Option>} containing the options that are explicitly set in this {@link CoapMessage}. The
+     * returned set does not contain options with default values. If this {@link CoapMessage} does not contain any
+     * options of the given option number, then the returned set is empty.
+     *
+     * @param optionNumber the option number
+     *
+     * @return a {@link Set<Option>} containing the options that are explicitly set in this {@link CoapMessage}.
+     */
+    public Set<Option> getOptions(int optionNumber){
+        return this.options.get(optionNumber);
+    }
+
+
     @Override
     public int hashCode(){
-        return toString().hashCode() + payload.hashCode();
+        return toString().hashCode() + content.hashCode();
     }
 
     /**
-     * Returns <messageCode>true</messageCode> if and only if the given object is an instance of {@link CoapMessage} and if
-     * the {@link Header}, the {@link OptionList} and the payload of both instances equal.
+     * Returns <code>true</code> if and only if the given object is an instance of {@link CoapMessage}
+     * and if the header, the token, the options and the content of both instances equal.
      *
      * @param object another object to compare this {@link CoapMessage} with
      *
-     * @return <messageCode>true</messageCode> if and only if the given object is an instance of {@link CoapMessage} and if
-     * the {@link Header}, the {@link OptionList} and the payload of both instances equal.
+     * @return <code>true</code> if and only if the given object is an instance of {@link CoapMessage}
+     * and if the header, the token, the options and the content of both instances equal.
      */
     @Override
     public boolean equals(Object object){
+
         if(!(object instanceof CoapMessage)){
             return false;
         }
 
-        CoapMessage msg = (CoapMessage) object;
-        return this.getHeader().equals(msg.getHeader())
-            && options.equals(msg.getOptions())
-            && payload.equals(msg.getPayload());
+        CoapMessage other = (CoapMessage) object;
+        return this.getVersion() == other.getVersion()
+            && this.getMessageType() == other.getMessageType()
+            && this.getMessageCode() == other.getMessageCode()
+            && this.getMessageID() == other.getMessageID()
+            && Arrays.equals(this.getToken(), other.getToken())
+            && this.getAllOptions().equals(other.getAllOptions())
+            && this.getContent().equals(other.getContent());
+
     }
 
     @Override
     public String toString(){
-        String result =  "CoAP message: " + getHeader() + " | " + getOptions() + " | ";
 
-        long payloadLength = getPayload().readableBytes();
+        StringBuffer result =  new StringBuffer();
+
+        //Header + Token
+        result.append("CoAP Message: [Header: (V) " + getVersion() + ", (T) " + getMessageType() + ", (TKL) "
+            + getToken().length + ", (C) " + getMessageCode() + ", (ID) " + getMessageID() + " | (Token) "
+            + new BigInteger(1, getToken()).toString(16) + " | ");
+
+        //Options
+        result.append("Options:");
+        for(int optionNumber : getAllOptions().keySet()){
+            result.append(" (No. " + optionNumber + ") ");
+            Iterator<Option> iterator = this.getOptions(optionNumber).iterator();
+            Option option = iterator.next();
+            result.append(option.toString());
+            while(iterator.hasNext())
+                result.append(" / " + iterator.next().toString());
+        }
+        result.append(" | ");
+
+        //Content
+        result.append("Content: ");
+        long payloadLength = getContent().readableBytes();
         if(payloadLength == 0)
-            result +=  "no payload";
+            result.append("<no content>]");
         else
-            result += "[PAYLOAD] " + getPayload().toString(0, Math.min(getPayload().readableBytes(), 20),
-                    Charset.forName("UTF-8")) +  "... ( " + payloadLength + " bytes)";
+            result.append(getContent().toString(0, Math.min(getContent().readableBytes(), 20), CoapMessage.CHARSET)
+                + "... ( " + payloadLength + " bytes)]");
 
-        return result;
+        return result.toString();
+
     }
-
-
 }

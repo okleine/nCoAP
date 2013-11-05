@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -29,23 +29,13 @@
 
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.message.header.Header;
-import de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName;
-
-
 /**
  *
  * @author Oliver Kleine
  */
 public class InvalidOptionException extends Exception {
 
-    private Header messageHeader;
     private int optionNumber;
-
-    public InvalidOptionException(Header header, int optionNumber, String msg){
-        this(optionNumber, msg);
-        this.messageHeader = header;
-    }
 
     public InvalidOptionException(int optionNumber, String msg){
         super(msg);
@@ -55,10 +45,11 @@ public class InvalidOptionException extends Exception {
     /**
      * Returns true if this Exception has been caused by a critical option. Otherwise (in case of elective options)
      * it returns false.
+     *
      * @return whether the Exception was caused by a critical option
      */
     public boolean isCritical(){
-       return OptionRegistry.isCritical(optionNumber);
+       return Option.isCritical(this.optionNumber);
     }
 
     /**
@@ -66,22 +57,7 @@ public class InvalidOptionException extends Exception {
      * @return the number of the option that caused the exception
      */
     public int getOptionNumber() {
-        return optionNumber;
+        return this.optionNumber;
     }
 
-    /**
-     * Returns the OptionName of the option that caused this exception
-     * @return the OptionName of the option that caused this exception
-     */
-    public OptionName getOptionName(){
-        return OptionName.getByNumber(optionNumber);
-    }
-
-    /**
-     * Returns the {@link Header} instance that caused this exception (if available) or null otherwise
-     * @return the {@link Header} instance that caused this exception (if available) or null otherwise
-     */
-    public Header getMessageHeader() {
-        return messageHeader;
-    }
 }
