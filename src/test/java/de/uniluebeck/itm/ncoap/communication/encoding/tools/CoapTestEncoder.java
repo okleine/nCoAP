@@ -22,25 +22,30 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.encoding;
+package de.uniluebeck.itm.ncoap.communication.encoding.tools;
 
-import de.uniluebeck.itm.ncoap.communication.CoapCommunicationException;
+import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageEncoder;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
+import de.uniluebeck.itm.ncoap.message.options.Option;
+import org.jboss.netty.buffer.ChannelBuffer;
 
 /**
  * Created with IntelliJ IDEA.
  * User: olli
- * Date: 05.11.13
- * Time: 18:01
+ * Date: 09.11.13
+ * Time: 21:47
  * To change this template use File | Settings | File Templates.
  */
-public class DecodingFailedException extends CoapCommunicationException{
+public class CoapTestEncoder extends CoapMessageEncoder{
 
-//    public DecodingFailedException(int messageType, int messageID, String message){
-//        super(messageType, messageID, message);
-//    }
+    public Object encode(CoapMessage coapMessage) throws Exception{
+        return super.encode(null, null, coapMessage);
+    }
 
-    public DecodingFailedException(int messageType, int messageID, Throwable cause){
-        super(messageType, messageID, cause);
+    public void encodeOption(ChannelBuffer buffer, int optionNumber, Option option, int prevNumber)
+            throws InvalidOptionException {
+        super.encodeOption(buffer, optionNumber, option, prevNumber);
     }
 
 }

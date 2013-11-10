@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 
 
@@ -52,6 +53,21 @@ public class CoapResponse extends CoapMessage {
     public CoapResponse(int messageCode){
         super(messageCode);
     }
+
+//    public static CoapResponse createErrorResponse(int messageCode, String errorMessage){
+//        CoapResponse response = new CoapResponse(messageCode);
+//
+//        try{
+//            response.setContent(("Option " + Option.Name.CONTENT_FORMAT + " not set.")
+//                    .getBytes(Charset.forName("UTF-8")));
+//            response.setContentType(MediaType.TEXT_PLAIN_UTF8);
+//        }
+//        catch (Exception e) {
+//            log.error("This should never happen!", e);
+//        }
+//
+//        return response;
+//    }
 
 //    public CoapResponse(int messageType, int messageCode, int messageID, long token) throws InvalidMessageException {
 //

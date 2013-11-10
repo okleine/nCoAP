@@ -1,4 +1,28 @@
 /**
+ * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * All rights reserved
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+/**
 * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
 * All rights reserved
 *
@@ -48,6 +72,9 @@
 package de.uniluebeck.itm.ncoap.communication.encoding;
 
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
+import de.uniluebeck.itm.ncoap.message.InvalidMessageException;
+import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -65,11 +92,13 @@ import org.slf4j.LoggerFactory;
 */
 public class CoapMessageEncoder extends OneToOneEncoder {
 
-    public static final int MAX_OPTION_DELTA = 14;
+    public static final int MAX_OPTION_DELTA = 65804;
+    public static final int MAX_OPTION_LENGTH = 65804;
+
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
-    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws Exception{
+    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws EncodingFailedException{
         if(!(object instanceof CoapMessage)){
             return object instanceof ChannelBuffer ? object : null;
         }
@@ -77,6 +106,16 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         CoapMessage coapMessage = (CoapMessage) object;
         log.debug("CoapMessage to encode: {}", coapMessage);
 
+        if(coapMessage.getMessageID() == CoapMessage.UNDEFINED)
+            throw new EncodingFailedException(CoapMessage.UNDEFINED, coapMessage.getMessageType(),
+                    new InvalidHeaderException("Message ID is not defined."));
+
+        if(coapMessage.getToken().length > CoapMessage.MAX_TOKEN_LENGTH)
+            throw new EncodingFailedException(coapMessage.getMessageType(), coapMessage.getMessageID(),
+                    new InvalidHeaderException("Maximum token length is " + CoapMessage.MAX_TOKEN_LENGTH + " (actual: "
+                        + coapMessage.getToken().length + ")"));
+
+        //Start encoding
         ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
 
         //Encode HEADER
@@ -87,23 +126,26 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             buffer.writeBytes(coapMessage.getToken());
 
         //Encode OPTIONS
-        encodeOptions(buffer, coapMessage);
+        try{
+            encodeOptions(buffer, coapMessage);
+        }
+        catch(InvalidOptionException e){
+
+        }
 
         //Add CONTENT
         ChannelBuffer encodedMessage = ChannelBuffers.wrappedBuffer(buffer, coapMessage.getContent());
 
-
-
         return encodedMessage;
     }
 
-    private void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage){
+    protected void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage){
 
-        int encodedHeader = (coapMessage.getVersion() << 30) |
-                (coapMessage.getMessageType() << 28) |
-                (coapMessage.getToken().length << 24) |
-                (coapMessage.getMessageCode() << 16) |
-                (coapMessage.getMessageID());
+        int encodedHeader = ((coapMessage.getProtocolVersion()  & 0b11)     << 30)
+                          | ((coapMessage.getMessageType()      & 0b11)     << 28)
+                          | ((coapMessage.getToken().length     & 0b1111)   << 24)
+                          | ((coapMessage.getMessageCode()      & 0xFF)     << 16)
+                          | ((coapMessage.getMessageID()        & 0xFFFF));
 
         buffer.writeInt(encodedHeader);
 
@@ -117,7 +159,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
     }
 
-    private void encodeOptions(ChannelBuffer buffer, CoapMessage coapMessage) throws Exception {
+    protected void encodeOptions(ChannelBuffer buffer, CoapMessage coapMessage) throws InvalidOptionException {
 
         //Encode options one after the other and append buf option to the buf
         int prevNumber = 0;
@@ -131,59 +173,66 @@ public class CoapMessageEncoder extends OneToOneEncoder {
     }
 
 
-    private void encodeOption(ChannelBuffer buffer, int optionNumber, Option option, int prevNumber)
-            throws Exception {
+    protected void encodeOption(ChannelBuffer buffer, int optionNumber, Option option, int prevNumber)
+            throws InvalidOptionException {
 
         //The previous option number must be smaller or equal to the actual one
-        if(prevNumber > optionNumber){
-            String msg = "Previous option no. (" + prevNumber + ") for encoding must not be larger then current " +
-                    "option no (" + optionNumber + ")";
-            throw new EncodingFailedException(msg);
-        }
+        if(prevNumber > optionNumber)
+            throw new InvalidOptionException(optionNumber, "Previous option no. (" + prevNumber +
+                    ") for encoding must not be larger then current option no (" + optionNumber + ")");
+
 
         int optionDelta = optionNumber - prevNumber;
         int optionLength = option.getValue().length;
 
-        if(optionLength > 65804)
-            throw new EncodingFailedException("Option no. " + optionNumber + " exceeds maximum option length "
-                    + "(actual: " + optionLength + ", maximum: " + 65804 + ")");
+        if(optionLength > MAX_OPTION_LENGTH)
+            throw new InvalidOptionException(optionNumber, "Option no. " + optionNumber +
+                    " exceeds maximum option length (actual: " + optionLength + ", maximum: " +
+                    MAX_OPTION_LENGTH + ")");
 
-        if(optionDelta > 65804)
-            throw new EncodingFailedException("Option no. " + optionNumber + " exceeds maximum option delta "
-                    + "(actual: " + optionDelta + ", maximum: " + 65804 + ")");
+        if(optionDelta > MAX_OPTION_DELTA)
+            throw new InvalidOptionException(optionNumber, "Option no. " + optionNumber +
+                    " exceeds maximum option delta (actual: " + optionDelta + ", maximum: " + MAX_OPTION_DELTA + ")");
 
 
         //option delta < 13
         if(optionDelta < 13){
-            if(optionLength < 13)
-                buffer.writeByte(optionDelta << 4 | optionLength);
 
-            else if (optionLength < 268)
-                buffer.writeByte(optionDelta << 4 | 13);
+            if(optionLength < 13){
+                buffer.writeByte(((optionDelta << 4) & 0xFF) | (optionLength & 0xFF));
+            }
 
-            else
-                buffer.writeByte(optionDelta << 4 | 14);
+            else if (optionLength < 269){
+                buffer.writeByte(((optionDelta << 4) & 0xFF) | (13 & 0xFF));
+                buffer.writeByte((optionLength - 13) & 0xFF);
+            }
+
+            else{
+                buffer.writeByte(((optionDelta << 4) & 0xFF) | (14 & 0xFF));
+                buffer.writeByte(((optionLength - 269) & 0xFF00) >>> 8);
+                buffer.writeByte((optionLength - 269) & 0xFF);
+            }
         }
 
         //13 <= option delta < 269
         else if(optionDelta < 269){
 
             if(optionLength < 13){
-                buffer.writeByte(13 << 4 | optionLength);
-                buffer.writeByte(optionDelta - 13);
+                buffer.writeByte(((13 & 0xFF) << 4) | (optionLength & 0xFF));
+                buffer.writeByte((optionDelta - 13) & 0xFF);
             }
 
             else if (optionLength < 269){
-                buffer.writeByte(13 << 4 | 13);
-                buffer.writeByte(optionDelta - 13);
-                buffer.writeByte(optionLength - 13);
+                buffer.writeByte(((13 & 0xFF) << 4) | (13 & 0xFF));
+                buffer.writeByte((optionDelta - 13) & 0xFF);
+                buffer.writeByte((optionLength - 13) & 0xFF);
             }
 
             else{
-                buffer.writeByte(13 << 4 | 14);
-                buffer.writeByte(optionDelta - 13);
-                buffer.writeByte((optionLength - 269) >>> 8);
-                buffer.writeByte((optionLength - 269)  << 24 >>> 24);
+                buffer.writeByte((13 & 0xFF) << 4 | (14 & 0xFF));
+                buffer.writeByte((optionDelta - 13) & 0xFF);
+                buffer.writeByte(((optionLength - 269) & 0xFF00) >>> 8);
+                buffer.writeByte((optionLength - 269) & 0xFF);
             }
         }
 
@@ -191,23 +240,24 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         else{
 
             if(optionLength < 13){
-                buffer.writeByte(14 << 4 | optionLength);
-                buffer.writeByte((optionDelta - 269) >>> 8);
-                buffer.writeByte((optionDelta - 269) << 24 >>> 24);
+                buffer.writeByte(((14 & 0xFF) << 4) | (optionLength & 0xFF));
+                buffer.writeByte(((optionDelta - 269) & 0xFF00) >>> 8);
+                buffer.writeByte((optionDelta - 269) & 0xFF);
             }
 
             else if (optionLength < 269){
-                buffer.writeByte(14 << 4 | 13);
-                buffer.writeByte((optionDelta - 269) >>> 8);
-                buffer.writeByte((optionDelta - 269) << 24 >>> 24);
-                buffer.writeByte(optionLength - 13);
+                buffer.writeByte(((14 & 0xFF) << 4) | (13 & 0xFF));
+                buffer.writeByte(((optionDelta - 269) & 0xFF00) >>> 8);
+                buffer.writeByte((optionDelta - 269) & 0xFF);
+                buffer.writeByte((optionLength - 13) & 0xFF);
             }
 
             else{
-                buffer.writeByte(14 << 4 | 14);
-                buffer.writeByte((optionDelta - 269) >>> 8);
-                buffer.writeByte((optionLength - 269) >>> 8);
-                buffer.writeByte((optionLength - 269)  << 24 >>> 24);
+                buffer.writeByte(((14 & 0xFF) << 4) | (14 & 0xFF));
+                buffer.writeByte(((optionDelta - 269) & 0xFF00) >>> 8);
+                buffer.writeByte((optionDelta - 269) & 0xFF);
+                buffer.writeByte(((optionLength - 269) & 0xFF00) >>> 8);
+                buffer.writeByte((optionLength - 269) & 0xFF);
             }
         }
 

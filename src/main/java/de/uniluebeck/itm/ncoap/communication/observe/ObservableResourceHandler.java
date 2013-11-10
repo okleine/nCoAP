@@ -50,7 +50,7 @@
 //
 //import com.google.common.collect.HashBasedTable;
 //import de.uniluebeck.itm.ncoap.application.server.InternalServiceRemovedFromServerMessage;
-//import de.uniluebeck.itm.ncoap.application.server.webservice.MediaTypeNotSupportedException;
+//import de.uniluebeck.itm.ncoap.application.server.webservice.ContentFormatNotSupportedException;
 //import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebService;
 //import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -423,10 +423,10 @@
 //
 //                }
 //                catch(Exception e){
-//                    if(e instanceof MediaTypeNotSupportedException){
-//                        MediaTypeNotSupportedException exception = (MediaTypeNotSupportedException) e;
+//                    if(e instanceof ContentFormatNotSupportedException){
+//                        ContentFormatNotSupportedException exception = (ContentFormatNotSupportedException) e;
 //                        String message = "Media type(s)";
-//                        for(ContentFormat unsupportedMediaType : exception.getUnsupportedMediaTypes()){
+//                        for(ContentFormat unsupportedMediaType : exception.getUnsupportedContentFormats()){
 //                            message += (" " + unsupportedMediaType);
 //                        }
 //                        message += " not anymore supported by service " + webService.getPath();

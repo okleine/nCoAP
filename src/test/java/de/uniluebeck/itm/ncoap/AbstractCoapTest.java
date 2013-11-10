@@ -25,6 +25,7 @@
 package de.uniluebeck.itm.ncoap;
 
 import org.apache.log4j.*;
+import org.junit.BeforeClass;
 
 /**
  * Abstract class to be extended by all nCoAP tests to get proper logging
@@ -61,7 +62,7 @@ public abstract class AbstractCoapTest {
 
             appender.setBufferSize(100000);
 
-            //Define loglevel
+            //Define log level
             Logger.getRootLogger().setLevel(Level.ERROR);
             Logger.getLogger("de.uniluebeck.itm.ncoap.communication.AbstractCoapTest")
                     .setLevel(Level.INFO);

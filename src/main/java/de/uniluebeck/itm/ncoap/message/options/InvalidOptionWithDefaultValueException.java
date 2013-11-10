@@ -22,25 +22,56 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.encoding;
+package de.uniluebeck.itm.ncoap.message.options;
 
-import de.uniluebeck.itm.ncoap.communication.CoapCommunicationException;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+
+import java.math.BigInteger;
 
 /**
  * Created with IntelliJ IDEA.
  * User: olli
  * Date: 05.11.13
- * Time: 18:01
+ * Time: 16:02
  * To change this template use File | Settings | File Templates.
  */
-public class DecodingFailedException extends CoapCommunicationException{
+public class InvalidOptionWithDefaultValueException extends InvalidOptionException {
 
-//    public DecodingFailedException(int messageType, int messageID, String message){
-//        super(messageType, messageID, message);
-//    }
 
-    public DecodingFailedException(int messageType, int messageID, Throwable cause){
-        super(messageType, messageID, cause);
+    private int optionNumber;
+    private final byte[] givenValue;
+
+    public InvalidOptionWithDefaultValueException(int optionNumber, byte[] givenValue){
+        super(optionNumber, "Can not create option no. " + optionNumber  + " with default value: " +
+                valueToString(optionNumber, givenValue));
+        this.optionNumber = optionNumber;
+        this.givenValue = givenValue;
+    }
+    
+    public String getGivenValueAsString() throws UnknownOptionException {
+        return valueToString(this.optionNumber, this.givenValue);
     }
 
+
+    private static String valueToString(int optionNumber, byte[] value) {
+        try{
+            switch(Option.getOptionType(optionNumber)){
+                case OptionType.Name.STRING:
+                    return new String(value, CoapMessage.CHARSET);
+                case OptionType.Name.OPAQUE:
+                    if(value.length == 0)
+                        return "<empty>";
+                    else
+                        return new BigInteger(1, value).toString(16);
+                case OptionType.Name.UINT:
+                    return "" + new BigInteger(1, value).longValue();
+                default:
+                    return "<empty>";
+            }
+        }
+        catch (UnknownOptionException e) {
+            return "<Unknown Option>";
+        }
+
+    }
 }

@@ -34,6 +34,7 @@ package de.uniluebeck.itm.ncoap.message.options;
 public abstract class ContentFormat {
 
     public static class Name{
+        public static final long    UNDEFINED           = -1;
         public static final long    TEXT_PLAIN_UTF8     = 0;
         public static final long    APP_LINK_FORMAT     = 40;
         public static final long    APP_XML             = 41;

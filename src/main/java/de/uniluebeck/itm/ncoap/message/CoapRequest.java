@@ -51,10 +51,11 @@ public class CoapRequest extends CoapMessage {
      *
      * @throws InvalidOptionException if one of the target URI options to be created is not valid
      * @throws URISyntaxException if the URI is not appropriate for a CoAP message.
-     * @throws InvalidMessageException if the given messageCode is not suitable for a request
+     * @throws InvalidHeaderException if the given messageCode is not suitable for a request
+     * @throws UnknownHostException if the host given in the targetUri could not be resolved to an IP address
      */
-    public CoapRequest(int messageType, int messageCode, URI targetUri) throws InvalidMessageException,
-            InvalidOptionException, URISyntaxException, UnknownHostException {
+    public CoapRequest(int messageType, int messageCode, URI targetUri) throws
+            InvalidOptionException, URISyntaxException, UnknownHostException, InvalidHeaderException {
 
         this(messageType, messageCode);
         setTargetUriOptions(targetUri);
@@ -64,7 +65,7 @@ public class CoapRequest extends CoapMessage {
     }
 
     public CoapRequest(int messageType, int messageCode, URI targetUri, InetAddress proxyAddress)
-            throws InvalidOptionException, InvalidMessageException {
+            throws InvalidOptionException, InvalidHeaderException {
 
         this(messageType, messageCode);
 
@@ -74,20 +75,21 @@ public class CoapRequest extends CoapMessage {
         log.debug("New request created: {}.", this);
     }
 
-
-//    public CoapRequest(int messageType, int messageCode, int messageID, long token) throws InvalidMessageException {
-//
-//        super(messageType, messageCode, messageID, token);
-//
-//    }
-
-
-    private CoapRequest(int messageType, int messageCode) throws InvalidMessageException {
+    /**
+     * This constructor is only intended for internal use. Please use one of the other constructors to avoid
+     * unexpected behaviour.
+     *
+     * @param messageType
+     * @param messageCode
+     * @throws InvalidHeaderException
+     */
+    public CoapRequest(int messageType, int messageCode) throws InvalidHeaderException {
         super(messageType, messageCode);
 
         if(!MessageCode.isRequest(messageCode))
-            throw new InvalidMessageException("MessageCode " + messageCode + " is not for requests.");
+            throw new InvalidHeaderException("MessageCode " + messageCode + " is not for requests.");
     }
+
 
     private void setProxyURIOption(URI targetUri) throws InvalidOptionException {
         try{
@@ -97,6 +99,7 @@ public class CoapRequest extends CoapMessage {
             log.error("This should never happen.", e);
         }
     }
+
 
     private void setTargetUriOptions(URI targetUri) throws URISyntaxException, InvalidOptionException {
         targetUri = targetUri.normalize();
@@ -159,9 +162,16 @@ public class CoapRequest extends CoapMessage {
 
 
     private void addUriHostOption(String uriHost) throws UnknownOptionException, InvalidOptionException {
-        if(!Option.isDefaultValue(Name.URI_HOST, uriHost.getBytes(CoapMessage.CHARSET)))
-            addStringOption(Name.URI_HOST, uriHost);
+        addStringOption(Name.URI_HOST, uriHost);
     }
+
+//    public URI getTargetResourceUri() throws URISyntaxException {
+//        if(options.containsKey(Name.PROXY_URI))
+//            return new URI((String) options.get(Name.PROXY_URI).iterator().next().getDecodedValue());
+//
+//
+//        if(options.containsKey(Name.PROXY_SCHEME))
+//    }
 
     /**
      * Sets the If-Match options according to the given {@link Collection<byte[]>} containing ETAGs. If there were any
@@ -316,7 +326,7 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns the full path of the request URI reconstructed from the URI path options present in this
-     * {@link CoapRequest}.
+     * {@link CoapRequest}. If no such option is set, the returned value is "/".
      *
      * @return the full path of the request URI reconstructed from the URI path options present in this
      * {@link CoapRequest}.

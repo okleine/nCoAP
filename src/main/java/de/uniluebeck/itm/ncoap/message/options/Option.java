@@ -24,6 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message.options;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.net.InetAddresses;
 import com.google.common.primitives.Longs;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
@@ -88,11 +89,45 @@ public abstract class Option<T>{
         characteristics.put(    Name.SIZE_1,         new Integer[]{OptionType.Name.UINT,         0,      4       });
     }
 
+    private static HashMultimap<Integer, Integer> mutualExclusions = HashMultimap.create();
+    static{
+        mutualExclusions.put(Name.URI_HOST,     Name.PROXY_URI);
+        mutualExclusions.put(Name.PROXY_URI,    Name.URI_HOST);
+
+        mutualExclusions.put(Name.URI_PORT,     Name.PROXY_URI);
+        mutualExclusions.put(Name.PROXY_URI,    Name.URI_PORT);
+
+        mutualExclusions.put(Name.URI_PATH,     Name.PROXY_URI);
+        mutualExclusions.put(Name.PROXY_URI,    Name.URI_PATH);
+
+        mutualExclusions.put(Name.URI_QUERY,    Name.PROXY_URI);
+        mutualExclusions.put(Name.PROXY_URI,    Name.URI_QUERY);
+
+        mutualExclusions.put(Name.PROXY_SCHEME, Name.PROXY_URI);
+        mutualExclusions.put(Name.PROXY_URI,    Name.PROXY_SCHEME);
+    }
+
+    /**
+     * Returns <code>true</code> if and only if the co-existence of both options is not allowed in a single
+     * message. As this method checks for mutual exclusion, the order of the given arguments has no impact on the
+     * result.
+     *
+     * @param firstOptionNumber the first option number
+     * @param secondOptionNumber the second option number
+     *
+     * @return <code>true</code> if the co-existence of the given option numbers is not allowed in a single message
+     */
+    public static boolean mutuallyExcludes(int firstOptionNumber, int secondOptionNumber){
+        return mutualExclusions.get(firstOptionNumber).contains(secondOptionNumber);
+    }
+
     /**
      * Returns the minimum length for the given option number in bytes.
      *
      * @param optionNumber the option number to check the minimum length of
+     *
      * @return the minimum length for the given option number in bytes
+     *
      * @throws UnknownOptionException if the given option number refers to an unknown option
      */
     public static int getMinLength(int optionNumber) throws UnknownOptionException {
