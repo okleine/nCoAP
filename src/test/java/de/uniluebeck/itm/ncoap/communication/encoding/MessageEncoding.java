@@ -49,7 +49,7 @@ import java.util.Collection;
 @RunWith(Parameterized.class)
 public class MessageEncoding extends AbstractCoapTest{
 
-    @Parameterized.Parameters(name = "Test: {0}")
+    @Parameterized.Parameters(name = "{index}: Test: {0}")
     public static Collection<Object[]> data() throws Exception {
         return Lists.newArrayList(
                 new Object[]{MessageType.Name.CON,
@@ -74,23 +74,24 @@ public class MessageEncoding extends AbstractCoapTest{
     private CoapMessage coapMessage;
 
 
-    public MessageEncoding(int messageType, int messageCode, URI targetUri, InetAddress proxy, int messageID,
+    public MessageEncoding(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri, InetAddress proxy, int messageID,
                            byte[] token) throws Exception{
 
         this.encoder = new CoapTestEncoder();
-        if(MessageCode.isRequest(messageCode)){
+        if(MessageCode.isRequest(messageCode.getNumber())){
             if(proxy != null)
                 this.coapMessage = new CoapRequest(messageType, messageCode, targetUri, proxy);
             else
                 this.coapMessage = new CoapRequest(messageType, messageCode, targetUri);
         }
 
-        else if(MessageCode.isResponse(messageCode)){
+        else if(MessageCode.Name.isResponse(messageCode)){
             this.coapMessage = new CoapResponse(messageCode);
         }
 
         else{
-            this.coapMessage = CoapMessage.createCoapMessage(messageType, messageCode, messageID, token);
+            this.coapMessage = CoapMessage.createCoapMessage(messageType.getNumber(), messageCode.getNumber(),
+                    messageID, token);
         }
 
         coapMessage.setMessageID(messageID);
@@ -104,6 +105,6 @@ public class MessageEncoding extends AbstractCoapTest{
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.encoding").setLevel(Level.DEBUG);
+        Logger.getRootLogger().setLevel(Level.DEBUG);
     }
 }

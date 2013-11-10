@@ -47,6 +47,9 @@
 
 package de.uniluebeck.itm.ncoap.message;
 
+import java.util.HashMap;
+import java.util.HashSet;
+
 /**
  * This enumeration contains all defined message codes (i.e. methods for requests and status for responses)
  * in CoAPs draft v7
@@ -56,34 +59,105 @@ package de.uniluebeck.itm.ncoap.message;
 
 public abstract class MessageCode {
 
-    public static class Name{
-        public static final int EMPTY                           = 0;
-        public static final int GET                             = 1;
-        public static final int POST                            = 2;
-        public static final int PUT                             = 3;
-        public static final int DELETE                          = 4;
-        public static final int CREATED_201                     = 65;
-        public static final int DELETED_202                     = 66;
-        public static final int VALID_203                       = 67;
-        public static final int CHANGED_204                     = 68;
-        public static final int CONTENT_205                     = 69;
-        public static final int BAD_REQUEST_400                 = 128;
-        public static final int UNAUTHORIZED_401                = 129;
-        public static final int BAD_OPTION_402                  = 130;
-        public static final int FORBIDDEN_403                   = 131;
-        public static final int NOT_FOUND_404                   = 132;
-        public static final int METHOD_NOT_ALLOWED_405          = 133;
-        public static final int NOT_ACCEPTABLE_406              = 134;
-        public static final int PRECONDITION_FAILED_412         = 140;
-        public static final int REQUEST_ENTITY_TOO_LARGE_413    = 141;
-        public static final int UNSUPPORTED_CONTENT_FORMAT_415  = 143;
-        public static final int INTERNAL_SERVER_ERROR_500       = 160;
-        public static final int NOT_IMPLEMENTED_501             = 161;
-        public static final int BAD_GATEWAY_502                 = 162;
-        public static final int SERVICE_UNAVAILABLE_503         = 163;
-        public static final int GATEWAY_TIMEOUT_504             = 164;
-        public static final int PROXYING_NOT_SUPPORTED_505      = 165;
+    private static final HashMap<Integer, Name> validNumbers = new HashMap<>();
+
+    public static enum Name{
+         UNKNOWN(-1),
+         EMPTY(0),
+         GET(1),
+         POST(2),
+         PUT(3),
+         DELETE(4),
+         CREATED_201(65),
+         DELETED_202(66),
+         VALID_203(67),
+         CHANGED_204(68),
+         CONTENT_205(69),
+         BAD_REQUEST_400(128),
+         UNAUTHORIZED_401(129),
+         BAD_OPTION_402(130),
+         FORBIDDEN_403(131),
+         NOT_FOUND_404(132),
+         METHOD_NOT_ALLOWED_405(133),
+         NOT_ACCEPTABLE_406(134),
+         PRECONDITION_FAILED_412(140),
+         REQUEST_ENTITY_TOO_LARGE_413(141),
+         UNSUPPORTED_CONTENT_FORMAT_415(143),
+         INTERNAL_SERVER_ERROR_500(160),
+         NOT_IMPLEMENTED_501(161),
+         BAD_GATEWAY_502(162),
+         SERVICE_UNAVAILABLE_503(163),
+         GATEWAY_TIMEOUT_504(164),
+         PROXYING_NOT_SUPPORTED_505(165);
+
+        private int number;
+
+        private Name(int number){
+            this.number = number;
+            validNumbers.put(number, this);
+        }
+
+        public int getNumber() {
+            return this.number;
+        }
+
+        /**
+         * Returns the {@link Name} corresponding to the given number or {@link Name#UNKNOWN} if no such {@link Name}
+         * exists.
+         *
+         * @return the {@link Name} corresponding to the given number or {@link Name#UNKNOWN} if no such {@link Name}
+         * exists.
+         */
+        public static Name getName(int number){
+            if(validNumbers.containsKey(number))
+                return validNumbers.get(number);
+            else
+                return Name.UNKNOWN;
+        }
+
+        public static boolean isMessageCode(int number){
+            return validNumbers.containsKey(number);
+        }
+
+        public static boolean isRequest(Name messageCode){
+            return MessageCode.isResponse(messageCode.getNumber());
+        }
+
+        public static boolean isResponse(Name messageCode) {
+            return MessageCode.isResponse(messageCode.getNumber());
+        }
+
     }
+    
+//    public static class Name{
+//        public static final int EMPTY                           = 0;
+//        public static final int GET                             = 1;
+//        public static final int POST                            = 2;
+//        public static final int PUT                             = 3;
+//        public static final int DELETE                          = 4;
+//        public static final int CREATED_201                     = 65;
+//        public static final int DELETED_202                     = 66;
+//        public static final int VALID_203                       = 67;
+//        public static final int CHANGED_204                     = 68;
+//        public static final int CONTENT_205                     = 69;
+//        public static final int BAD_REQUEST_400                 = 128;
+//        public static final int UNAUTHORIZED_401                = 129;
+//        public static final int BAD_OPTION_402                  = 130;
+//        public static final int FORBIDDEN_403                   = 131;
+//        public static final int NOT_FOUND_404                   = 132;
+//        public static final int METHOD_NOT_ALLOWED_405          = 133;
+//        public static final int NOT_ACCEPTABLE_406              = 134;
+//        public static final int PRECONDITION_FAILED_412         = 140;
+//        public static final int REQUEST_ENTITY_TOO_LARGE_413    = 141;
+//        public static final int UNSUPPORTED_CONTENT_FORMAT_415  = 143;
+//        public static final int INTERNAL_SERVER_ERROR_500       = 160;
+//        public static final int NOT_IMPLEMENTED_501             = 161;
+//        public static final int BAD_GATEWAY_502                 = 162;
+//        public static final int SERVICE_UNAVAILABLE_503         = 163;
+//        public static final int GATEWAY_TIMEOUT_504             = 164;
+//        public static final int PROXYING_NOT_SUPPORTED_505      = 165;
+//    }
+
 
     /**
      * This method indicates wheter the message code refers to a request.
@@ -121,7 +195,7 @@ public abstract class MessageCode {
      * @return <code>true</code> if payload is allowed, <code>false</code> otherwise
      */
     public static boolean allowsContent(int codeNumber){
-        return !(codeNumber == Name.GET || codeNumber == Name.DELETE);
+        return !(codeNumber == Name.GET.getNumber() || codeNumber == Name.DELETE.getNumber());
     }
 
 

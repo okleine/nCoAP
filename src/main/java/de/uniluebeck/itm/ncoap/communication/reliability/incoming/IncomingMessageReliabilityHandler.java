@@ -1,51 +1,3 @@
-/**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
- * All rights reserved
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *
- *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
- *    disclaimer.
- *
- *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
- *    following disclaimer in the documentation and/or other materials provided with the distribution.
- *
- *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
- *    products derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-///**
-// * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
-// * All rights reserved
-// *
-// * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-// * following conditions are met:
-// *
-// *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
-// *    disclaimer.
-// *
-// *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-// *    following disclaimer in the documentation and/or other materials provided with the distribution.
-// *
-// *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
-// *    products derived from this software without specific prior written permission.
-// *
-// * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-// * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-// * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-// * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-// * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// */
 ///**
 //* Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
 //* All rights reserved.
@@ -75,13 +27,10 @@
 //import com.google.common.collect.HashMultimap;
 //import com.google.common.collect.Multimap;
 //import com.google.common.collect.Multimaps;
-//import de.uniluebeck.itm.ncoap.communication.observe.InternalStopObservationMessage;
 //import de.uniluebeck.itm.ncoap.message.CoapMessage;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
 //import de.uniluebeck.itm.ncoap.message.CoapResponse;
-//import de.uniluebeck.itm.ncoap.message.header.Header;
 //import de.uniluebeck.itm.ncoap.message.MessageType;
-//import de.uniluebeck.itm.ncoap.toolbox.Token;
 //import org.jboss.netty.channel.*;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
@@ -90,20 +39,18 @@
 //import java.util.concurrent.ScheduledExecutorService;
 //import java.util.concurrent.TimeUnit;
 //
-//import static de.uniluebeck.itm.ncoap.message.options.OptionRegistry.OptionName.OBSERVE_RESPONSE;
-//
 //
 ///**
-// * This class is the first {@link ChannelUpstreamHandler} to deal with incoming decoded {@link CoapMessage}s. If the
-// * incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty acknowledgement to the
-// * sender if there wasn't a piggy-backed response within a period of 2 seconds.
-// *
-// * If the incoming message is a confirmable {@link CoapResponse} it immediately sends a proper acknowledgement if there
-// * was an open request waiting for a seperate response or update-notification. It immediately sends an RST
-// * if there was no such response expected.
-// *
-// * @author Oliver Kleine
-// */
+//* This class is the first {@link ChannelUpstreamHandler} to deal with incoming decoded {@link CoapMessage}s. If the
+//* incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty acknowledgement to the
+//* sender if there wasn't a piggy-backed response within a period of 2 seconds.
+//*
+//* If the incoming message is a confirmable {@link CoapResponse} it immediately sends a proper acknowledgement if there
+//* was an open request waiting for a seperate response or update-notification. It immediately sends an RST
+//* if there was no such response expected.
+//*
+//* @author Oliver Kleine
+//*/
 //public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 //
 //    private static Logger log = LoggerFactory.getLogger(IncomingMessageReliabilityHandler.class.getName());
@@ -112,8 +59,8 @@
 //    private final HashBasedTable<InetSocketAddress, Integer, Boolean> acknowledgementStates
 //            = HashBasedTable.create();
 //
-//    private final Multimap<InetSocketAddress, Token> waitingForResponse
-//            = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, Token>create());
+//    private final Multimap<InetSocketAddress, Long> waitingForResponse
+//            = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, Long>create());
 //
 //    private ScheduledExecutorService executorService;
 //
@@ -153,7 +100,7 @@
 //        final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
 //        final int messageID = coapMessage.getMessageID();
 //
-//        if(coapMessage.getMessageType() == MessageType.CON){
+//        if(coapMessage.getMessageType() == MessageType.Name.CON){
 //            if(coapMessage instanceof CoapRequest){
 //                if(!addAcknowledgementStatus(remoteAddress, coapMessage)){
 //                    me.getFuture().setSuccess();
@@ -177,20 +124,28 @@
 //            }
 //
 //            if(coapMessage instanceof CoapResponse){
-//                Token token = new Token(coapMessage.getToken());
+//                Long token = coapMessage.getTokenAsLong();
+//
 //                if(!waitingForResponse.containsEntry(me.getRemoteAddress(), token)){
 //                    log.info("Received response without open request (remote {}, token {}). Write RST.",
 //                            me.getRemoteAddress(), token);
+//
 //                    writeReset(ctx, (InetSocketAddress) me.getRemoteAddress(), coapMessage.getMessageID(),
 //                            coapMessage.getToken());
+//
 //                    return;
 //                }
-//                else if(!((CoapResponse) coapMessage).isUpdateNotification()){
-//                    log.info("Received response for open request (remote {}, token {})",
-//                            me.getRemoteAddress(), token);
-//                    waitingForResponse.remove(me.getRemoteAddress(), token);
+//
+////                else if(!((CoapResponse) coapMessage).isUpdateNotification()){
+////                    log.info("Received response for open request (remote {}, token {})",
+////                            me.getRemoteAddress(), token);
+////                    waitingForResponse.remove(me.getRemoteAddress(), token);
+////                }
+//
+//                else {
+//                    writeEmptyAcknowledgement(ctx, remoteAddress, coapMessage.getMessageID());
 //                }
-//                writeEmptyAcknowledgement(ctx, remoteAddress, coapMessage.getMessageID());
+//
 //            }
 //        }
 //
@@ -199,8 +154,8 @@
 //
 //    /**
 //     * If the message to be written is a {@link CoapResponse} this method decides whether the message type is
-//     * {@link de.uniluebeck.itm.ncoap.message.MessageType#ACK} (if there wasn't an empty acknowledgement sent yet) or {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} (if there
-//     * already was an empty acknowledgement sent). In the latter case it additionally cancels the sending of
+//     * {@link MessageType.Name#ACK} (if there wasn't an empty acknowledgement sent yet) or {@link MessageType.Name#CON}
+//     * (if there was already an empty acknowledgement sent). In the latter case it additionally cancels the sending of
 //     * an empty acknowledgement (which was scheduled by the <code>messageReceived</code> method when the request
 //     * was received).
 //     *

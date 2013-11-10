@@ -1,27 +1,27 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
- * All rights reserved
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *
- *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
- *    disclaimer.
- *
- *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
- *    following disclaimer in the documentation and/or other materials provided with the distribution.
- *
- *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
- *    products derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+* Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+* All rights reserved
+*
+* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+* following conditions are met:
+*
+*  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+*    disclaimer.
+*
+*  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+*    following disclaimer in the documentation and/or other materials provided with the distribution.
+*
+*  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+*    products derived from this software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+* GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 /**
 * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
 * All rights reserved
@@ -196,7 +196,12 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                     coapRequest.getUriPath(), me.getRemoteAddress());
 
             //Write error response if there is no such webservice instance registered at this server instance
-            CoapResponse coapResponse = new CoapResponse(MessageCode.Name.NOT_FOUND_404);
+            CoapResponse coapResponse = null;
+            try {
+                coapResponse = new CoapResponse(MessageCode.Name.NOT_FOUND_404);
+            } catch (InvalidHeaderException e) {
+                log.error("This should never happen.", e);
+            }
             coapResponse.setServicePath(coapRequest.getUriPath());
             try {
                 if(coapRequest.getToken().length > 0)
@@ -268,8 +273,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
                     }
                     catch (Exception ex) {
-                        coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
                         try {
+                            coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
                             coapResponse.setMessageID(coapRequest.getMessageID());
                             if(coapRequest.getToken().length > 0)
                                 coapResponse.setToken(coapRequest.getToken());
@@ -279,6 +284,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                             coapResponse.setContent(errors.toString().getBytes(Charset.forName("UTF-8")));
                         } catch (Exception e) {
                             log.error("This should never happen.", e);
+                            return;
                         }
                     }
 
@@ -330,64 +336,58 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             return;
         }
 
-        CoapCommunicationException e1 = (CoapCommunicationException) e.getCause();
-        CoapResponse coapResponse;
-        byte[] content;
-
-        //Handle excpetions from incoming message decoding
-        if(e1 instanceof DecodingFailedException){
-
-            if(e1.getCause() != null && e1.getCause() instanceof InvalidOptionException)
-                coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
-            else
-                coapResponse = new CoapResponse(MessageCode.Name.BAD_REQUEST_400);
-
-            try{
-                if(e1.getMessageType() == MessageType.Name.CON)
-                    coapResponse.setMessageType(MessageType.Name.ACK);
-                else
-                    coapResponse.setMessageType(MessageType.Name.NON);
-            }
-            catch (InvalidHeaderException e2) {
-                log.error("This should never happen.", e2);
-            }
-
-            content = e1.getCause().getMessage().getBytes(CoapMessage.CHARSET);
-
-        }
-
-        //Handle excpetions from outgoing  message encoding (actually this should never happen!)
-        else if(e1 instanceof EncodingFailedException){
-
-            log.error("This should never happen!", e.getCause());
-            coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-
-            try{
-                coapResponse.setMessageType(e1.getMessageType());
-            }
-            catch (InvalidHeaderException e2) {
-                log.error("This should never happen.", e2);
-            }
-
-            content = e1.getCause().getMessage().getBytes(CoapMessage.CHARSET);
-        }
-
-        else{
-
-            coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-            content = e.getCause().getMessage().getBytes(CoapMessage.CHARSET);
-
-        }
-
         try{
+            CoapCommunicationException e1 = (CoapCommunicationException) e.getCause();
+            CoapResponse coapResponse;
+            byte[] content;
+
+            //Handle excpetions from incoming message decoding
+            if(e1 instanceof DecodingFailedException){
+
+                if(e1.getCause() != null && e1.getCause() instanceof InvalidOptionException)
+                    coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
+                else
+                    coapResponse = new CoapResponse(MessageCode.Name.BAD_REQUEST_400);
+
+
+                if(e1.getMessageType() == MessageType.Name.CON.getNumber())
+                    coapResponse.setMessageType(MessageType.Name.ACK.getNumber());
+                else
+                    coapResponse.setMessageType(MessageType.Name.NON.getNumber());
+
+
+                content = e1.getCause().getMessage().getBytes(CoapMessage.CHARSET);
+
+            }
+
+            //Handle excpetions from outgoing  message encoding (actually this should never happen!)
+            else if(e1 instanceof EncodingFailedException){
+
+                log.error("This should never happen!", e.getCause());
+                coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+                coapResponse.setMessageType(e1.getMessageType());
+
+                content = e1.getCause().getMessage().getBytes(CoapMessage.CHARSET);
+            }
+
+            else{
+
+                coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+                content = e.getCause().getMessage().getBytes(CoapMessage.CHARSET);
+
+            }
+
+            //Set the message ID and the content of the error message
             coapResponse.setMessageID(e1.getMessageID());
             coapResponse.setContent(content);
-        }
-        catch (InvalidHeaderException | InvalidMessageException e2) {
-            log.error("This should never happen.", e2);
-        }
 
-        sendCoapResponse(coapResponse, (InetSocketAddress) ctx.getChannel().getRemoteAddress());
+
+            sendCoapResponse(coapResponse, (InetSocketAddress) ctx.getChannel().getRemoteAddress());
+
+        }
+        catch (InvalidHeaderException | InvalidMessageException e1) {
+            log.error("This should never happen.", e1);
+        }
     }
 
     /**

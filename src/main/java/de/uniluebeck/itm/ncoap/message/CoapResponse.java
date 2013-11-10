@@ -49,9 +49,19 @@ public class CoapResponse extends CoapMessage {
      * automatically set by the nCoAP framework.
      *
      * @param messageCode The {@link MessageCode} of the response
+     *
+     * @throws
      */
-    public CoapResponse(int messageCode){
+    public CoapResponse(int messageCode) throws InvalidHeaderException {
         super(messageCode);
+
+        if(!MessageCode.isResponse(messageCode))
+            throw new InvalidHeaderException("Message code no." + messageCode + " is no response code.");
+    }
+
+
+    public CoapResponse(MessageCode.Name messageCode) throws InvalidHeaderException {
+        this(messageCode.getNumber());
     }
 
 //    public static CoapResponse createErrorResponse(int messageCode, String errorMessage){

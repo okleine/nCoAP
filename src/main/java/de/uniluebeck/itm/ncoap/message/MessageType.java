@@ -47,30 +47,59 @@
 
 package de.uniluebeck.itm.ncoap.message;
 
+import java.util.HashMap;
+
+
 /**
  * @author Oliver Kleine
  */
 public abstract class MessageType {
 
-    public static class Name{
-        /**
-         * corresponds to CoAPs numerical message type 0 (Confirmable message)
-         */
-        public static final int CON = 0;
+    private static final HashMap<Integer, Name> validNumbers = new HashMap<>();
+
+    public static enum Name{
+
+        UNKNOWN(-1),
+        CON(0),
+        NON(1),
+        ACK(2),
+        RST(3);
+
+        private int number;
+
+        private Name(int number){
+            this.number = number;
+            validNumbers.put(number, this);
+        }
+
+        public int getNumber(){
+            return this.number;
+        }
 
         /**
-         * corresponds to CoAPs numerical message type 1 (Nonconfirmable message)
+         * Returns the {@link Name} corresponding to the given number or {@link Name#UNKNOWN} if no such {@link Name}
+         * exists.
+         *
+         * @return the {@link Name} corresponding to the given number or {@link Name#UNKNOWN} if no such {@link Name}
+         * exists.
          */
-        public static final int NON = 1;
+        public static Name getName(int number){
+            if(validNumbers.containsKey(number))
+                return validNumbers.get(number);
+            else
+                return Name.UNKNOWN;
+        }
 
         /**
-         * corresponds to CoAPs numerical message type 2 (Acknowledgement)
+         * Returns <code>true</code> if and only if the given number corresponds to a valid message type. Otherwise it
+         * returns <code>false</code>.
+         *
+         * @param number the number to check whether it corresponds to a valid message type.
+         *
+         * @return whether the given number corresponds to a valid message type.
          */
-        public static final int ACK = 2;
-
-        /**
-         * corresponds to CoAPs numerical message type 3 (Reset message)
-         */
-        public static final int RST = 3;
+        public static boolean isMessageType(int number){
+            return validNumbers.keySet().contains(number);
+        }
     }
 }

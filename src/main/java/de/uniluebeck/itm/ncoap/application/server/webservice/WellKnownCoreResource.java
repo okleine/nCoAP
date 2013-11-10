@@ -49,10 +49,7 @@
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
@@ -98,23 +95,28 @@ public final class WellKnownCoreResource extends NotObservableWebService<Map<Str
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest request,
                                    InetSocketAddress remoteAddress) {
+        try{
+            if(request.getMessageCode() != MessageCode.Name.GET.getNumber()){
+                responseFuture.set(new CoapResponse(MessageCode.Name.METHOD_NOT_ALLOWED_405));
+                return;
+            }
 
-        if(request.getMessageCode() != MessageCode.Name.GET){
-            responseFuture.set(new CoapResponse(MessageCode.Name.METHOD_NOT_ALLOWED_405));
-            return;
+            CoapResponse response = new CoapResponse(MessageCode.Name.CONTENT_205);
+
+            try {
+                byte[] payload = getSerializedResourceStatus(ContentFormat.Name.APP_LINK_FORMAT);
+                response.setContent(ChannelBuffers.wrappedBuffer(payload), ContentFormat.Name.APP_LINK_FORMAT);
+
+            } catch (Exception e) {
+                log.error("This should never happen.", e);
+            }
+
+            responseFuture.set(response);
         }
-
-        CoapResponse response = new CoapResponse(MessageCode.Name.CONTENT_205);
-
-        try {
-            byte[] payload = getSerializedResourceStatus(ContentFormat.Name.APP_LINK_FORMAT);
-            response.setContent(ChannelBuffers.wrappedBuffer(payload), ContentFormat.Name.APP_LINK_FORMAT);
-
-        } catch (Exception e) {
+        catch (InvalidHeaderException e) {
             log.error("This should never happen.", e);
+            responseFuture.setException(e);
         }
-
-        responseFuture.set(response);
     }
 
 //    @Override

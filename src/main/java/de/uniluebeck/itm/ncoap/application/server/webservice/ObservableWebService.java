@@ -149,9 +149,9 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
      */
     public final int getMessageTypeForUpdateNotifications(){
         if(isUpdateNotificationConfirmable)
-            return MessageType.Name.CON;
+            return MessageType.Name.CON.getNumber();
         else
-            return MessageType.Name.NON;
+            return MessageType.Name.NON.getNumber();
     }
 
 

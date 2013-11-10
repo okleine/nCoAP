@@ -45,6 +45,25 @@ public class CoapRequest extends CoapMessage {
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
      * and initial option list with target URI-related options set.
      *
+     * @param messageType  A {@link MessageType.Name}
+     * @param messageCode A {@link MessageCode}
+     * @param targetUri the recipients URI
+     *
+     * @throws InvalidOptionException if one of the target URI options to be created is not valid
+     * @throws URISyntaxException if the URI is not appropriate for a CoAP message.
+     * @throws InvalidHeaderException if the given messageCode is not suitable for a request
+     * @throws UnknownHostException if the host given in the targetUri could not be resolved to an IP address
+     */
+    public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri) throws
+            InvalidOptionException, URISyntaxException, UnknownHostException, InvalidHeaderException {
+
+        this(messageType.getNumber(), messageCode.getNumber(), targetUri);
+    }
+
+    /**
+     * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
+     * and initial option list with target URI-related options set.
+     *
      * @param messageType  A {@link MessageType}
      * @param messageCode A {@link MessageCode}
      * @param targetUri the recipients URI
@@ -57,17 +76,27 @@ public class CoapRequest extends CoapMessage {
     public CoapRequest(int messageType, int messageCode, URI targetUri) throws
             InvalidOptionException, URISyntaxException, UnknownHostException, InvalidHeaderException {
 
-        this(messageType, messageCode);
+        super(messageType, messageCode);
+
+        if(!(MessageCode.isRequest(messageCode)))
+            throw new InvalidHeaderException("Message code no." + messageCode + " is no request code.");
+
         setTargetUriOptions(targetUri);
         this.recipientAddress = InetAddress.getByName(targetUri.getHost());
 
         log.debug("New request created: {}.", this);
     }
 
+    public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri,
+                       InetAddress proxyAddress) throws InvalidOptionException, InvalidHeaderException {
+
+        this(messageType.getNumber(), messageCode.getNumber(), targetUri, proxyAddress);
+    }
+
     public CoapRequest(int messageType, int messageCode, URI targetUri, InetAddress proxyAddress)
             throws InvalidOptionException, InvalidHeaderException {
 
-        this(messageType, messageCode);
+        super(messageType, messageCode);
 
         setProxyURIOption(targetUri);
         this.recipientAddress = proxyAddress;

@@ -54,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 public class MessageDecodingWithValidMessages extends AbstractCoapTest{
 
     @Parameterized.Parameters(name = "Test: {1}")
-    public static Collection<Object[]> data() throws InvalidMessageException {
+    public static Collection<Object[]> data() throws Exception {
         return Lists.newArrayList(
                 new Object[]{new byte[]{(byte) (0x60 & 0xFF), 0, (byte) (0xFF & 0xFF), (byte) (0xFF & 0xFF)},
                         CoapMessage.createEmptyAcknowledgement(65535)},

@@ -74,6 +74,7 @@ package de.uniluebeck.itm.ncoap.communication.encoding;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.InvalidMessageException;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -106,8 +107,8 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         CoapMessage coapMessage = (CoapMessage) object;
         log.debug("CoapMessage to encode: {}", coapMessage);
 
-        if(coapMessage.getMessageID() == CoapMessage.UNDEFINED)
-            throw new EncodingFailedException(CoapMessage.UNDEFINED, coapMessage.getMessageType(),
+        if(coapMessage.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED)
+            throw new EncodingFailedException(coapMessage.getMessageType(), CoapMessage.MESSAGE_ID_UNDEFINED,
                     new InvalidHeaderException("Message ID is not defined."));
 
         if(coapMessage.getToken().length > CoapMessage.MAX_TOKEN_LENGTH)

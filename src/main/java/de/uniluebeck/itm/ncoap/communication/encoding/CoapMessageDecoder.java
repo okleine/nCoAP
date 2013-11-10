@@ -84,7 +84,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4)
-            throw new DecodingFailedException(CoapMessage.UNDEFINED, CoapMessage.UNDEFINED,
+            throw new DecodingFailedException(MessageType.Name.UNKNOWN.getNumber(), CoapMessage.MESSAGE_ID_UNDEFINED,
                     new InvalidHeaderException("Buffer must contain at least readable 4 " +
                             "bytes (but has " + buffer.readableBytes() + ")"));
 
@@ -107,7 +107,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         //Check whether message code indicates empty message and either TKL is greater than 0 or there are unread bytes
         //following the header
-        if(messageCode == MessageCode.Name.EMPTY){
+        if(messageCode == MessageCode.Name.EMPTY.getNumber()){
             if(tokenLength > 0){
                 String message = "Invalid TKL header value for empty message: " + tokenLength;
                 log.warn(message);
@@ -151,7 +151,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         }
 
         //If message code indicates empty message, follow-up bytes (i.e. token, options, and content) are ignored.
-        if(coapMessage.getMessageCode() == MessageCode.Name.EMPTY && buffer.readableBytes() > 0){
+        if(coapMessage.getMessageCode() == MessageCode.Name.EMPTY.getNumber() && buffer.readableBytes() > 0){
             if(buffer.readableBytes() > 0)
                 log.warn("Ignore remaining {} bytes after header that indicates empty message.", buffer.readableBytes());
 

@@ -63,9 +63,9 @@ public abstract class AbstractCoapTest {
             appender.setBufferSize(100000);
 
             //Define log level
-            Logger.getRootLogger().setLevel(Level.ERROR);
+            Logger.getRootLogger().setLevel(Level.DEBUG);
             Logger.getLogger("de.uniluebeck.itm.ncoap.communication.AbstractCoapTest")
-                    .setLevel(Level.INFO);
+                    .setLevel(Level.DEBUG);
         }
     }
 
