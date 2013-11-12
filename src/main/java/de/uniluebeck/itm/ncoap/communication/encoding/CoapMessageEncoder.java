@@ -111,21 +111,15 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             throw new EncodingFailedException(coapMessage.getMessageType(), CoapMessage.MESSAGE_ID_UNDEFINED,
                     new InvalidHeaderException("Message ID is not defined."));
 
-        if(coapMessage.getToken().length > CoapMessage.MAX_TOKEN_LENGTH)
-            throw new EncodingFailedException(coapMessage.getMessageType(), coapMessage.getMessageID(),
-                    new InvalidHeaderException("Maximum token length is " + CoapMessage.MAX_TOKEN_LENGTH + " (actual: "
-                        + coapMessage.getToken().length + ")"));
-
         //Start encoding
         ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer();
 
-        //Encode HEADER
+        //Encode HEADER and TOKEN
         encodeHeader(encodedMessage, coapMessage);
         log.debug("Encoded length of message (after HEADER): {}", encodedMessage.readableBytes());
 
         //Encode TOKEN
-        if(coapMessage.getToken().length > 0)
-            encodedMessage.writeBytes(coapMessage.getToken());
+
 
         log.debug("Encoded length of message (after TOKEN): {}", encodedMessage.readableBytes());
 
@@ -151,9 +145,11 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
     protected void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage){
 
+        byte[] token = coapMessage.getTokenAsByteArray();
+
         int encodedHeader = ((coapMessage.getProtocolVersion()  & 0b11)     << 30)
                           | ((coapMessage.getMessageType()      & 0b11)     << 28)
-                          | ((coapMessage.getToken().length     & 0b1111)   << 24)
+                          | ((token.length                      & 0b1111)   << 24)
                           | ((coapMessage.getMessageCode()      & 0xFF)     << 16)
                           | ((coapMessage.getMessageID()        & 0xFFFF));
 
@@ -167,16 +163,21 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             log.debug("Encoded Header: {}", binary);
         }
 
+        //Write token
+        buffer.writeBytes(token);
+
     }
 
     protected void encodeOptions(ChannelBuffer buffer, CoapMessage coapMessage) throws InvalidOptionException {
 
         //Encode options one after the other and append buf option to the buf
-        int prevNumber = 0;
+        int previousOptionNumber = 0;
 
         for(int optionNumber : coapMessage.getAllOptions().keySet()){
-            for(Option option : coapMessage.getOptions(optionNumber))
-                encodeOption(buffer, optionNumber, option, prevNumber);
+            for(Option option : coapMessage.getOptions(optionNumber)){
+                encodeOption(buffer, optionNumber, option, previousOptionNumber);
+                previousOptionNumber = optionNumber;
+            }
         }
 
         buffer.writeByte(255);
@@ -209,7 +210,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         if(optionDelta < 13){
 
             if(optionLength < 13){
-                buffer.writeByte(((optionDelta << 4) & 0xFF) | (optionLength & 0xFF));
+                buffer.writeByte(((optionDelta & 0xFF) << 4) | (optionLength & 0xFF));
             }
 
             else if (optionLength < 269){
@@ -273,5 +274,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
         //Write option value
         buffer.writeBytes(option.getValue());
+        log.debug("Encoded option no {} with value {}", optionNumber, option.getDecodedValue());
+        log.debug("Encoded message length is now: {}", buffer.readableBytes());
     }
 }

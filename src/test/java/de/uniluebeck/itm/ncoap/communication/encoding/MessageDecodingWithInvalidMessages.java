@@ -26,6 +26,7 @@ package de.uniluebeck.itm.ncoap.communication.encoding;
 
 import com.google.common.collect.Lists;
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
+import de.uniluebeck.itm.ncoap.communication.encoding.tools.CoapTestDecoder;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.InvalidMessageException;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
@@ -76,12 +77,6 @@ public class MessageDecodingWithInvalidMessages extends AbstractCoapTest{
         Logger.getLogger("de.uniluebeck.itm.ncoap.communication.encoding").setLevel(Level.DEBUG);
     }
 
-    private class CoapMessageTestDecoder extends CoapMessageDecoder{
-        protected Object decode(ChannelBuffer buffer) throws Exception {
-            return super.decode(null, null, buffer);
-        }
-    }
-
     private ChannelBuffer encodedMessageBuffer;
 
 
@@ -95,7 +90,7 @@ public class MessageDecodingWithInvalidMessages extends AbstractCoapTest{
 
     @Test
     public void testDecoding() throws Exception {
-        new CoapMessageTestDecoder().decode(encodedMessageBuffer);
+        new CoapTestDecoder().decode(encodedMessageBuffer);
     }
 }
 

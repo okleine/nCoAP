@@ -57,14 +57,14 @@ public class MessageEncoding extends AbstractCoapTest{
                              new URI("coap", null, "www.example.org", -1, "/path/to/service", null, null),
                              null,
                              12345,
-                             new byte[]{1,2,3,4,5,6,7,8}},
+                             0xFFFFFFFFFFFFL},
 
                 new Object[]{MessageType.Name.CON,
                              MessageCode.Name.GET,
                              new URI("coap", null, "www.example.org", -1, "/path/to/service", null, null),
                              InetAddress.getByName("2001:1:2:3:4:5:6:7"),
                              65535,
-                             new byte[0]}
+                             0L}
         );
     }
 
@@ -75,7 +75,7 @@ public class MessageEncoding extends AbstractCoapTest{
 
 
     public MessageEncoding(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri, InetAddress proxy, int messageID,
-                           byte[] token) throws Exception{
+                           long token) throws Exception{
 
         this.encoder = new CoapTestEncoder();
         if(MessageCode.isRequest(messageCode.getNumber())){

@@ -11,10 +11,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
  */
 public class ReliabilityHandler extends SimpleChannelHandler {
 
-    public static final int ACK_TIMEOUT_MILLIS = 2000;
-    public static final double ACK_RANDOM_FACTOR = 1.5;
-    public static final int MAX_RETRANSMIT = 4;
-    public static final int NSTART = 1;
+
 
 
 }

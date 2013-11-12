@@ -24,9 +24,6 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import de.uniluebeck.itm.ncoap.communication.reliability.ReliabilityHandler;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
@@ -34,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -50,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 *
 * @author Oliver Kleine
 */
-public class IncomingMessageReliabilityHandler extends ReliabilityHandler {
+public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     public static final int EMPTY_ACK_DELAY_MILLIS = 1900;
 
@@ -60,8 +56,6 @@ public class IncomingMessageReliabilityHandler extends ReliabilityHandler {
     private final HashBasedTable<InetSocketAddress, Integer, MessageType.Name> owingResponses
             = HashBasedTable.create();
 
-//    private final Multimap<InetSocketAddress, Long> waitingForResponse
-//            = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, Long>create());
 
     private ScheduledExecutorService executorService;
 
@@ -157,7 +151,7 @@ public class IncomingMessageReliabilityHandler extends ReliabilityHandler {
      * {@link ChannelUpstreamHandler} interface) to the datagramChannel that received the message.
      * @param me the {@link MessageEvent} containing the actual message
      *
-     * @throws Exception if an error occured
+     * @throws Exception if an error occurred
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{

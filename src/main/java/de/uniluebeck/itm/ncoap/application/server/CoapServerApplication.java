@@ -204,12 +204,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                 log.error("This should never happen.", e);
             }
             coapResponse.setServicePath(coapRequest.getUriPath());
-            try {
-                if(coapRequest.getToken().length > 0)
-                    coapResponse.setToken(coapRequest.getToken());
-            } catch (Exception e) {
-                log.error("This should never happen.", e);
-            }
+            coapResponse.setToken(coapRequest.getToken());
+
 
             sendCoapResponse(coapResponse, (InetSocketAddress) me.getRemoteAddress());
             return;
@@ -243,8 +239,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
                         if(MessageCode.isErrorMessage(coapResponse.getMessageCode())){
                             coapResponse.setMessageID(coapRequest.getMessageID());
-                            if(coapRequest.getToken().length > 0)
-                                coapResponse.setToken(coapRequest.getToken());
+                            coapResponse.setToken(coapRequest.getToken());
                             sendCoapResponse(coapResponse, remoteAddress);
                             return;
                         }
@@ -258,8 +253,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
                         //Set message ID and token to match the request
                         coapResponse.setMessageID(coapRequest.getMessageID());
-                        if(coapRequest.getToken().length > 0)
-                            coapResponse.setToken(coapRequest.getToken());
+                        coapResponse.setToken(coapRequest.getToken());
 
 
 //                        //Set content type if there is payload but no content type
@@ -277,8 +271,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                         try {
                             coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
                             coapResponse.setMessageID(coapRequest.getMessageID());
-                            if(coapRequest.getToken().length > 0)
-                                coapResponse.setToken(coapRequest.getToken());
+                            coapResponse.setToken(coapRequest.getToken());
                             coapResponse.setServicePath(webService.getPath());
                             StringWriter errors = new StringWriter();
                             ex.printStackTrace(new PrintWriter(errors));

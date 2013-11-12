@@ -5,7 +5,7 @@
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 * following conditions are met:
 *
-*  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+*  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
 *    disclaimer.
 *
 *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -24,48 +24,53 @@
 */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import java.net.InetSocketAddress;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
 
 /**
-* Instances are sent upstream by the {@link OutgoingMessageReliabilityHandler} whenever there was a retransmission
-* of a confirmable {@link CoapMessage}.
+* A {@link ReliabilitySchedule} represents the schedule regarding the retransmissions of a confirmable
+* {@link CoapMessage}.
 *
 * @author Oliver Kleine
 */
-public class InternalMessageRetransmissionMessage {
+class ReliabilitySchedule {
 
-    private InetSocketAddress remoteAddress;
+    private static Logger log = LoggerFactory.getLogger(ReliabilitySchedule.class.getName());
+    private Set<ScheduledFuture> retransmissionFutures;
+    private ScheduledFuture timeoutNotificationFuture;
     private long token;
 
-    /**
-     * @param remoteAddress the recipient of the retransmitted message
-     * @param token the token of the retransmitted message
-     */
-    public InternalMessageRetransmissionMessage(InetSocketAddress remoteAddress, long token) {
-        this.remoteAddress = remoteAddress;
+
+    public ReliabilitySchedule(Set<ScheduledFuture> retransmissionFutures, ScheduledFuture timeoutNotificationFuture,
+                               long token) {
+
+        this.retransmissionFutures = retransmissionFutures;
+        this.timeoutNotificationFuture = timeoutNotificationFuture;
         this.token = token;
     }
 
-    /**
-     * Returns the recipient of the retransmitted message
-     * @return the recipient of the retransmitted message
-     */
-    public InetSocketAddress getRemoteAddress() {
-        return remoteAddress;
+
+    public void cancelRemainingTasks(){
+        int counter = 0;
+        for(ScheduledFuture retransmissionFuture : retransmissionFutures){
+            if(retransmissionFuture.cancel(true))
+                counter++;
+        }
+        log.debug("Canceled {} retransmissions.", counter);
+
+        if(timeoutNotificationFuture.cancel(true))
+            log.debug("Canceled timeout notification");
     }
 
-    /**
-     * Returns the token of the retransmitted message
-     * @return the token of the retransmitted message
-     */
-    public long getToken() {
-        return token;
-    }
-
-    @Override
-    public String toString(){
-        return "[InternalMessageRetransmissionMessage]: " + remoteAddress + " (remote address), "
-                + token + " (token)";
+    public long getToken(){
+        return this.token;
     }
 }

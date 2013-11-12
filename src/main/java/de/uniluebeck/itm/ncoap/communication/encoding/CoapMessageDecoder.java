@@ -47,6 +47,7 @@
 
 package de.uniluebeck.itm.ncoap.communication.encoding;
 
+import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
@@ -144,7 +145,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         //Create CoAP message object
         CoapMessage coapMessage = null;
         try {
-            coapMessage = CoapMessage.createCoapMessage(messageType, messageCode, messageID, token);
+            coapMessage = CoapMessage.createCoapMessage(messageType, messageCode, messageID,
+                    TokenFactory.fromByteArray(token));
         }
         catch (InvalidHeaderException e) {
             throw new DecodingFailedException(messageType, messageID, e);
@@ -216,6 +218,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                 optionLength += (buffer.readByte() << 8) & 0xFF00;
                 optionLength += buffer.readByte() & 0xFF;
             }
+
+            log.debug("Previous option: {}, Option delta: {}", previousOption, optionDelta);
 
             int optionNumber = previousOption + optionDelta;
             log.debug("Decode option no. {} with length of {} bytes.", optionNumber, optionLength);
