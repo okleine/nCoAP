@@ -117,25 +117,34 @@ public class CoapMessageEncoder extends OneToOneEncoder {
                         + coapMessage.getToken().length + ")"));
 
         //Start encoding
-        ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
+        ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer();
 
         //Encode HEADER
-        encodeHeader(buffer, coapMessage);
+        encodeHeader(encodedMessage, coapMessage);
+        log.debug("Encoded length of message (after HEADER): {}", encodedMessage.readableBytes());
 
         //Encode TOKEN
         if(coapMessage.getToken().length > 0)
-            buffer.writeBytes(coapMessage.getToken());
+            encodedMessage.writeBytes(coapMessage.getToken());
+
+        log.debug("Encoded length of message (after TOKEN): {}", encodedMessage.readableBytes());
+
+        if(coapMessage.getAllOptions().size() == 0 && coapMessage.getContent().readableBytes() == 0)
+            return encodedMessage;
+
 
         //Encode OPTIONS
         try{
-            encodeOptions(buffer, coapMessage);
+            encodeOptions(encodedMessage, coapMessage);
         }
         catch(InvalidOptionException e){
-
+            throw new EncodingFailedException(coapMessage.getMessageType(), coapMessage.getMessageID(), e);
         }
+        log.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
 
         //Add CONTENT
-        ChannelBuffer encodedMessage = ChannelBuffers.wrappedBuffer(buffer, coapMessage.getContent());
+        encodedMessage = ChannelBuffers.wrappedBuffer(encodedMessage, coapMessage.getContent());
+        log.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
 
         return encodedMessage;
     }

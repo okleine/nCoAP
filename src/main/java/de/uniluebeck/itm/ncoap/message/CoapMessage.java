@@ -300,7 +300,12 @@ public abstract class CoapMessage {
             throw new InvalidOptionException(optionNumber, "Option number {} is no uint-option.");
 
         //Add new option to option list
-        UintOption option = new UintOption(optionNumber, new BigInteger(1, Longs.toByteArray(value)).toByteArray());
+        byte[] byteValue = Longs.toByteArray(value);
+        int index = 0;
+        while(index < byteValue.length && byteValue[index] == 0)
+            index++;
+
+        UintOption option = new UintOption(optionNumber, Arrays.copyOfRange(byteValue, index, byteValue.length));
         addOption(optionNumber, option);
 
     }
@@ -437,6 +442,14 @@ public abstract class CoapMessage {
 
         else
             return Longs.fromByteArray(Bytes.concat(new byte[8 - this.token.length], this.token));
+    }
+
+
+    public String getTokenAsHexString(){
+        if(token.length == 0)
+            return "0x00 <EMPTY>";
+        else
+            return "0x" + new BigInteger(1, token).toString(16).toUpperCase();
     }
 
     /**
@@ -637,7 +650,7 @@ public abstract class CoapMessage {
         //Header + Token
         result.append("CoAP Message: [Header: (V) " + getProtocolVersion() + ", (T) " + getMessageTypeName() + ", (TKL) "
             + getToken().length + ", (C) " + getMessageCodeName() + ", (ID) " + getMessageID() + " | (Token) "
-            + new BigInteger(1, getToken()).toString(16) + " | ");
+            + new BigInteger(1, getToken()).toString(16).toUpperCase() + " | ");
 
         //Options
         result.append("Options:");

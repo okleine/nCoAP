@@ -52,6 +52,7 @@ import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageEncoder;
 
 
+import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
@@ -74,7 +75,7 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
     private CoapMessageDecoder decoder;
 
 //    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
-//    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
+    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
 //
 //    private ObservableResourceHandler observableResourceHandler;
 
@@ -89,7 +90,7 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         this.decoder = new CoapMessageDecoder();
 
 //        this.outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(ioExecutorService);
-//        this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(ioExecutorService);
+        this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(ioExecutorService);
 //
 //        this.observableResourceHandler = new ObservableResourceHandler(ioExecutorService);
     }
@@ -105,7 +106,7 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
         pipeline.addLast("CoAP Message Decoder", decoder);
 
 //        pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
-//        pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
+        pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
 //
 //        pipeline.addLast("ObservableResourceHandler", observableResourceHandler);
 

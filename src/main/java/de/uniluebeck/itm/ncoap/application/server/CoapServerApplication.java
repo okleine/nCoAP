@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -309,7 +310,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 log.debug("Response for token {} successfully sent to recipient {}.",
-                        coapResponse.getToken(), remoteAddress);
+                        coapResponse.getTokenAsHexString(), remoteAddress);
             }
         });
 
@@ -337,6 +338,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         }
 
         try{
+            log.error("CoapCommunicationException caught: ", e.getCause());
             CoapCommunicationException e1 = (CoapCommunicationException) e.getCause();
             CoapResponse coapResponse;
             byte[] content;
