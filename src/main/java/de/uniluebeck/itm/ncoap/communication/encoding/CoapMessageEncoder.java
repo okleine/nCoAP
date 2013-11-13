@@ -112,16 +112,12 @@ public class CoapMessageEncoder extends OneToOneEncoder {
                     new InvalidHeaderException("Message ID is not defined."));
 
         //Start encoding
-        ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer();
+        ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer(0);
 
         //Encode HEADER and TOKEN
         encodeHeader(encodedMessage, coapMessage);
-        log.debug("Encoded length of message (after HEADER): {}", encodedMessage.readableBytes());
+        log.debug("Encoded length of message (after HEADER + TOKEN): {}", encodedMessage.readableBytes());
 
-        //Encode TOKEN
-
-
-        log.debug("Encoded length of message (after TOKEN): {}", encodedMessage.readableBytes());
 
         if(coapMessage.getAllOptions().size() == 0 && coapMessage.getContent().readableBytes() == 0)
             return encodedMessage;
@@ -164,7 +160,8 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         }
 
         //Write token
-        buffer.writeBytes(token);
+        if(token.length > 0)
+            buffer.writeBytes(token);
 
     }
 

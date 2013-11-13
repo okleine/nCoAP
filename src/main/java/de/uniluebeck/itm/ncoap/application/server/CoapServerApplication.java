@@ -51,14 +51,17 @@ package de.uniluebeck.itm.ncoap.application.server;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import com.google.common.util.concurrent.*;
+import com.google.common.primitives.Longs;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WebService;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.ncoap.communication.CoapCommunicationException;
 import de.uniluebeck.itm.ncoap.communication.encoding.DecodingFailedException;
 import de.uniluebeck.itm.ncoap.communication.encoding.EncodingFailedException;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.channel.*;
@@ -68,11 +71,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 
 /**
@@ -247,6 +251,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                         //Set Max-Age Option according to the value returned by the Webservice
                         if(webService.getMaxAge() != Option.MAX_AGE_DEFAULT)
                             coapResponse.setMaxAge(webService.getMaxAge());
+
+                        coapResponse.setEtag(Longs.toByteArray(webService.getEtag()));
 
                         //Sets the path of the service this response came from
                         coapResponse.setServicePath(webService.getPath());

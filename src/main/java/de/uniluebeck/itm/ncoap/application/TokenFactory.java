@@ -83,6 +83,9 @@ public class TokenFactory {
     }
 
     public static byte[] toByteArray(long token){
+        if(token == 0)
+            return new byte[0];
+
         byte[] tokenBytes = Longs.toByteArray(token);
 
         int index = 0;

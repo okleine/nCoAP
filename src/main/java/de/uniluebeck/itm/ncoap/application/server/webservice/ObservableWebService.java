@@ -48,17 +48,25 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
+import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
+import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
+import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Observable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -70,7 +78,7 @@ import java.util.concurrent.TimeUnit;
 * means, that the object that holds the resourceStatus of the resource is of type T.
 *
 * Example: Assume, you want to realize a not observable service representing a temperature with limited accuracy
-* (integer values). Then, your service class must extend {@link NotObservableWebService<Integer>}.
+* (integer values). Then, your service class should extend {@link NotObservableWebService<Integer>}.
 *
 * @author Oliver Kleine, Stefan Hüske
 */
@@ -80,13 +88,17 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 
     private String path;
     private T resourceStatus;
+
+    private int etagLength = Option.ETAG_LENGTH_DEFAULT;
+    private byte[] etag;
+
     private boolean isUpdateNotificationConfirmable = true;
 
     private ScheduledExecutorService scheduledExecutorService;
     private ListeningExecutorService listeningExecutorService;
     private long maxAge = Option.MAX_AGE_DEFAULT;
 
-    private ScheduledFuture maxAgeFuture;
+    //private ScheduledFuture maxAgeFuture;
 
     protected ObservableWebService(String path, T initialStatus){
         this.path = path;
@@ -106,18 +118,16 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
             this.scheduledExecutorService.shutdownNow();
 
         this.scheduledExecutorService = executorService;
-        scheduleMaxAgeNotifications();
+        this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
+        //scheduleMaxAgeNotifications();
     }
+
 
     @Override
     public ScheduledExecutorService getScheduledExecutorService(){
         return this.scheduledExecutorService;
     }
 
-    @Override
-    public void setListeningExecutorService(ListeningExecutorService executorService) {
-        this.listeningExecutorService = executorService;
-    }
 
     @Override
     public ListeningExecutorService getListeningExecutorService() {
@@ -166,6 +176,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
         this.isUpdateNotificationConfirmable = isConfirmable;
     }
 
+
     @Override
     public final String getPath() {
        return this.path;
@@ -180,19 +191,52 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
     public synchronized final void setResourceStatus(T newStatus){
         this.resourceStatus = newStatus;
 
-        try{
-            if(maxAgeFuture.cancel(false))
-                log.info("Max-age notification cancelled for {}.", getPath());
-        }
-        catch(NullPointerException ex){
-            log.info("Max-age notifiation for {} not yet scheduled. This should only happen once!", getPath());
-        }
+//        try{
+//            if(maxAgeFuture.cancel(false))
+//                log.info("Max-age notification cancelled for {}.", getPath());
+//        }
+//        catch(NullPointerException ex){
+//            log.info("Max-age notifiation for {} not yet scheduled. This should only happen once!", getPath());
+//        }
 
         //Notify observers (methods inherited from abstract class Observable)
         setChanged();
         notifyObservers();
 
-        scheduleMaxAgeNotifications();
+        //scheduleMaxAgeNotifications();
+
+        try{
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            this.etag =
+                    Arrays.copyOfRange(messageDigest.digest(newStatus.toString().getBytes(CoapMessage.CHARSET)), 0,
+                            etagLength);
+        }
+        catch (NoSuchAlgorithmException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+    @Override
+    public void setEtagLength(int etagLength) throws IllegalArgumentException {
+        try{
+            if(etagLength > Option.getMaxLength(Option.Name.ETAG))
+                throw new IllegalArgumentException("Maximum length for ETAG option is " +
+                        Option.getMaxLength(Option.Name.ETAG));
+
+            if(etagLength < Option.getMinLength(Option.Name.ETAG))
+                throw new IllegalArgumentException("Minimum length for ETAG option is " +
+                        Option.getMinLength(Option.Name.ETAG));
+
+            this.etagLength = etagLength;
+        }
+        catch (UnknownOptionException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+    @Override
+    public byte[] getEtag(){
+        return this.etag;
     }
 
     /**
@@ -237,21 +281,21 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
         this.maxAge = maxAge;
     }
 
-    private void scheduleMaxAgeNotifications(){
-        maxAgeFuture = scheduledExecutorService.schedule(new Runnable() {
-            @Override
-            public void run() {
-                synchronized (ObservableWebService.this){
-                    log.info("Send max-age notifications for {} with status {}.", getPath(), getResourceStatus());
-
-                    setChanged();
-                    notifyObservers();
-
-                    scheduleMaxAgeNotifications();
-                }
-            }
-        }, getMaxAge(), TimeUnit.SECONDS);
-    }
+//    private void scheduleMaxAgeNotifications(){
+//        maxAgeFuture = scheduledExecutorService.schedule(new Runnable() {
+//            @Override
+//            public void run() {
+//                synchronized (ObservableWebService.this){
+//                    log.info("Send max-age notifications for {} with status {}.", getPath(), getResourceStatus());
+//
+//                    setChanged();
+//                    notifyObservers();
+//
+//                    scheduleMaxAgeNotifications();
+//                }
+//            }
+//        }, getMaxAge(), TimeUnit.SECONDS);
+//    }
 
     /**
      * The hash code of is {@link ObservableWebService} instance is produced as {@code this.getPath().hashCode()}.

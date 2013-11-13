@@ -48,20 +48,20 @@ public class OpaqueOption extends Option<byte[]>{
         return this.value;
     }
 
-    @Override
-    public boolean equals(Object object) {
-        if(!(object instanceof OpaqueOption))
-            return false;
-
-        OpaqueOption other = (OpaqueOption) object;
-        return Arrays.equals(this.getDecodedValue(), other.getDecodedValue());
-    }
+//    @Override
+//    public boolean equals(Object object) {
+//        if(!(object instanceof OpaqueOption))
+//            return false;
+//
+//        OpaqueOption other = (OpaqueOption) object;
+//        return Arrays.equals(this.getDecodedValue(), other.getDecodedValue());
+//    }
 
     @Override
     public String toString(){
         if(this.value.length == 0)
             return "<empty>";
         else
-            return new BigInteger(1, value).toString(16);
+            return "0x" + new BigInteger(1, value).toString(16).toUpperCase();
     }
 }

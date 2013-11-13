@@ -28,24 +28,23 @@ package de.uniluebeck.itm.ncoap.message.options;
  *
  * @author Oliver Kleine
  */
-public class EmptyOption extends Option<Object>{
+public class EmptyOption extends OpaqueOption{
 
-    //Constructor with package visibility
     public EmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, new byte[0]);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        return (o instanceof EmptyOption);
-    }
+//    @Override
+//    public boolean equals(Object o) {
+//        return (o instanceof EmptyOption);
+//    }
 
-    /**
-     * This method is just to enable inheritance from {@link Option}. The return value is <code>null</code>.
-     * @return  <code>null</code> as there is no value
-     */
-    @Override
-    public Object getDecodedValue() {
-        return null;
-    }
+//    /**
+//     * This method is just to enable inheritance from {@link Option}. The return value is <code>null</code>.
+//     * @return  <code>null</code> as there is no value
+//     */
+//    @Override
+//    public byte[] getDecodedValue() {
+//        return null;
+//    }
 }

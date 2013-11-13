@@ -52,6 +52,8 @@ import java.util.concurrent.*;
 */
 public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
+    public static final int NSTART = 1;
+
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private TokenFactory tokenFactory = new TokenFactory();
@@ -211,10 +213,15 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
             //find proper callback
             CoapResponseProcessor callback =
-                    responseProcessors.get(message.getToken(), me.getRemoteAddress());
+                    responseProcessors.get(me.getRemoteAddress(), message.getToken());
 
-            if(callback != null && callback instanceof EmptyAcknowledgementProcessor)
+            if(callback != null && callback instanceof EmptyAcknowledgementProcessor){
+                log.debug("Found processor for {}", message);
                 ((EmptyAcknowledgementProcessor) callback).processEmptyAcknowledgement(message);
+            }
+            else{
+                log.error("No processor found for {}", message);
+            }
 
             me.getFuture().setSuccess();
             return;

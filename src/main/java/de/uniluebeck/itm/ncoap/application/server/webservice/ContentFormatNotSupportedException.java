@@ -68,7 +68,7 @@ public class ContentFormatNotSupportedException extends Exception {
     public ContentFormatNotSupportedException(int... contentFormats){
         super("Mediatype(s) not supported: " + contentFormats);
 
-        unsupportedContentFormats = new HashSet<Integer>();
+        unsupportedContentFormats = new HashSet<>();
         for(int contentFormat : unsupportedContentFormats){
             this.unsupportedContentFormats.add(contentFormat);
         }

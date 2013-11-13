@@ -24,7 +24,7 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.ncoap.communication.reliability.ReliabilityHandler;
+import de.uniluebeck.itm.ncoap.communication.CoapCommunicationException;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -82,7 +82,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      * @throws Exception if an error occured
      */
     @Override
-    public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+    public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws CoapCommunicationException{
         log.debug("Upstream from {}: {}.", me.getRemoteAddress(), me.getMessage());
 
         if(!(me.getMessage() instanceof CoapMessage)){
@@ -99,8 +99,20 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         //Incoming requests
         if(coapMessage instanceof CoapRequest){
 
+            //Do not further process duplicates
+            if(owingResponses.contains(remoteSocketAddress, messageID)){
+                log.debug("Duplicate received: {}", coapMessage);
+
+                if(coapMessage.getMessageTypeName() == MessageType.Name.CON)
+                    writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
+
+                me.getFuture().setSuccess();
+                return;
+            }
+
             //Incoming confirmable requests
             if(coapMessage.getMessageTypeName() == MessageType.Name.CON){
+
                 owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.ACK);
 
                 //Schedule empty ACK fo incoming request for in 1900ms
@@ -157,97 +169,29 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof CoapResponse){
+        try{
+            if(me.getMessage() instanceof CoapResponse){
 
-            CoapResponse coapResponse = (CoapResponse) me.getMessage();
-            InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-            int messageID = coapResponse.getMessageID();
+                CoapResponse coapResponse = (CoapResponse) me.getMessage();
+                InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+                int messageID = coapResponse.getMessageID();
 
 
-            MessageType.Name messageTypeName = owingResponses.remove(remoteSocketAddress, messageID);
-            if(messageTypeName == MessageType.Name.CON)
-                coapResponse.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
+                MessageType.Name messageTypeName = owingResponses.remove(remoteSocketAddress, messageID);
 
-            log.debug("Set messageType to {}", messageTypeName);
-            coapResponse.setMessageType(messageTypeName.getNumber());
+                if(messageTypeName == MessageType.Name.CON)
+                    coapResponse.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
+
+                log.debug("Set messageType to {}", messageTypeName);
+                coapResponse.setMessageType(messageTypeName.getNumber());
+            }
+
+            ctx.sendDownstream(me);
         }
-
-        ctx.sendDownstream(me);
+        catch (InvalidHeaderException e) {
+            log.error("This should never happen.", e);
+        }
     }
-
-//    private synchronized void setMessageType(CoapResponse coapResponse, InetSocketAddress remoteSocketAddress, int messageID)
-//            throws Exception{
-//
-//
-//        }
-//
-//        //the response is either on a NON request or is an update notification for observers
-////        if(acknowledgementSent == null && !coapResponse.isUpdateNotification()){
-////            coapResponse.getHeader().setMsgID(Header.MESSAGE_ID_UNDEFINED);
-////            coapResponse.getHeader().setMessageType(MessageType.NON);
-////            return;
-////        }
-//
-//        //the response is on a CON request
-//        if (acknowledgementSent){
-//            if(coapResponse.getOption(OBSERVE_RESPONSE).isEmpty()){
-//                //remove message ID to make the OutgoingMessageReliabilityHandler set a new one
-//                coapResponse.getHeader().setMsgID(Header.MESSAGE_ID_UNDEFINED);
-//            }
-//            coapResponse.getHeader().setMessageType(MessageType.CON);
-//        }
-//        else{
-//            coapResponse.getHeader().setMessageType(MessageType.ACK);
-//        }
-//    }
-
-
-
-
-//    /**
-//     * Checks whether there is an empty acknowledgement to be sent for the given combination of remote address
-//     * and message ID and sets its status according to "sent".
-//     *
-//     * @param remoteAddress the {@link InetSocketAddress} of the recipient
-//     * @param messageID the message ID of the empty acknowledgement
-//     * @return <code>true</code> if the previous status was <code>false</code>, <code>false</code> if the
-//     * previous state was <code>true</code> or if there is or was no such empty acknowledgement to be sent
-//     */
-//    private synchronized boolean setAcknowledgementSent(InetSocketAddress remoteAddress, int messageID){
-//        if(owingResponses.contains(remoteAddress, messageID)){
-//            boolean acknowledgementSent = incomingConfirmableMessages.put(remoteAddress, messageID, true);
-//            if(acknowledgementSent){
-//                log.debug("Empty ACK already sent for message ID {} to {}.", messageID, remoteAddress);
-//                return false;
-//            }
-//            else{
-//                log.debug("ACK status for message ID {} to {} changed to true.", messageID, remoteAddress);
-//                return true;
-//            }
-//        }
-//        else{
-//            log.debug("No ACK status found for message ID {} to {}.", messageID, remoteAddress);
-//            return false;
-//        }
-//    }
-
-
-//    private synchronized boolean addAcknowledgementStatus(InetSocketAddress remoteAddress, CoapMessage coapMessage){
-//        //Ignore duplicates
-//        if(acknowledgementStates.contains(remoteAddress, coapMessage.getMessageID())){
-//            log.info("Received duplicate (IGNORE): {}.", coapMessage);
-//            return false;
-//        }
-//
-//        acknowledgementStates.put(remoteAddress, coapMessage.getMessageID(), false);
-//        log.debug("Added ACK status for {}.", coapMessage);
-//        return true;
-//    }
-//
-//
-//    private synchronized Boolean removeAcknowledgementStatus(InetSocketAddress remoteAddress, int messageID){
-//        return acknowledgementStates.remove(remoteAddress, messageID);
-//    }
 
 
     private void writeEmptyAcknowledgement(ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,

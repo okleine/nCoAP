@@ -24,6 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -136,6 +137,7 @@ public abstract class CoapMessage {
     private int messageCode;
     private int messageID;
     private long token;
+
     protected SetMultimap<Integer, Option> options;
     private ChannelBuffer content;
 
@@ -618,12 +620,22 @@ public abstract class CoapMessage {
         }
 
         CoapMessage other = (CoapMessage) object;
+
+        if(this.getAllOptions().size() != other.getAllOptions().size())
+            return false;
+
+        for(Map.Entry<Integer, Option> entry : this.getAllOptions().entries()){
+            if(other.getAllOptions().containsEntry(entry.getKey(), entry.getValue()))
+                return false;
+        }
+
+
         return this.getProtocolVersion() == other.getProtocolVersion()
             && this.getMessageType() == other.getMessageType()
             && this.getMessageCode() == other.getMessageCode()
             && this.getMessageID() == other.getMessageID()
             && this.getToken() == other.getToken()
-            && this.getAllOptions().equals(other.getAllOptions())
+//            && this.getAllOptions().equals(other.getAllOptions())
             && this.getContent().equals(other.getContent());
 
     }
@@ -668,5 +680,27 @@ public abstract class CoapMessage {
             throw new InvalidHeaderException("Invalid message code no. " + messageCode);
 
         this.messageCode = messageCode;
+    }
+
+
+    /**
+     * This is the supplier to provide the {@link LinkedHashSet} to contain the {@link Option} instances. There
+     * is one {@link LinkedHashSet} provided per option number. The order prevention of the values contained
+     * in such a set is necessary to keep the order of multiple values for one option (e.g. URI path).
+     */
+    private final static class LinkedHashSetSupplier implements Supplier<LinkedHashSet<Option>> {
+
+        public static LinkedHashSetSupplier instance = new LinkedHashSetSupplier();
+
+        private LinkedHashSetSupplier(){};
+
+        public static LinkedHashSetSupplier getInstance(){
+            return instance;
+        }
+
+        @Override
+        public LinkedHashSet<Option> get() {
+            return new LinkedHashSet<>();
+        }
     }
 }

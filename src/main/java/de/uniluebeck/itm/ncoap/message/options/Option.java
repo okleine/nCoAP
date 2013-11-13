@@ -49,6 +49,7 @@ public abstract class Option<T>{
         public static final int URI_HOST        = 3;
         public static final int ETAG            = 4;
         public static final int IF_NONE_MATCH   = 5;
+        public static final int OBSERVE         = 6;
         public static final int URI_PORT        = 7;
         public static final int LOCATION_PATH   = 8;
         public static final int URI_PATH        = 11;
@@ -64,6 +65,7 @@ public abstract class Option<T>{
     
     public static final long MAX_AGE_DEFAULT = 60;
     public static final long URI_PORT_DEFAULT = 5683;
+    public static final int ETAG_LENGTH_DEFAULT = 4;
 
     public static final byte[] ENCODED_MAX_AGE_DEFAULT =
             new BigInteger(1, Longs.toByteArray(MAX_AGE_DEFAULT)).toByteArray();
@@ -78,6 +80,7 @@ public abstract class Option<T>{
         characteristics.put(    Name.IF_NONE_MATCH,  new Integer[]{OptionType.Name.EMPTY,        0,      0       });
         characteristics.put(    Name.URI_PORT,       new Integer[]{OptionType.Name.UINT,         0,      2       });
         characteristics.put(    Name.LOCATION_PATH,  new Integer[]{OptionType.Name.STRING,       0,      255     });
+        characteristics.put(    Name.OBSERVE,        new Integer[]{OptionType.Name.OPAQUE,       0,      3       });
         characteristics.put(    Name.URI_PATH,       new Integer[]{OptionType.Name.STRING,       0,      255     });
         characteristics.put(    Name.CONTENT_FORMAT, new Integer[]{OptionType.Name.UINT,         0,      2       });
         characteristics.put(    Name.MAX_AGE,        new Integer[]{OptionType.Name.UINT,         0,      4       });
@@ -262,7 +265,13 @@ public abstract class Option<T>{
     public abstract T getDecodedValue();
 
     @Override
-    public abstract boolean equals(Object other);
+    public boolean equals(Object object){
+        if(!(object instanceof Option))
+            return false;
+
+        Option other = (Option) object;
+        return Arrays.equals(this.getValue(), other.getValue());
+    }
 
     @Override
     public String toString(){

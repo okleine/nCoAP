@@ -56,12 +56,12 @@ public class UintOption extends Option<Long>{
     }
 
 
-    @Override
-    public boolean equals(Object object) {
-        if(!(object instanceof UintOption))
-            return false;
-
-        UintOption other = (UintOption) object;
-        return this.getDecodedValue() == other.getDecodedValue();
-    }
+//    @Override
+//    public boolean equals(Object object) {
+//        if(!(object instanceof UintOption))
+//            return false;
+//
+//        UintOption other = (UintOption) object;
+//        return this.getDecodedValue() == other.getDecodedValue();
+//    }
 }

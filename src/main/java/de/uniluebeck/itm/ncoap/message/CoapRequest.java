@@ -194,13 +194,6 @@ public class CoapRequest extends CoapMessage {
         addStringOption(Name.URI_HOST, uriHost);
     }
 
-//    public URI getTargetResourceUri() throws URISyntaxException {
-//        if(options.containsKey(Name.PROXY_URI))
-//            return new URI((String) options.get(Name.PROXY_URI).iterator().next().getDecodedValue());
-//
-//
-//        if(options.containsKey(Name.PROXY_SCHEME))
-//    }
 
     /**
      * Sets the If-Match options according to the given {@link Collection<byte[]>} containing ETAGs. If there were any
@@ -264,6 +257,8 @@ public class CoapRequest extends CoapMessage {
 
         return InetAddresses.toUriString(recipientAddress);
     }
+
+
 
     /**
      * Sets the ETAG options of this {@link CoapRequest}. If there are any ETAG options present in this

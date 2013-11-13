@@ -52,7 +52,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     public static final int ACK_TIMEOUT_MILLIS = 2000;
     public static final double ACK_RANDOM_FACTOR = 1.5;
     public static final int MAX_RETRANSMIT = 4;
-    public static final int NSTART = 1;
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -244,10 +243,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 }
             }
             else {
-                log.debug("No open CON found for messageID {} to {}. IGNORE.",
-                        coapMessage.getMessageID(), remoteSocketAddress);
-                me.getFuture().setSuccess();
-                return;
+                log.debug("No open CON found for messageID {} to {}. IGNORE.", coapMessage.getMessageID(),
+                        remoteSocketAddress);
             }
         }
 

@@ -53,6 +53,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 
 
@@ -175,6 +176,10 @@ public interface WebService<T> {
      */
     @Override
     public int hashCode();
+
+    public byte[] getEtag();
+
+    public void setEtagLength(int etagLength) throws IllegalArgumentException;
 
     /**
      * Method to process an incoming {@link CoapRequest} asynchronously. The implementation of this method is dependant

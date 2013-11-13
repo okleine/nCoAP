@@ -62,14 +62,14 @@ public class StringOption extends Option<String>{
         return new String(value, CoapMessage.CHARSET);
     }
 
-    @Override
-    public boolean equals(Object object) {
-        if(!(object instanceof StringOption))
-            return false;
-
-        StringOption other = (StringOption) object;
-        return this.getDecodedValue().equals(other.getDecodedValue());
-    }
+//    @Override
+//    public boolean equals(Object object) {
+//        if(!(object instanceof StringOption))
+//            return false;
+//
+//        StringOption other = (StringOption) object;
+//        return this.getDecodedValue().equals(other.getDecodedValue());
+//    }
 
 
 //    @Override

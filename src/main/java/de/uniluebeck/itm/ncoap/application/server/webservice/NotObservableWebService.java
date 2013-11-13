@@ -48,10 +48,20 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
+import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.sun.istack.internal.NotNull;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
+import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -65,10 +75,15 @@ import java.util.concurrent.ScheduledExecutorService;
 */
 public abstract class NotObservableWebService<T> implements WebService<T> {
 
+    private static Logger log = LoggerFactory.getLogger(NotObservableWebService.class.getName());
+
     private String path;
     private T resourceStatus;
 
     private long maxAge = Option.MAX_AGE_DEFAULT;
+
+    private int etagLength = Option.ETAG_LENGTH_DEFAULT;
+    private byte[] etag;
 
     private ScheduledExecutorService scheduledExecutorService;
     private ListeningExecutorService listeningExecutorService;
@@ -76,6 +91,7 @@ public abstract class NotObservableWebService<T> implements WebService<T> {
     //private HashBasedTable<InetSocketAddress, Token, ListenableFuture<CoapResponse>> openRequests;
 
     protected NotObservableWebService(String servicePath, T initialStatus){
+
         this.path = servicePath;
         this.resourceStatus = initialStatus;
         //this.openRequests = HashBasedTable.create();
@@ -130,6 +146,39 @@ public abstract class NotObservableWebService<T> implements WebService<T> {
     @Override
     public final void setResourceStatus(T newStatus){
         this.resourceStatus = newStatus;
+
+        try{
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            this.etag =
+                    Arrays.copyOfRange(messageDigest.digest(newStatus.toString().getBytes(CoapMessage.CHARSET)), 0,
+                            etagLength);
+        }
+        catch (NoSuchAlgorithmException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+    @Override
+    public void setEtagLength(int etagLength) throws IllegalArgumentException {
+        try{
+            if(etagLength > Option.getMaxLength(Option.Name.ETAG))
+                throw new IllegalArgumentException("Maximum length for ETAG option is " +
+                        Option.getMaxLength(Option.Name.ETAG));
+
+            if(etagLength < Option.getMinLength(Option.Name.ETAG))
+                throw new IllegalArgumentException("Minimum length for ETAG option is " +
+                        Option.getMinLength(Option.Name.ETAG));
+
+            this.etagLength = etagLength;
+        }
+        catch (UnknownOptionException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+    @Override
+    public byte[] getEtag(){
+        return this.etag;
     }
 
     @Override
@@ -139,20 +188,15 @@ public abstract class NotObservableWebService<T> implements WebService<T> {
 
     @Override
     public boolean equals(Object object){
-
-        if(object == null){
+        if(object == null)
             return false;
-        }
 
-        if(!(object instanceof String || object instanceof WebService)){
+        if(!(object instanceof String || object instanceof WebService))
             return false;
-        }
 
-        if(object instanceof String){
+        if(object instanceof String)
             return (this.getPath().equals(object));
-        }
-        else{
-            return (this.getPath().equals(((WebService) object).getPath()));
-        }
+
+        return (this.getPath().equals(((WebService) object).getPath()));
     }
 }
