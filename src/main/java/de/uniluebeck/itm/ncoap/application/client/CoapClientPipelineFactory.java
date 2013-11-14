@@ -33,6 +33,7 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.DatagramChannel;
+import org.jboss.netty.handler.execution.ExecutionHandler;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -44,6 +45,8 @@ import java.util.concurrent.ScheduledExecutorService;
 * @author Oliver Kleine
 */
 public class CoapClientPipelineFactory implements ChannelPipelineFactory {
+
+    private ExecutionHandler executionHandler;
 
     //Encoding
     private CoapMessageEncoder encoder;
@@ -57,15 +60,17 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
 //    private BlockwiseTransferHandler blockwiseTransferHandler;
 
     /**
-     * @param scheduledExecutorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     * @param ioExecutorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      */
-    public CoapClientPipelineFactory(ScheduledExecutorService scheduledExecutorService){
+    public CoapClientPipelineFactory(ScheduledExecutorService ioExecutorService){
+
+        this.executionHandler = new ExecutionHandler(ioExecutorService);
 
         encoder = new CoapMessageEncoder();
         decoder = new CoapMessageDecoder();
 
-        outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(scheduledExecutorService);
-        incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(scheduledExecutorService);
+        outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(ioExecutorService);
+        incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(ioExecutorService);
 //
 //        blockwiseTransferHandler = new BlockwiseTransferHandler();
     }
@@ -74,9 +79,11 @@ public class CoapClientPipelineFactory implements ChannelPipelineFactory {
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
-        //channels.addLast("Execution Handler", executionHandler);
+        pipeline.addLast("Execution Handler", executionHandler);
+
         pipeline.addLast("CoAP Message Encoder", encoder);
         pipeline.addLast("CoAP Message Decoder", decoder);
+
         pipeline.addLast("Outgoing Message Reliability Handler", outgoingMessageReliabilityHandler);
         pipeline.addLast("Incoming Message Reliability Handler", incomingMessageReliabilityHandler);
 //        pipeline.addLast("Blockwise Transfer Handler", blockwiseTransferHandler);

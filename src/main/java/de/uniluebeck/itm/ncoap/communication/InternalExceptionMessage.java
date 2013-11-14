@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.ncoap.communication.codec;
+package de.uniluebeck.itm.ncoap.communication;
 
 /**
  * Created with IntelliJ IDEA.

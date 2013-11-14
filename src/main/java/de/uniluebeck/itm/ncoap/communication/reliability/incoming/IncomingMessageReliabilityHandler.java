@@ -26,7 +26,7 @@ package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.communication.codec.DecodingException;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
-import de.uniluebeck.itm.ncoap.communication.codec.InternalExceptionMessage;
+import de.uniluebeck.itm.ncoap.communication.InternalExceptionMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;

@@ -71,6 +71,7 @@
 
 package de.uniluebeck.itm.ncoap.communication.codec;
 
+import de.uniluebeck.itm.ncoap.communication.InternalExceptionMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;

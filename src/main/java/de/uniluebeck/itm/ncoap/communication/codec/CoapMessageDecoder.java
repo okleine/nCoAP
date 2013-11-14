@@ -48,6 +48,7 @@
 package de.uniluebeck.itm.ncoap.communication.codec;
 
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
+import de.uniluebeck.itm.ncoap.communication.InternalExceptionMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
