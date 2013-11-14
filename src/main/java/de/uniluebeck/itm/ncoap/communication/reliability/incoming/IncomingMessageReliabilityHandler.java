@@ -24,7 +24,9 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.ncoap.communication.CoapCommunicationException;
+import de.uniluebeck.itm.ncoap.communication.codec.DecodingException;
+import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
+import de.uniluebeck.itm.ncoap.communication.codec.InternalExceptionMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -82,8 +84,38 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      * @throws Exception if an error occured
      */
     @Override
-    public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws CoapCommunicationException{
+    public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Upstream from {}: {}.", me.getRemoteAddress(), me.getMessage());
+
+        if(me.getMessage() instanceof InternalExceptionMessage){
+            InternalExceptionMessage message = (InternalExceptionMessage) me.getMessage();
+            Throwable ex = message.getCause();
+
+            //Exception during request decoding (owing message: 4.x error response)
+            if(MessageCode.isRequest(message.getMessageCode()) && ex instanceof DecodingException){
+                InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+
+                if(message.getMessageType() == MessageType.Name.CON.getNumber()){
+                    scheduleEmptyAcknowlegement(ctx, remoteSocketAddress , message.getMessageID());
+                }
+                else{
+                    synchronized (owingResponses){
+                        owingResponses.put(remoteSocketAddress, message.getMessageID(), MessageType.Name.NON);
+                        log.debug("No. of owing responses: {}", owingResponses.size());
+                    }
+                }
+            }
+
+            //Exception during response encoding (owing message: 5.x error response)
+            if(MessageCode.isResponse(message.getMessageCode()) && ex instanceof EncodingException){
+                InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+                synchronized (owingResponses){
+                    owingResponses.put(remoteSocketAddress, message.getMessageID(),
+                            MessageType.Name.getName(message.getMessageType()));
+                    log.debug("No. of owing responses: {}", owingResponses.size());
+                }
+            }
+        }
 
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendUpstream(me);
@@ -112,32 +144,16 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
             //Incoming confirmable requests
             if(coapMessage.getMessageTypeName() == MessageType.Name.CON){
-
-                owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.ACK);
-
-                //Schedule empty ACK fo incoming request for in 1900ms
-                executorService.schedule(new Runnable(){
-
-                    @Override
-                    public void run() {
-                        if(owingResponses.contains(remoteSocketAddress, messageID)){
-                            owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.CON);
-                            writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
-                        }
-                        else{
-                            log.debug("ACK for {} from {} was already sent as piggy-backed response.",
-                                    messageID, remoteSocketAddress);
-                        }
-                    }
-                }, EMPTY_ACK_DELAY_MILLIS, TimeUnit.MILLISECONDS);
-
+                scheduleEmptyAcknowlegement(ctx, remoteSocketAddress, messageID);
                 log.debug("Scheduled empty ACK for {}.", coapMessage);
-
             }
 
             //Incoming non-confirmable requests
             else{
-                owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.NON);
+                synchronized (owingResponses){
+                    owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.NON);
+                    log.debug("No. of owing responses: {}", owingResponses.size());
+                }
             }
         }
 
@@ -149,7 +165,38 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             }
         }
 
+
+
         ctx.sendUpstream(me);
+    }
+
+
+    private void scheduleEmptyAcknowlegement(final ChannelHandlerContext ctx,
+                                             final InetSocketAddress remoteSocketAddress, final int messageID){
+
+        synchronized (owingResponses){
+            owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.ACK);
+            log.debug("No. of owing responses: {}", owingResponses.size());
+        }
+
+        //Schedule empty ACK fo incoming request for in 1900ms
+        executorService.schedule(new Runnable(){
+
+            @Override
+            public void run() {
+                synchronized (owingResponses){
+                    if(owingResponses.contains(remoteSocketAddress, messageID)){
+                        owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.CON);
+                        log.debug("No. of owing responses: {}", owingResponses.size());
+                        writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
+                    }
+                    else{
+                        log.debug("ACK for {} from {} was already sent as piggy-backed response.",
+                                messageID, remoteSocketAddress);
+                    }
+                }
+            }
+        }, EMPTY_ACK_DELAY_MILLIS, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -176,8 +223,11 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
                 int messageID = coapResponse.getMessageID();
 
-
-                MessageType.Name messageTypeName = owingResponses.remove(remoteSocketAddress, messageID);
+                MessageType.Name messageTypeName;
+                synchronized (owingResponses){
+                    messageTypeName = owingResponses.remove(remoteSocketAddress, messageID);
+                    log.debug("No. of owing responses: {}", owingResponses.size());
+                }
 
                 if(messageTypeName == MessageType.Name.CON)
                     coapResponse.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
@@ -213,6 +263,8 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             log.error("This should never happen.", e);
         }
     }
+
+
 
 //    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,
 //                                           final int messageID, final byte[] token){

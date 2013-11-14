@@ -48,8 +48,8 @@
 */
 package de.uniluebeck.itm.ncoap.application.server;
 
-import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageDecoder;
-import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageEncoder;
+import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
+import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
 
 
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;

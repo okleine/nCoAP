@@ -69,12 +69,10 @@
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package de.uniluebeck.itm.ncoap.communication.encoding;
+package de.uniluebeck.itm.ncoap.communication.codec;
 
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
-import de.uniluebeck.itm.ncoap.message.InvalidMessageException;
-import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -99,7 +97,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
-    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws EncodingFailedException{
+    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws EncodingException {
         if(!(object instanceof CoapMessage)){
             return object instanceof ChannelBuffer ? object : null;
         }
@@ -108,8 +106,10 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         log.debug("CoapMessage to encode: {}", coapMessage);
 
         if(coapMessage.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED)
-            throw new EncodingFailedException(coapMessage.getMessageType(), CoapMessage.MESSAGE_ID_UNDEFINED,
-                    new InvalidHeaderException("Message ID is not defined."));
+            return new InternalExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
+                    coapMessage.getMessageID(), coapMessage.getToken(),
+                    new EncodingException(new InvalidHeaderException("Message ID is not defined."))
+            );
 
         //Start encoding
         ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer(0);
@@ -128,8 +128,10 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             encodeOptions(encodedMessage, coapMessage);
         }
         catch(InvalidOptionException e){
-            throw new EncodingFailedException(coapMessage.getMessageType(), coapMessage.getMessageID(), e);
+            return new InternalExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
+                    coapMessage.getMessageID(), coapMessage.getToken(), new EncodingException(e));
         }
+
         log.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
 
         //Add CONTENT

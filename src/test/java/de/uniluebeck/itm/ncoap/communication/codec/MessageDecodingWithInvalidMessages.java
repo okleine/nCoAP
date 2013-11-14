@@ -22,19 +22,19 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.encoding;
+package de.uniluebeck.itm.ncoap.communication.codec;
 
 import com.google.common.collect.Lists;
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.communication.codec.tools.CoapTestDecoder;
 import de.uniluebeck.itm.ncoap.message.InvalidMessageException;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -51,65 +51,43 @@ import static org.junit.Assert.assertEquals;
  * To change this template use File | Settings | File Templates.
  */
 @RunWith(Parameterized.class)
-public class MessageDecodingWithValidMessages extends AbstractCoapTest{
+public class MessageDecodingWithInvalidMessages extends AbstractCoapTest{
 
-    @Parameterized.Parameters(name = "Test: {1}")
-    public static Collection<Object[]> data() throws Exception {
+    @Parameterized.Parameters
+    public static Collection<Object[]> data() throws InvalidMessageException {
         return Lists.newArrayList(
-                new Object[]{new byte[]{(byte) (0x60 & 0xFF), 0, (byte) (0xFF & 0xFF), (byte) (0xFF & 0xFF)},
-                        CoapMessage.createEmptyAcknowledgement(65535)},
+                //[0] TKL is 1, but 0 remaining bytes after header
+                new Object[]{new byte[]{(byte) (0b01000001 & 0b11111111), 0, 0, 0},
+                DecodingException.class, "Invalid TKL header value for empty message: 1"},
 
-                new Object[]{new byte[]{(byte) (0x70 & 0xFF), 0, 0, 0},
-                        CoapMessage.createEmptyReset(0)}
+                //[1] TKL is 8, but only 6 remaining bytes after header
+                new Object[]{new byte[]{(byte) (0b01001000 & 0b11111111), 1, 1, 0, 1, 1, 1, 1, 1, 1},
+                DecodingException.class, "TKL header value: 8, Readable bytes: 6"}
         );
     }
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Override
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uniluebeck.itm.ncoap.communication.encoding").setLevel(Level.DEBUG);
     }
 
-    private class CoapMessageTestDecoder extends CoapMessageDecoder{
-        protected Object decode(ChannelBuffer buffer) throws Exception {
-            return super.decode(null, null, buffer);
-        }
-    }
-
     private ChannelBuffer encodedMessageBuffer;
-    private CoapMessage expected;
-    private CoapMessage actual;
 
-    public MessageDecodingWithValidMessages(byte[] encodedMessage, CoapMessage expected){
-        this.expected = expected;
+
+    public MessageDecodingWithInvalidMessages(byte[] encodedMessage, Class<Exception> expectedExceptionClass,
+                                              String expectedMessage){
         this.encodedMessageBuffer = ChannelBuffers.wrappedBuffer(encodedMessage);
+        exception.expect(expectedExceptionClass);
+        exception.expectMessage(expectedMessage);
     }
 
-
-
-
-    @Before
-    public void test() throws Exception {
-        actual = (CoapMessage) new CoapMessageTestDecoder().decode(encodedMessageBuffer);
-    }
 
     @Test
-    public void testProtocolVersion(){
-        assertEquals(expected.getProtocolVersion(), actual.getProtocolVersion());
+    public void testDecoding() throws Exception {
+        new CoapTestDecoder().decode(encodedMessageBuffer);
     }
-
-    @Test
-    public void testMessageTyoe(){
-        assertEquals(expected.getMessageType(), actual.getMessageType());
-    }
-
-    @Test
-    public void testMessageCode(){
-        assertEquals(expected.getMessageCode(), actual.getMessageCode());
-    }
-
-    @Test
-    public void testMessageID(){
-        assertEquals(expected.getMessageID(), actual.getMessageID());
-    }
-
 }
+

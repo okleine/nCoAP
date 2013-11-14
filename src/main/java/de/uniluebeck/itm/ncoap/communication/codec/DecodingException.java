@@ -22,9 +22,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.encoding;
-
-import de.uniluebeck.itm.ncoap.communication.CoapCommunicationException;
+package de.uniluebeck.itm.ncoap.communication.codec;
 
 /**
  * Created with IntelliJ IDEA.
@@ -33,14 +31,14 @@ import de.uniluebeck.itm.ncoap.communication.CoapCommunicationException;
  * Time: 18:01
  * To change this template use File | Settings | File Templates.
  */
-public class DecodingFailedException extends CoapCommunicationException{
+public class DecodingException extends Exception {
 
-//    public DecodingFailedException(int messageType, int messageID, String message){
+//    public DecodingException(int messageType, int messageID, String message){
 //        super(messageType, messageID, message);
 //    }
 
-    public DecodingFailedException(int messageType, int messageID, Throwable cause){
-        super(messageType, messageID, cause);
+    public DecodingException(Throwable cause){
+        super(cause);
     }
 
 }

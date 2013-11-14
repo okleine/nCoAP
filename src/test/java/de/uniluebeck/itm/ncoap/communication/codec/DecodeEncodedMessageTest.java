@@ -1,9 +1,9 @@
-package de.uniluebeck.itm.ncoap.communication.encoding;
+package de.uniluebeck.itm.ncoap.communication.codec;
 
 import com.google.common.collect.Lists;
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.communication.encoding.tools.CoapTestDecoder;
-import de.uniluebeck.itm.ncoap.communication.encoding.tools.CoapTestEncoder;
+import de.uniluebeck.itm.ncoap.communication.codec.tools.CoapTestDecoder;
+import de.uniluebeck.itm.ncoap.communication.codec.tools.CoapTestEncoder;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;

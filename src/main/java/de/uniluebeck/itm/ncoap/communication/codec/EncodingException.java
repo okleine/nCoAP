@@ -69,9 +69,8 @@
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package de.uniluebeck.itm.ncoap.communication.encoding;
+package de.uniluebeck.itm.ncoap.communication.codec;
 
-import de.uniluebeck.itm.ncoap.communication.CoapCommunicationException;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
@@ -79,20 +78,20 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 *
 * @author Oliver Kleine
 */
-public class EncodingFailedException extends CoapCommunicationException {
+public class EncodingException extends Exception {
 
 //    /**
 //     * @param message A string representation of the reason that caused this exception
 //     */
-//    public EncodingFailedException(int messageType, int messageID, String message) {
+//    public EncodingException(int messageType, int messageID, String message) {
 //        super(messageType, messageID, message);
 //    }
 
     /**
      * @param cause The {@link Throwable} instance that caused this exception
      */
-    public EncodingFailedException(int messageType, int messageID, Throwable cause) {
-        super(messageType, messageID, cause);
+    public EncodingException(Throwable cause) {
+        super(cause);
     }
 
 }

@@ -93,7 +93,7 @@ public abstract class NotObservableWebService<T> implements WebService<T> {
     protected NotObservableWebService(String servicePath, T initialStatus){
 
         this.path = servicePath;
-        this.resourceStatus = initialStatus;
+        setResourceStatus(initialStatus);
         //this.openRequests = HashBasedTable.create();
     }
 

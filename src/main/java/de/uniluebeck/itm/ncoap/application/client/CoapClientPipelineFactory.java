@@ -25,8 +25,8 @@
 
 package de.uniluebeck.itm.ncoap.application.client;
 
-import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageDecoder;
-import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageEncoder;
+import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
+import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;

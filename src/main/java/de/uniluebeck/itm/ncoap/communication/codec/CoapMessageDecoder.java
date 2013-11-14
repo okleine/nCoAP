@@ -45,7 +45,7 @@
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package de.uniluebeck.itm.ncoap.communication.encoding;
+package de.uniluebeck.itm.ncoap.communication.codec;
 
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.message.*;
@@ -73,7 +73,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
-    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object object) throws DecodingFailedException {
+    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object object) throws Exception {
 
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
         if(!(object instanceof ChannelBuffer)){
@@ -81,13 +81,13 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         }
 
         ChannelBuffer buffer = (ChannelBuffer) object;
-        log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
+        log.debug("Incoming message from {} to be decoded (length: {})", ctx.getChannel().getRemoteAddress(),
+                buffer.readableBytes());
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4)
-            throw new DecodingFailedException(MessageType.Name.UNKNOWN.getNumber(), CoapMessage.MESSAGE_ID_UNDEFINED,
-                    new InvalidHeaderException("Buffer must contain at least readable 4 " +
-                            "bytes (but has " + buffer.readableBytes() + ")"));
+            throw new InvalidHeaderException("Buffer must contain at least readable 4 " +
+                            "bytes (but has " + buffer.readableBytes() + ")");
 
 
         //Decode the header values
@@ -101,10 +101,38 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         log.debug("Decoded Header: (T) {}, (TKL) {}, (C) {}, (ID) {}",
                 new Object[]{messageType, tokenLength, messageCode, messageID});
 
-        if(version != CoapMessage.PROTOCOL_VERSION)
-            throw new DecodingFailedException(messageType, messageID,
-                    new InvalidHeaderException("Unsupported CoAP protocol version: " + version));
+        //Check whether there are enough unread bytes left to read the token
+        if(buffer.readableBytes() < tokenLength){
+            byte[] tokenBytes = new byte[buffer.readableBytes()];
+            buffer.readBytes(tokenBytes);
+            long token =  TokenFactory.fromByteArray(tokenBytes);
+            return new InternalExceptionMessage(messageType, messageCode, messageID, token,
+                    new DecodingException(new InvalidHeaderException("TKL header value: " + tokenLength +
+                            ", Remaining bytes: " + TokenFactory.toHexString(token) + ".")
+            ));
+        }
 
+        //Check whether TKL indicates a not allowed token length
+        if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH){
+            byte[] tokenBytes = new byte[CoapMessage.MAX_TOKEN_LENGTH];
+            buffer.readBytes(tokenBytes);
+            long token =  TokenFactory.fromByteArray(tokenBytes);
+            return new InternalExceptionMessage(messageType, messageCode, messageID, token, new DecodingException(
+                    new InvalidMessageException("TKL value to large (max: " + CoapMessage.MAX_TOKEN_LENGTH
+                            + ", actual: " + tokenLength + "). First 8 bytes of token: "
+                            + TokenFactory.toHexString(token))
+            ));
+        }
+
+        //Decode the token
+        byte[] token = new byte[tokenLength];
+        buffer.readBytes(token);
+
+        //Check whether the protocol version is supported (=1)
+        if(version != CoapMessage.PROTOCOL_VERSION)
+            return new InternalExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+                    new DecodingException(new InvalidHeaderException("Unsupported CoAP protocol version: " + version)
+            ));
 
         //Check whether message code indicates empty message and either TKL is greater than 0 or there are unread bytes
         //following the header
@@ -112,35 +140,20 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             if(tokenLength > 0){
                 String message = "Invalid TKL header value for empty message: " + tokenLength;
                 log.warn(message);
-                throw new DecodingFailedException(messageType, messageID,
-                        new InvalidHeaderException(message));
+                return new InternalExceptionMessage(messageType, messageCode, messageID,
+                        TokenFactory.fromByteArray(token), new DecodingException(new InvalidHeaderException(message))
+                );
             }
 
             if(buffer.readableBytes() > 0){
                 String message = "Empty messages MUST NOT contain anything but the 4 bytes header "
                         + " (actual remaining bytes after header: " + buffer.readableBytes() + ")";
                 log.warn(message);
-                throw new DecodingFailedException(messageType, messageID,
-                        new InvalidMessageException(message));
+                return new InternalExceptionMessage(messageType, messageCode, messageID,
+                        TokenFactory.fromByteArray(token), new DecodingException(new InvalidMessageException(message))
+                );
             }
         }
-
-        //Check whether TKL indicates a not allowed token length
-        if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH)
-            throw new DecodingFailedException(messageType, messageID,
-                    new InvalidMessageException("TKL value out of bounds (max: " + CoapMessage.MAX_TOKEN_LENGTH
-                        + ", actual: " + tokenLength + ")."));
-
-
-        //Check whether there are enough unread bytes left to read the token
-        if(buffer.readableBytes() < tokenLength)
-            throw new DecodingFailedException(messageType, messageID,
-                    new InvalidHeaderException("TKL header value: " + tokenLength + ", Readable bytes: " +
-                            buffer.readableBytes() + "."));
-
-        //Decode the token
-        byte[] token = new byte[tokenLength];
-        buffer.readBytes(token);
 
         //Create CoAP message object
         CoapMessage coapMessage = null;
@@ -149,7 +162,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                     TokenFactory.fromByteArray(token));
         }
         catch (InvalidHeaderException e) {
-            throw new DecodingFailedException(messageType, messageID, e);
+            return new InternalExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+                    new DecodingException(e));
         }
 
         //If message code indicates empty message, follow-up bytes (i.e. token, options, and content) are ignored.
@@ -166,7 +180,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                 setOptions(coapMessage, buffer);
         }
         catch (InvalidOptionException e){
-            throw new DecodingFailedException(messageType, messageID, e);
+            return new InternalExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+                    new DecodingException(e));
         }
 
         //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
@@ -176,7 +191,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             coapMessage.setContent(buffer);
         }
         catch (InvalidMessageException e) {
-            throw new DecodingFailedException(messageType, messageID, e);
+            return new InternalExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+                    new DecodingException(e));
         }
 
         //TODO Set IP address of local socket (currently [0::] for wildcard address)

@@ -179,6 +179,15 @@ public interface WebService<T> {
 
     public byte[] getEtag();
 
+    /**
+     * Sets the length of the {@link Option.Name#ETAG} that is automatically set by the nCoAP framework for outgoing
+     * instances of {@link CoapResponse}. If not explicitly set to another value using this method, the default length
+     * is {@link Option#ETAG_LENGTH_DEFAULT}.
+     *
+     * @param etagLength the length of the value for the {@link Option.Name#ETAG}
+     *
+     * @throws IllegalArgumentException
+     */
     public void setEtagLength(int etagLength) throws IllegalArgumentException;
 
     /**

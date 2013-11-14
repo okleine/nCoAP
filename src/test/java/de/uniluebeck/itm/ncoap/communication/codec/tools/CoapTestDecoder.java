@@ -1,6 +1,6 @@
-package de.uniluebeck.itm.ncoap.communication.encoding.tools;
+package de.uniluebeck.itm.ncoap.communication.codec.tools;
 
-import de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageDecoder;
+import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import org.jboss.netty.buffer.ChannelBuffer;
 
 /**
