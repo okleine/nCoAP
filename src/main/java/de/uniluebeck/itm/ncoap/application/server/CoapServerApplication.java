@@ -55,13 +55,14 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.ncoap.application.server.webservice.WebService;
+import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.ncoap.communication.codec.DecodingException;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
 import de.uniluebeck.itm.ncoap.communication.InternalExceptionMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
+import de.uniluebeck.itm.ncoap.message.options.OpaqueOption;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -72,16 +73,19 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 
 
 /**
-* An instance of {@link CoapServerApplication} is the component to enable instances of {@link WebService} to
+* An instance of {@link CoapServerApplication} is the component to enable instances of {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} to
 * communicate with the outside world, i.e. the Internet. Once a {@link CoapServerApplication} was instanciated
-* one can register {@link WebService} instances and by this means make them available at their specified path.
+* one can register {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instances and by this means make them available at their specified path.
 *
 * Each instance of {@link CoapServerApplication} is automatically bound to a local port to listen at for
 * incoming requests.
@@ -94,15 +98,19 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private DatagramChannel channel;
+    //private DatagramChannel channel;
     private Multimap<InetSocketAddress, CoapRequest> openRequests =
             Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, CoapRequest>create());
 
-    //This map holds all registered webservice (key: URI path, value: WebService instance)
-    private HashMap<String, WebService> registeredServices = new HashMap<String, WebService>();
+    //This map holds all registered webservice (key: URI path, value: Webservice instance)
+    private HashMap<String, Webservice> registeredServices = new HashMap<>();
 
     private ListeningExecutorService listeningExecutorService;
     private ScheduledExecutorService scheduledExecutorService;
+
+    private WebServiceCreator webServiceCreator;
+
+    private Set<Channel> serverChannels;
 
     public CoapServerApplication(InetSocketAddress... listeningSockets){
 
@@ -114,20 +122,25 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         ScheduledExecutorService ioExecutorService =
                 Executors.newScheduledThreadPool(numberOfThreads, threadFactory);
 
+        this.serverChannels = new HashSet<>();
+
         for(InetSocketAddress listeningSocket : listeningSockets){
             CoapServerDatagramChannelFactory factory =
-                    new CoapServerDatagramChannelFactory(ioExecutorService, listeningSocket);
+                    new CoapServerDatagramChannelFactory(ioExecutorService, listeningSocket, this);
 
-            channel = factory.getChannel();
-            channel.getPipeline().addLast("Server Application", this);
+            serverChannels.add(factory.getChannel());
+//            channel = factory.getChannel();
+//            channel.getPipeline().addLast("Server Application", this);
 
-            this.scheduledExecutorService = ioExecutorService;
-            this.listeningExecutorService = MoreExecutors.listeningDecorator(scheduledExecutorService);
-
-            registerService(new WellKnownCoreResource(registeredServices));
-
-            log.info("New server created. Listening on port {}.", getServerPort());
+            log.info("New server created. Listening at {}.", listeningSocket);
         }
+
+        this.scheduledExecutorService = ioExecutorService;
+        this.listeningExecutorService = MoreExecutors.listeningDecorator(scheduledExecutorService);
+
+        this.webServiceCreator = new DefaultWebServiceCreator(this);
+
+        registerService(new WellKnownCoreResource(registeredServices));
     }
 
 
@@ -168,7 +181,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      * @param me the {@link MessageEvent} containing the actual message
      */
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, final MessageEvent me){
+    public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
         log.debug("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
         if(me.getMessage() instanceof InternalExceptionMessage){
@@ -177,132 +190,136 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             return;
         }
 
-        if(!(me.getMessage() instanceof CoapMessage)){
+        if(!(me.getMessage() instanceof CoapRequest)){
+            log.warn("Server received inadequeate message: {}", me.getMessage());
             ctx.sendUpstream(me);
             return;
         }
 
         me.getFuture().setSuccess();
 
-        CoapMessage coapMessage = (CoapMessage) me.getMessage();
-        if(!(MessageCode.isRequest(coapMessage.getMessageCode()))){
-            log.error("Server received CoAP message which is not a request. IGNORE");
+        final CoapRequest coapRequest = (CoapRequest) me.getMessage();
+        final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+
+        //log.debug("Contains key: {}", openRequests.containsKey(remoteSocketAddress));
+        //log.debug("Contains value: {}", openRequests.containsValue(coapRequest));
+
+        //Avoid duplicate request processing!
+        if(openRequests.containsEntry(me.getRemoteAddress(), coapRequest)){
+            log.warn("Received duplicate request (IGNORE): {}", coapRequest);
             return;
         }
-
 
         //Create settable future to wait for response
         final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
 
-        final CoapRequest coapRequest = (CoapRequest) me.getMessage();
-        final InetSocketAddress remoteAddress = (InetSocketAddress) me.getRemoteAddress();
-
         //Look up web service instance to handle the request
-        final WebService webService = registeredServices.get(coapRequest.getUriPath());
+        final Webservice webservice = registeredServices.get(coapRequest.getUriPath());
+
+        responseFuture.addListener(new CoapResponseSender(responseFuture, coapRequest, webservice, ctx,
+                remoteSocketAddress), listeningExecutorService);
 
         //Write error response if no such web service exists
-        if(webService == null){
-            log.info("Requested service {} not found. Send 404 error response to {}.",
-                    coapRequest.getUriPath(), me.getRemoteAddress());
+        if(webservice == null){
 
-            //Write error response if there is no such webservice instance registered at this server instance
-            CoapResponse coapResponse = null;
-            try {
-                coapResponse = new CoapResponse(MessageCode.Name.NOT_FOUND_404);
-            } catch (InvalidHeaderException e) {
-                log.error("This should never happen.", e);
+            if(coapRequest.getMessageCodeName() == MessageCode.Name.PUT){
+                //Create new Webservice
+                log.debug("Incoming request to create resource");
+                this.webServiceCreator.handleWebServiceCreationRequest(responseFuture, coapRequest);
             }
-            coapResponse.setServicePath(coapRequest.getUriPath());
-            coapResponse.setToken(coapRequest.getToken());
 
-
-            sendCoapResponse(coapResponse, (InetSocketAddress) me.getRemoteAddress());
-            return;
-        }
-
-        //Avoid duplicate request processing!
-        log.debug("Contains key: {}", openRequests.containsKey(me.getRemoteAddress()));
-        log.debug("Contains value: {}", openRequests.containsValue(coapRequest));
-
-        if(!openRequests.containsEntry(me.getRemoteAddress(), coapRequest)){
-
-            boolean added = openRequests.put((InetSocketAddress) me.getRemoteAddress(), coapRequest);
-            if(added)
-                log.warn("Added request from {} to list of open requests: {}", me.getRemoteAddress(), coapRequest);
-            else
-                log.error("NOT ADDED!");
-
-            webService.processCoapRequest(responseFuture, coapRequest, remoteAddress);
-
-            responseFuture.addListener(new Runnable(){
-                @Override
-                public void run() {
-                    CoapResponse coapResponse;
-                    try {
-                        coapResponse = responseFuture.get();
-
-                        if(openRequests.remove(me.getRemoteAddress(), coapRequest)){
-                            log.warn("Remove message {} from {} from list of open requests!",
-                                coapRequest, me.getRemoteAddress());
-                        }
-
-                        if(MessageCode.isErrorMessage(coapResponse.getMessageCode())){
-                            coapResponse.setMessageID(coapRequest.getMessageID());
-                            coapResponse.setToken(coapRequest.getToken());
-                            sendCoapResponse(coapResponse, remoteAddress);
-                            return;
-                        }
-
-                        //Set Max-Age Option according to the value returned by the Webservice
-                        if(webService.getMaxAge() != Option.MAX_AGE_DEFAULT)
-                            coapResponse.setMaxAge(webService.getMaxAge());
-
-                        coapResponse.setEtag(webService.getEtag());
-
-                        //Sets the path of the service this response came from
-                        coapResponse.setServicePath(webService.getPath());
-
-                        //Set message ID and token to match the request
-                        coapResponse.setMessageID(coapRequest.getMessageID());
-                        coapResponse.setToken(coapRequest.getToken());
-
-
-//                        //Set content type if there is payload but no content type
-//                        if(coapResponse.getContent().readableBytes() > 0 &&
-//                                coapResponse.getContentFormat() == ContentFormat.Name.UNDEFINED)
-//                            coapResponse.setContentType(MediaType.TEXT_PLAIN_UTF8);
-
-//                        //Set observe response option if requested
-//                        if(webService instanceof ObservableWebService && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
-//                            if(!coapResponse.getMessageCode().isErrorMessage())
-//                                coapResponse.setObserveOptionValue(0);
-
-                    }
-                    catch (Exception ex) {
-                        log.error("Unexpected exception!", ex);
-                        try {
-                            coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-                            coapResponse.setMessageID(coapRequest.getMessageID());
-                            coapResponse.setToken(coapRequest.getToken());
-                            coapResponse.setServicePath(webService.getPath());
-                            StringWriter errors = new StringWriter();
-                            ex.printStackTrace(new PrintWriter(errors));
-                            coapResponse.setContent(errors.toString().getBytes(Charset.forName("UTF-8")));
-                        } catch (Exception e) {
-                            log.error("This should never happen.", e);
-                            return;
-                        }
-                    }
-
-                    //Send the response
-                    sendCoapResponse(coapResponse, remoteAddress);
+            else{
+                //Write error response if there is no such webservice instance registered at this server instance
+                try {
+                    log.info("Requested service {} not found. Send 404 error response to {}.",
+                            coapRequest.getUriPath(), me.getRemoteAddress());
+                    responseFuture.set(new CoapResponse(MessageCode.Name.NOT_FOUND_404));
                 }
-            }, listeningExecutorService);
+                catch (InvalidHeaderException e) {
+                    log.error("This should never happen.", e);
+                    responseFuture.setException(e);
+                }
+            }
         }
-        else{
-            log.warn("A request from  {} with message ID {} is already in progess! IGNORE!",
-                    me.getRemoteAddress(), coapRequest.getMessageID());
+
+        //The IF-NON-MATCH option indicates that the request is only to be processed if the webservice does not (yet)
+        //exist. But it does. So send an error response
+        if(coapRequest.isIfNonMatchSet()){
+            try {
+                String message = "IF-NONE-MATCH option was set but service at path " + coapRequest.getUriPath()
+                        + " exists.";
+                log.debug(message);
+
+                CoapResponse coapResponse = new CoapResponse(MessageCode.Name.PRECONDITION_FAILED_412);
+                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET));
+                responseFuture.set(coapResponse);
+            }
+            catch (InvalidHeaderException | InvalidMessageException e) {
+                log.error("This should never happen.", e);
+                responseFuture.setException(e);
+            }
         }
+
+
+        //Check for ETAG related options
+        byte[] currentEtag = webservice.getEtag();
+
+        //Check for IF-MATCH option
+        for(byte[] etag : coapRequest.getIfMatch()){
+            //EMPTY string means existence of the service
+            if(etag.length == 0 || Arrays.equals(etag, currentEtag)){
+                log.debug("ETAG from IF-MATCH option matches: " + OpaqueOption.toHexString(etag));
+                webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
+                break;
+            }
+            else{
+                log.debug("ETAG from IF-MATCH option does not match: " + OpaqueOption.toHexString(etag));
+            }
+        }
+
+        //This is only reached if there is no matching ETAG contained as IF-MATCH option
+        if(!coapRequest.getIfMatch().isEmpty()){
+            try {
+                String message = "None of the ETAGs contained as IF-MATCH option matches."
+                        + " Current ETAG is " + OpaqueOption.toHexString(webservice.getEtag());
+                log.debug(message);
+                CoapResponse coapResponse = new CoapResponse(MessageCode.Name.PRECONDITION_FAILED_412);
+                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET));
+                responseFuture.set(coapResponse);
+            }
+            catch (InvalidHeaderException | InvalidMessageException e) {
+                log.error("This should never happen.", e);
+                return;
+            }
+
+        }
+
+        //Check for ETAG options
+        for(byte[] etag : coapRequest.getEtags()){
+            if(Arrays.equals(etag, currentEtag)){
+                try {
+                    log.debug("Valid ETAG option found in request: {}", OpaqueOption.toHexString(etag));
+                    CoapResponse coapResponse = new CoapResponse(MessageCode.Name.VALID_203);
+                    //coapResponse.setMessageID(coapRequest.getMessageID());
+                    //coapResponse.setEtag(etag);
+                    responseFuture.set(coapResponse);
+                }
+                catch (InvalidHeaderException e) {
+                    log.error("This should never happen.", e);
+                    return;
+                }
+            }
+
+            log.debug("ETAG is not valid (anymore?): ", OpaqueOption.toHexString(etag));
+        }
+
+        boolean added = openRequests.put((InetSocketAddress) me.getRemoteAddress(), coapRequest);
+        if(added)
+            log.warn("Added request from {} to list of open requests: {}", me.getRemoteAddress(), coapRequest);
+        else
+            log.error("NOT ADDED!");
+
+        webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
     }
 
     private void handleCodecException(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
@@ -354,7 +371,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             coapResponse.setContent(content);
 
 
-            sendCoapResponse(coapResponse, remoteAddress);
+            sendCoapResponse(ctx, coapResponse, remoteAddress);
 
         }
         catch (InvalidHeaderException | InvalidMessageException e1) {
@@ -362,11 +379,12 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         }
     }
 
-    private void sendCoapResponse(final CoapResponse coapResponse, final InetSocketAddress remoteAddress){
+    private void sendCoapResponse(final ChannelHandlerContext ctx, final CoapResponse coapResponse,
+                                  final InetSocketAddress remoteAddress){
 
         //Write response
         log.info("Write response to {}: {}", remoteAddress, coapResponse);
-        ChannelFuture future = channel.write(coapResponse, remoteAddress);
+        ChannelFuture future = Channels.write(ctx.getChannel(), coapResponse, remoteAddress);
 
         future.addListener(new ChannelFutureListener() {
             @Override
@@ -400,19 +418,19 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      * Shuts the server down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
      *
-     * Prior to doing so this methods removes all registered {@link WebService} instances from the server, i.e.
-     * invokes the {@link WebService#shutdown()} method of all registered services.
+     * Prior to doing so this methods removes all registered {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instances from the server, i.e.
+     * invokes the {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice#shutdown()} method of all registered services.
      */
     public void shutdown() throws InterruptedException {
 
         //remove all webservices
-        WebService[] services;
+        Webservice[] services;
         synchronized (this){
-            services = new WebService[registeredServices.values().size()];
+            services = new Webservice[registeredServices.values().size()];
             registeredServices.values().toArray(services);
         }
 
-        for(WebService service : services){
+        for(Webservice service : services){
             removeService(service.getPath());
         }
 
@@ -420,86 +438,88 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         Thread.sleep(1000);
 
         //Close the datagram datagramChannel (includes unbind)
-        ChannelFuture future = channel.close();
+        for(final Channel channel : serverChannels){
+            ChannelFuture future = channel.close();
 
-        //Await the closure and let the factory release its external resource to finalize the shutdown
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
-                log.info("Server channel closed (port {}).", closedChannel.getLocalAddress().getPort());
+            //Await the closure and let the factory release its external resource to finalize the shutdown
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
+                    log.info("Server channel closed (port {}).", closedChannel.getLocalAddress().getPort());
 
-                channel.getFactory().releaseExternalResources();
-                log.info("External resources released, shutdown completed (port {}).",
-                        closedChannel.getLocalAddress().getPort());
-            }
-        });
+                    channel.getFactory().releaseExternalResources();
+                    log.info("External resources released, shutdown completed (port {}).",
+                            closedChannel.getLocalAddress().getPort());
+                }
+            });
 
-        future.awaitUninterruptibly();
+            future.awaitUninterruptibly();
+        }
     }
 
 
     /**
-     * Registers a WebService instance at the server. After registration the service will be available at the path
+     * Registers a Webservice instance at the server. After registration the service will be available at the path
      * given as <code>service.getPath()</code>.
      *
      * It is not possible to register multiple webServices at a single path. If a new service is registered at the server
      * with a path from another already registered service, then the new service replaces the old one.
      *
-     * @param webService A {@link WebService} instance to be registered at the server
+     * @param webservice A {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance to be registered at the server
      */
-    public final void registerService(final WebService webService) {
-        registeredServices.put(webService.getPath(), webService);
-        log.info("Registered new service at " + webService.getPath());
+    public final void registerService(final Webservice webservice) {
+        registeredServices.put(webservice.getPath(), webservice);
+        log.info("Registered new service at " + webservice.getPath());
 
-//        if(webService instanceof ObservableWebService){
+//        if(webservice instanceof ObservableWebservice){
 //            InternalObservableResourceRegistrationMessage message =
-//                    new InternalObservableResourceRegistrationMessage((ObservableWebService) webService);
+//                    new InternalObservableResourceRegistrationMessage((ObservableWebservice) webservice);
 //
 //            ChannelFuture future = Channels.write(channel, message);
 //            future.addListener(new ChannelFutureListener() {
 //                @Override
 //                public void operationComplete(ChannelFuture future) throws Exception {
-//                    log.info("Registered {} at observable resource handler.", webService.getPath());
+//                    log.info("Registered {} at observable resource handler.", webservice.getPath());
 //                }
 //            });
 //        }
 
-        webService.setScheduledExecutorService(scheduledExecutorService);
-        webService.setListeningExecutorService(listeningExecutorService);
+        webservice.setScheduledExecutorService(scheduledExecutorService);
+        webservice.setListeningExecutorService(listeningExecutorService);
     }
 
     /**
-     * Removes the {@link WebService} instance registered at the given path from the server
+     * Removes the {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance registered at the given path from the server
      *
-     * @param uriPath the path of the {@link WebService} instance to be removed
+     * @param uriPath the path of the {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance to be removed
      *
      * @return <code>true</code> if the service was removed succesfully, <code>false</code> otherwise.
      */
     public synchronized boolean removeService(String uriPath) {
-        WebService removedService = registeredServices.remove(uriPath);
+        Webservice removedService = registeredServices.remove(uriPath);
 
-//        if(removedService != null && removedService instanceof ObservableWebService){
+//        if(removedService != null && removedService instanceof ObservableWebservice){
 //            channel.write(new InternalServiceRemovedFromServerMessage(uriPath));
 //            removedService.shutdown();
 //        }
 
         if(removedService != null)
-            log.info("Service {} removed from server with port {}.", uriPath, getServerPort());
+            log.info("Service {} removed from server.", uriPath);
         else
-            log.info("Service {} could not be removed. Does not exist on port {}.", uriPath, getServerPort());
+            log.info("Service {} could not be removed. Does not exist.", uriPath);
 
         return removedService == null;
     }
 
     /**
-     * Removes all registered {@link WebService} instances from the server.
+     * Removes all registered {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instances from the server.
      */
     public void removeAllServices() {
 
-        WebService[] services;
+        Webservice[] services;
         synchronized (this){
-            services = new WebService[registeredServices.values().size()];
+            services = new Webservice[registeredServices.values().size()];
             registeredServices.values().toArray(services);
         }
 
@@ -512,8 +532,103 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         }
     }
 
-    public int getServerPort(){
-        return channel.getLocalAddress().getPort();
-    }
 
+//    public int getServerPort(){
+//        return channel.getLocalAddress().getPort();
+//    }
+
+    private class CoapResponseSender implements Runnable{
+
+        private final SettableFuture<CoapResponse> responseFuture;
+        private final CoapRequest coapRequest;
+        private final Webservice webservice;
+        private final ChannelHandlerContext ctx;
+        private final InetSocketAddress remoteSocketAddress;
+
+        public CoapResponseSender(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+                                  Webservice webservice,
+                                  ChannelHandlerContext ctx, InetSocketAddress remoteSocketAddress){
+
+            this.responseFuture = responseFuture;
+            this.coapRequest = coapRequest;
+            this.webservice = webservice;
+            this.ctx = ctx;
+            this.remoteSocketAddress = remoteSocketAddress;
+        }
+
+        @Override
+        public void run() {
+            CoapResponse coapResponse;
+            try {
+                coapResponse = responseFuture.get();
+                coapResponse.setMessageID(coapRequest.getMessageID());
+                coapResponse.setToken(coapRequest.getToken());
+
+                if(openRequests.remove(remoteSocketAddress, coapRequest)){
+                    log.info("Removed message {} from {} from list of open requests!",
+                            coapRequest, remoteSocketAddress);
+                }
+
+                if(MessageCode.isErrorMessage(coapResponse.getMessageCode())){
+                    sendCoapResponse(ctx, coapResponse, remoteSocketAddress);
+                    return;
+                }
+
+                if(webservice != null){
+
+                    //Set Max-Age Option according to the value returned by the Webservice
+                    try{
+                        coapResponse.setMaxAge(webservice.getMaxAge());
+                    }
+                    catch(InvalidOptionException e){
+                        log.debug("IGNORE invalid option exception.");
+                    }
+
+                    try{
+                        coapResponse.setEtag(webservice.getEtag());
+                    }
+                    catch(InvalidOptionException e){
+                        log.debug("IGNORE invalid option exception.");
+                    }
+                }
+
+                //Sets the path of the service this response came from
+                //coapResponse.setServicePath(webService.getPath());
+
+                //Set message ID and token to match the request
+                coapResponse.setMessageID(coapRequest.getMessageID());
+                coapResponse.setToken(coapRequest.getToken());
+
+
+//                        //Set content type if there is payload but no content type
+//                        if(coapResponse.getContent().readableBytes() > 0 &&
+//                                coapResponse.getContentFormat() == ContentFormat.Name.UNDEFINED)
+//                            coapResponse.setContentType(MediaType.TEXT_PLAIN_UTF8);
+
+//                        //Set observe response option if requested
+//                        if(webService instanceof ObservableWebservice && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
+//                            if(!coapResponse.getMessageCode().isErrorMessage())
+//                                coapResponse.setObserveOptionValue(0);
+
+            }
+            catch (Exception ex) {
+                log.error("Unexpected exception!", ex);
+                try {
+                    coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+                    coapResponse.setMessageID(coapRequest.getMessageID());
+                    coapResponse.setToken(coapRequest.getToken());
+                    //coapResponse.setServicePath(webService.getPath());
+                    StringWriter errors = new StringWriter();
+                    ex.printStackTrace(new PrintWriter(errors));
+                    coapResponse.setContent(errors.toString().getBytes(Charset.forName("UTF-8")));
+                } catch (Exception e) {
+                    log.error("This should never happen.", e);
+                    return;
+                }
+            }
+
+            //Send the response
+            sendCoapResponse(ctx, coapResponse, remoteSocketAddress);
+        }
+    }
 }

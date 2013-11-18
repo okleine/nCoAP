@@ -63,11 +63,11 @@
 //import static org.junit.Assert.fail;
 //
 ///**
-// * Simple implementation of {@link NotObservableWebService} to handle incoming {@link CoapRequest}s.
+// * Simple implementation of {@link NotObservableWebservice} to handle incoming {@link CoapRequest}s.
 // *
 // * @author Oliver Kleine
 // */
-//public class NotObservableTestWebService extends NotObservableWebService<String>{
+//public class NotObservableTestWebService extends NotObservableWebservice<String>{
 //
 //    private static Logger log = LoggerFactory.getLogger(NotObservableTestWebService.class.getName());
 //

@@ -27,7 +27,7 @@
 //import com.google.common.collect.HashBasedTable;
 //import de.uniluebeck.itm.ncoap.application.server.InternalServiceRemovedFromServerMessage;
 //import de.uniluebeck.itm.ncoap.application.server.webservice.ContentFormatNotSupportedException;
-//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebService;
+//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 //import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
 //import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -186,22 +186,22 @@
 //     * <ul>
 //     *     <li>
 //     *         {@link InternalObservableResourceRegistrationMessage}: If there is a new observer to be registered
-//     *         for an instance of {@link ObservableWebService}.
+//     *         for an instance of {@link ObservableWebservice}.
 //     *     </li>
 //     *     <li>
-//     *         {@link InternalServiceRemovedFromServerMessage}: If there was an instance of {@link ObservableWebService}
+//     *         {@link InternalServiceRemovedFromServerMessage}: If there was an instance of {@link ObservableWebservice}
 //     *         removed from the {@link CoapServerApplication}, all observations for this service are stopped
 //     *         and observers are notified.
 //     *     </li>
 //     *     <li>
-//     *         {@link CoapResponse} if there was a response by an instance of {@link ObservableWebService} and this
+//     *         {@link CoapResponse} if there was a response by an instance of {@link ObservableWebservice} and this
 //     *         response is the result of a request from an observer of the service, then the running observation
 //     *         is stopped. If the request contained the {@link OptionName#OBSERVE_REQUEST} option, a new observation
 //     *         is started, i.e. notification count starts at 1 again.
 //     *     </li>
 //     * </ul>
 //     *
-//     * @param ctx the {@link ChannelHandlerContext} of this {@link ObservableWebService}
+//     * @param ctx the {@link ChannelHandlerContext} of this {@link ObservableWebservice}
 //     * @param me  the {@link MessageEvent} containing the message to be handled
 //     *
 //     * @throws Exception
@@ -330,15 +330,15 @@
 //
 //
 //    /**
-//     * This method is automatically invoked by the framework if the status of an {@link ObservableWebService}
+//     * This method is automatically invoked by the framework if the status of an {@link ObservableWebservice}
 //     * instance changed. On invocation every observer gets an update notification.
 //     *
-//     * @param observable the {@link ObservableWebService} instance whose resource status changed
+//     * @param observable the {@link ObservableWebservice} instance whose resource status changed
 //     * @param arg null and thus ignored
 //     */
 //    @Override
 //    public void update(final Observable observable, Object arg) {
-//        ObservableWebService webService = (ObservableWebService) observable;
+//        ObservableWebservice webService = (ObservableWebservice) observable;
 //        log.info("Observable service {} updated!", webService.getPath());
 //
 //        UpdateNotificationsSender updateNotificationSender =
@@ -351,10 +351,10 @@
 //
 //        private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 //
-//        private ObservableWebService webService;
+//        private ObservableWebservice webService;
 //        private Map<InetSocketAddress, ObservationParameter> observations;
 //
-//        UpdateNotificationsSender(ObservableWebService webService,
+//        UpdateNotificationsSender(ObservableWebservice webService,
 //                                  Map<InetSocketAddress, ObservationParameter> observations){
 //            this.webService = webService;
 //            this.observations = observations;

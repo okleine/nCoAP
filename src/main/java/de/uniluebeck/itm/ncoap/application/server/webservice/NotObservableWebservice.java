@@ -48,12 +48,9 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
-import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.sun.istack.internal.NotNull;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
 import org.slf4j.Logger;
@@ -62,6 +59,7 @@ import org.slf4j.LoggerFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -69,18 +67,19 @@ import java.util.concurrent.ScheduledExecutorService;
 * means, that the object that holds the resourceStatus of the resource is of type T.
 *
 * Example: Assume, you want to realize a not observable service representing a temperature with limited accuracy
-* (integer values). Then, your service class could e.g. extend {@link NotObservableWebService<Integer>}.
+* (integer values). Then, your service class could e.g. extend {@link NotObservableWebservice <Integer>}.
 *
 * @author Oliver Kleine, Stefan Hüske
 */
-public abstract class NotObservableWebService<T> implements WebService<T> {
+public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
-    private static Logger log = LoggerFactory.getLogger(NotObservableWebService.class.getName());
+    private static Logger log = LoggerFactory.getLogger(NotObservableWebservice.class.getName());
 
     private String path;
     private T resourceStatus;
+    private long resourceStatusExpiryDate;
 
-    private long maxAge = Option.MAX_AGE_DEFAULT;
+    //private long maxAge = Option.MAX_AGE_DEFAULT;
 
     private int etagLength = Option.ETAG_LENGTH_DEFAULT;
     private byte[] etag;
@@ -88,13 +87,9 @@ public abstract class NotObservableWebService<T> implements WebService<T> {
     private ScheduledExecutorService scheduledExecutorService;
     private ListeningExecutorService listeningExecutorService;
 
-    //private HashBasedTable<InetSocketAddress, Token, ListenableFuture<CoapResponse>> openRequests;
-
-    protected NotObservableWebService(String servicePath, T initialStatus){
-
+    protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds){
         this.path = servicePath;
-        setResourceStatus(initialStatus);
-        //this.openRequests = HashBasedTable.create();
+        setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
     @Override
@@ -128,25 +123,28 @@ public abstract class NotObservableWebService<T> implements WebService<T> {
     }
 
     @Override
-    public long getMaxAge() {
-        return maxAge;
+    public final long getMaxAge() {
+        return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
     }
 
-    /**
-     * The max-age value represents the validity period (in seconds) of the actual status. The nCoap framework uses this
-     * value as default value for the  {@link Option.Name#MAX_AGE} option for outgoing
-     * {@link CoapResponse}s, if there was no such option set manually.
-     *
-     * @param maxAge the new max age value
-     */
-    public void setMaxAge(int maxAge) {
-        this.maxAge = maxAge;
-    }
+//    /**
+//     * The max-age value represents the validity period (in seconds) of the actual status. The nCoap framework uses this
+//     * value as default value for the  {@link Option.Name#MAX_AGE} option for outgoing
+//     * {@link CoapResponse}s, if there was no such option set manually.
+//     *
+//     * @param maxAge the new max age value
+//     */
+//    public void setMaxAge(int maxAge) {
+//        this.maxAge = maxAge;
+//    }
+
 
     @Override
-    public final void setResourceStatus(T newStatus){
+    public final void setResourceStatus(T newStatus, long lifetimeSeconds){
         this.resourceStatus = newStatus;
+        this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
 
+        log.debug("New resource status: {}, expires in {} seconds", newStatus.toString(), lifetimeSeconds);
         try{
             MessageDigest messageDigest = MessageDigest.getInstance("MD5");
             this.etag =
@@ -191,12 +189,12 @@ public abstract class NotObservableWebService<T> implements WebService<T> {
         if(object == null)
             return false;
 
-        if(!(object instanceof String || object instanceof WebService))
+        if(!(object instanceof String || object instanceof Webservice))
             return false;
 
         if(object instanceof String)
             return (this.getPath().equals(object));
 
-        return (this.getPath().equals(((WebService) object).getPath()));
+        return (this.getPath().equals(((Webservice) object).getPath()));
     }
 }

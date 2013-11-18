@@ -191,7 +191,7 @@ public abstract class CoapMessage {
 
         this.setMessageType(messageType);
         this.setMessageCode(messageCode);
-        log.debug("Set Message Code to {}.", messageCode);
+        log.debug("Set Message Code to {} ({}).", MessageCode.Name.getName(messageCode), messageCode);
         this.setMessageID(messageID);
         this.setToken(token);
 

@@ -49,11 +49,11 @@
 //package de.uniluebeck.itm.ncoap.communication.observe;
 //
 //import java.net.InetSocketAddress;
-//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebService;
+//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 //import de.uniluebeck.itm.ncoap.message.MessageType;
 //
 ///**
-// * This internal message is created and send upstream when an observer of an {@link ObservableWebService} instance
+// * This internal message is created and send upstream when an observer of an {@link ObservableWebservice} instance
 // * rejects the reception of an update notification with a {@link MessageType#RST}.
 // *
 // * @author Oliver Kleine
@@ -65,7 +65,7 @@
 //
 //    /**
 //     * @param observerAddress the address of the rejecting observer
-//     * @param servicePath the path of the {@link ObservableWebService} instance whose update notification was rejected
+//     * @param servicePath the path of the {@link ObservableWebservice} instance whose update notification was rejected
 //     */
 //    public InternalUpdateNotificationRejectedMessage(InetSocketAddress observerAddress, String servicePath){
 //        this.observerAddress = observerAddress;

@@ -224,12 +224,12 @@ public class CoapResponse extends CoapMessage {
 //       return (Long) this.getOption(OptionRegistry.Option.Name.OBSERVE_RESPONSE).get(0).getDecodedValue();
 //    }
 
-    public String getServicePath() {
-        return servicePath;
-    }
-
-    public void setServicePath(String servicePath) {
-        this.servicePath = servicePath;
-    }
+//    public String getServicePath() {
+//        return servicePath;
+//    }
+//
+//    public void setServicePath(String servicePath) {
+//        this.servicePath = servicePath;
+//    }
 
 }

@@ -48,31 +48,31 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication.observe;
 //
-//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebService;
+//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 //
 ///**
-// * This internal message is sent downstream when there is a new {@link ObservableWebService} instance registered
+// * This internal message is sent downstream when there is a new {@link ObservableWebservice} instance registered
 // * on the {@link CoapServerApplication} instance
 // *
 // * @author Oliver Kleine
 // */
 //public class InternalObservableResourceRegistrationMessage {
 //
-//    private ObservableWebService webService;
+//    private ObservableWebservice webService;
 //
 //    /**
-//     * @param webService the newly registered {@link ObservableWebService} instance
+//     * @param webService the newly registered {@link ObservableWebservice} instance
 //     */
-//    public InternalObservableResourceRegistrationMessage(ObservableWebService webService){
+//    public InternalObservableResourceRegistrationMessage(ObservableWebservice webService){
 //        this.webService = webService;
 //    }
 //
 //    /**
-//     * Returns the newly registered {@link ObservableWebService} instance
-//     * @return the newly registered {@link ObservableWebService} instance
+//     * Returns the newly registered {@link ObservableWebservice} instance
+//     * @return the newly registered {@link ObservableWebservice} instance
 //     */
-//    public ObservableWebService getWebService() {
+//    public ObservableWebservice getWebService() {
 //        return webService;
 //    }
 //

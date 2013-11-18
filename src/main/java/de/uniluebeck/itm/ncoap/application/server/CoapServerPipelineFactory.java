@@ -77,13 +77,17 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
     private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
     private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
+
+    private CoapServerApplication serverApplication;
 //
 //    private ObservableResourceHandler observableResourceHandler;
 
     /**
      * @param ioExecutorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      */
-    public CoapServerPipelineFactory(ScheduledExecutorService ioExecutorService){
+    public CoapServerPipelineFactory(ScheduledExecutorService ioExecutorService,
+                                     CoapServerApplication serverApplication){
+
 
         this.executionHandler = new ExecutionHandler(ioExecutorService);
 
@@ -92,8 +96,12 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
         this.outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(ioExecutorService);
         this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(ioExecutorService);
+
+        this.serverApplication = serverApplication;
 //
 //        this.observableResourceHandler = new ObservableResourceHandler(ioExecutorService);
+
+
     }
 
 
@@ -108,6 +116,8 @@ public class CoapServerPipelineFactory implements ChannelPipelineFactory {
 
         pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
         pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
+
+        pipeline.addLast("Server Application", serverApplication);
 //
 //        pipeline.addLast("ObservableResourceHandler", observableResourceHandler);
 

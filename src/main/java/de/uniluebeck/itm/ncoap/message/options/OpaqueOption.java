@@ -26,7 +26,6 @@ package de.uniluebeck.itm.ncoap.message.options;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * This class contains all specific functionality for {@link Option} instances of {@link OptionType.Name#OPAQUE}.
@@ -59,7 +58,11 @@ public class OpaqueOption extends Option<byte[]>{
 
     @Override
     public String toString(){
-        if(this.value.length == 0)
+        return toHexString(this.value);
+    }
+
+    public static String toHexString(byte[] value){
+        if(value.length == 0)
             return "<empty>";
         else
             return "0x" + new BigInteger(1, value).toString(16).toUpperCase();

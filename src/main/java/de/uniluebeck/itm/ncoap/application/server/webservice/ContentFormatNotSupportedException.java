@@ -54,7 +54,7 @@ import java.util.Set;
 
 /**
 * Exception to {@link ContentFormatNotSupportedException} indicate that a requested content format is not provided by a
-* {@link WebService} instance.
+* {@link Webservice} instance.
 *
 * @author Oliver Kleine
 */

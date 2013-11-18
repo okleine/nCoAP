@@ -50,7 +50,7 @@
 //
 //import java.net.InetSocketAddress;
 //
-//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebService;
+//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 //
 ///**
 // * This internal message is sent upstream when a confirmable update notification was re-transmitted due to a missing
@@ -66,7 +66,7 @@
 //    /**
 //     * @param observerAddress the address of the observer that did not confirm the reception of a confirmable
 //     *                        update notification
-//     * @param servicePath the path of the {@link ObservableWebService} instance whose confirmable update notification
+//     * @param servicePath the path of the {@link ObservableWebservice} instance whose confirmable update notification
 //     *                    was not yet confirmed by the observer
 //     */
 //    public InternalUpdateNotificationRetransmissionMessage(InetSocketAddress observerAddress, String servicePath) {
@@ -83,9 +83,9 @@
 //    }
 //
 //    /**
-//     * Returns the path of the {@link ObservableWebService} instance whose confirmable update notification was not yet
+//     * Returns the path of the {@link ObservableWebservice} instance whose confirmable update notification was not yet
 //     * confirmed by the observer
-//     * @return the path of the {@link ObservableWebService} instance whose confirmable update notification was not yet
+//     * @return the path of the {@link ObservableWebservice} instance whose confirmable update notification was not yet
 //     * confirmed by the observer
 //     */
 //    public String getServicePath() {

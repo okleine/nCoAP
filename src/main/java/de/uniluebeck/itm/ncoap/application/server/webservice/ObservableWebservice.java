@@ -48,7 +48,6 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
-import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
@@ -57,7 +56,6 @@ import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
 import org.slf4j.Logger;
@@ -69,8 +67,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Observable;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -78,13 +74,13 @@ import java.util.concurrent.TimeUnit;
 * means, that the object that holds the resourceStatus of the resource is of type T.
 *
 * Example: Assume, you want to realize a not observable service representing a temperature with limited accuracy
-* (integer values). Then, your service class should extend {@link NotObservableWebService<Integer>}.
+* (integer values). Then, your service class should extend {@link NotObservableWebservice <Integer>}.
 *
 * @author Oliver Kleine, Stefan Hüske
 */
-public abstract class ObservableWebService<T> extends Observable implements WebService<T> {
+public abstract class ObservableWebservice<T> extends Observable implements Webservice<T> {
 
-    private static Logger log = LoggerFactory.getLogger(ObservableWebService.class.getName());
+    private static Logger log = LoggerFactory.getLogger(ObservableWebservice.class.getName());
 
     private String path;
     private T resourceStatus;
@@ -100,14 +96,14 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 
     //private ScheduledFuture maxAgeFuture;
 
-    protected ObservableWebService(String path, T initialStatus){
+    protected ObservableWebservice(String path, T initialStatus){
         this.path = path;
         this.resourceStatus = initialStatus;
     }
 
     /**
      * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
-     * {@link CoapServerApplication} instance (using {@link CoapServerApplication#registerService(WebService)}.
+     * {@link CoapServerApplication} instance (using {@link CoapServerApplication#registerService(Webservice)}.
      * So, usually there is no need to set another {@link ScheduledExecutorService} instance manually.
      *
      * @param executorService a {@link ScheduledExecutorService} instance.
@@ -188,7 +184,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
     }
 
     @Override
-    public synchronized final void setResourceStatus(T newStatus){
+    public synchronized final void setResourceStatus(T newStatus, long lifetimeSeconds){
         this.resourceStatus = newStatus;
 
 //        try{
@@ -241,7 +237,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 
     /**
      * The max age value represents the validity period (in seconds) of the actual status. With
-     * {@link ObservableWebService} instances the nCoAP framework uses this value
+     * {@link ObservableWebservice} instances the nCoAP framework uses this value
      * <ul>
      *     <li>
      *          to set the {@link Option.Name#MAX_AGE} option in every {@link CoapResponse} that was produced by
@@ -263,7 +259,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 
     /**
      * The max age value represents the validity period (in seconds) of the actual status. With
-     * {@link ObservableWebService} instances the nCoAP framework uses this value
+     * {@link ObservableWebservice} instances the nCoAP framework uses this value
      * <ul>
      *     <li>
      *         to set the {@link Option.Name#MAX_AGE} option in every {@link CoapResponse} that was produced by
@@ -285,7 +281,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 //        maxAgeFuture = scheduledExecutorService.schedule(new Runnable() {
 //            @Override
 //            public void run() {
-//                synchronized (ObservableWebService.this){
+//                synchronized (ObservableWebservice.this){
 //                    log.info("Send max-age notifications for {} with status {}.", getPath(), getResourceStatus());
 //
 //                    setChanged();
@@ -298,8 +294,8 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
 //    }
 
     /**
-     * The hash code of is {@link ObservableWebService} instance is produced as {@code this.getPath().hashCode()}.
-     * @return the hash code of this {@link ObservableWebService} instance
+     * The hash code of is {@link ObservableWebservice} instance is produced as {@code this.getPath().hashCode()}.
+     * @return the hash code of this {@link ObservableWebservice} instance
      */
     @Override
     public int hashCode(){
@@ -313,7 +309,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
             return false;
         }
 
-        if(!(object instanceof String || object instanceof WebService)){
+        if(!(object instanceof String || object instanceof Webservice)){
             return false;
         }
 
@@ -321,7 +317,7 @@ public abstract class ObservableWebService<T> extends Observable implements WebS
             return this.getPath().equals(object);
         }
         else{
-            return this.getPath().equals(((WebService) object).getPath());
+            return this.getPath().equals(((Webservice) object).getPath());
         }
     }
 }

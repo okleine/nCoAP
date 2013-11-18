@@ -75,7 +75,7 @@
 // *
 // * @author Oliver Kleine
 // */
-//public class ObservableTestWebService extends ObservableWebService<Integer>{
+//public class ObservableTestWebService extends ObservableWebservice<Integer>{
 //
 //    private static Logger log = LoggerFactory.getLogger(ObservableTestWebService.class.getName());
 //

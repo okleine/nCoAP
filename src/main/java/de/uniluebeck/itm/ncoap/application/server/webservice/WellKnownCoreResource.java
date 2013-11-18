@@ -56,7 +56,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 import java.util.Map;
 
 /**
@@ -65,7 +64,7 @@ import java.util.Map;
 *
 * @author Oliver Kleine
 */
-public final class WellKnownCoreResource extends NotObservableWebService<Map<String, WebService>> {
+public final class WellKnownCoreResource extends NotObservableWebservice<Map<String, Webservice>> {
 
     private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
 
@@ -73,8 +72,8 @@ public final class WellKnownCoreResource extends NotObservableWebService<Map<Str
      * Creates the well-known/core resource at path /.well-known/core as defined in the CoAP draft
      * @param initialStatus the Map containing all available path
      */
-    public WellKnownCoreResource(Map<String, WebService> initialStatus) {
-        super("/.well-known/core", initialStatus);
+    public WellKnownCoreResource(Map<String, Webservice> initialStatus) {
+        super("/.well-known/core", initialStatus, 100000);
     }
 
     /**
@@ -83,13 +82,13 @@ public final class WellKnownCoreResource extends NotObservableWebService<Map<Str
      *
      * In case of a request with {@link @link MessageCode.Name#GET} it returns a {@link CoapResponse} with
      * {@link MessageCode.Name#CONTENT_205} and with a payload listing all paths to the available resources
-     * (i.e. {@link WebService} instances}).
+     * (i.e. {@link Webservice} instances}).
      *
      * The payload is always formatted in {@link ContentFormat.Name#APP_LINK_FORMAT}.
      *
      * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
      *                       the list of available services in CoRE link format.
-     * @param request The {@link CoapRequest} to be processed by the {@link WebService} instance
+     * @param request The {@link CoapRequest} to be processed by the {@link Webservice} instance
      * @param remoteAddress The address of the sender of the request
      */
     @Override
