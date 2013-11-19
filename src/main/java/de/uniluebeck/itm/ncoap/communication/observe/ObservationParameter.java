@@ -71,7 +71,7 @@ class ObservationParameter {
         return this.latestMessageID;
     }
 
-    public void updateNotificationCount(){
+    public void nextUpdateNotification(){
         this.notificationCount += OutgoingMessageReliabilityHandler.MAX_RETRANSMIT + 2;
     }
 

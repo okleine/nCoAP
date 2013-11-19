@@ -228,9 +228,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 reliabilitySchedule = reliabilitySchedules.remove(remoteSocketAddress, coapMessage.getMessageID());
             }
 
-            reliabilitySchedule.cancelRemainingTasks();
-
             if(!(reliabilitySchedule == null)){
+                reliabilitySchedule.cancelRemainingTasks();
                 if(coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
                     if(coapMessage.getMessageTypeName() == MessageType.Name.ACK){
 
