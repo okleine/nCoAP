@@ -48,20 +48,22 @@
 package de.uniluebeck.itm.ncoap.communication.codec;
 
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
-import de.uniluebeck.itm.ncoap.communication.InternalExceptionMessage;
-import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
+import de.uniluebeck.itm.ncoap.message.InvalidMessageException;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
+import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+
+import static org.jboss.netty.channel.Channels.fireMessageReceived;
 
 
 /**
@@ -69,12 +71,33 @@ import java.net.InetSocketAddress;
 *
 * @author Oliver Kleine
 */
-public class CoapMessageDecoder extends OneToOneDecoder{
+public class CoapMessageDecoder implements ChannelUpstreamHandler{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
-    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object object) throws Exception {
+    public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
+        if (!(evt instanceof MessageEvent)) {
+            ctx.sendUpstream(evt);
+            return;
+        }
+
+        MessageEvent e = (MessageEvent) evt;
+        Object originalMessage = e.getMessage();
+        Object decodedMessage = decode(ctx, e.getChannel(), originalMessage,
+                (InetSocketAddress) e.getRemoteAddress());
+
+        if (originalMessage == decodedMessage) {
+            ctx.sendUpstream(evt);
+        }
+        else if (decodedMessage != null) {
+            fireMessageReceived(ctx, decodedMessage, e.getRemoteAddress());
+        }
+    }
+
+
+    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object object,
+                            InetSocketAddress remoteSocketAddress) throws Exception {
 
         //Do nothing but return the given object if it's not an instance of ChannelBuffer
         if(!(object instanceof ChannelBuffer)){
@@ -82,8 +105,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         }
 
         ChannelBuffer buffer = (ChannelBuffer) object;
-        log.debug("Incoming message from {} to be decoded (length: {})", ctx.getChannel().getRemoteAddress(),
-                buffer.readableBytes());
+        log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4)
@@ -107,7 +129,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             byte[] tokenBytes = new byte[buffer.readableBytes()];
             buffer.readBytes(tokenBytes);
             long token =  TokenFactory.fromByteArray(tokenBytes);
-            return new InternalExceptionMessage(messageType, messageCode, messageID, token,
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, token,
                     new DecodingException(new InvalidHeaderException("TKL header value: " + tokenLength +
                             ", Remaining bytes: " + TokenFactory.toHexString(token) + ".")
             ));
@@ -118,7 +140,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             byte[] tokenBytes = new byte[CoapMessage.MAX_TOKEN_LENGTH];
             buffer.readBytes(tokenBytes);
             long token =  TokenFactory.fromByteArray(tokenBytes);
-            return new InternalExceptionMessage(messageType, messageCode, messageID, token, new DecodingException(
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, token, new DecodingException(
                     new InvalidMessageException("TKL value to large (max: " + CoapMessage.MAX_TOKEN_LENGTH
                             + ", actual: " + tokenLength + "). First 8 bytes of token: "
                             + TokenFactory.toHexString(token))
@@ -131,7 +153,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
         //Check whether the protocol version is supported (=1)
         if(version != CoapMessage.PROTOCOL_VERSION)
-            return new InternalExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
                     new DecodingException(new InvalidHeaderException("Unsupported CoAP protocol version: " + version)
             ));
 
@@ -141,7 +163,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             if(tokenLength > 0){
                 String message = "Invalid TKL header value for empty message: " + tokenLength;
                 log.warn(message);
-                return new InternalExceptionMessage(messageType, messageCode, messageID,
+                return new InternalCodecExceptionMessage(messageType, messageCode, messageID,
                         TokenFactory.fromByteArray(token), new DecodingException(new InvalidHeaderException(message))
                 );
             }
@@ -150,7 +172,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                 String message = "Empty messages MUST NOT contain anything but the 4 bytes header "
                         + " (actual remaining bytes after header: " + buffer.readableBytes() + ")";
                 log.warn(message);
-                return new InternalExceptionMessage(messageType, messageCode, messageID,
+                return new InternalCodecExceptionMessage(messageType, messageCode, messageID,
                         TokenFactory.fromByteArray(token), new DecodingException(new InvalidMessageException(message))
                 );
             }
@@ -163,7 +185,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                     TokenFactory.fromByteArray(token));
         }
         catch (InvalidHeaderException e) {
-            return new InternalExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
                     new DecodingException(e));
         }
 
@@ -178,10 +200,10 @@ public class CoapMessageDecoder extends OneToOneDecoder{
         //Decode and set the options
         try{
             if(buffer.readableBytes() > 0)
-                setOptions(coapMessage, buffer);
+                setOptions(ctx, coapMessage, buffer, remoteSocketAddress);
         }
         catch (InvalidOptionException e){
-            return new InternalExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
                     new DecodingException(e));
         }
 
@@ -192,7 +214,7 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             coapMessage.setContent(buffer);
         }
         catch (InvalidMessageException e) {
-            return new InternalExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
                     new DecodingException(e));
         }
 
@@ -209,22 +231,25 @@ public class CoapMessageDecoder extends OneToOneDecoder{
     }
 
 
-    private void setOptions(CoapMessage coapMessage, ChannelBuffer buffer) throws InvalidOptionException {
+    private void setOptions(ChannelHandlerContext ctx, CoapMessage coapMessage, ChannelBuffer buffer,
+                            InetSocketAddress remoteSocketAddress) throws InvalidOptionException {
 
         //Decode the options
         int previousOption = 0;
         int firstByte = buffer.readByte() & 0xFF;
 
         while(firstByte != 255 && buffer.readableBytes() > 0){
-            log.debug("First byte: {}", firstByte);
+            log.debug("First byte: {} ({})", toBinaryString(firstByte), firstByte);
             int optionDelta = (firstByte & 0xFF) >>> 4;
             int optionLength = firstByte & 0x0F;
 
+            log.debug("temp. delta: {}, temp. length {}", optionDelta, optionLength);
             if(optionDelta == 13)
                 optionDelta += buffer.readByte() & 0xFF;
 
             else if(optionDelta == 14){
-                optionDelta += (buffer.readByte() << 8) & 0xFF00;
+                optionDelta = 269;
+                optionDelta += (buffer.readByte() & 0xFF) << 8;
                 optionDelta += buffer.readByte() & 0xFF;
             }
 
@@ -232,7 +257,8 @@ public class CoapMessageDecoder extends OneToOneDecoder{
                 optionLength += buffer.readByte() & 0xFF;
 
             else if(optionLength == 14){
-                optionLength += (buffer.readByte() << 8) & 0xFF00;
+                optionLength = 269;
+                optionLength += (buffer.readByte() & 0xFF) << 8;
                 optionLength += buffer.readByte() & 0xFF;
             }
 
@@ -249,11 +275,22 @@ public class CoapMessageDecoder extends OneToOneDecoder{
             catch (UnknownOptionException e) {
                 if(Option.isCritical(optionNumber)){
                     String message = "Could not decode unsupported critical option no. " + optionNumber;
-                    log.warn(message);
-                    throw new InvalidOptionException(optionNumber, message);
-                }
+                    if(MessageCode.isRequest(coapMessage.getMessageCode())){
+                        log.error(message);
+                        throw new InvalidOptionException(optionNumber, message);
+                    }
+                    else if(MessageCode.isResponse(coapMessage.getMessageCode())){
+                        InternalCodecExceptionMessage exceptionMessage =
+                                new InternalCodecExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
+                                        coapMessage.getMessageID(), coapMessage.getToken(), e);
 
-                log.info("Silently ignored unsupported elective option no. {}", optionNumber);
+                        ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), exceptionMessage,
+                                remoteSocketAddress));
+                    }
+                }
+                else{
+                    log.info("Silently ignored unsupported elective option no. {}", optionNumber);
+                }
 
             }
             catch (InvalidOptionException e) {
@@ -272,6 +309,21 @@ public class CoapMessageDecoder extends OneToOneDecoder{
 
             log.debug("{} readable bytes remaining.", buffer.readableBytes());
         }
+    }
+
+    private static String toBinaryString(int byteValue){
+        StringBuffer buffer = new StringBuffer(8);
+
+        //int actualValue = byteValue & 0xFF;
+
+        for(int i = 7; i >= 0; i--){
+            if((byteValue & (int) Math.pow(2, i)) > 0)
+                buffer.append("1");
+            else
+                buffer.append("0");
+        }
+
+        return buffer.toString();
     }
 
 //    /**

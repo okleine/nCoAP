@@ -92,9 +92,8 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
     private ScheduledExecutorService scheduledExecutorService;
     private ListeningExecutorService listeningExecutorService;
-    private long maxAge = Option.MAX_AGE_DEFAULT;
+    private long resourceStatusExpiryDate;
 
-    //private ScheduledFuture maxAgeFuture;
 
     protected ObservableWebservice(String path, T initialStatus){
         this.path = path;
@@ -125,7 +124,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
 
-    @Override
     public ListeningExecutorService getListeningExecutorService() {
         return listeningExecutorService;
     }
@@ -153,11 +151,11 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      * @return {@link MessageType.Name#CON} if update notifications should be sent confirmable or
      * {@link MessageType.Name#NON} otherwise. Default, i.e. if not set otherwise, is {@link MessageType.Name#CON}.
      */
-    public final int getMessageTypeForUpdateNotifications(){
+    public final MessageType.Name getMessageTypeForUpdateNotifications(){
         if(isUpdateNotificationConfirmable)
-            return MessageType.Name.CON.getNumber();
+            return MessageType.Name.CON;
         else
-            return MessageType.Name.NON.getNumber();
+            return MessageType.Name.NON;
     }
 
 
@@ -186,26 +184,17 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     @Override
     public synchronized final void setResourceStatus(T newStatus, long lifetimeSeconds){
         this.resourceStatus = newStatus;
-
-//        try{
-//            if(maxAgeFuture.cancel(false))
-//                log.info("Max-age notification cancelled for {}.", getPath());
-//        }
-//        catch(NullPointerException ex){
-//            log.info("Max-age notifiation for {} not yet scheduled. This should only happen once!", getPath());
-//        }
+        this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
 
         //Notify observers (methods inherited from abstract class Observable)
         setChanged();
         notifyObservers();
 
-        //scheduleMaxAgeNotifications();
-
         try{
             MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-            this.etag =
-                    Arrays.copyOfRange(messageDigest.digest(newStatus.toString().getBytes(CoapMessage.CHARSET)), 0,
-                            etagLength);
+            this.etag = Arrays.copyOfRange(messageDigest.digest(newStatus.toString()
+                                                                         .getBytes(CoapMessage.CHARSET)),
+                        0, etagLength);
         }
         catch (NoSuchAlgorithmException e) {
             log.error("This should never happen.", e);
@@ -235,47 +224,52 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         return this.etag;
     }
 
-    /**
-     * The max age value represents the validity period (in seconds) of the actual status. With
-     * {@link ObservableWebservice} instances the nCoAP framework uses this value
-     * <ul>
-     *     <li>
-     *          to set the {@link Option.Name#MAX_AGE} option in every {@link CoapResponse} that was produced by
-     *          {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}
-     *          (if not set to another value before {@link SettableFuture<CoapResponse>#set(CoapResponse)}).
-     *     </li>
-     *     <li>
-     *         to send update notifications to all observers of this service every {@link #maxAge} seconds.
-     *     </li>
-     * </ul>
-     *
-     * The default (if not set otherwise) is {@link Option#MAX_AGE_DEFAULT}
-     *
-     * @return the current value of {@link #maxAge}
-     */
-    public long getMaxAge() {
-        return maxAge;
+    @Override
+    public final long getMaxAge() {
+        return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
     }
 
-    /**
-     * The max age value represents the validity period (in seconds) of the actual status. With
-     * {@link ObservableWebservice} instances the nCoAP framework uses this value
-     * <ul>
-     *     <li>
-     *         to set the {@link Option.Name#MAX_AGE} option in every {@link CoapResponse} that was produced by
-     *          {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}
-     *          (if not set to another value before {@link SettableFuture<CoapResponse>#set(CoapResponse)}).
-     *     </li>
-     *     <li>
-     *         to send update notifications to all observers of this service every {@link #maxAge} seconds.
-     *     </li>
-     * </ul>
-     *
-     * @param maxAge  the new max age value
-     */
-    public void setMaxAge(long maxAge) {
-        this.maxAge = maxAge;
-    }
+//    /**
+//     * The max age value represents the validity period (in seconds) of the actual status. With
+//     * {@link ObservableWebservice} instances the nCoAP framework uses this value
+//     * <ul>
+//     *     <li>
+//     *          to set the {@link Option.Name#MAX_AGE} option in every {@link CoapResponse} that was produced by
+//     *          {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}
+//     *          (if not set to another value before {@link SettableFuture<CoapResponse>#set(CoapResponse)}).
+//     *     </li>
+//     *     <li>
+//     *         to send update notifications to all observers of this service every {@link #maxAge} seconds.
+//     *     </li>
+//     * </ul>
+//     *
+//     * The default (if not set otherwise) is {@link Option#MAX_AGE_DEFAULT}
+//     *
+//     * @return the current value of {@link #maxAge}
+//     */
+//    public long getMaxAge() {
+//        return maxAge;
+//    }
+
+//    /**
+//     * The max age value represents the validity period (in seconds) of the actual status. With
+//     * {@link ObservableWebservice} instances the nCoAP framework uses this value
+//     * <ul>
+//     *     <li>
+//     *         to set the {@link Option.Name#MAX_AGE} option in every {@link CoapResponse} that was produced by
+//     *          {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}
+//     *          (if not set to another value before {@link SettableFuture<CoapResponse>#set(CoapResponse)}).
+//     *     </li>
+//     *     <li>
+//     *         to send update notifications to all observers of this service every {@link #maxAge} seconds.
+//     *     </li>
+//     * </ul>
+//     *
+//     * @param maxAge  the new max age value
+//     */
+//    public void setMaxAge(long maxAge) {
+//        this.maxAge = maxAge;
+//    }
 
 //    private void scheduleMaxAgeNotifications(){
 //        maxAgeFuture = scheduledExecutorService.schedule(new Runnable() {

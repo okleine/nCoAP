@@ -13,7 +13,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 public class CoapTestDecoder extends CoapMessageDecoder{
 
     public Object decode(ChannelBuffer buffer) throws Exception {
-        return super.decode(null, null, buffer);
+        return super.decode(null, null, buffer, null);
     }
 
 }

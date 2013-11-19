@@ -65,7 +65,7 @@
 // * events related to a sent {@link CoapRequest}.
 // */
 //public class TestResponseProcessor implements CoapResponseProcessor, RetransmissionTimeoutProcessor,
-//        EmptyAcknowledgementProcessor, RetransmissionProcessor, ObservationTimeoutProcessor {
+//        EmptyAcknowledgementProcessor, TransmissionInformationProcessor, ObservationTimeoutProcessor {
 //
 //    private Logger log = Logger.getLogger(this.getClass().getName());
 //
@@ -86,7 +86,7 @@
 //    }
 //
 //    @Override
-//    public void requestSent() {
+//    public void messageTransmitted() {
 //        requestSentTimes.add(System.currentTimeMillis());
 //        log.info("Attempt #" + requestSentTimes.size() + " to sent request.");
 //    }

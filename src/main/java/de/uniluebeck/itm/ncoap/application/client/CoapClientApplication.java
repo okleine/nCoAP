@@ -28,6 +28,7 @@ package de.uniluebeck.itm.ncoap.application.client;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
+import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -125,8 +126,8 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                                     new Object[]{remoteSocketAddress.getAddress().getHostAddress(),
                                             remoteSocketAddress.getPort(), coapRequest});
 
-                            if (coapResponseProcessor instanceof RetransmissionProcessor)
-                                ((RetransmissionProcessor) coapResponseProcessor).requestSent();
+                            if (coapResponseProcessor instanceof TransmissionInformationProcessor)
+                                ((TransmissionInformationProcessor) coapResponseProcessor).messageTransmitted();
                         }
                     });
 
@@ -252,8 +253,27 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             CoapResponseProcessor callback =
                     responseProcessors.get(retransmissionMessage.getRemoteAddress(), retransmissionMessage.getToken());
 
-            if(callback != null && callback instanceof RetransmissionProcessor)
-                ((RetransmissionProcessor) callback).requestSent();
+            if(callback != null && callback instanceof TransmissionInformationProcessor)
+                ((TransmissionInformationProcessor) callback).messageTransmitted();
+            else
+                log.warn("No TransmissionInformationProcessor found for token {} and remote address {}",
+                        TokenFactory.toHexString(retransmissionMessage.getToken()),
+                        retransmissionMessage.getRemoteAddress());
+
+            me.getFuture().setSuccess();
+            return;
+        }
+
+        if(me.getMessage() instanceof InternalCodecExceptionMessage){
+            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
+
+            CoapResponseProcessor callback = responseProcessors.get(me.getRemoteAddress(), message.getToken());
+
+            if(callback != null && callback instanceof CodecExceptionReceiver)
+                ((CodecExceptionReceiver) callback).handleCodecException(message.getCause());
+            else
+                log.info("No CodecExceptionReceiver found for token {} and remote address {}",
+                        TokenFactory.toHexString(message.getToken()), me.getRemoteAddress());
 
             me.getFuture().setSuccess();
             return;
@@ -263,7 +283,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 //            InternalNextBlockReceivedMessage message = (InternalNextBlockReceivedMessage) me.getMessage();
 //
 //            CoapResponseProcessor callback =
-//                    responseProcessors.get(message.getToken(), me.getRemoteAddress());
+//                    responseProcessors.get(message.getToken(), me.getRemoteSocketAddress());
 //
 //            if(callback != null && callback instanceof InternalNextBlockReceivedMessageProcessor)
 //                ((InternalNextBlockReceivedMessageProcessor) callback).receivedNextBlock();
@@ -282,7 +302,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
 //            if(coapResponse.isUpdateNotification()){
 //                final Token token = new Token(coapResponse.getToken());
-//                final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+//                final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteSocketAddress();
 //
 //                //Stop observation timeout
 //                ScheduledFuture oldObservationTimeoutFuture = observationTimeouts.get(token, remoteSocketAddress);
@@ -361,8 +381,8 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 //
 //            removeResponseCallback(token, remoteSocketAddress);
 //
-//            InternalStopObservationMessage stopObservationMessage =
-//                    new InternalStopObservationMessage(remoteSocketAddress, token);
+//            InternalStopRetransmissionMessage stopObservationMessage =
+//                    new InternalStopRetransmissionMessage(remoteSocketAddress, token);
 //
 //            ChannelFuture future = Channels.write(channel, stopObservationMessage);
 //            future.addListener(new ChannelFutureListener() {

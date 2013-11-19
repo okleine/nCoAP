@@ -46,92 +46,39 @@
 * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package de.uniluebeck.itm.ncoap.application.server;
+package de.uniluebeck.itm.ncoap.communication.observe;
 
-import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
-import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
-
-
-import de.uniluebeck.itm.ncoap.communication.observe.ObservableResourceHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.handler.execution.ExecutionHandler;
-import org.jboss.netty.channel.socket.DatagramChannel;
-
-import java.util.concurrent.ScheduledExecutorService;
+import java.net.InetSocketAddress;
+import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 
 /**
-* Factory to provide the {@link ChannelPipeline} for newly created {@link DatagramChannel}s via
-* {@link CoapServerDatagramChannelFactory}.
+* Internal message to be sent downstream, e.g. from the {@link CoapClientApplication}  if an observation timed out,
+* i.e. there was no follow-up update notification from the observed resource within the max-age period of the
+* previous update-notification.
 *
 * @author Oliver Kleine
 */
-public class CoapServerPipelineFactory implements ChannelPipelineFactory {
+public class InternalStopRetransmissionMessage {
 
-    private ExecutionHandler executionHandler;
+    private InetSocketAddress remoteSocketAddress;
+    private int messageID;
 
-    private CoapMessageEncoder encoder;
-    private CoapMessageDecoder decoder;
 
-    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
-    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
+    public InternalStopRetransmissionMessage(InetSocketAddress remoteSocketAddress, int messageID){
 
-    private CoapServerApplication serverApplication;
-//
-    private ObservableResourceHandler observableResourceHandler;
+        this.remoteSocketAddress = remoteSocketAddress;
+        this.messageID = messageID;
+    }
 
     /**
-     * @param ioExecutorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     * Returns the {@link InetSocketAddress} of the host that hosts the observed service
+     * @return the {@link InetSocketAddress} of the host that hosts the observed service
      */
-    public CoapServerPipelineFactory(ScheduledExecutorService ioExecutorService,
-                                     CoapServerApplication serverApplication){
-
-
-        this.executionHandler = new ExecutionHandler(ioExecutorService);
-
-        this.encoder = new CoapMessageEncoder();
-        this.decoder = new CoapMessageDecoder();
-
-        this.outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(ioExecutorService);
-        this.incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(ioExecutorService);
-
-        this.serverApplication = serverApplication;
-
-        this.observableResourceHandler = new ObservableResourceHandler(ioExecutorService);
-
-
+    public InetSocketAddress getRemoteSocketAddress() {
+        return this.remoteSocketAddress;
     }
 
-
-    @Override
-    public ChannelPipeline getPipeline() throws Exception {
-        ChannelPipeline pipeline = Channels.pipeline();
-
-        pipeline.addLast("Execution Handler", executionHandler);
-
-        pipeline.addLast("CoAP Message Encoder", encoder);
-        pipeline.addLast("CoAP Message Decoder", decoder);
-
-        pipeline.addLast("ObservableResourceHandler", observableResourceHandler);
-
-        pipeline.addLast("OutgoingMessageReliabilityHandler", outgoingMessageReliabilityHandler);
-        pipeline.addLast("IncomingMessageReliabilityHandler", incomingMessageReliabilityHandler);
-
-        pipeline.addLast("Server Application", serverApplication);
-
-
-        return pipeline;
+    public int getMessageID() {
+        return this.messageID;
     }
-
-//    /**
-//     * Returns the {@link ObservableResourceHandler} which is part of each pipline from this factory
-//     * @return the {@link ObservableResourceHandler} which is part of each pipline from this factory
-//     */
-//    public ObservableResourceHandler getObservableResourceHandler(){
-//        return this.observableResourceHandler;
-//    }
-
 }

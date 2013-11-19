@@ -89,7 +89,7 @@ public class TokenFactory {
         byte[] tokenBytes = Longs.toByteArray(token);
 
         int index = 0;
-        while(tokenBytes[index] == 0 && index < tokenBytes.length - 1)
+        while(index < tokenBytes.length - 1 && tokenBytes[index] == 0)
             index++;
 
         return Arrays.copyOfRange(tokenBytes, index, tokenBytes.length);

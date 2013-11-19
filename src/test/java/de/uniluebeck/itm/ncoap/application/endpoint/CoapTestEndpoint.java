@@ -116,7 +116,7 @@
 //            receivedMessages.put(System.currentTimeMillis(), (CoapMessage) e.getMessage());
 //
 //            log.info("Incoming #{} (from {}): {}.",
-//                    new Object[]{getReceivedMessages().size(), e.getRemoteAddress(), e.getMessage()});
+//                    new Object[]{getReceivedMessages().size(), e.getRemoteSocketAddress(), e.getMessage()});
 //        }
 //    }
 //

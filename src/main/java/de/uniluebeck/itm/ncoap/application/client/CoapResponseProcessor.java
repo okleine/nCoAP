@@ -29,39 +29,39 @@ import de.uniluebeck.itm.ncoap.message.*;
 
 
 /**
-* Classes implementing the {@link CoapResponseProcessor} interface handle incoming {@link CoapResponse}s related to
-* a particular {@link CoapRequest}.
-*
-* If one wants an instance of {@link CoapResponseProcessor} to handle other events as well, the implementing class
-* must additionally implement one ore more of the following other interfaces, i.e.
-* <ul>
-*     <li>
-*         {@link RetransmissionTimeoutProcessor} to be informed if the maximum number of retransmission attempts
-*         was made for a confirmable {@link CoapRequest} and there was no acknowledgement received.
-*     </li>
-*     <li>
-*         {@link EmptyAcknowledgementProcessor} to be informed if a confirmable {@link CoapRequest} was
-*         acknowledged by the recipient with an empty acknowledgement.
-*     </li>
-*     <li>
-*         {@link RetransmissionProcessor} to be informed about every transmission attempt for the {@link CoapRequest}.
-*     </li>
-*     <li>
-*         {@link InternalNextBlockReceivedMessage} to be informed about every received block if the server decided to
-*         send the response blockwise.
-*     </li>
-* </ul>
-*
-* A {@link CoapResponseProcessor} is comparable to a tab in a browser, whereas the {@link CoapClientApplication}
-* browser is comparable to the browser application.
-*
-* @author Oliver Kleine
-*/
+ * Classes implementing the {@link CoapResponseProcessor} interface handle incoming {@link CoapResponse}s related to
+ * a particular {@link CoapRequest}.
+ *
+ * If one wants an instance of {@link CoapResponseProcessor} to handle other events as well, the implementing class
+ * must additionally implement one ore more of the following other interfaces, i.e.
+ * <ul>
+ *     <li>
+ *         {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor} to be
+ *         informed if the maximum number of retransmission attempts was made for a confirmable {@link CoapRequest}
+ *         and there was no acknowledgement received.
+ *     </li>
+ *     <li>
+ *         {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAcknowledgementProcessor}
+ *         to be informed if a confirmable {@link CoapRequest} was acknowledged by the recipient with an empty
+ *         acknowledgement.
+ *     </li>
+ *     <li>
+ *         {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor} to be informed
+ *         about every transmission attempt for the {@link CoapRequest}.
+ *     </li>
+ * </ul>
+ *
+ * A {@link CoapResponseProcessor} is comparable to a tab in a browser, whereas the {@link CoapClientApplication}
+ * browser is comparable to the browser application.
+ *
+ * @author Oliver Kleine
+ */
 public interface CoapResponseProcessor {
 
     /**
      * Method invoked by the {@link CoapClientApplication} for an incoming response (which is of any type but
-     * empty {@link de.uniluebeck.itm.ncoap.message.MessageType#ACK} or {@link de.uniluebeck.itm.ncoap.message.MessageType#RST}).
+     * empty {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#ACK} or
+     * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#RST}).
      *
      * @param coapResponse the response message
      */

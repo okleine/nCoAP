@@ -69,7 +69,7 @@ public class MessageDecodingWithValidMessages extends AbstractCoapTest{
 
     private class CoapMessageTestDecoder extends CoapMessageDecoder{
         protected Object decode(ChannelBuffer buffer) throws Exception {
-            return super.decode(null, null, buffer);
+            return super.decode(null, null, buffer, null);
         }
     }
 

@@ -30,9 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.util.Iterator;
-
 
 
 /**
@@ -42,7 +40,6 @@ public class CoapResponse extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
-    private String servicePath;
 
     /**
      * This is the constructor supposed to be used to create {@link CoapResponse} instances. The {@link MessageType} is
@@ -64,26 +61,6 @@ public class CoapResponse extends CoapMessage {
         this(messageCode.getNumber());
     }
 
-//    public static CoapResponse createErrorResponse(int messageCode, String errorMessage){
-//        CoapResponse response = new CoapResponse(messageCode);
-//
-//        try{
-//            response.setContent(("Option " + Option.Name.CONTENT_FORMAT + " not set.")
-//                    .getBytes(Charset.forName("UTF-8")));
-//            response.setContentType(MediaType.TEXT_PLAIN_UTF8);
-//        }
-//        catch (Exception e) {
-//            log.error("This should never happen!", e);
-//        }
-//
-//        return response;
-//    }
-
-//    public CoapResponse(int messageType, int messageCode, int messageID, long token) throws InvalidMessageException {
-//
-//        super(messageType, messageCode, messageID, token);
-//
-//    }
 
     public void setEtag(byte[] etag) throws InvalidOptionException {
         try {
@@ -102,6 +79,27 @@ public class CoapResponse extends CoapMessage {
             return null;
     }
 
+
+    public void setObservationSequenceNumber(long sequenceNumber){
+        sequenceNumber = sequenceNumber & 0xFFFFFF;
+        try {
+            this.addUintOption(Option.Name.OBSERVE, sequenceNumber);
+        }
+        catch (UnknownOptionException | InvalidOptionException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+    public long getObservationSequenceNumber(){
+        if(!options.containsKey(Option.Name.OBSERVE))
+            return -1;
+        else
+            return (Long) options.get(Option.Name.OBSERVE).iterator().next().getDecodedValue();
+    }
+
+    public boolean isUpdateNotification(){
+        return this.getObservationSequenceNumber() != -1;
+    }
 
     /**
      * Adds all necessary location URI related options to the list. This causes eventually already contained

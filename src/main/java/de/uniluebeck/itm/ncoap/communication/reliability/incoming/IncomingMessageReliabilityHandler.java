@@ -24,9 +24,10 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
+import de.uniluebeck.itm.ncoap.application.TokenFactory;
+import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
 import de.uniluebeck.itm.ncoap.communication.codec.DecodingException;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
-import de.uniluebeck.itm.ncoap.communication.InternalExceptionMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -87,8 +88,8 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Upstream from {}: {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof InternalExceptionMessage){
-            InternalExceptionMessage message = (InternalExceptionMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalCodecExceptionMessage){
+            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
             Throwable ex = message.getCause();
 
             //Exception during request decoding (owing message: 4.x error response)
@@ -103,6 +104,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                         owingResponses.put(remoteSocketAddress, message.getMessageID(), MessageType.Name.NON);
                         log.debug("No. of owing responses: {}", owingResponses.size());
                     }
+                }
+            }
+
+            if(MessageCode.isResponse(message.getMessageCode()) && ex instanceof DecodingException){
+                if(message.getMessageType() == MessageType.Name.CON.getNumber()
+                        || message.getMessageType() == MessageType.Name.NON.getNumber()){
+                    InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+                    writeReset(ctx, remoteSocketAddress, message.getMessageID(), message.getToken());
                 }
             }
 
@@ -266,19 +275,24 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
 
 
-//    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,
-//                                           final int messageID, final byte[] token){
-//        CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
-//
-//        ChannelFuture future = Channels.future(ctx.getChannel());
-//        Channels.write(ctx, future, resetMessage, remoteAddress);
-//
-//        future.addListener(new ChannelFutureListener() {
-//            @Override
-//            public void operationComplete(ChannelFuture future) throws Exception {
-//                log.info("RST for message ID {} and token {} succesfully sent to {}.", new Object[]{messageID,
-//                        new Token(token), remoteAddress});
-//            }
-//        });
-//    }
+    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
+                                           final int messageID, final long token){
+        try{
+            CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
+            resetMessage.setToken(token);
+            ChannelFuture future = Channels.future(ctx.getChannel());
+            Channels.write(ctx, future, resetMessage, remoteSocketAddress);
+
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    log.info("RST for message ID {} and token {} succesfully sent to {}.", new Object[]{messageID,
+                            TokenFactory.toHexString(token), remoteSocketAddress});
+                }
+            });
+        }
+        catch (InvalidHeaderException e) {
+            log.error("This should never happen.", e);
+        }
+    }
 }

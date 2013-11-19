@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 /**
  * This class contains all specific functionality for {@link Option} instances of {@link OptionType#UINT}. If there is
@@ -43,11 +44,11 @@ public class UintOption extends Option<Long>{
     private static Logger log = LoggerFactory.getLogger(UintOption.class.getName());
 
     public UintOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
-        super(optionNumber, value);
+        super(optionNumber, shortenValue(value));
     }
 
     public UintOption(int optionNumber, long value) throws InvalidOptionException, UnknownOptionException {
-        this(optionNumber, new BigInteger(1, Longs.toByteArray(value)).toByteArray());
+        this(optionNumber, value == 0 ? new byte[0] : new BigInteger(1, Longs.toByteArray(value)).toByteArray());
     }
 
     @Override
@@ -55,6 +56,14 @@ public class UintOption extends Option<Long>{
         return new BigInteger(1, value).longValue();
     }
 
+
+    public static byte[] shortenValue(byte[] value){
+        int index = 0;
+        while(index < value.length - 1 && value[index] == 0)
+            index++;
+
+        return Arrays.copyOfRange(value, index, value.length);
+    }
 
 //    @Override
 //    public boolean equals(Object object) {

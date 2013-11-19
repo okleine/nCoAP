@@ -71,7 +71,6 @@
 
 package de.uniluebeck.itm.ncoap.communication.codec;
 
-import de.uniluebeck.itm.ncoap.communication.InternalExceptionMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
@@ -107,7 +106,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         log.debug("CoapMessage to encode: {}", coapMessage);
 
         if(coapMessage.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED)
-            return new InternalExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
+            return new InternalCodecExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
                     coapMessage.getMessageID(), coapMessage.getToken(),
                     new EncodingException(new InvalidHeaderException("Message ID is not defined."))
             );
@@ -129,7 +128,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             encodeOptions(encodedMessage, coapMessage);
         }
         catch(InvalidOptionException e){
-            return new InternalExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
+            return new InternalCodecExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
                     coapMessage.getMessageID(), coapMessage.getToken(), new EncodingException(e));
         }
 

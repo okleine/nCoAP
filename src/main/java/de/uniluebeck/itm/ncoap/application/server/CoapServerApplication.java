@@ -55,15 +55,17 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import de.uniluebeck.itm.ncoap.application.server.webservice.ContentFormatNotSupportedException;
+import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
+import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
 import de.uniluebeck.itm.ncoap.communication.codec.DecodingException;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
-import de.uniluebeck.itm.ncoap.communication.InternalExceptionMessage;
+import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableResourceRegistrationMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.OpaqueOption;
-import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.slf4j.Logger;
@@ -77,6 +79,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -184,8 +187,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
         log.debug("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof InternalExceptionMessage){
-            InternalExceptionMessage message = (InternalExceptionMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalCodecExceptionMessage){
+            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
             handleCodecException(ctx, (InetSocketAddress) me.getRemoteAddress(), message);
             return;
         }
@@ -323,7 +326,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     }
 
     private void handleCodecException(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
-                                      InternalExceptionMessage message) {
+                                      InternalCodecExceptionMessage message) {
 
         try{
             Throwable ex = message.getCause();
@@ -472,21 +475,21 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         registeredServices.put(webservice.getPath(), webservice);
         log.info("Registered new service at " + webservice.getPath());
 
-//        if(webservice instanceof ObservableWebservice){
-//            InternalObservableResourceRegistrationMessage message =
-//                    new InternalObservableResourceRegistrationMessage((ObservableWebservice) webservice);
-//
-//            ChannelFuture future = Channels.write(channel, message);
-//            future.addListener(new ChannelFutureListener() {
-//                @Override
-//                public void operationComplete(ChannelFuture future) throws Exception {
-//                    log.info("Registered {} at observable resource handler.", webservice.getPath());
-//                }
-//            });
-//        }
+        if(webservice instanceof ObservableWebservice){
+            InternalObservableResourceRegistrationMessage message =
+                    new InternalObservableResourceRegistrationMessage((ObservableWebservice) webservice);
+
+            ChannelFuture future = Channels.write(serverChannels.iterator().next(), message);
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    log.info("Registered {} at observable resource handler.", webservice.getPath());
+                }
+            });
+        }
 
         webservice.setScheduledExecutorService(scheduledExecutorService);
-        webservice.setListeningExecutorService(listeningExecutorService);
+        //webservice.setListeningExecutorService(listeningExecutorService);
     }
 
     /**
@@ -532,11 +535,6 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         }
     }
 
-
-//    public int getServerPort(){
-//        return channel.getLocalAddress().getPort();
-//    }
-
     private class CoapResponseSender implements Runnable{
 
         private final SettableFuture<CoapResponse> responseFuture;
@@ -581,15 +579,19 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                         coapResponse.setMaxAge(webservice.getMaxAge());
                     }
                     catch(InvalidOptionException e){
-                        log.debug("IGNORE invalid option exception.");
+                        log.debug("IGNORE invalid option exception:", e);
                     }
 
                     try{
                         coapResponse.setEtag(webservice.getEtag());
                     }
                     catch(InvalidOptionException e){
-                        log.debug("IGNORE invalid option exception.");
+                        log.debug("IGNORE invalid option exception:", e);
                     }
+
+                    if(coapRequest.isObserveSet() && webservice instanceof ObservableWebservice)
+                        coapResponse.setObservationSequenceNumber(0);
+
                 }
 
                 //Sets the path of the service this response came from
@@ -611,16 +613,26 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 //                                coapResponse.setObserveOptionValue(0);
 
             }
+
             catch (Exception ex) {
-                log.error("Unexpected exception!", ex);
                 try {
-                    coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-                    coapResponse.setMessageID(coapRequest.getMessageID());
-                    coapResponse.setToken(coapRequest.getToken());
-                    //coapResponse.setServicePath(webService.getPath());
-                    StringWriter errors = new StringWriter();
-                    ex.printStackTrace(new PrintWriter(errors));
-                    coapResponse.setContent(errors.toString().getBytes(Charset.forName("UTF-8")));
+                    if(ex instanceof ExecutionException && ex.getCause() instanceof ContentFormatNotSupportedException){
+                        coapResponse = new CoapResponse(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415);
+                        coapResponse.setMessageID(coapRequest.getMessageID());
+                        coapResponse.setToken(coapRequest.getToken());
+                        coapResponse.setContent(ex.getCause().getMessage().getBytes(CoapMessage.CHARSET));
+                    }
+                    else{
+                        log.error("Unexpected exception!", ex);
+
+                        coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+                        coapResponse.setMessageID(coapRequest.getMessageID());
+                        coapResponse.setToken(coapRequest.getToken());
+                        //coapResponse.setServicePath(webService.getPath());
+                        StringWriter errors = new StringWriter();
+                        ex.printStackTrace(new PrintWriter(errors));
+                        coapResponse.setContent(errors.toString().getBytes(CoapMessage.CHARSET));
+                    }
                 } catch (Exception e) {
                     log.error("This should never happen.", e);
                     return;

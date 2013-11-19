@@ -49,6 +49,7 @@
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.options.Option;
@@ -73,22 +74,24 @@ import java.util.concurrent.ScheduledExecutorService;
 */
 public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
+    public static long SECONDS_PER_YEAR = 31556926;
+
     private static Logger log = LoggerFactory.getLogger(NotObservableWebservice.class.getName());
 
     private String path;
     private T resourceStatus;
     private long resourceStatusExpiryDate;
 
-    //private long maxAge = Option.MAX_AGE_DEFAULT;
-
-    private int etagLength = Option.ETAG_LENGTH_DEFAULT;
+    private int etagLength;
     private byte[] etag;
 
     private ScheduledExecutorService scheduledExecutorService;
     private ListeningExecutorService listeningExecutorService;
 
+
     protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds){
         this.path = servicePath;
+        this.etagLength = Option.ETAG_LENGTH_DEFAULT;
         setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
@@ -103,17 +106,20 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     }
 
     @Override
-    public void setScheduledExecutorService(ScheduledExecutorService executorService){
+    public final void setScheduledExecutorService(ScheduledExecutorService executorService){
         this.scheduledExecutorService = executorService;
+        this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
     }
 
-    @Override
-    public void setListeningExecutorService(ListeningExecutorService executorService) {
-        this.listeningExecutorService = executorService;
-    }
 
-    @Override
-    public ListeningExecutorService getListeningExecutorService() {
+    /**
+     * Returns an instance of {@link ListeningExecutorService} to execute asynchronous webservice internal tasks.
+     * Actually, the underlying {@link java.util.concurrent.ExecutorService} is the same instance as returned by
+     * {@link #getScheduledExecutorService()} but decorated using {@link MoreExecutors#listeningDecorator}.
+     *
+     * @return an instance of {@link ListeningExecutorService} to execute asynchronous webservice internal tasks
+     */
+    public final ListeningExecutorService getListeningExecutorService() {
         return listeningExecutorService;
     }
 

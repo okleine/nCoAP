@@ -26,6 +26,7 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import com.google.common.collect.HashBasedTable;
+import de.uniluebeck.itm.ncoap.communication.observe.InternalStopRetransmissionMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -54,17 +55,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     public static final int MAX_RETRANSMIT = 4;
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
-
-    /**
-     * The maximum number of retransmission attempts for outgoing {@link CoapMessage}s with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON}.
-     */
-    //public static final int MAX_RETRANSMITS = 4;
-
-    /**
-     * The approximate number of milliseconds between the first transmission attempt for outgoing {@link CoapMessage}s
-     * with {@link de.uniluebeck.itm.ncoap.message.MessageType#CON} and the first retransmission attempt.
-     */
-    //public static final int FIRST_RETRANSMISSION_DELAY = 2000;
 
     /**
      * The approximate number of milliseconds between the last retransmission attempt for outgoing {@link CoapMessage}s
@@ -148,7 +138,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         int[] delays = new int[MAX_RETRANSMIT];
         int delay = 0;
         for(int counter = 0; counter < MAX_RETRANSMIT; counter++){
-            delay += (int)(Math.pow(2, counter) * ACK_TIMEOUT_MILLIS * (RANDOM.nextDouble() * ACK_RANDOM_FACTOR));
+            delay += (int)(Math.pow(2, counter) * ACK_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() / 2));
             delays[counter] = delay;
         }
 
@@ -207,6 +197,19 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Upstream (from {}): {}.", me.getRemoteAddress(), me.getMessage());
+
+        if(me.getMessage() instanceof InternalStopRetransmissionMessage){
+            InternalStopRetransmissionMessage message = (InternalStopRetransmissionMessage) me.getMessage();
+            synchronized (reliabilitySchedules){
+                ReliabilitySchedule reliabilitySchedule =
+                        reliabilitySchedules.remove(message.getRemoteSocketAddress(), message.getMessageID());
+                if(reliabilitySchedule != null)
+                    reliabilitySchedule.cancelRemainingTasks();
+                else
+                    log.info("No reliability tasks found to be canceled.");
+            }
+            return;
+        }
 
         if(!(me.getMessage() instanceof CoapMessage)) {
             ctx.sendUpstream(me);

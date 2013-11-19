@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 *
 * @author Oliver Kleine
 */
-class MessageIDFactory extends Observable{
+public class MessageIDFactory extends Observable{
 
     public static int ALLOCATION_TIMEOUT = 120;
 

@@ -73,6 +73,7 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.PROXY_SCHEME,       ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.ACCEPT,             MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.ETAG,               MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.OBSERVE,            ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.URI_HOST,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.URI_PORT,           ONCE);
@@ -100,10 +101,15 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   Option.Name.PROXY_SCHEME,       ONCE);
 
         //Response success (2.x)
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.LOCATION_PATH,      MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.LOCATION_QUERY,     MULTIPLE);
+
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.ETAG,               ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.MAX_AGE,            ONCE);
+
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.MAX_AGE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.ETAG,               ONCE);
@@ -268,6 +274,12 @@ public abstract class CoapMessage {
      */
     public void addOption(int optionNumber, Option option) throws InvalidOptionException {
         this.checkOptionPermission(optionNumber);
+
+        if(optionNumber == Option.Name.OBSERVE && MessageCode.isRequest(this.getMessageCode())
+            && option.getValue().length > 0){
+
+            throw new InvalidOptionException(optionNumber, "Maximum length for option no. 6 in requests is 0");
+        }
 
         for(int containedOption : options.keySet()){
             if(Option.mutuallyExcludes(containedOption, optionNumber))

@@ -57,6 +57,7 @@ import de.uniluebeck.itm.ncoap.message.options.Option;
 
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
@@ -130,7 +131,7 @@ public interface Webservice<T> {
      */
     public void setScheduledExecutorService(ScheduledExecutorService executorService);
 
-    public void setListeningExecutorService(ListeningExecutorService listeningExecutorService);
+    //public void setListeningExecutorService(ListeningExecutorService listeningExecutorService);
 
     /**
      * Returns the {@link ScheduledExecutorService} instance which is used to schedule and execute any
@@ -141,7 +142,7 @@ public interface Webservice<T> {
      */
     public ScheduledExecutorService getScheduledExecutorService();
 
-    public ListeningExecutorService getListeningExecutorService();
+    //public ListeningExecutorService getListeningExecutorService();
 
     /**
      * The max-age value represents the validity period (in seconds) of the actual status. The nCoap framework uses
@@ -154,6 +155,12 @@ public interface Webservice<T> {
      */
     public long getMaxAge();
 
+    /**
+     * Returns the actual ETAG, i.e. hashvalue, on the resource status (not the payload!)
+     *
+     * @return the actual ETAG, i.e. hashvalue, on the resource status (not the payload!)
+     */
+    public byte[] getEtag();
 
     /**
      * This method is called by the nCoAP framework when this {@link Webservice} is removed from the
@@ -192,7 +199,8 @@ public interface Webservice<T> {
     @Override
     public int hashCode();
 
-    public byte[] getEtag();
+
+
 
     /**
      * Sets the length of the {@link Option.Name#ETAG} that is automatically set by the nCoAP framework for outgoing

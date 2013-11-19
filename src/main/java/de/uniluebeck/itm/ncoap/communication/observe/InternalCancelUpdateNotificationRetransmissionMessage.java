@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -22,39 +22,42 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uniluebeck.itm.ncoap.communication.observe;
 
+import java.net.InetSocketAddress;
+
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
-import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 
 /**
-* This internal message is sent downstream when there is a new {@link ObservableWebservice} instance registered
-* on the {@link CoapServerApplication} instance
+* This internal message is sent upstream when a confirmable update notification was re-transmitted due to a missing
+* acknowledgement from the observer.
 *
-* @author Oliver Kleine
+* @author Oliver Kleine, Stefan Hueske
 */
-public class InternalObservableResourceRegistrationMessage {
+public class InternalCancelUpdateNotificationRetransmissionMessage {
 
-    private ObservableWebservice webservice;
+    private InetSocketAddress remoteSocketAddress;
+    private int messageID;
 
-    /**
-     * @param webservice the newly registered {@link ObservableWebservice} instance
-     */
-    public InternalObservableResourceRegistrationMessage(ObservableWebservice webservice){
-        this.webservice = webservice;
+
+    public InternalCancelUpdateNotificationRetransmissionMessage(InetSocketAddress remoteSocketAddress,
+                                                                 int messageID) {
+
+        this.remoteSocketAddress = remoteSocketAddress;
+        this.messageID = messageID;
     }
 
-    /**
-     * Returns the newly registered {@link ObservableWebservice} instance
-     * @return the newly registered {@link ObservableWebservice} instance
-     */
-    public ObservableWebservice getWebservice() {
-        return webservice;
+    public InetSocketAddress getRemoteSocketAddress() {
+        return this.remoteSocketAddress;
+    }
+
+    public int getMessageID(){
+        return this.messageID;
     }
 
     @Override
     public String toString(){
-        return "[ObservableResourceRegistration] Path: " + webservice.getPath();
+        return "[InternalCancelUpdateNotificationRetransmissionMessage] observer: " + this.getRemoteSocketAddress()
+                + ", messageID: " + this.getMessageID();
     }
 }

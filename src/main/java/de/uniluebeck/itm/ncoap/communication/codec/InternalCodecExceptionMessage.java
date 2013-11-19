@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.ncoap.communication;
+package de.uniluebeck.itm.ncoap.communication.codec;
 
 /**
  * Created with IntelliJ IDEA.
@@ -7,15 +7,15 @@ package de.uniluebeck.itm.ncoap.communication;
  * Time: 12:28
  * To change this template use File | Settings | File Templates.
  */
-public class InternalExceptionMessage {
+public class InternalCodecExceptionMessage {
 
     private final int messageType;
     private final int messageCode;
     private final int messageID;
     private final long token;
-    private Throwable cause;
+    private final Throwable cause;
 
-    public InternalExceptionMessage(int messageType, int messageCode, int messageID, long token, Throwable cause){
+    public InternalCodecExceptionMessage(int messageType, int messageCode, int messageID, long token, Throwable cause){
         this.messageType = messageType;
         this.messageCode = messageCode;
         this.messageID = messageID;
