@@ -91,7 +91,7 @@ public class AcceptedContentFormatNotSupportedException extends Exception {
      * @param contentFormats the integer values representing the content formats that are not supported
      */
     public AcceptedContentFormatNotSupportedException(long... contentFormats){
-        super("Mediatype(s) not supported: " + contentFormats);
+        super();
 
         unsupportedContentFormats = new HashSet<>();
         for(long contentFormat : unsupportedContentFormats){
@@ -105,6 +105,11 @@ public class AcceptedContentFormatNotSupportedException extends Exception {
      */
     public Set<Long> getUnsupportedContentFormats() {
         return this.unsupportedContentFormats;
+    }
+
+    @Override
+    public String getMessage(){
+        return "Accepted Content Format(s) not supported: " + getUnsupportedContentFormatsAsString();
     }
 
     public String getUnsupportedContentFormatsAsString(){

@@ -268,6 +268,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                     responseFuture.setException(e);
                 }
             }
+
+            return;
         }
 
         if(coapRequest.getMessageCodeName() == MessageCode.Name.DELETE){
