@@ -1,4 +1,28 @@
 /**
+ * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * All rights reserved
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+/**
 * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
 * All rights reserved
 *
@@ -55,7 +79,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.ncoap.application.server.webservice.ContentFormatNotSupportedException;
+import de.uniluebeck.itm.ncoap.application.Token;
+import de.uniluebeck.itm.ncoap.application.server.webservice.AcceptedContentFormatNotSupportedException;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
@@ -74,7 +99,6 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -222,6 +246,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         responseFuture.addListener(new CoapResponseSender(responseFuture, coapRequest, webservice, ctx,
                 remoteSocketAddress), listeningExecutorService);
 
+
         //Write error response if no such web service exists
         if(webservice == null){
 
@@ -242,6 +267,27 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                     log.error("This should never happen.", e);
                     responseFuture.setException(e);
                 }
+            }
+        }
+
+        if(coapRequest.getMessageCodeName() == MessageCode.Name.DELETE){
+            try{
+                log.info("Webservice to be deleted {}", webservice.getPath());
+                if(webservice.allowsDelete()){
+                    if(this.removeService(webservice.getPath()))
+                        log.info("Successfully deleted webservice {}", webservice.getPath());
+                    else
+                        log.error("Could not delete webservice {}", webservice.getPath());
+
+                    webservice.shutdown();
+
+                    CoapResponse coapResponse = new CoapResponse(MessageCode.Name.DELETED_202);
+                    responseFuture.set(coapResponse);
+                }
+            }
+            catch (Exception e) {
+                log.error("This should never happen.", e);
+                responseFuture.setException(e);
             }
         }
 
@@ -393,7 +439,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 log.debug("Response for token {} successfully sent to recipient {}.",
-                        coapResponse.getTokenAsHexString(), remoteAddress);
+                        Token.toHexString(coapResponse.getToken().getBytes()), remoteAddress);
             }
         });
 
@@ -594,46 +640,36 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
                 }
 
-                //Sets the path of the service this response came from
-                //coapResponse.setServicePath(webService.getPath());
-
                 //Set message ID and token to match the request
                 coapResponse.setMessageID(coapRequest.getMessageID());
                 coapResponse.setToken(coapRequest.getToken());
-
-
-//                        //Set content type if there is payload but no content type
-//                        if(coapResponse.getContent().readableBytes() > 0 &&
-//                                coapResponse.getContentFormat() == ContentFormat.Name.UNDEFINED)
-//                            coapResponse.setContentType(MediaType.TEXT_PLAIN_UTF8);
-
-//                        //Set observe response option if requested
-//                        if(webService instanceof ObservableWebservice && !coapRequest.getOption(OBSERVE_REQUEST).isEmpty())
-//                            if(!coapResponse.getMessageCode().isErrorMessage())
-//                                coapResponse.setObserveOptionValue(0);
 
             }
 
             catch (Exception ex) {
                 try {
-                    if(ex instanceof ExecutionException && ex.getCause() instanceof ContentFormatNotSupportedException){
-                        coapResponse = new CoapResponse(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415);
-                        coapResponse.setMessageID(coapRequest.getMessageID());
-                        coapResponse.setToken(coapRequest.getToken());
-                        coapResponse.setContent(ex.getCause().getMessage().getBytes(CoapMessage.CHARSET));
+                    if(ex instanceof ExecutionException
+                            && ex.getCause() instanceof AcceptedContentFormatNotSupportedException){
+
+                        AcceptedContentFormatNotSupportedException ex1 =
+                                (AcceptedContentFormatNotSupportedException) ex.getCause();
+
+                        coapResponse = new CoapResponse(MessageCode.Name.NOT_ACCEPTABLE_406);
+                        coapResponse.setContent(ex1.getMessage().getBytes(CoapMessage.CHARSET));
                     }
                     else{
                         log.error("Unexpected exception!", ex);
 
                         coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-                        coapResponse.setMessageID(coapRequest.getMessageID());
-                        coapResponse.setToken(coapRequest.getToken());
-                        //coapResponse.setServicePath(webService.getPath());
                         StringWriter errors = new StringWriter();
                         ex.printStackTrace(new PrintWriter(errors));
                         coapResponse.setContent(errors.toString().getBytes(CoapMessage.CHARSET));
                     }
-                } catch (Exception e) {
+
+                    coapResponse.setMessageID(coapRequest.getMessageID());
+                    coapResponse.setToken(coapRequest.getToken());
+                }
+                catch (Exception e) {
                     log.error("This should never happen.", e);
                     return;
                 }

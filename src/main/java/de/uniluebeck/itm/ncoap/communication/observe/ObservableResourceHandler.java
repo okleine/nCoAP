@@ -1,8 +1,33 @@
+/**
+ * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * All rights reserved
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package de.uniluebeck.itm.ncoap.communication.observe;
 
 import com.google.common.collect.HashBasedTable;
+import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
-import de.uniluebeck.itm.ncoap.application.server.webservice.ContentFormatNotSupportedException;
+import de.uniluebeck.itm.ncoap.application.server.webservice.AcceptedContentFormatNotSupportedException;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.message.*;
@@ -31,7 +56,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     //This table is to relate the first response on a observation request with the service path
-    private HashBasedTable<InetSocketAddress, Long, String> observationsPerToken;
+    private HashBasedTable<InetSocketAddress, Token, String> observationsPerToken;
 
     //This table is to relate the observers socket address and the service path to a running observation
     private HashBasedTable<InetSocketAddress, String, ObservationParameter> observationsPerPath;
@@ -101,7 +126,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-            long token = coapResponse.getToken();
+            Token token = coapResponse.getToken();
             int messageID = coapResponse.getMessageID();
 
             String webservicePath = this.observationsPerToken.get(remoteSocketAddress, token);
@@ -112,7 +137,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                     if(!this.observationsPerPath.contains(remoteSocketAddress, webservicePath)){
                         //This is a new observation
                         log.debug("Start observation of service {} (observer: {}, token: {}, messageID: {})",
-                                new Object[]{webservicePath, remoteSocketAddress, TokenFactory.toHexString(token),
+                                new Object[]{webservicePath, remoteSocketAddress, Token.toHexString(token.getBytes()),
                                              messageID
                                 });
 
@@ -125,7 +150,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
                     else{
                         log.debug("Update observation of service {} (observer: {}, token: {}, messageID: {})",
-                                new Object[]{webservicePath, remoteSocketAddress, TokenFactory.toHexString(token),
+                                new Object[]{webservicePath, remoteSocketAddress, Token.toHexString(token.getBytes()),
                                              messageID
                                 });
 
@@ -151,7 +176,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         ctx.sendDownstream(me);
     }
 
-    private synchronized void updateLatestMessageID(InetSocketAddress remoteSocketAddress, long token, int messageID){
+    private synchronized void updateLatestMessageID(InetSocketAddress remoteSocketAddress, Token token, int messageID){
         String servicePath = this.observationsPerToken.get(remoteSocketAddress, token);
         ObservationParameter observationParameter = this.observationsPerPath.get(remoteSocketAddress, servicePath);
 
@@ -189,6 +214,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                 CoapResponse updateNotification = new CoapResponse(MessageCode.Name.CONTENT_205);
                 updateNotification.setMessageType(webservice.getMessageTypeForUpdateNotifications().getNumber());
                 updateNotification.setToken(observationParameter.getToken());
+                updateNotification.setEtag(webservice.getEtag());
                 updateNotification.setObservationSequenceNumber(observationParameter.getNotificationCount());
                 updateNotification.setContent(serializedResourceStatus, contentFormat);
 
@@ -197,7 +223,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                 ), 0, TimeUnit.MILLISECONDS);
             }
 
-            catch (ContentFormatNotSupportedException e) {
+            catch (AcceptedContentFormatNotSupportedException e) {
                 handleContentFormatNotSupportedException(remoteSocketAddress, observationParameter, e);
                 continue;
             }
@@ -210,9 +236,9 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
     }
 
     private void handleContentFormatNotSupportedException(InetSocketAddress remoteSocketAddress,
-                ObservationParameter observationParameter, ContentFormatNotSupportedException e){
+                ObservationParameter observationParameter, AcceptedContentFormatNotSupportedException e){
         try {
-            CoapResponse updateNotification = new CoapResponse(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415);
+            CoapResponse updateNotification = new CoapResponse(MessageCode.Name.NOT_ACCEPTABLE_406);
             String message = "Content Format No. " + e.getUnsupportedContentFormatsAsString();
             updateNotification.setContent(message.getBytes(CoapMessage.CHARSET));
 
@@ -236,7 +262,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
 
     private synchronized void stopObservation(ChannelHandlerContext ctx, InetSocketAddress remoteSocketAddress,
-                                                 long token){
+                                                 Token token){
 
         String servicePath = this.observationsPerToken.remove(remoteSocketAddress, token);
 
@@ -265,12 +291,12 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
             log.info("Removed {} as observer for service {}", remoteSocketAddress, path);
     }
 
-    private synchronized void addObservationPerToken(InetSocketAddress remoteSocketAddress, long token,
+    private synchronized void addObservationPerToken(InetSocketAddress remoteSocketAddress, Token token,
                                                      String webservicePath){
 
         this.observationsPerToken.put(remoteSocketAddress, token, webservicePath);
         log.info("Received new observation request from {} for service {} with token {}",
-                new Object[]{remoteSocketAddress, webservicePath, TokenFactory.toHexString(token)});
+                new Object[]{remoteSocketAddress, webservicePath, Token.toHexString(token.getBytes())});
     }
 
 

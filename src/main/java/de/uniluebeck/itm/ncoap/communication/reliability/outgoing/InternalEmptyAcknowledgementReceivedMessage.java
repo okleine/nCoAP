@@ -5,7 +5,7 @@
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *
- *  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
  *    disclaimer.
  *
  *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -21,9 +21,10 @@
  * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+ */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
+import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,26 +39,26 @@ import org.slf4j.LoggerFactory;
 public class InternalEmptyAcknowledgementReceivedMessage {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
-    private long token;
+    private Token token;
 
     /**
      * @param token the token of the confirmed message
      */
-    public InternalEmptyAcknowledgementReceivedMessage(long token){
+    public InternalEmptyAcknowledgementReceivedMessage(Token token){
         this.token = token;
-        log.debug("Internal acknowledgement message created for token {}.", TokenFactory.toHexString(token));
+        log.debug("Internal acknowledgement message created for token {}.", Token.toHexString(token.getBytes()));
     }
 
     /**
      * Returns the token of the confirmed message
      * @return the token of the confirmed message
      */
-    public long getToken(){
+    public Token getToken(){
         return token;
     }
 
     @Override
     public String toString(){
-        return "InternalEmptyAcknowledgementReceivedMessage: " + TokenFactory.toHexString(token) + " (token)";
+        return "InternalEmptyAcknowledgementReceivedMessage: " + Token.toHexString(token.getBytes()) + " (token)";
     }
 }

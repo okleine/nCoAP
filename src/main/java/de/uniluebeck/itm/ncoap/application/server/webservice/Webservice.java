@@ -173,6 +173,8 @@ public interface Webservice<T> {
      */
     public void shutdown();
 
+    public boolean allowsDelete();
+
     /**
      * Implementing classes must provide this method such that it returns <code>true</code> if
      * <ul>

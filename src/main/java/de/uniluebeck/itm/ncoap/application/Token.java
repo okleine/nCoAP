@@ -22,17 +22,52 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.client;
+package de.uniluebeck.itm.ncoap.application;
+
+import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
+
+import java.util.Arrays;
 
 /**
  * Created with IntelliJ IDEA.
  * User: olli
- * Date: 18.11.13
- * Time: 12:15
+ * Date: 19.11.13
+ * Time: 18:35
  * To change this template use File | Settings | File Templates.
  */
-public interface CodecExceptionReceiver {
+public class Token {
 
-    public void handleCodecException(Throwable excpetion);
+    private byte[] token;
 
+    public Token(byte[] token){
+        this.token = token;
+    }
+
+    public byte[] getBytes(){
+        return this.token;
+    }
+
+    @Override
+    public boolean equals(Object object){
+        if(object == null || (!(object instanceof Token)))
+            return false;
+
+        Token other = (Token) object;
+        return Arrays.equals(this.getBytes(), other.getBytes());
+    }
+
+    @Override
+    public int hashCode(){
+        return Ints.fromByteArray(Bytes.concat(token, new byte[4]));
+    }
+
+    public static String toHexString(byte[] token){
+        StringBuffer result = new StringBuffer();
+        result.append("0x");
+        for(int i = 0; i < token.length; i++)
+            result.append(Integer.toHexString(token[i] & 0xFF));
+
+        return result.toString().toUpperCase();
+    }
 }

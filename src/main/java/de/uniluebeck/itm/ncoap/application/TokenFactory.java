@@ -25,12 +25,10 @@
 
 package de.uniluebeck.itm.ncoap.application;
 
-import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
 import java.util.*;
 
 /**
@@ -45,62 +43,58 @@ public class TokenFactory {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private Random random = new Random(System.currentTimeMillis());
-    private Set<Long> usedTokens = Collections.synchronizedSet(new HashSet<Long>());
+    private Set<Token> usedTokens = Collections.synchronizedSet(new HashSet<Token>());
 
     /**
      * Returns the next token to be used
      * @return the next token to be used
      */
-    public long getNextToken(){
+    public Token getNextToken(){
+        byte[] nextToken;
         //create new token
-        long nextToken;
         do
-            nextToken = random.nextLong();
-        while(!usedTokens.add(nextToken));
+            nextToken = Longs.toByteArray(random.nextLong());
+        while(!usedTokens.add(new Token(nextToken)));
 
-        log.debug("Added token: {} (Now {} tokens in use).", toHexString(nextToken), usedTokens.size());
+        log.debug("Added token: {} (Now {} tokens in use).", Token.toHexString(nextToken), usedTokens.size());
 
-        return nextToken;
+        return new Token(nextToken);
     }
 
     /**
      * Pass the token back to make it re-usable for upcoming requests
      * @param token the token not used anymore
      */
-    public void passBackToken(long token){
+    public void passBackToken(Token token){
 
         if(usedTokens.remove(token))
-            log.debug("Passed back token: {} (Now {} tokens in use.)", toHexString(token), usedTokens.size());
+            log.debug("Passed back token: {} (Now {} tokens in use.)", Token.toHexString(token.getBytes()),
+                    usedTokens.size());
         else
-            log.warn("Could not pass back token {}. Still {} tokens in use.", toHexString(token), usedTokens.size());
+            log.warn("Could not pass back token {}. Still {} tokens in use.", Token.toHexString(token.getBytes()),
+                    usedTokens.size());
     }
 
-    public static long fromByteArray(byte[] token){
-        if(token.length == 0)
-            return 0;
+//    public static long fromByteArray(byte[] token){
+//        if(token.length == 0)
+//            return 0;
+//
+//        return Longs.fromByteArray(Bytes.concat(new byte[8 - token.length], token));
+//    }
 
-        return Longs.fromByteArray(Bytes.concat(new byte[8 - token.length], token));
-    }
+//    public static byte[] toByteArray(long token){
+//        if(token == 0)
+//            return new byte[0];
+//
+//        byte[] tokenBytes = Longs.toByteArray(token);
+//
+//        int index = 0;
+//        while(index < tokenBytes.length - 1 && tokenBytes[index] == 0)
+//            index++;
+//
+//        return Arrays.copyOfRange(tokenBytes, index, tokenBytes.length);
+//    }
 
-    public static byte[] toByteArray(long token){
-        if(token == 0)
-            return new byte[0];
 
-        byte[] tokenBytes = Longs.toByteArray(token);
-
-        int index = 0;
-        while(index < tokenBytes.length - 1 && tokenBytes[index] == 0)
-            index++;
-
-        return Arrays.copyOfRange(tokenBytes, index, tokenBytes.length);
-    }
-
-    public static String toHexString(long token){
-
-        if(token == 0)
-            return "<EMPTY>";
-        else
-            return "0x" + new BigInteger(1, Longs.toByteArray(token)).toString(16).toUpperCase();
-    }
 
 }

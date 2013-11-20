@@ -125,7 +125,7 @@ public class CoapResponse extends CoapMessage {
                     locationPath = locationPath.substring(1);
 
                 for(String pathComponent : locationPath.split("/"))
-                    this.addStringOption(Option.Name.URI_PATH, pathComponent);
+                    this.addStringOption(Option.Name.LOCATION_PATH, pathComponent);
             }
 
             if(locationQuery != null){

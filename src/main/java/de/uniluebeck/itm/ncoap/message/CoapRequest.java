@@ -452,6 +452,20 @@ public class CoapRequest extends CoapMessage {
         return result;
     }
 
+    public long[] getAcceptedContentFormatsAsArray(){
+        Set<Long> tmp = getAcceptedContentFormats();
+        long[] result = new long[tmp.size()];
+
+        int i = 0;
+        Iterator<Long> iterator = tmp.iterator();
+        while(iterator.hasNext()){
+            result[i] = iterator.next();
+            i++;
+        }
+
+        return result;
+    }
+
     /**
      * Returns the value of the Proxy URI option if such an option is present in this {@link CoapRequest}. If no such
      * option is present but a Proxy Scheme option, then the returned {@link URI} is reconstructed from the

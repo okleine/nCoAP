@@ -168,7 +168,7 @@
 //            try {
 //                payload = getSerializedResourceStatus(MediaType.TEXT_PLAIN_UTF8);
 //            }
-//            catch (ContentFormatNotSupportedException e) {
+//            catch (AcceptedContentFormatNotSupportedException e) {
 //                log.error("Unsupported media type");
 //            }
 //        }
@@ -177,7 +177,7 @@
 //                try{
 //                    payload = getSerializedResourceStatus(mediaType);
 //                }
-//                catch (ContentFormatNotSupportedException e) {
+//                catch (AcceptedContentFormatNotSupportedException e) {
 //                    log.debug("Unsupported media type");
 //                }
 //                if(payload != null)
@@ -196,7 +196,7 @@
 //    }
 //
 //    @Override
-//    public byte[] getSerializedResourceStatus(OptionRegistry.MediaType mediaType) throws ContentFormatNotSupportedException{
+//    public byte[] getSerializedResourceStatus(OptionRegistry.MediaType mediaType) throws AcceptedContentFormatNotSupportedException{
 //        return ("Status #" + getResourceStatus()).getBytes(Charset.forName("UTF-8"));
 //    }
 //}

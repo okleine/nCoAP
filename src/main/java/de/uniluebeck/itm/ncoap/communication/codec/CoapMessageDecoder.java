@@ -47,6 +47,7 @@
 
 package de.uniluebeck.itm.ncoap.communication.codec;
 
+import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
@@ -128,10 +129,10 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
         if(buffer.readableBytes() < tokenLength){
             byte[] tokenBytes = new byte[buffer.readableBytes()];
             buffer.readBytes(tokenBytes);
-            long token =  TokenFactory.fromByteArray(tokenBytes);
+            Token token =  new Token(tokenBytes);
             return new InternalCodecExceptionMessage(messageType, messageCode, messageID, token,
                     new DecodingException(new InvalidHeaderException("TKL header value: " + tokenLength +
-                            ", Remaining bytes: " + TokenFactory.toHexString(token) + ".")
+                            ", Remaining bytes: " + Token.toHexString(token.getBytes()) + ".")
             ));
         }
 
@@ -139,11 +140,11 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
         if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH){
             byte[] tokenBytes = new byte[CoapMessage.MAX_TOKEN_LENGTH];
             buffer.readBytes(tokenBytes);
-            long token =  TokenFactory.fromByteArray(tokenBytes);
+            Token token =  new Token(tokenBytes);
             return new InternalCodecExceptionMessage(messageType, messageCode, messageID, token, new DecodingException(
                     new InvalidMessageException("TKL value to large (max: " + CoapMessage.MAX_TOKEN_LENGTH
                             + ", actual: " + tokenLength + "). First 8 bytes of token: "
-                            + TokenFactory.toHexString(token))
+                            + Token.toHexString(token.getBytes()))
             ));
         }
 
@@ -153,7 +154,7 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
 
         //Check whether the protocol version is supported (=1)
         if(version != CoapMessage.PROTOCOL_VERSION)
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, new Token(token),
                     new DecodingException(new InvalidHeaderException("Unsupported CoAP protocol version: " + version)
             ));
 
@@ -164,7 +165,7 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
                 String message = "Invalid TKL header value for empty message: " + tokenLength;
                 log.warn(message);
                 return new InternalCodecExceptionMessage(messageType, messageCode, messageID,
-                        TokenFactory.fromByteArray(token), new DecodingException(new InvalidHeaderException(message))
+                        new Token(token), new DecodingException(new InvalidHeaderException(message))
                 );
             }
 
@@ -173,7 +174,7 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
                         + " (actual remaining bytes after header: " + buffer.readableBytes() + ")";
                 log.warn(message);
                 return new InternalCodecExceptionMessage(messageType, messageCode, messageID,
-                        TokenFactory.fromByteArray(token), new DecodingException(new InvalidMessageException(message))
+                        new Token(token), new DecodingException(new InvalidMessageException(message))
                 );
             }
         }
@@ -181,11 +182,10 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
         //Create CoAP message object
         CoapMessage coapMessage = null;
         try {
-            coapMessage = CoapMessage.createCoapMessage(messageType, messageCode, messageID,
-                    TokenFactory.fromByteArray(token));
+            coapMessage = CoapMessage.createCoapMessage(messageType, messageCode, messageID, new Token(token));
         }
         catch (InvalidHeaderException e) {
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, new Token(token),
                     new DecodingException(e));
         }
 
@@ -203,7 +203,7 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
                 setOptions(ctx, coapMessage, buffer, remoteSocketAddress);
         }
         catch (InvalidOptionException e){
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, new Token(token),
                     new DecodingException(e));
         }
 
@@ -214,7 +214,7 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
             coapMessage.setContent(buffer);
         }
         catch (InvalidMessageException e) {
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, TokenFactory.fromByteArray(token),
+            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, new Token(token),
                     new DecodingException(e));
         }
 

@@ -30,7 +30,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.ncoap.application.TokenFactory;
+import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -142,12 +142,12 @@ public abstract class CoapMessage {
     private int messageType;
     private int messageCode;
     private int messageID;
-    private long token;
+    private Token token;
 
     protected SetMultimap<Integer, Option> options;
     private ChannelBuffer content;
 
-    public static CoapMessage createCoapMessage(int messageType, int messageCode, int messageID, long token)
+    public static CoapMessage createCoapMessage(int messageType, int messageCode, int messageID, Token token)
             throws InvalidHeaderException {
 
         if(MessageCode.isRequest(messageCode)){
@@ -156,6 +156,7 @@ public abstract class CoapMessage {
             coapRequest.setToken(token);
             return coapRequest;
         }
+
         else if(MessageCode.isResponse(messageCode)){
             CoapResponse coapResponse = new  CoapResponse(messageCode);
             coapResponse.setMessageType(messageType);
@@ -163,18 +164,19 @@ public abstract class CoapMessage {
             coapResponse.setToken(token);
             return coapResponse;
         }
+
         else if(messageCode == MessageCode.Name.EMPTY.getNumber()){
             if(messageType == MessageType.Name.ACK.getNumber()){
-                if(token == 0)
+                if(token.getBytes().length == 0)
                     return createEmptyAcknowledgement(messageID);
                 else
-                    throw new InvalidHeaderException("Empty ACK must have token value 0");
+                    throw new InvalidHeaderException("Empty ACK must have no token, i.e. token of length 0");
             }
             else if(messageType == MessageType.Name.RST.getNumber()){
-                if(token == 0)
+                if(token.getBytes().length == 0)
                     return createEmptyReset(messageID);
                 else
-                    throw new InvalidHeaderException("Empty RST must have token value 0");
+                    throw new InvalidHeaderException("Empty RST must have no token, i.e. token of length 0");
             }
             else{
                 throw new InvalidHeaderException("Code EMPTY but neither ACK or RST.");
@@ -186,7 +188,7 @@ public abstract class CoapMessage {
 
     }
 
-    protected CoapMessage(int messageType, int messageCode, int messageID, long token)
+    protected CoapMessage(int messageType, int messageCode, int messageID, Token token)
             throws InvalidHeaderException {
 
         if(!MessageType.Name.isMessageType(messageType))
@@ -211,12 +213,12 @@ public abstract class CoapMessage {
 
 
     protected CoapMessage(int messageType, int messageCode) throws InvalidHeaderException {
-        this(messageType, messageCode, MESSAGE_ID_UNDEFINED, 0);
+        this(messageType, messageCode, MESSAGE_ID_UNDEFINED, new Token(new byte[0]));
     }
 
 
     protected CoapMessage(int messageCode) throws InvalidHeaderException {
-        this(MessageType.Name.UNKNOWN.getNumber(), messageCode, MESSAGE_ID_UNDEFINED, 0);
+        this(MessageType.Name.UNKNOWN.getNumber(), messageCode, MESSAGE_ID_UNDEFINED, new Token(new byte[0]));
         this.messageCode = messageCode;
     }
 
@@ -230,7 +232,8 @@ public abstract class CoapMessage {
      * @throws InvalidHeaderException if the given message ID is out of the allowed range
      */
     public static CoapMessage createEmptyReset(int messageID) throws InvalidHeaderException {
-        return new CoapMessage(MessageType.Name.RST.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID, 0){};
+        return new CoapMessage(MessageType.Name.RST.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
+                new Token(new byte[0])){};
     }
 
     /**
@@ -242,7 +245,8 @@ public abstract class CoapMessage {
      * @throws InvalidHeaderException if the given message ID is out of the allowed range
      */
     public static CoapMessage createEmptyAcknowledgement(int messageID) throws InvalidHeaderException {
-        return new CoapMessage(MessageType.Name.ACK.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID, 0){};
+        return new CoapMessage(MessageType.Name.ACK.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
+                new Token(new byte[0])){};
     }
 
     /**
@@ -424,13 +428,13 @@ public abstract class CoapMessage {
      *
      * options per message.
      */
-    public void setToken(long token){
+    public void setToken(Token token){
         this.token = token;
     }
 
-    public byte[] getTokenAsByteArray(){
-        return TokenFactory.toByteArray(token);
-    }
+//    public byte[] getTokenAsByteArray(){
+//        return TokenFactory.toByteArray(token);
+//    }
 //    /**
 //     * Returns the value of the token option or an empty byte array b with <messageCode>(b.length == 0) == true</messageCode>.
 //     * @return the value of the messages token option
@@ -443,14 +447,14 @@ public abstract class CoapMessage {
      * Returns the value
      * @return
      */
-    public long getToken(){
+    public Token getToken(){
         return this.token;
     }
 
 
-    public String getTokenAsHexString(){
-        return TokenFactory.toHexString(getToken());
-    }
+//    public String getTokenAsHexString(){
+//        return TokenFactory.toHexString(getToken());
+//    }
 
     /**
      * Returns the number representing the format of the content or {@link ContentFormat.Name#UNDEFINED} if no such
@@ -659,8 +663,8 @@ public abstract class CoapMessage {
 
         //Header + Token
         result.append("CoAP Message: [Header: (V) " + getProtocolVersion() + ", (T) " + getMessageTypeName() + ", (TKL) "
-            + getTokenAsByteArray().length + ", (C) " + getMessageCodeName() + ", (ID) " + getMessageID() + " | (Token) "
-            + TokenFactory.toHexString(token) + " | ");
+            + token.getBytes().length + ", (C) " + getMessageCodeName() + ", (ID) " + getMessageID() + " | (Token) "
+            + Token.toHexString(token.getBytes()) + " | ");
 
         //Options
         result.append("Options:");

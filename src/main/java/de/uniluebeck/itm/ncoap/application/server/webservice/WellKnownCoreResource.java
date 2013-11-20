@@ -73,7 +73,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * @param initialStatus the Map containing all available path
      */
     public WellKnownCoreResource(Map<String, Webservice> initialStatus) {
-        super("/.well-known/core", initialStatus, 100000);
+        super("/.well-known/core", initialStatus, NotObservableWebservice.SECONDS_PER_YEAR);
     }
 
     /**
@@ -119,7 +119,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
     }
 
 //    @Override
-    public byte[] getSerializedResourceStatus(long contentFormat) throws ContentFormatNotSupportedException {
+    public byte[] getSerializedResourceStatus(long contentFormat) throws AcceptedContentFormatNotSupportedException {
         StringBuffer buffer = new StringBuffer();
 
         //TODO make this real CoRE link format
@@ -136,5 +136,10 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
     @Override
     public void shutdown() {
         //nothing to do here...
+    }
+
+    @Override
+    public boolean allowsDelete() {
+        return false;
     }
 }

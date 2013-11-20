@@ -141,7 +141,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      *
      * @return the serialized resource status
      */
-    public abstract byte[] getSerializedResourceStatus(long contentFormat) throws ContentFormatNotSupportedException;
+    public abstract byte[] getSerializedResourceStatus(long contentFormat) throws AcceptedContentFormatNotSupportedException;
 
 
     /**

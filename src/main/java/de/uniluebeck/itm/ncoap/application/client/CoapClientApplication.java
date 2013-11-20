@@ -27,6 +27,7 @@ package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
@@ -58,7 +59,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private TokenFactory tokenFactory = new TokenFactory();
-    private HashBasedTable<InetSocketAddress, Long, CoapResponseProcessor> responseProcessors =
+    private HashBasedTable<InetSocketAddress, Token, CoapResponseProcessor> responseProcessors =
             HashBasedTable.create();
 
 //    private HashBasedTable<Long, InetSocketAddress, ScheduledFuture> observationTimeouts =
@@ -171,23 +172,23 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         future.awaitUninterruptibly();
     }
 
-    private synchronized void addResponseCallback(InetSocketAddress remoteSocketAddress, long token,
+    private synchronized void addResponseCallback(InetSocketAddress remoteSocketAddress, Token token,
                                                   CoapResponseProcessor coapResponseProcessor){
 
         responseProcessors.put(remoteSocketAddress, token, coapResponseProcessor);
-        log.debug("Added response processor for token {} from {}.", TokenFactory.toHexString(token),
+        log.debug("Added response processor for token {} from {}.", Token.toHexString(token.getBytes()),
                 remoteSocketAddress);
         log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
     }
 
 
     private synchronized CoapResponseProcessor removeResponseCallback(InetSocketAddress remoteSocketAddress,
-                                                                      long token){
+                                                                      Token token){
 
         CoapResponseProcessor result = responseProcessors.remove(remoteSocketAddress, token);
 
         if(result != null)
-            log.debug("Removed response processor for token {} from {}.", TokenFactory.toHexString(token),
+            log.debug("Removed response processor for token {} from {}.", Token.toHexString(token.getBytes()),
                     remoteSocketAddress);
 
         log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
@@ -257,7 +258,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 ((TransmissionInformationProcessor) callback).messageTransmitted();
             else
                 log.warn("No TransmissionInformationProcessor found for token {} and remote address {}",
-                        TokenFactory.toHexString(retransmissionMessage.getToken()),
+                        Token.toHexString(retransmissionMessage.getToken().getBytes()),
                         retransmissionMessage.getRemoteAddress());
 
             me.getFuture().setSuccess();
@@ -273,7 +274,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 ((CodecExceptionReceiver) callback).handleCodecException(message.getCause());
             else
                 log.info("No CodecExceptionReceiver found for token {} and remote address {}",
-                        TokenFactory.toHexString(message.getToken()), me.getRemoteAddress());
+                        Token.toHexString(message.getToken().getBytes()), me.getRemoteAddress());
 
             me.getFuture().setSuccess();
             return;
@@ -333,13 +334,13 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 //            }
 
             if(responseProcessor != null){
-                log.debug("Callback found for token {}.", TokenFactory.toHexString(coapResponse.getToken()));
+                log.debug("Callback found for token {}.", Token.toHexString(coapResponse.getToken().getBytes()));
                 responseProcessor.processCoapResponse(coapResponse);
             }
             else{
-                log.info("No responseProcessor found for token {}.", TokenFactory.toHexString(coapResponse.getToken()));
-                //tokenFactory.passBackToken(coapResponse.getToken());
-            }
+                log.info("No responseProcessor found for token {}.",
+                        Token.toHexString(coapResponse.getToken().getBytes()));
+             }
 
             //pass the token back if it's a normal response (no update-notification)
 //            if(!coapResponse.isUpdateNotification())

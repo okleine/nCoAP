@@ -134,6 +134,10 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
         log.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
 
+        //Add END-OF-OPTIONS marker only if there is payload
+        if(coapMessage.getContent().readableBytes() > 0)
+            encodedMessage.writeByte(255);
+
         //Add CONTENT
         encodedMessage = ChannelBuffers.wrappedBuffer(encodedMessage, coapMessage.getContent());
         log.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
@@ -143,7 +147,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
     protected void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage){
 
-        byte[] token = coapMessage.getTokenAsByteArray();
+        byte[] token = coapMessage.getToken().getBytes();
 
         int encodedHeader = ((coapMessage.getProtocolVersion()  & 0b11)     << 30)
                           | ((coapMessage.getMessageType()      & 0b11)     << 28)
@@ -178,8 +182,6 @@ public class CoapMessageEncoder extends OneToOneEncoder {
                 previousOptionNumber = optionNumber;
             }
         }
-
-        buffer.writeByte(255);
     }
 
 
