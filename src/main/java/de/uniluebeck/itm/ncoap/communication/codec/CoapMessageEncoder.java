@@ -103,7 +103,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         }
 
         CoapMessage coapMessage = (CoapMessage) object;
-        log.debug("CoapMessage to encode: {}", coapMessage);
+        log.info("CoapMessage to be encoded: {}", coapMessage);
 
         if(coapMessage.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED)
             return new InternalCodecExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),

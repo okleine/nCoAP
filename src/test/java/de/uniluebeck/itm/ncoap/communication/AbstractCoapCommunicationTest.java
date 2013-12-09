@@ -50,10 +50,10 @@
 //
 //import de.uniluebeck.itm.ncoap.AbstractCoapTest;
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-//import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableTestWebService;
-//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebService;
 //import org.apache.log4j.*;
 //import org.junit.AfterClass;
 //

@@ -37,16 +37,16 @@ import de.uniluebeck.itm.ncoap.message.CoapResponse;
  */
 public abstract class WebServiceCreator {
 
-    private CoapServerApplication serverApplication;
-
-    public WebServiceCreator(CoapServerApplication serverApplication){
-        this.serverApplication = serverApplication;
-    }
+    private CoapServerApplication coapServerApplication;
 
     public abstract void handleWebServiceCreationRequest(SettableFuture<CoapResponse> responseFuture,
                                                                  CoapRequest coapRequest);
 
-    public CoapServerApplication getServerApplication() {
-        return serverApplication;
+    public final void setCoapServerApplication(CoapServerApplication coapServerApplication){
+        this.coapServerApplication = coapServerApplication;
+    }
+
+    public final CoapServerApplication getCoapServerApplication() {
+        return coapServerApplication;
     }
 }

@@ -25,17 +25,9 @@
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.application.server.webservice.AcceptedContentFormatNotSupportedException;
-import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableWebservice;
-import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -48,79 +40,12 @@ public class DefaultWebServiceCreator extends WebServiceCreator {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    public DefaultWebServiceCreator(CoapServerApplication serverApplication) {
-        super(serverApplication);
-    }
-
     public void handleWebServiceCreationRequest(SettableFuture<CoapResponse> responseFuture,
                                                 CoapRequest coapRequest) {
         try {
 
-            long contentFormat = coapRequest.getContentFormat();
-
-            if(contentFormat == ContentFormat.Name.UNDEFINED){
-                CoapResponse coapResponse = new CoapResponse(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415);
-                coapResponse.setContent("There is no format defined for the content!".getBytes(CoapMessage.CHARSET));
-                responseFuture.set(coapResponse);
-                return;
-            }
-
-            String webservicePath = coapRequest.getUriPath();
-            byte[] content = new byte[coapRequest.getContent().readableBytes()];
-            coapRequest.getContent().readBytes(content);
-
-            Webservice webservice = new NotObservableWebservice<byte[]>(webservicePath, content,
-                    NotObservableWebservice.SECONDS_PER_YEAR){
-
-                private long contentFormat;
-
-                public void setContentFormat(long contentFormat){
-                    this.contentFormat = contentFormat;
-                }
-
-                @Override
-                public void shutdown() {
-                    //Nothing to do here
-                }
-
-                @Override
-                public boolean allowsDelete() {
-                    return true;
-                }
-
-                @Override
-                public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                               InetSocketAddress remoteAddress) {
-
-                    log.info("Created webservice received request!");
-
-                    try{
-                        Set<Long> acceptedContentFormats = coapRequest.getAcceptedContentFormats();
-
-                        if(!(acceptedContentFormats.isEmpty() || acceptedContentFormats.contains(this.contentFormat))){
-                            AcceptedContentFormatNotSupportedException ex =
-                                    new AcceptedContentFormatNotSupportedException(acceptedContentFormats.iterator().next());
-
-                            responseFuture.setException(ex);
-                            return;
-                        }
-
-                        CoapResponse coapResponse = new CoapResponse(MessageCode.Name.CONTENT_205);
-                        coapResponse.setContent(this.getResourceStatus(), contentFormat);
-                        responseFuture.set(coapResponse);
-                    }
-                    catch(Exception e){
-                        log.error("This should never happen!", e);
-                        responseFuture.setException(e);
-                    }
-                }
-            };
-
-            this.getServerApplication().registerService(webservice);
-
-            CoapResponse coapResponse = new CoapResponse(MessageCode.Name.CREATED_201);
-            coapResponse.setLocationURI(new URI(null, null, null, -1, webservicePath, null, null));
-
+            CoapResponse coapResponse = new CoapResponse(MessageCode.Name.METHOD_NOT_ALLOWED_405);
+            coapResponse.setContent("Service creation via PUT is not supported!".getBytes(CoapMessage.CHARSET));
             responseFuture.set(coapResponse);
         }
         catch (Exception e) {

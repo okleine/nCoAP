@@ -37,7 +37,7 @@ public interface EmptyAcknowledgementProcessor {
 
     /**
      * This method is invoked for an incoming empty
-     * acknowledgement. If the client application is e.g. a browser, one could e.g. display a message in the
+     * acknowledgement. If the client plugtest is e.g. a browser, one could e.g. display a message in the
      * browser windows telling the user that the server has received the request but needs some time to
      * process it.
      */

@@ -73,7 +73,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * @param initialStatus the Map containing all available path
      */
     public WellKnownCoreResource(Map<String, Webservice> initialStatus) {
-        super("/.well-known/core", initialStatus, NotObservableWebservice.SECONDS_PER_YEAR);
+        super("/.well-known/core", initialStatus, SECONDS_PER_YEAR);
     }
 
     /**

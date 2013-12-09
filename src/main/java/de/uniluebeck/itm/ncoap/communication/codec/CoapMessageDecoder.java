@@ -48,20 +48,16 @@
 package de.uniluebeck.itm.ncoap.communication.codec;
 
 import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.application.TokenFactory;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
-import de.uniluebeck.itm.ncoap.message.InvalidMessageException;
-import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
-import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
+import de.uniluebeck.itm.ncoap.message.options.OptionException;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import static org.jboss.netty.channel.Channels.fireMessageReceived;
@@ -72,157 +68,164 @@ import static org.jboss.netty.channel.Channels.fireMessageReceived;
 *
 * @author Oliver Kleine
 */
-public class CoapMessageDecoder implements ChannelUpstreamHandler{
+public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
     public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
+
         if (!(evt instanceof MessageEvent)) {
             ctx.sendUpstream(evt);
             return;
         }
 
-        MessageEvent e = (MessageEvent) evt;
-        Object originalMessage = e.getMessage();
-        Object decodedMessage = decode(ctx, e.getChannel(), originalMessage,
-                (InetSocketAddress) e.getRemoteAddress());
+        final MessageEvent messageEvent = (MessageEvent) evt;
+        Object originalMessage = messageEvent.getMessage();
 
-        if (originalMessage == decodedMessage) {
-            ctx.sendUpstream(evt);
+        try{
+            if (!(originalMessage instanceof ChannelBuffer)){
+                ctx.sendUpstream(evt);
+            }
+            else{
+                InetSocketAddress remoteSocketAddress = (InetSocketAddress) messageEvent.getRemoteAddress();
+                CoapMessage coapMessage = decode(remoteSocketAddress, (ChannelBuffer) originalMessage);
+                fireMessageReceived(ctx, coapMessage, remoteSocketAddress);
+            }
         }
-        else if (decodedMessage != null) {
-            fireMessageReceived(ctx, decodedMessage, e.getRemoteAddress());
+        catch(Exception e){
+            messageEvent.getFuture().setSuccess();
+            throw e;
         }
     }
 
 
-    protected Object decode(ChannelHandlerContext ctx, Channel channel, Object object,
-                            InetSocketAddress remoteSocketAddress) throws Exception {
+    private CoapMessage decode(InetSocketAddress remoteSocketAddress, ChannelBuffer buffer)
+            throws InvalidHeaderException, DecodingException {
 
-        //Do nothing but return the given object if it's not an instance of ChannelBuffer
-        if(!(object instanceof ChannelBuffer)){
-            return object;
-        }
-
-        ChannelBuffer buffer = (ChannelBuffer) object;
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4)
-            throw new InvalidHeaderException("Buffer must contain at least readable 4 " +
-                            "bytes (but has " + buffer.readableBytes() + ")");
+            throw new DecodingException(remoteSocketAddress, CoapMessage.MESSAGE_ID_UNDEFINED, new Token(new byte[0]),
+                    new MessageFormatException("Buffer must contain at least 4 "
+                        + "readable bytes (but has " + buffer.readableBytes() + ")"));
 
 
         //Decode the header values
         int encodedHeader = buffer.readInt();
-        int version = (encodedHeader >>> 30) & 0b11;
-        int messageType = (encodedHeader >>> 28) & 0b11;
-        int tokenLength = (encodedHeader >>> 24) & 0b1111;
-        int messageCode = (encodedHeader >>> 16) & 0b11111111;
-        int messageID = encodedHeader & 0b1111111111111111;
+        int version =     (encodedHeader >>> 30) & 0x03;
+        int messageType = (encodedHeader >>> 28) & 0x03;
+        int tokenLength = (encodedHeader >>> 24) & 0x0F;
+        int messageCode = (encodedHeader >>> 16) & 0xFF;
+        int messageID =   (encodedHeader)        & 0xFFFF;
+
 
         log.debug("Decoded Header: (T) {}, (TKL) {}, (C) {}, (ID) {}",
                 new Object[]{messageType, tokenLength, messageCode, messageID});
 
-        //Check whether there are enough unread bytes left to read the token
-        if(buffer.readableBytes() < tokenLength){
-            byte[] tokenBytes = new byte[buffer.readableBytes()];
-            buffer.readBytes(tokenBytes);
-            Token token =  new Token(tokenBytes);
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, token,
-                    new DecodingException(new InvalidHeaderException("TKL header value: " + tokenLength +
-                            ", Remaining bytes: " + Token.toHexString(token.getBytes()) + ".")
-            ));
-        }
+        //Check whether the protocol version is supported (=1)
+        if(version != CoapMessage.PROTOCOL_VERSION)
+            throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
+                new MessageFormatException("Unsupported CoAP protocol version: " + version));
 
         //Check whether TKL indicates a not allowed token length
         if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH){
             byte[] tokenBytes = new byte[CoapMessage.MAX_TOKEN_LENGTH];
             buffer.readBytes(tokenBytes);
             Token token =  new Token(tokenBytes);
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, token, new DecodingException(
-                    new InvalidMessageException("TKL value to large (max: " + CoapMessage.MAX_TOKEN_LENGTH
-                            + ", actual: " + tokenLength + "). First 8 bytes of token: "
-                            + Token.toHexString(token.getBytes()))
-            ));
+
+            throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
+                new MessageFormatException("TKL value to large (max: " + CoapMessage.MAX_TOKEN_LENGTH
+                    + ", actual: " + tokenLength + "). First 8 bytes of token: " + token));
         }
 
-        //Decode the token
+        //Check whether there are enough unread bytes left to read the token
+        if(buffer.readableBytes() < tokenLength){
+            byte[] tokenBytes = new byte[buffer.readableBytes()];
+            buffer.readBytes(tokenBytes);
+            Token token =  new Token(tokenBytes);
+            throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
+                new MessageFormatException("TKL header value: " + tokenLength + ", Remaining bytes: " + token + "."));
+        }
+
+        //Read the token
         byte[] token = new byte[tokenLength];
         buffer.readBytes(token);
 
-        //Check whether the protocol version is supported (=1)
-        if(version != CoapMessage.PROTOCOL_VERSION)
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, new Token(token),
-                    new DecodingException(new InvalidHeaderException("Unsupported CoAP protocol version: " + version)
-            ));
 
         //Check whether message code indicates empty message and either TKL is greater than 0 or there are unread bytes
         //following the header
         if(messageCode == MessageCode.Name.EMPTY.getNumber()){
-            if(tokenLength > 0){
-                String message = "Invalid TKL header value for empty message: " + tokenLength;
-                log.warn(message);
-                return new InternalCodecExceptionMessage(messageType, messageCode, messageID,
-                        new Token(token), new DecodingException(new InvalidHeaderException(message))
-                );
-            }
 
-            if(buffer.readableBytes() > 0){
-                String message = "Empty messages MUST NOT contain anything but the 4 bytes header "
-                        + " (actual remaining bytes after header: " + buffer.readableBytes() + ")";
-                log.warn(message);
-                return new InternalCodecExceptionMessage(messageType, messageCode, messageID,
-                        new Token(token), new DecodingException(new InvalidMessageException(message))
-                );
-            }
-        }
+            if(tokenLength > 0)
+                throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
+                    new MessageFormatException("Invalid TKL header value for empty message: " + tokenLength));
 
-        //Create CoAP message object
-        CoapMessage coapMessage = null;
-        try {
-            coapMessage = CoapMessage.createCoapMessage(messageType, messageCode, messageID, new Token(token));
-        }
-        catch (InvalidHeaderException e) {
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, new Token(token),
-                    new DecodingException(e));
-        }
-
-        //If message code indicates empty message, follow-up bytes (i.e. token, options, and content) are ignored.
-        if(coapMessage.getMessageCode() == MessageCode.Name.EMPTY.getNumber() && buffer.readableBytes() > 0){
             if(buffer.readableBytes() > 0)
-                log.warn("Ignore remaining {} bytes after header that indicates empty message.", buffer.readableBytes());
+                throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
+                    new MessageFormatException("Empty messages MUST NOT contain anything but the 4 bytes "
+                        + "header (actual remaining bytes after header: " + buffer.readableBytes() + ")"));
 
-            return coapMessage;
         }
+
+        //Handle empty message
+        if(messageCode == MessageCode.Name.EMPTY.getNumber()){
+
+            if(messageType == MessageType.Name.ACK.getNumber())
+                return CoapMessage.createEmptyAcknowledgement(messageID);
+
+            else if(messageType == MessageType.Name.RST.getNumber())
+                return CoapMessage.createEmptyReset(messageID);
+
+            else
+                throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
+                    new MessageFormatException("Empty message received which is neither an ACK nor a RST (Type: "
+                        + messageType + ")."));
+
+        }
+
+        //Handle non-empty messages (CON or NON)
+        CoapMessage coapMessage;
+
+        if(MessageCode.isRequest(messageCode))
+            coapMessage = new CoapRequest(messageType, messageCode);
+
+        else if(MessageCode.isResponse(messageCode)){
+            coapMessage = new CoapResponse(messageCode);
+            coapMessage.setMessageType(messageType);
+        }
+
+        else
+            throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
+                new MessageFormatException("Unknown message code: " + messageCode));
+
+
+        coapMessage.setMessageID(messageID);
+        coapMessage.setToken(new Token(token));
+
 
         //Decode and set the options
-        try{
-            if(buffer.readableBytes() > 0)
-                setOptions(ctx, coapMessage, buffer, remoteSocketAddress);
+        if(buffer.readableBytes() > 0){
+            try {
+                setOptions(coapMessage, buffer);
+            }
+            catch (OptionException e) {
+                throw new DecodingException(remoteSocketAddress, messageID, new Token(token), e);
+            }
         }
-        catch (InvalidOptionException e){
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, new Token(token),
-                    new DecodingException(e));
-        }
+
 
         //The remaining bytes (if any) are the messages payload. If there is no payload, reader and writer index are
         //at the same position (buf.readableBytes() == 0).
         buffer.discardReadBytes();
+
         try {
             coapMessage.setContent(buffer);
         }
         catch (InvalidMessageException e) {
-            return new InternalCodecExceptionMessage(messageType, messageCode, messageID, new Token(token),
-                    new DecodingException(e));
-        }
-
-        //TODO Set IP address of local socket (currently [0::] for wildcard address)
-        if(channel != null){
-            InetAddress rcptAddress = ((InetSocketAddress) channel.getLocalAddress()).getAddress();
-            coapMessage.setRecipientAddress(rcptAddress);
-            log.debug("Set receipient address to: " + rcptAddress);
+            log.warn("Message code {} does not allow content. Ignore {} bytes.", coapMessage.getMessageCode(),
+                    buffer.readableBytes());
         }
 
         log.info("Decoded Message: {}", coapMessage);
@@ -231,84 +234,133 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
     }
 
 
-    private void setOptions(ChannelHandlerContext ctx, CoapMessage coapMessage, ChannelBuffer buffer,
-                            InetSocketAddress remoteSocketAddress) throws InvalidOptionException {
+    private void setOptions(CoapMessage coapMessage, ChannelBuffer buffer) throws OptionException {
 
         //Decode the options
-        int previousOption = 0;
+        int previousOptionNumber = 0;
         int firstByte = buffer.readByte() & 0xFF;
 
-        while(firstByte != 255 && buffer.readableBytes() > 0){
+        while(firstByte != 0xFF && buffer.readableBytes() > 0){
             log.debug("First byte: {} ({})", toBinaryString(firstByte), firstByte);
-            int optionDelta = (firstByte & 0xFF) >>> 4;
-            int optionLength = firstByte & 0x0F;
-
+            int optionDelta =   (firstByte & 0xF0) >>> 4;
+            int optionLength =   firstByte & 0x0F;
             log.debug("temp. delta: {}, temp. length {}", optionDelta, optionLength);
+
             if(optionDelta == 13)
                 optionDelta += buffer.readByte() & 0xFF;
 
-            else if(optionDelta == 14){
-                optionDelta = 269;
-                optionDelta += (buffer.readByte() & 0xFF) << 8;
-                optionDelta += buffer.readByte() & 0xFF;
-            }
+            else if(optionDelta == 14)
+                optionDelta = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
 
-            if(optionLength == 13)
-                optionLength += buffer.readByte() & 0xFF;
+            else
 
-            else if(optionLength == 14){
-                optionLength = 269;
-                optionLength += (buffer.readByte() & 0xFF) << 8;
+            if(optionLength == 13){
                 optionLength += buffer.readByte() & 0xFF;
             }
 
-            log.debug("Previous option: {}, Option delta: {}", previousOption, optionDelta);
+            else if(optionLength == 14)
+                optionLength = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
 
-            int optionNumber = previousOption + optionDelta;
-            log.debug("Decode option no. {} with length of {} bytes.", optionNumber, optionLength);
+
+            log.debug("Previous option: {}, Option delta: {}", previousOptionNumber, optionDelta);
+
+            int actualOptionNumber = previousOptionNumber + optionDelta;
+            log.debug("Decode option no. {} with length of {} bytes.", actualOptionNumber, optionLength);
 
             try {
                 byte[] optionValue = new byte[optionLength];
                 buffer.readBytes(optionValue);
-                coapMessage.addOption(optionNumber, Option.createOption(optionNumber, optionValue));
+                coapMessage.addOption(actualOptionNumber, Option.createOption(actualOptionNumber, optionValue));
             }
-            catch (UnknownOptionException e) {
-                if(Option.isCritical(optionNumber)){
-                    String message = "Could not decode unsupported critical option no. " + optionNumber;
-                    if(MessageCode.isRequest(coapMessage.getMessageCode())){
-                        log.error(message);
-                        throw new InvalidOptionException(optionNumber, message);
-                    }
-                    else if(MessageCode.isResponse(coapMessage.getMessageCode())){
-                        InternalCodecExceptionMessage exceptionMessage =
-                                new InternalCodecExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
-                                        coapMessage.getMessageID(), coapMessage.getToken(), e);
+            catch (OptionException e) {
 
-                        ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), exceptionMessage,
-                                remoteSocketAddress));
-                    }
+                if(MessageCode.isResponse(coapMessage.getMessageCode())){
+                    log.warn("Silently ignore option no. " + e.getOptionNumber() + " in incoming response.");
                 }
+
+                else if(Option.isCritical(actualOptionNumber)){
+                    throw e;
+                }
+
                 else{
-                    log.info("Silently ignored unsupported elective option no. {}", optionNumber);
+                    log.warn("Silently ignore elective option no. " + e.getOptionNumber() + " in incoming request.");
                 }
 
             }
-            catch (InvalidOptionException e) {
-                if(Option.isCritical(optionNumber)){
-                    String message = "Could not decode malformed option no. " + optionNumber;
-                    log.warn(message);
-                    throw new InvalidOptionException(optionNumber, message);
-                }
 
-                log.info("Silently ignored malformed elective option no. {}", optionNumber);
-            }
+            previousOptionNumber = actualOptionNumber;
 
-            previousOption = optionNumber;
             if(buffer.readableBytes() > 0)
                 firstByte = buffer.readByte() & 0xFF;
 
             log.debug("{} readable bytes remaining.", buffer.readableBytes());
         }
+    }
+
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent){
+        if(exceptionEvent.getCause() instanceof DecodingException){
+            DecodingException ex = (DecodingException) exceptionEvent.getCause();
+
+            if(ex.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED){
+                log.warn("Could not handle incoming malformed message (Reason: {})",
+                        ex.getCause().getMessage());
+                return;
+            }
+
+            log.warn("Received malformed message (Reason: {})", ex.getCause().getMessage());
+
+            //Message Format Exceptions cause a RST message
+            if(ex.getCause() instanceof MessageFormatException){
+                try{
+                    final CoapMessage emptyReset = CoapMessage.createEmptyReset(ex.getMessageID());
+                    log.warn("Send empty RST: {}", emptyReset);
+                    sendMessage(ctx, ex.getRemoteSocketAddress(), emptyReset);
+                }
+                catch(InvalidHeaderException e){
+                    log.error("This should never happen!", e);
+                }
+            }
+
+            //Invalid or unknown critical options in requests cause a BAD OPTION error response
+            else if(ex.getCause() instanceof OptionException){
+                try{
+                    final CoapResponse coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
+                    coapResponse.setMessageID(ex.getMessageID());
+                    coapResponse.setToken(ex.getToken());
+                    coapResponse.setContent(ex.getCause().getMessage().getBytes(CoapMessage.CHARSET),
+                            ContentFormat.Name.TEXT_PLAIN_UTF8);
+                    log.warn("Send BAD OPTION response: {}", coapResponse);
+                    sendMessage(ctx, ex.getRemoteSocketAddress(), coapResponse);
+                }
+                catch (InvalidHeaderException | InvalidOptionException | InvalidMessageException e) {
+                    log.error("This should never happen.", e);
+                }
+            }
+
+            else{
+                log.error("This should never happen (DecodingException with unsupported cause!", ex.getCause());
+            }
+        }
+
+        else{
+            log.error("This should never happen (Unexpected Exception while decoding)!", exceptionEvent.getCause());
+        }
+    }
+
+    private void sendMessage(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
+                             final CoapMessage coapMessage){
+
+        ChannelFuture future = Channels.future(ctx.getChannel());
+        Channels.write(ctx, Channels.future(ctx.getChannel()), coapMessage, remoteSocketAddress);
+
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                log.info("Sent message to {}: {}", remoteSocketAddress, coapMessage);
+            }
+        });
     }
 
     private static String toBinaryString(int byteValue){
@@ -325,127 +377,4 @@ public class CoapMessageDecoder implements ChannelUpstreamHandler{
 
         return buffer.toString();
     }
-
-//    /**
-//     * This method method creates an OptionList containing the specified number of options. It does
-//     * not matter whether there are more options or payload contained in the ChannelBuffer. The
-//     * creation process stops right after the specified number of options. This method assumes
-//     * the first option to begin at the current reader position of the ChannelBuffer.
-//     *
-//     * After the creation process the reader index of the ChannelBuffer points to the position
-//     * right after the last byte used to create the last option in the OptionList. In most
-//     * cases this will be the starting position of the payload (if there is any).
-//     *
-//     * Note, that eventually contained malformed but elective options will not be added to the list but will be
-//     * silently ignored. Malformed critical options cause an InvalidOptionException. No list will be created in the
-//     * latter case.
-//     *
-//     * @param buffer the {@link ChannelBuffer} containing the options to be decoded
-//     * @param optionCount the number of options to be decoded
-//     * @param messageCode the {@link de.uniluebeck.itm.ncoap.message.MessageCode} of the message that is intended to include the new OptionList
-//     * @param header the {@link Header} of the message to be decoded
-//     *
-//     * @return An {@link OptionList} instance containing the decoded options
-//     *
-//     * @throws InvalidOptionException if a critical option is malformed, e.g. size is out of defined bounds
-//     * @throws ToManyOptionsException if there are too many options contained in the list
-//     */
-//    private OptionList decodeOptionList(ChannelBuffer buffer, int optionCount, MessageCode messageCode, Header header)
-//            throws InvalidOptionException, ToManyOptionsException {
-//
-//        if(optionCount > 15){
-//            throw new ToManyOptionsException("Option count of " + optionCount +
-//                    " exceeds the number of allowed options");
-//        }
-//
-//        OptionList result = new OptionList();
-//        int prevOptionNumber = 0;
-//        for(int i = 0; i < optionCount; i++){
-//            //Create the next readable option from the ChannelBuffer and move the buffers read-index to
-//            //the starting position of the next option (resp. of the payload if existing)
-//            try{
-//                Option newOption = decodeOption(buffer, prevOptionNumber, header);
-//                 //Add new Option to the list
-//                log.debug("Option with number 0x{} to be created.", newOption.getOptionNumber());
-//                OptionName optionName = OptionName.getByNumber(newOption.getOptionNumber());
-//                log.debug("Option " + optionName + " to be created.");
-//                result.addOption(messageCode, optionName, newOption);
-//                prevOptionNumber = Math.abs(newOption.getOptionNumber()); //double datatype for observe option hack
-//            }
-//            catch(InvalidOptionException e){
-//                if(e.isCritical()){
-//                    log.error("Malformed " + e.getOptionName() + " option is critical.");
-//                    throw e;
-//                }
-//                log.debug("Malformed " + e.getOptionName() + " option silently ignored.", e);
-//            }
-//        }
-//
-//        return result;
-//    }
-//
-//    /**
-//     * This method creates reads and decodes the {@link Option} starting at the current reader index of
-//     * the given {@link ChannelBuffer}. Thus, there must be an encoded option starting at the current reader index.
-//     * Otherwise an {@link InvalidOptionException} is thrown.
-//     *
-//     * @param buf a {@link ChannelBuffer} with its reader index at an options starting position
-//     * @param prevOptionNumber the option number of the previous option in the {@link ChannelBuffer}
-//     *                         (or ZERO if there is no)
-//     * @param header the {@link Header} of the message to be decoded
-//     *
-//     * @return The decoded {@link de.uniluebeck.itm.ncoap.message.options.Option}
-//     *
-//     * @throws InvalidOptionException if the option to be decoded is invalid
-//     */
-//    private Option decodeOption(ChannelBuffer buf, int prevOptionNumber, Header header) throws InvalidOptionException {
-//        byte firstByte = buf.readByte();
-//
-//        //Exclude option delta and add to previous option optionNumber
-//        int optionNumber = (UnsignedBytes.toInt(firstByte) >>> 4) +  prevOptionNumber;
-//
-//        // Small hack, due to two types of the observe option
-//        if(!header.getMessageCode().isRequest() && optionNumber == OBSERVE_REQUEST.getNumber()) {
-//            optionNumber = OBSERVE_RESPONSE.getNumber();
-//        }
-//
-//        OptionName optionName = OptionName.getByNumber(optionNumber);
-//        log.debug("Option name of number {} is {}", optionNumber, optionName);
-//
-//        if(optionName == OptionName.UNKNOWN)
-//            throw new InvalidOptionException(optionNumber, "Unknown option number " + optionNumber);
-//
-//        //Option optionNumber 21 is "If-none-match" and must not contain any value. This is e.g. useful for
-//        //PUT requests not being supposed to overwrite existing resources
-//        if(optionName.equals(OptionRegistry.OptionName.IF_NONE_MATCH)){
-//            return Option.createEmptyOption(optionName);
-//        }
-//
-//        //Exclude options valueLength. If all of the last 4 digits of the first byte are 1,
-//        //the valueLength must be calculated by 15 + the second bytes value treated as unsigned.
-//        int valueLength = firstByte & 0x0f;
-//        if(valueLength  == 15){
-//            valueLength = UnsignedBytes.toInt(buf.readByte()) + 15;
-//        }
-//
-//        //Determine option specific valueLength constraints
-//        int minLength = OptionRegistry.getMinLength(optionName);
-//        int maxLength = OptionRegistry.getMaxLength(optionName);
-//
-//        if(valueLength < minLength || valueLength > maxLength){
-//            throw new InvalidOptionException(optionNumber, optionName + " option must have a value length"
-//                    + " between " + minLength + " and " + maxLength + " (both including) but has " +  valueLength);
-//        }
-//
-//        //Read encoded value from buffer
-//        byte[] encodedValue = new byte[valueLength];
-//        buf.readBytes(encodedValue);
-//
-//        //Create appropriate Option
-//        Option result = Option.createOption(optionName, encodedValue);
-//
-//        log.debug("Decoded {} {}", optionName, result.getDecodedValue());
-//        return result;
-//    }
-
 }

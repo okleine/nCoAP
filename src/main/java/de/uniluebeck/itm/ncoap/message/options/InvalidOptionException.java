@@ -33,31 +33,10 @@ package de.uniluebeck.itm.ncoap.message.options;
  *
  * @author Oliver Kleine
  */
-public class InvalidOptionException extends Exception {
-
-    private int optionNumber;
+public class InvalidOptionException extends OptionException {
 
     public InvalidOptionException(int optionNumber, String msg){
-        super(msg);
-        this.optionNumber = optionNumber;
-    }
-
-    /**
-     * Returns true if this Exception has been caused by a critical option. Otherwise (in case of elective options)
-     * it returns false.
-     *
-     * @return whether the Exception was caused by a critical option
-     */
-    public boolean isCritical(){
-       return Option.isCritical(this.optionNumber);
-    }
-
-    /**
-     * Returns the number of the option that caused the exception
-     * @return the number of the option that caused the exception
-     */
-    public int getOptionNumber() {
-        return this.optionNumber;
+        super(optionNumber, msg);
     }
 
 }

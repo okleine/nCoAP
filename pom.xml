@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.uniluebeck.itm</groupId>
     <artifactId>ncoap</artifactId>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <version>1.8.0-SNAPSHOT</version>
     <name>nCoAP</name>
     <url>http://media.itm.uni-luebeck.de/people/kleine/maven/${project.artifactId}/${project.version}</url>

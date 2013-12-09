@@ -163,7 +163,7 @@ public class CoapResponse extends CoapMessage {
                     locationPath.append("/" + ((StringOption) pathComponentIterator.next()).getDecodedValue());
         }
 
-       //Reconstrut query
+       //Reconstruct query
         StringBuffer locationQuery = new StringBuffer();
 
         if(options.containsKey(Option.Name.LOCATION_QUERY)){

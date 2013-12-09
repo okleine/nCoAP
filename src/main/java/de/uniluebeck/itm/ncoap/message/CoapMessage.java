@@ -101,13 +101,16 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   Option.Name.PROXY_SCHEME,       ONCE);
 
         //Response success (2.x)
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.ETAG,               ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.LOCATION_PATH,      MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.LOCATION_QUERY,     MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.ETAG,               ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.MAX_AGE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.CONTENT_FORMAT,     ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
@@ -116,23 +119,51 @@ public abstract class CoapMessage {
 
         //Client errors (4.x)
         optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),                  Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(), Option.Name.MAX_AGE, ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
+        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(),                 Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),                   Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),                    Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),                    Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),           Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),               Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),          Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),     Option.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),     Option.Name.SIZE_1,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),   Option.Name.MAX_AGE,    ONCE);
-        
+        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         //Server errors (5.x)
         optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),    Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),          Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),              Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),          Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),   Option.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
     }
 
 
@@ -664,7 +695,7 @@ public abstract class CoapMessage {
         //Header + Token
         result.append("CoAP Message: [Header: (V) " + getProtocolVersion() + ", (T) " + getMessageTypeName() + ", (TKL) "
             + token.getBytes().length + ", (C) " + getMessageCodeName() + ", (ID) " + getMessageID() + " | (Token) "
-            + Token.toHexString(token.getBytes()) + " | ");
+            + token + " | ");
 
         //Options
         result.append("Options:");

@@ -80,13 +80,6 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 */
 public class EncodingException extends Exception {
 
-//    /**
-//     * @param message A string representation of the reason that caused this exception
-//     */
-//    public EncodingException(int messageType, int messageID, String message) {
-//        super(messageType, messageID, message);
-//    }
-
     /**
      * @param cause The {@link Throwable} instance that caused this exception
      */

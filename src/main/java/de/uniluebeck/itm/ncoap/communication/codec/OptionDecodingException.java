@@ -24,48 +24,28 @@
  */
 package de.uniluebeck.itm.ncoap.communication.codec;
 
-import de.uniluebeck.itm.ncoap.application.Token;
+import de.uniluebeck.itm.ncoap.message.options.OptionException;
+
+import java.net.InetSocketAddress;
 
 /**
  * Created with IntelliJ IDEA.
  * User: olli
- * Date: 14.11.13
- * Time: 12:28
+ * Date: 05.11.13
+ * Time: 18:01
  * To change this template use File | Settings | File Templates.
  */
-public class InternalCodecExceptionMessage {
+public class OptionDecodingException extends Exception {
 
-    private final int messageType;
-    private final int messageCode;
-    private final int messageID;
-    private final Token token;
-    private final Throwable cause;
+    private int messageID;
 
-    public InternalCodecExceptionMessage(int messageType, int messageCode, int messageID, Token token, Throwable cause){
-        this.messageType = messageType;
-        this.messageCode = messageCode;
+    public OptionDecodingException(int messageID, OptionException cause){
+        super(cause);
         this.messageID = messageID;
-        this.token = token;
-        this.cause = cause;
     }
 
-    public Throwable getCause() {
-        return cause;
+    public int getMessageID(){
+        return this.messageID;
     }
 
-    public int getMessageType() {
-        return messageType;
-    }
-
-    public int getMessageID() {
-        return messageID;
-    }
-
-    public int getMessageCode() {
-        return messageCode;
-    }
-
-    public Token getToken() {
-        return token;
-    }
 }

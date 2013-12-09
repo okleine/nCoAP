@@ -50,8 +50,8 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
 import org.slf4j.Logger;
@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -78,9 +77,12 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
     private static Logger log = LoggerFactory.getLogger(NotObservableWebservice.class.getName());
 
+    private CoapServerApplication coapServerApplication;
+
     private String path;
     private T resourceStatus;
     private long resourceStatusExpiryDate;
+
 
     private int etagLength;
     private byte[] etag;
@@ -95,13 +97,21 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
         setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
+    public void setCoapServerApplication(CoapServerApplication serverApplication){
+        this.coapServerApplication = serverApplication;
+    }
+
+    public CoapServerApplication getCoapServerApplication(){
+        return this.coapServerApplication;
+    }
+
     @Override
     public String getPath() {
         return this.path;
     }
 
     @Override
-    public final T getResourceStatus(){
+    public final synchronized T getResourceStatus(){
         return this.resourceStatus;
     }
 
@@ -129,7 +139,7 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     }
 
     @Override
-    public final long getMaxAge() {
+    public final synchronized long getMaxAge() {
         return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
     }
 
@@ -146,7 +156,7 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
 
     @Override
-    public final void setResourceStatus(T newStatus, long lifetimeSeconds){
+    public final synchronized void setResourceStatus(T newStatus, long lifetimeSeconds){
         this.resourceStatus = newStatus;
         this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
 
@@ -181,7 +191,7 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     }
 
     @Override
-    public byte[] getEtag(){
+    public synchronized byte[] getEtag(){
         return this.etag;
     }
 

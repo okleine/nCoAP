@@ -31,16 +31,9 @@ package de.uniluebeck.itm.ncoap.message.options;
  * Time: 13:09
  * To change this template use File | Settings | File Templates.
  */
-public class UnknownOptionException extends Exception{
-
-    private int optionNumber;
+public class UnknownOptionException extends OptionException{
 
     public UnknownOptionException(int optionNumber){
-        super("Unknown option number: " + optionNumber);
-        this.optionNumber = optionNumber;
-    }
-
-    public int getOptionNumber() {
-        return optionNumber;
+        super(optionNumber, "Unknown option number: " + optionNumber);
     }
 }

@@ -34,6 +34,7 @@ import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -54,16 +55,11 @@ import java.util.concurrent.*;
 */
 public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
-    public static final int NSTART = 1;
-
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private TokenFactory tokenFactory = new TokenFactory();
     private HashBasedTable<InetSocketAddress, Token, CoapResponseProcessor> responseProcessors =
             HashBasedTable.create();
-
-//    private HashBasedTable<Long, InetSocketAddress, ScheduledFuture> observationTimeouts =
-//            HashBasedTable.create();
 
     private DatagramChannel datagramChannel;
 
@@ -176,7 +172,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                                                   CoapResponseProcessor coapResponseProcessor){
 
         responseProcessors.put(remoteSocketAddress, token, coapResponseProcessor);
-        log.debug("Added response processor for token {} from {}.", Token.toHexString(token.getBytes()),
+        log.debug("Added response processor for token {} from {}.", token,
                 remoteSocketAddress);
         log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
     }
@@ -188,7 +184,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         CoapResponseProcessor result = responseProcessors.remove(remoteSocketAddress, token);
 
         if(result != null)
-            log.debug("Removed response processor for token {} from {}.", Token.toHexString(token.getBytes()),
+            log.debug("Removed response processor for token {} from {}.", token,
                     remoteSocketAddress);
 
         log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
@@ -258,8 +254,7 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 ((TransmissionInformationProcessor) callback).messageTransmitted();
             else
                 log.warn("No TransmissionInformationProcessor found for token {} and remote address {}",
-                        Token.toHexString(retransmissionMessage.getToken().getBytes()),
-                        retransmissionMessage.getRemoteAddress());
+                        retransmissionMessage.getToken(), retransmissionMessage.getRemoteAddress());
 
             me.getFuture().setSuccess();
             return;
@@ -274,77 +269,37 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 ((CodecExceptionReceiver) callback).handleCodecException(message.getCause());
             else
                 log.info("No CodecExceptionReceiver found for token {} and remote address {}",
-                        Token.toHexString(message.getToken().getBytes()), me.getRemoteAddress());
+                        message.getToken(), me.getRemoteAddress());
 
             me.getFuture().setSuccess();
             return;
         }
 
-//        if(me.getMessage() instanceof InternalNextBlockReceivedMessage){
-//            InternalNextBlockReceivedMessage message = (InternalNextBlockReceivedMessage) me.getMessage();
-//
-//            CoapResponseProcessor callback =
-//                    responseProcessors.get(message.getToken(), me.getRemoteSocketAddress());
-//
-//            if(callback != null && callback instanceof InternalNextBlockReceivedMessageProcessor)
-//                ((InternalNextBlockReceivedMessageProcessor) callback).receivedNextBlock();
-//
-//            me.getFuture().setSuccess();
-//            return;
-//        }
-
         if(me.getMessage() instanceof CoapResponse){
 
             final CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
-            log.debug("Response received: {}.", coapResponse);
+            log.info("Response received: {}.", coapResponse);
 
             final CoapResponseProcessor responseProcessor;
 
-//            if(coapResponse.isUpdateNotification()){
-//                final Token token = new Token(coapResponse.getToken());
-//                final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteSocketAddress();
-//
-//                //Stop observation timeout
-//                ScheduledFuture oldObservationTimeoutFuture = observationTimeouts.get(token, remoteSocketAddress);
-//                if(oldObservationTimeoutFuture != null){
-//                    if(oldObservationTimeoutFuture.cancel(false)){
-//                        log.debug("Observation timeout canceled for token {} from {}.",
-//                                token, remoteSocketAddress);
-//                    }
-//                    else{
-//                        log.error("Observation timeout could not be canceled for token {} from {}.",
-//                                token, remoteSocketAddress);
-//                    }
-//                }
-//
-//                responseProcessor = responseProcessors.get(token, remoteSocketAddress);
-//
-//                //Schedule observation timeout after max-age!
-//                ScheduledFuture newObservationTimeoutFuture =
-//                        scheduledExecutorService.schedule(new ObservationTimeoutTask(ctx.getChannel(),
-//                                remoteSocketAddress, coapResponse.getToken(), responseProcessor),
-//                                coapResponse.getMaxAge() + 5, TimeUnit.SECONDS);
-//
-//                observationTimeouts.put(token, remoteSocketAddress, newObservationTimeoutFuture);
-//            }
-//            else {
-            responseProcessor = removeResponseCallback((InetSocketAddress) me.getRemoteAddress(),
-                    coapResponse.getToken());
-//            }
+            if(coapResponse.isUpdateNotification() && !MessageCode.isErrorMessage(coapResponse.getMessageCode())){
+                responseProcessor = responseProcessors.get(me.getRemoteAddress(), coapResponse.getToken());
+            }
+            else{
+                responseProcessor = removeResponseCallback((InetSocketAddress) me.getRemoteAddress(),
+                        coapResponse.getToken());
+
+                tokenFactory.passBackToken(coapResponse.getToken());
+            }
 
             if(responseProcessor != null){
-                log.debug("Callback found for token {}.", Token.toHexString(coapResponse.getToken().getBytes()));
+                log.debug("Callback found for token {}.", coapResponse.getToken());
                 responseProcessor.processCoapResponse(coapResponse);
             }
             else{
-                log.info("No responseProcessor found for token {}.",
-                        Token.toHexString(coapResponse.getToken().getBytes()));
+                log.info("No responseProcessor found for token {}.", coapResponse.getToken());
              }
-
-            //pass the token back if it's a normal response (no update-notification)
-//            if(!coapResponse.isUpdateNotification())
-                tokenFactory.passBackToken(coapResponse.getToken());
 
             me.getFuture().setSuccess();
         }
@@ -382,8 +337,8 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 //
 //            removeResponseCallback(token, remoteSocketAddress);
 //
-//            InternalStopRetransmissionMessage stopObservationMessage =
-//                    new InternalStopRetransmissionMessage(remoteSocketAddress, token);
+//            InternalStopUpdateNotificationRetransmissionMessage stopObservationMessage =
+//                    new InternalStopUpdateNotificationRetransmissionMessage(remoteSocketAddress, token);
 //
 //            ChannelFuture future = Channels.write(channel, stopObservationMessage);
 //            future.addListener(new ChannelFutureListener() {

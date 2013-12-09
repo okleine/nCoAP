@@ -82,11 +82,15 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
     private static Logger log = LoggerFactory.getLogger(ObservableWebservice.class.getName());
 
+    private CoapServerApplication coapServerApplication;
+
     private String path;
     private T resourceStatus;
 
     private int etagLength = Option.ETAG_LENGTH_DEFAULT;
     private byte[] etag;
+
+    private Object monitor = new Object();
 
     private boolean isUpdateNotificationConfirmable = true;
 
@@ -98,6 +102,14 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     protected ObservableWebservice(String path, T initialStatus){
         this.path = path;
         this.resourceStatus = initialStatus;
+    }
+
+    public void setCoapServerApplication(CoapServerApplication serverApplication){
+        this.coapServerApplication = serverApplication;
+    }
+
+    public CoapServerApplication getCoapServerApplication(){
+        return this.coapServerApplication;
     }
 
     /**
@@ -114,7 +126,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
         this.scheduledExecutorService = executorService;
         this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
-        //scheduleMaxAgeNotifications();
     }
 
 
@@ -132,16 +143,24 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     public abstract void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                             InetSocketAddress remoteAddress);
 
+    protected final Object getMonitor(){
+        return this.monitor;
+    }
+
     /**
      * Returns the payload to be contained in {@link CoapResponse}s on incoming {@link CoapRequest}s. This method
-     * is invoked by the framework upon invocation of {@link #setResourceStatus(Object)}. The implementation
+     * is invoked by the framework upon invocation of {@link #setResourceStatus(T, long)}. The implementation
      * of this method is supposed to be fast, since it is invoked for every observer.
+     *
+     * Note: Extending classes should synchronize the method body using the object from {@link #getMonitor()} to
+     * ensure, that the nCoAP framework sets MAX-AGE and ETAG properly.
      *
      * @param contentFormat the number representing the format of the serialized resource status
      *
      * @return the serialized resource status
      */
-    public abstract byte[] getSerializedResourceStatus(long contentFormat) throws AcceptedContentFormatNotSupportedException;
+    public abstract byte[] getSerializedResourceStatus(long contentFormat)
+            throws AcceptedContentFormatNotSupportedException;
 
 
     /**
@@ -177,7 +196,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
     @Override
-    public final T getResourceStatus(){
+    public final synchronized T getResourceStatus(){
         return this.resourceStatus;
     }
 
@@ -220,12 +239,12 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
     @Override
-    public byte[] getEtag(){
+    public synchronized  byte[] getEtag(){
         return this.etag;
     }
 
     @Override
-    public final long getMaxAge() {
+    public final synchronized long getMaxAge() {
         return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
     }
 

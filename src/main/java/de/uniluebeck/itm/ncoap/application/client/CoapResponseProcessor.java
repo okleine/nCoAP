@@ -52,7 +52,7 @@ import de.uniluebeck.itm.ncoap.message.*;
  * </ul>
  *
  * A {@link CoapResponseProcessor} is comparable to a tab in a browser, whereas the {@link CoapClientApplication}
- * browser is comparable to the browser application.
+ * browser is comparable to the browser plugtest.
  *
  * @author Oliver Kleine
  */

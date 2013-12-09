@@ -25,12 +25,11 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
-* Instances are sent upstream (i.e. to the application) by the {@link OutgoingMessageReliabilityHandler}
+* Instances are sent upstream (i.e. to the plugtest) by the {@link OutgoingMessageReliabilityHandler}
 * when there was an empty acknowledgement received indicating that a recipient received a a confirmable
 * message.
 *
@@ -46,7 +45,7 @@ public class InternalEmptyAcknowledgementReceivedMessage {
      */
     public InternalEmptyAcknowledgementReceivedMessage(Token token){
         this.token = token;
-        log.debug("Internal acknowledgement message created for token {}.", Token.toHexString(token.getBytes()));
+        log.debug("Internal acknowledgement message created for token {}.", token);
     }
 
     /**
@@ -59,6 +58,6 @@ public class InternalEmptyAcknowledgementReceivedMessage {
 
     @Override
     public String toString(){
-        return "InternalEmptyAcknowledgementReceivedMessage: " + Token.toHexString(token.getBytes()) + " (token)";
+        return "InternalEmptyAcknowledgementReceivedMessage: " + token + " (token)";
     }
 }

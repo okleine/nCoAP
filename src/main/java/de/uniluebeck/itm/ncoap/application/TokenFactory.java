@@ -45,6 +45,7 @@ public class TokenFactory {
     private Random random = new Random(System.currentTimeMillis());
     private Set<Token> usedTokens = Collections.synchronizedSet(new HashSet<Token>());
 
+
     /**
      * Returns the next token to be used
      * @return the next token to be used
@@ -56,7 +57,7 @@ public class TokenFactory {
             nextToken = Longs.toByteArray(random.nextLong());
         while(!usedTokens.add(new Token(nextToken)));
 
-        log.debug("Added token: {} (Now {} tokens in use).", Token.toHexString(nextToken), usedTokens.size());
+        log.debug("Added token: {} (Now {} tokens in use).", nextToken, usedTokens.size());
 
         return new Token(nextToken);
     }
@@ -68,33 +69,10 @@ public class TokenFactory {
     public void passBackToken(Token token){
 
         if(usedTokens.remove(token))
-            log.debug("Passed back token: {} (Now {} tokens in use.)", Token.toHexString(token.getBytes()),
+            log.debug("Passed back token: {} (Now {} tokens in use.)", token,
                     usedTokens.size());
         else
-            log.warn("Could not pass back token {}. Still {} tokens in use.", Token.toHexString(token.getBytes()),
+            log.warn("Could not pass back token {}. Still {} tokens in use.", token,
                     usedTokens.size());
     }
-
-//    public static long fromByteArray(byte[] token){
-//        if(token.length == 0)
-//            return 0;
-//
-//        return Longs.fromByteArray(Bytes.concat(new byte[8 - token.length], token));
-//    }
-
-//    public static byte[] toByteArray(long token){
-//        if(token == 0)
-//            return new byte[0];
-//
-//        byte[] tokenBytes = Longs.toByteArray(token);
-//
-//        int index = 0;
-//        while(index < tokenBytes.length - 1 && tokenBytes[index] == 0)
-//            index++;
-//
-//        return Arrays.copyOfRange(tokenBytes, index, tokenBytes.length);
-//    }
-
-
-
 }

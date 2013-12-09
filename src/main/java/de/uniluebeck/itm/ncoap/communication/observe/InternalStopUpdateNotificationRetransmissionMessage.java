@@ -58,13 +58,13 @@ import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 *
 * @author Oliver Kleine
 */
-public class InternalStopRetransmissionMessage {
+public class InternalStopUpdateNotificationRetransmissionMessage {
 
     private InetSocketAddress remoteSocketAddress;
     private int messageID;
 
 
-    public InternalStopRetransmissionMessage(InetSocketAddress remoteSocketAddress, int messageID){
+    public InternalStopUpdateNotificationRetransmissionMessage(InetSocketAddress remoteSocketAddress, int messageID){
 
         this.remoteSocketAddress = remoteSocketAddress;
         this.messageID = messageID;

@@ -48,8 +48,6 @@
 */
 package de.uniluebeck.itm.ncoap.application.server;
 
-import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.DatagramChannel;

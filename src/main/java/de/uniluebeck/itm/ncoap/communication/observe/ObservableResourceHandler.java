@@ -26,7 +26,6 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.application.server.webservice.AcceptedContentFormatNotSupportedException;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
@@ -61,10 +60,6 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
     //This table is to relate the observers socket address and the service path to a running observation
     private HashBasedTable<InetSocketAddress, String, ObservationParameter> observationsPerPath;
 
-//    //This table relates observer socket addresses and the message ID used for the latest update notification
-//    //to the path of the observed service
-//    private HashBasedTable<InetSocketAddress, Integer, String> latestMessageIDs;
-
     private ScheduledExecutorService executorService;
 
     public ObservableResourceHandler(ScheduledExecutorService executorService){
@@ -92,7 +87,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                     ObservationParameter observationParameter = observationsForRemoteHost.get(servicePath);
 
                     if(observationParameter.getLatestMessageID() == resetedMessageID){
-                        stopObservation(ctx, remoteSocketAddress, servicePath);
+                        stopObservation(remoteSocketAddress, servicePath);
                         break;
                     }
                 }
@@ -100,7 +95,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
             else if(coapMessage instanceof CoapRequest){
                 CoapRequest coapRequest = (CoapRequest) coapMessage;
-                stopObservation(ctx, remoteSocketAddress, coapRequest.getUriPath());
+                stopObservation(ctx, remoteSocketAddress, coapRequest.getToken());
 
                 if(coapRequest.isObserveSet())
                     addObservationPerToken((InetSocketAddress) me.getRemoteAddress(), coapRequest.getToken(),
@@ -137,7 +132,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                     if(!this.observationsPerPath.contains(remoteSocketAddress, webservicePath)){
                         //This is a new observation
                         log.debug("Start observation of service {} (observer: {}, token: {}, messageID: {})",
-                                new Object[]{webservicePath, remoteSocketAddress, Token.toHexString(token.getBytes()),
+                                new Object[]{webservicePath, remoteSocketAddress, token,
                                              messageID
                                 });
 
@@ -150,7 +145,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
                     else{
                         log.debug("Update observation of service {} (observer: {}, token: {}, messageID: {})",
-                                new Object[]{webservicePath, remoteSocketAddress, Token.toHexString(token.getBytes()),
+                                new Object[]{webservicePath, remoteSocketAddress, token,
                                              messageID
                                 });
 
@@ -159,18 +154,13 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                     }
                 }
 
-                long observationSequenceNumber = coapResponse.getObservationSequenceNumber();
                 coapResponse.removeOptions(Option.Name.OBSERVE);
-                coapResponse.setObservationSequenceNumber(observationSequenceNumber + 1);
+                coapResponse.setObservationSequenceNumber(getNextUpdateNotificationCount(remoteSocketAddress, token));
             }
 
             else{
                 stopObservation(ctx, remoteSocketAddress, coapResponse.getToken());
             }
-
-
-
-
         }
 
         ctx.sendDownstream(me);
@@ -183,6 +173,13 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         observationParameter.setLatestMessageID(messageID);
     }
 
+    private synchronized long getNextUpdateNotificationCount(InetSocketAddress remoteSocketAddress, Token token){
+        String servicePath = this.observationsPerToken.get(remoteSocketAddress, token);
+        ObservationParameter observationParameter = this.observationsPerPath.get(remoteSocketAddress, servicePath);
+
+        return observationParameter.getNextUpdateNotificationTransmissionCount();
+    }
+
     @Override
     public void update(Observable object, Object arg) {
         if(!(object instanceof ObservableWebservice))
@@ -191,12 +188,14 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         ObservableWebservice webservice = (ObservableWebservice) object;
         String webservicePath = webservice.getPath();
 
+        log.info("UPDATE of service {}", webservicePath);
+
         Map<InetSocketAddress, ObservationParameter> applyingObservations = observationsPerPath.column(webservicePath);
         Map<Long, ChannelBuffer> formattedContent = new HashMap<>();
 
         for(InetSocketAddress remoteSocketAddress : applyingObservations.keySet()){
             ObservationParameter observationParameter = applyingObservations.get(remoteSocketAddress);
-            observationParameter.nextUpdateNotification();
+            observationParameter.nextResourceUpdate();
 
             long contentFormat = observationParameter.getContentFormat();
 
@@ -238,14 +237,17 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
     private void handleContentFormatNotSupportedException(InetSocketAddress remoteSocketAddress,
                 ObservationParameter observationParameter, AcceptedContentFormatNotSupportedException e){
         try {
-            CoapResponse updateNotification = new CoapResponse(MessageCode.Name.NOT_ACCEPTABLE_406);
-            String message = "Content Format No. " + e.getUnsupportedContentFormatsAsString();
+
+            String webservice = observationsPerToken.get(remoteSocketAddress, observationParameter.getToken());
+            stopObservation(remoteSocketAddress, webservice);
+
+            CoapResponse updateNotification = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+            String message = "Not supported anymore: Content Format No. " + e.getUnsupportedContentFormatsAsString();
             updateNotification.setContent(message.getBytes(CoapMessage.CHARSET));
 
-//            executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, updateNotification,
-//                    observationIDs.get(remoteSocketAddress, observationParameter.getToken()),
-//                    observationParameter.getChannel()
-//            ), 0, TimeUnit.MILLISECONDS);
+            executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, updateNotification,
+                    observationParameter.getLatestMessageID(), observationParameter.getChannel()
+            ), 0, TimeUnit.MILLISECONDS);
         }
         catch (InvalidHeaderException | InvalidMessageException e1) {
             log.error("This should never happen.", e1);
@@ -262,7 +264,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
 
     private synchronized void stopObservation(ChannelHandlerContext ctx, InetSocketAddress remoteSocketAddress,
-                                                 Token token){
+                                              Token token){
 
         String servicePath = this.observationsPerToken.remove(remoteSocketAddress, token);
 
@@ -271,8 +273,8 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                     this.observationsPerPath.remove(remoteSocketAddress, servicePath);
 
             if(observationParameter != null){
-                InternalStopRetransmissionMessage stopRetransmissionMessage =
-                        new InternalStopRetransmissionMessage(remoteSocketAddress,
+                InternalStopUpdateNotificationRetransmissionMessage stopRetransmissionMessage =
+                        new InternalStopUpdateNotificationRetransmissionMessage(remoteSocketAddress,
                                 observationParameter.getLatestMessageID());
 
                 ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), stopRetransmissionMessage, null));
@@ -282,13 +284,22 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         }
     }
 
-    private synchronized void stopObservation(ChannelHandlerContext ctx, InetSocketAddress remoteSocketAddress,
-                                                 String path){
+    private synchronized void stopObservation(InetSocketAddress remoteSocketAddress, String webservicePath){
 
-        if(this.observationsPerPath.remove(remoteSocketAddress, path) == null)
-            log.error("Could not remove {} as observer for service {}", remoteSocketAddress, path);
-        else
-            log.info("Removed {} as observer for service {}", remoteSocketAddress, path);
+        ObservationParameter observationParameter =
+                this.observationsPerPath.remove(remoteSocketAddress, webservicePath);
+
+            if(observationParameter == null){
+                log.error("No observation parameters found (remote socket: {}, service: {})", remoteSocketAddress, webservicePath);
+            }
+            else{
+                if(observationsPerToken.remove(remoteSocketAddress, observationParameter.getToken()) != null){
+                    log.info("Removed {} as observer for service {}", remoteSocketAddress, webservicePath);
+                }
+                else{
+                    log.error("Could not remove {} as observer for service {}", remoteSocketAddress, webservicePath);
+                }
+            }
     }
 
     private synchronized void addObservationPerToken(InetSocketAddress remoteSocketAddress, Token token,
@@ -296,37 +307,8 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
         this.observationsPerToken.put(remoteSocketAddress, token, webservicePath);
         log.info("Received new observation request from {} for service {} with token {}",
-                new Object[]{remoteSocketAddress, webservicePath, Token.toHexString(token.getBytes())});
+                new Object[]{remoteSocketAddress, webservicePath, token});
     }
-
-
-
-//    private synchronized String removeNotAnsweredObservationRequest(InetSocketAddress remoteSocketAddress, long token){
-//        String result = this.observationsPerToken.remove(remoteSocketAddress, token);
-//        if(result != null){
-//            log.info("Received first update notification for observer {} for service {}", remoteSocketAddress, result);
-//        }
-//        else{
-//            log.error("No not answered observe request found for token {} from {}", TokenFactory.toHexString(token),
-//                    remoteSocketAddress);
-//        }
-//        return result;
-//    }
-
-//    private synchronized void updateObservationIDs(InetSocketAddress remoteSocketAddress, long token, int latestMessageID){
-//        this.observationIDs.put(remoteSocketAddress, token, latestMessageID);
-//    }
-//
-//    private synchronized void removeObservationIDs(InetSocketAddress remoteSocketAddress, long token){
-//        Integer messageID = this.observationIDs.remove(remoteSocketAddress, token);
-//
-//        if(messageID != null)
-//            log.debug("Removed observation IDs: {} (Remote Socket Address), {} (token), {} (messageID)",
-//                    new Object[]{remoteSocketAddress, TokenFactory.toHexString(token), messageID});
-//        else
-//            log.warn("Could not remove observation ID for {} and token {}", remoteSocketAddress,
-//                    TokenFactory.toHexString(token));
-//    }
 
 
     private class UpdateNotificationSender implements Runnable{
@@ -348,9 +330,11 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         @Override
         public void run() {
 
+            log.info("Start retransmission: {}", updateNotification);
+
             //Stop potentially running retranmissions
-            InternalStopRetransmissionMessage stopRetransmissionMessage =
-                    new InternalStopRetransmissionMessage(remoteSocketAddress, latestMessageID);
+            InternalStopUpdateNotificationRetransmissionMessage stopRetransmissionMessage =
+                    new InternalStopUpdateNotificationRetransmissionMessage(remoteSocketAddress, latestMessageID);
 
             ChannelHandlerContext ctx1 = channel.getPipeline().getContext(ObservableResourceHandler.class);
             ctx1.sendUpstream(new UpstreamMessageEvent(channel, stopRetransmissionMessage, null));

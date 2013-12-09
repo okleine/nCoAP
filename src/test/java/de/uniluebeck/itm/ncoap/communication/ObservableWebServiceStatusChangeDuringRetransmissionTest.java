@@ -48,9 +48,9 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication;
 //
-//import de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-//import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebService;
 //import de.uniluebeck.itm.ncoap.message.*;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
 //import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
@@ -90,7 +90,7 @@
 //              .setLevel(Level.DEBUG);
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe")
 //              .setLevel(Level.DEBUG);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.application.endpoint.CoapTestEndpoint")
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint")
 //              .setLevel(Level.DEBUG);
 //    }
 //

@@ -25,7 +25,7 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.ncoap.communication.observe.InternalStopRetransmissionMessage;
+import de.uniluebeck.itm.ncoap.communication.observe.InternalStopUpdateNotificationRetransmissionMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -194,8 +194,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Upstream (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof InternalStopRetransmissionMessage){
-            InternalStopRetransmissionMessage message = (InternalStopRetransmissionMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalStopUpdateNotificationRetransmissionMessage){
+            InternalStopUpdateNotificationRetransmissionMessage message = (InternalStopUpdateNotificationRetransmissionMessage) me.getMessage();
             synchronized (reliabilitySchedules){
                 ReliabilitySchedule reliabilitySchedule =
                         reliabilitySchedules.remove(message.getRemoteSocketAddress(), message.getMessageID());

@@ -52,11 +52,7 @@ import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 

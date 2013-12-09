@@ -48,7 +48,6 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -57,7 +56,6 @@ import de.uniluebeck.itm.ncoap.message.options.Option;
 
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
@@ -174,6 +172,11 @@ public interface Webservice<T> {
     public void shutdown();
 
     public boolean allowsDelete();
+
+
+    public void setCoapServerApplication(CoapServerApplication serverApplication);
+
+    public CoapServerApplication getCoapServerApplication();
 
     /**
      * Implementing classes must provide this method such that it returns <code>true</code> if

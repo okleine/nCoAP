@@ -48,6 +48,20 @@ public class Token {
         return this.token;
     }
 
+    /**
+     * Returns a String representation of the token in form of a hex-String
+     *
+     * @return a String representation of the token in form of a hex-String
+     */
+    @Override
+    public String toString(){
+        StringBuffer result = new StringBuffer();
+        for(int i = 0; i < token.length; i++)
+            result.append(Integer.toHexString(token[i] & 0xFF));
+
+        return "0x" + result.toString().toUpperCase();
+    }
+
     @Override
     public boolean equals(Object object){
         if(object == null || (!(object instanceof Token)))
@@ -60,14 +74,5 @@ public class Token {
     @Override
     public int hashCode(){
         return Ints.fromByteArray(Bytes.concat(token, new byte[4]));
-    }
-
-    public static String toHexString(byte[] token){
-        StringBuffer result = new StringBuffer();
-        result.append("0x");
-        for(int i = 0; i < token.length; i++)
-            result.append(Integer.toHexString(token[i] & 0xFF));
-
-        return result.toString().toUpperCase();
     }
 }

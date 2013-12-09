@@ -97,6 +97,6 @@ public class InternalRetransmissionTimeoutMessage {
     @Override
     public String toString(){
         return "InternalRetransmissionTimeoutMessage: " + remoteAddress + " (remote address), "
-                + Token.toHexString(token.getBytes()) + " (token)";
+                + token + " (token)";
     }
 }

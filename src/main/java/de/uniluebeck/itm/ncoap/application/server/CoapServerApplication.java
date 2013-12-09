@@ -79,13 +79,12 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.AcceptedContentFormatNotSupportedException;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
-import de.uniluebeck.itm.ncoap.communication.codec.DecodingException;
+import de.uniluebeck.itm.ncoap.communication.codec.OptionDecodingException;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableResourceRegistrationMessage;
 import de.uniluebeck.itm.ncoap.message.*;
@@ -132,6 +131,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     //This map holds all registered webservice (key: URI path, value: Webservice instance)
     private HashMap<String, Webservice> registeredServices = new HashMap<>();
 
+
     private ListeningExecutorService listeningExecutorService;
     private ScheduledExecutorService scheduledExecutorService;
 
@@ -139,8 +139,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
     private Set<Channel> serverChannels;
 
-    public CoapServerApplication(InetSocketAddress... listeningSockets){
 
+    public CoapServerApplication(WebServiceCreator webServiceCreator, InetSocketAddress... listeningSockets){
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Server I/O Thread#%d").build();
 
         int numberOfThreads = Runtime.getRuntime().availableProcessors() * 2;
@@ -156,8 +156,6 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                     new CoapServerDatagramChannelFactory(ioExecutorService, listeningSocket, this);
 
             serverChannels.add(factory.getChannel());
-//            channel = factory.getChannel();
-//            channel.getPipeline().addLast("Server Application", this);
 
             log.info("New server created. Listening at {}.", listeningSocket);
         }
@@ -165,9 +163,14 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         this.scheduledExecutorService = ioExecutorService;
         this.listeningExecutorService = MoreExecutors.listeningDecorator(scheduledExecutorService);
 
-        this.webServiceCreator = new DefaultWebServiceCreator(this);
-
+        this.webServiceCreator = webServiceCreator;
+        webServiceCreator.setCoapServerApplication(this);
         registerService(new WellKnownCoreResource(registeredServices));
+
+    }
+
+    public CoapServerApplication(InetSocketAddress... listeningSockets){
+        this(new DefaultWebServiceCreator(), listeningSockets);
     }
 
 
@@ -176,7 +179,11 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      * and already provides the default <code>.well-known/core</code> resource
      */
     public CoapServerApplication(int serverPort){
-        this(new InetSocketAddress(serverPort));
+        this(new DefaultWebServiceCreator(), new InetSocketAddress(serverPort));
+    }
+
+    public CoapServerApplication(WebServiceCreator webServiceCreator, int serverPort){
+        this(webServiceCreator, new InetSocketAddress(serverPort));
     }
 
     /**
@@ -185,6 +192,10 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      */
     public CoapServerApplication(){
         this(DEFAULT_COAP_SERVER_PORT);
+    }
+
+    public CoapServerApplication(WebServiceCreator webServiceCreator){
+        this(webServiceCreator, DEFAULT_COAP_SERVER_PORT);
     }
 
     /**
@@ -382,7 +393,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             byte[] content;
 
             //Handle excpetions from incoming message decoding
-            if(ex instanceof DecodingException){
+            if(ex instanceof OptionDecodingException){
 
                 if(ex.getCause() != null && ex.getCause() instanceof InvalidOptionException)
                     coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
@@ -440,8 +451,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.debug("Response for token {} successfully sent to recipient {}.",
-                        Token.toHexString(coapResponse.getToken().getBytes()), remoteAddress);
+                log.debug("Response for token {} successfully sent to recipient {}.", coapResponse.getToken(),
+                        remoteAddress);
             }
         });
 
@@ -519,7 +530,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      *
      * @param webservice A {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance to be registered at the server
      */
-    public final void registerService(final Webservice webservice) {
+    public final void registerService(final  Webservice webservice) {
+        webservice.setCoapServerApplication(this);
         registeredServices.put(webservice.getPath(), webservice);
         log.info("Registered new service at " + webservice.getPath());
 

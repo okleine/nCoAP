@@ -49,15 +49,11 @@
 package de.uniluebeck.itm.ncoap.communication.observe;
 
 import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
 
 /**
 * Instances of {@link ObservationParameter} contain meta-information about a running observation of
@@ -94,8 +90,13 @@ class ObservationParameter {
         return this.latestMessageID;
     }
 
-    public void nextUpdateNotification(){
-        this.notificationCount += OutgoingMessageReliabilityHandler.MAX_RETRANSMIT + 2;
+    public long getNextUpdateNotificationTransmissionCount(){
+        this.notificationCount += 1;
+        return this.notificationCount;
+    }
+
+    public void nextResourceUpdate(){
+        this.notificationCount += OutgoingMessageReliabilityHandler.MAX_RETRANSMIT + 1;
     }
 
     /**

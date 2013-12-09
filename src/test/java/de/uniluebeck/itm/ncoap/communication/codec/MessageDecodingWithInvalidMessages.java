@@ -58,11 +58,11 @@ public class MessageDecodingWithInvalidMessages extends AbstractCoapTest{
         return Lists.newArrayList(
                 //[0] TKL is 1, but 0 remaining bytes after header
                 new Object[]{new byte[]{(byte) (0b01000001 & 0b11111111), 0, 0, 0},
-                DecodingException.class, "Invalid TKL header value for empty message: 1"},
+                OptionDecodingException.class, "Invalid TKL header value for empty message: 1"},
 
                 //[1] TKL is 8, but only 6 remaining bytes after header
                 new Object[]{new byte[]{(byte) (0b01001000 & 0b11111111), 1, 1, 0, 1, 1, 1, 1, 1, 1},
-                DecodingException.class, "TKL header value: 8, Readable bytes: 6"}
+                OptionDecodingException.class, "TKL header value: 8, Readable bytes: 6"}
         );
     }
 

@@ -49,9 +49,8 @@ package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
-import de.uniluebeck.itm.ncoap.communication.codec.DecodingException;
+import de.uniluebeck.itm.ncoap.communication.codec.OptionDecodingException;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
@@ -118,7 +117,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             Throwable ex = message.getCause();
 
             //Exception during request decoding (owing message: 4.x error response)
-            if(MessageCode.isRequest(message.getMessageCode()) && ex instanceof DecodingException){
+            if(MessageCode.isRequest(message.getMessageCode()) && ex instanceof OptionDecodingException){
                 InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
 
                 if(message.getMessageType() == MessageType.Name.CON.getNumber()){
@@ -132,7 +131,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 }
             }
 
-            if(MessageCode.isResponse(message.getMessageCode()) && ex instanceof DecodingException){
+            if(MessageCode.isResponse(message.getMessageCode()) && ex instanceof OptionDecodingException){
                 if(message.getMessageType() == MessageType.Name.CON.getNumber()
                         || message.getMessageType() == MessageType.Name.NON.getNumber()){
                     InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
@@ -266,7 +265,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 if(messageTypeName == MessageType.Name.CON)
                     coapResponse.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
 
-                log.debug("Set messageType to {}", messageTypeName);
+                log.info("Set messageType to {}", messageTypeName);
                 coapResponse.setMessageType(messageTypeName.getNumber());
             }
 
@@ -312,7 +311,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     log.info("RST for message ID {} and token {} succesfully sent to {}.", new Object[]{messageID,
-                            Token.toHexString(token.getBytes()), remoteSocketAddress});
+                            token, remoteSocketAddress});
                 }
             });
         }

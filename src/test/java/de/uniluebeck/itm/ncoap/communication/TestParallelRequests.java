@@ -49,9 +49,9 @@
 //package de.uniluebeck.itm.ncoap.communication;
 //
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor;
-//import de.uniluebeck.itm.ncoap.application.server.CoapTestServer;
-//import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.server.CoapTestServer;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebService;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
 //import de.uniluebeck.itm.ncoap.message.CoapResponse;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -92,7 +92,7 @@
 //    @Override
 //    public void setupLogging() throws Exception {
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.TestParallelRequests").setLevel(Level.DEBUG);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.application.client.TestResponseProcessor").setLevel(Level.DEBUG);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor").setLevel(Level.DEBUG);
 //    }
 //
 //    @Override
