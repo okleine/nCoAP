@@ -73,7 +73,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * @param initialStatus the Map containing all available path
      */
     public WellKnownCoreResource(Map<String, Webservice> initialStatus) {
-        super("/.well-known/core", initialStatus, SECONDS_PER_YEAR);
+        super("/.well-known/core", initialStatus, 0);
     }
 
     /**
@@ -131,6 +131,12 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
         log.debug("Content: \n{}", buffer.toString());
 
         return buffer.toString().getBytes(CoapMessage.CHARSET);
+    }
+
+
+    @Override
+    public byte[] getEtag(long contentFormatValue) {
+        return new byte[0];
     }
 
     @Override

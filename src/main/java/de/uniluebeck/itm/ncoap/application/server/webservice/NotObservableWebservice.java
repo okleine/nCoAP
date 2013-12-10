@@ -48,19 +48,27 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
+import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
 * This is the abstract class to be extended by classes to represent a not observable resource.The generic type T
@@ -73,47 +81,67 @@ import java.util.concurrent.ScheduledExecutorService;
 */
 public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
-    public static long SECONDS_PER_YEAR = 31556926;
-
     private static Logger log = LoggerFactory.getLogger(NotObservableWebservice.class.getName());
 
     private CoapServerApplication coapServerApplication;
 
     private String path;
-    private T resourceStatus;
+
+    //private T resourceStatus;
+    private HashMap<Long, byte[][]> serializedResourceStatus;
     private long resourceStatusExpiryDate;
 
+    private ReadWriteLock readWriteLock = new ReentrantReadWriteLock(false);
 
     private int etagLength;
-    private byte[] etag;
 
     private ScheduledExecutorService scheduledExecutorService;
     private ListeningExecutorService listeningExecutorService;
 
 
-    protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds){
+    protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds,
+                                      long... supportedContentFormatNumbers){
         this.path = servicePath;
         this.etagLength = Option.ETAG_LENGTH_DEFAULT;
+
+        this.serializedResourceStatus = new HashMap<>();
+
+        for(Long contentFormatNumber : supportedContentFormatNumbers){
+            this.serializedResourceStatus.put(contentFormatNumber, null);
+        }
+
         setResourceStatus(initialStatus, lifetimeSeconds);
     }
+
+    /**
+     * To ensure that resource status, max-age and etag are properly set, the
+     * @return
+     */
+    public final ReadWriteLock getReadWriteLock(){
+        return this.readWriteLock;
+    }
+
 
     public void setCoapServerApplication(CoapServerApplication serverApplication){
         this.coapServerApplication = serverApplication;
     }
 
+
     public CoapServerApplication getCoapServerApplication(){
         return this.coapServerApplication;
     }
+
 
     @Override
     public String getPath() {
         return this.path;
     }
 
-    @Override
-    public final synchronized T getResourceStatus(){
-        return this.resourceStatus;
-    }
+//    @Override
+//    public final synchronized T getResourceStatus(){
+//        return this.resourceStatus;
+//    }
+
 
     @Override
     public final void setScheduledExecutorService(ScheduledExecutorService executorService){
@@ -139,7 +167,7 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     }
 
     @Override
-    public final synchronized long getMaxAge() {
+    public final long getMaxAge() {
         return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
     }
 
@@ -157,19 +185,26 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
     @Override
     public final synchronized void setResourceStatus(T newStatus, long lifetimeSeconds){
-        this.resourceStatus = newStatus;
+        readWriteLock.writeLock().lock();
+        //this.resourceStatus = newStatus;
         this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
 
+        for(Long contentFormatNumber : serializedResourceStatus.keySet()){
+            try{
+                byte[] resourceStatus = getSerializedResourceStatus(contentFormatNumber);
+                byte[] etag = getEtag(resourceStatus);
+
+                this.serializedResourceStatus.put(contentFormatNumber, new byte[][]{resourceStatus, etag});
+            }
+            catch (AcceptedContentFormatNotSupportedException e) {
+                log.error("According to the constructor parameters content format no. {} should be supported but is" +
+                        "not!", contentFormatNumber);
+            }
+
+        }
+
         log.debug("New resource status: {}, expires in {} seconds", newStatus.toString(), lifetimeSeconds);
-        try{
-            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-            this.etag =
-                    Arrays.copyOfRange(messageDigest.digest(newStatus.toString().getBytes(CoapMessage.CHARSET)), 0,
-                            etagLength);
-        }
-        catch (NoSuchAlgorithmException e) {
-            log.error("This should never happen.", e);
-        }
+        readWriteLock.writeLock().unlock();
     }
 
     @Override
@@ -191,8 +226,15 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     }
 
     @Override
-    public synchronized byte[] getEtag(){
-        return this.etag;
+    public byte[] getEtag(byte[] serializedResourceStatus){
+        try{
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            return Arrays.copyOfRange(messageDigest.digest(serializedResourceStatus), 0, etagLength);
+        }
+        catch (NoSuchAlgorithmException e) {
+            log.error("This should never happen.", e);
+            return new byte[0];
+        }
     }
 
     @Override

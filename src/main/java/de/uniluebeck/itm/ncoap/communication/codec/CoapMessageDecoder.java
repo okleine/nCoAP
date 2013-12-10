@@ -101,15 +101,14 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
 
 
     private CoapMessage decode(InetSocketAddress remoteSocketAddress, ChannelBuffer buffer)
-            throws InvalidHeaderException, DecodingException {
+            throws MessageFormatDecodingException, OptionDecodingException, InvalidHeaderException {
 
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4)
-            throw new DecodingException(remoteSocketAddress, CoapMessage.MESSAGE_ID_UNDEFINED, new Token(new byte[0]),
-                    new MessageFormatException("Buffer must contain at least 4 "
-                        + "readable bytes (but has " + buffer.readableBytes() + ")"));
+            throw new MessageFormatDecodingException(remoteSocketAddress, CoapMessage.MESSAGE_ID_UNDEFINED,
+                    "Buffer must contain at least 4 readable bytes (but has " + buffer.readableBytes() + ")");
 
 
         //Decode the header values
@@ -126,8 +125,9 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
 
         //Check whether the protocol version is supported (=1)
         if(version != CoapMessage.PROTOCOL_VERSION)
-            throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
-                new MessageFormatException("Unsupported CoAP protocol version: " + version));
+            throw new MessageFormatDecodingException(remoteSocketAddress, messageID,
+                    "Unsupported CoAP protocol version: " + version);
+
 
         //Check whether TKL indicates a not allowed token length
         if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH){
@@ -135,9 +135,9 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
             buffer.readBytes(tokenBytes);
             Token token =  new Token(tokenBytes);
 
-            throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
-                new MessageFormatException("TKL value to large (max: " + CoapMessage.MAX_TOKEN_LENGTH
-                    + ", actual: " + tokenLength + "). First 8 bytes of token: " + token));
+            throw new MessageFormatDecodingException(remoteSocketAddress, messageID, "TKL value to large (max: "
+                    + CoapMessage.MAX_TOKEN_LENGTH + ", actual: " + tokenLength + "). First 8 bytes of token: "
+                    + token);
         }
 
         //Check whether there are enough unread bytes left to read the token
@@ -145,8 +145,8 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
             byte[] tokenBytes = new byte[buffer.readableBytes()];
             buffer.readBytes(tokenBytes);
             Token token =  new Token(tokenBytes);
-            throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
-                new MessageFormatException("TKL header value: " + tokenLength + ", Remaining bytes: " + token + "."));
+            throw new MessageFormatDecodingException(remoteSocketAddress, messageID,
+                "TKL header value: " + tokenLength + ", Remaining bytes: " + token + ".");
         }
 
         //Read the token
@@ -159,13 +159,13 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
         if(messageCode == MessageCode.Name.EMPTY.getNumber()){
 
             if(tokenLength > 0)
-                throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
-                    new MessageFormatException("Invalid TKL header value for empty message: " + tokenLength));
+                throw new MessageFormatDecodingException(remoteSocketAddress, messageID,
+                    "Invalid TKL header value for empty message: " + tokenLength);
 
             if(buffer.readableBytes() > 0)
-                throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
-                    new MessageFormatException("Empty messages MUST NOT contain anything but the 4 bytes "
-                        + "header (actual remaining bytes after header: " + buffer.readableBytes() + ")"));
+                throw new MessageFormatDecodingException(remoteSocketAddress, messageID,
+                    "Empty messages MUST NOT contain anything but the 4 bytes header (actual remaining bytes after "
+                        + " header: " + buffer.readableBytes() + ")");
 
         }
 
@@ -179,9 +179,8 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
                 return CoapMessage.createEmptyReset(messageID);
 
             else
-                throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
-                    new MessageFormatException("Empty message received which is neither an ACK nor a RST (Type: "
-                        + messageType + ")."));
+                throw new MessageFormatDecodingException(remoteSocketAddress, messageID,
+                    "Empty message received which is neither an ACK nor a RST (Type: " + messageType + ").");
 
         }
 
@@ -197,13 +196,12 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
         }
 
         else
-            throw new DecodingException(remoteSocketAddress, messageID, new Token(new byte[0]),
-                new MessageFormatException("Unknown message code: " + messageCode));
+            throw new MessageFormatDecodingException(remoteSocketAddress, messageID,
+                "Unknown message code: " + messageCode);
 
 
         coapMessage.setMessageID(messageID);
         coapMessage.setToken(new Token(token));
-
 
         //Decode and set the options
         if(buffer.readableBytes() > 0){
@@ -211,7 +209,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
                 setOptions(coapMessage, buffer);
             }
             catch (OptionException e) {
-                throw new DecodingException(remoteSocketAddress, messageID, new Token(token), e);
+                throw new OptionDecodingException(remoteSocketAddress, messageID, new Token(token), e);
             }
         }
 
@@ -300,19 +298,17 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent){
-        if(exceptionEvent.getCause() instanceof DecodingException){
-            DecodingException ex = (DecodingException) exceptionEvent.getCause();
+
+        //Message Format Exceptions cause a RST message
+        if(exceptionEvent.getCause() instanceof MessageFormatDecodingException){
+            MessageFormatDecodingException ex = (MessageFormatDecodingException) exceptionEvent.getCause();
 
             if(ex.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED){
-                log.warn("Could not handle incoming malformed message (Reason: {})",
-                        ex.getCause().getMessage());
-                return;
+                log.warn("Could not handle incoming malformed message (Reason: {})", ex.getCause().getMessage());
             }
+            else{
+                log.warn("Received malformed message (Reason: {})", ex.getCause().getMessage());
 
-            log.warn("Received malformed message (Reason: {})", ex.getCause().getMessage());
-
-            //Message Format Exceptions cause a RST message
-            if(ex.getCause() instanceof MessageFormatException){
                 try{
                     final CoapMessage emptyReset = CoapMessage.createEmptyReset(ex.getMessageID());
                     log.warn("Send empty RST: {}", emptyReset);
@@ -322,30 +318,30 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
                     log.error("This should never happen!", e);
                 }
             }
+        }
 
-            //Invalid or unknown critical options in requests cause a BAD OPTION error response
-            else if(ex.getCause() instanceof OptionException){
-                try{
-                    final CoapResponse coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
-                    coapResponse.setMessageID(ex.getMessageID());
-                    coapResponse.setToken(ex.getToken());
-                    coapResponse.setContent(ex.getCause().getMessage().getBytes(CoapMessage.CHARSET),
-                            ContentFormat.Name.TEXT_PLAIN_UTF8);
-                    log.warn("Send BAD OPTION response: {}", coapResponse);
-                    sendMessage(ctx, ex.getRemoteSocketAddress(), coapResponse);
-                }
-                catch (InvalidHeaderException | InvalidOptionException | InvalidMessageException e) {
-                    log.error("This should never happen.", e);
-                }
+        //Option Decoding Exceptions (only thrown for incoming requests) cause a BAD OPTION (402) response
+        else if(exceptionEvent.getCause() instanceof OptionDecodingException){
+            OptionDecodingException ex = (OptionDecodingException) exceptionEvent.getCause();
+            log.warn("Received request with not-handable option (Reason: {})", ex.getCause().getMessage());
+
+            try{
+                final CoapResponse coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
+                coapResponse.setMessageID(ex.getMessageID());
+                coapResponse.setToken(ex.getToken());
+                coapResponse.setContent(ex.getCause().getMessage().getBytes(CoapMessage.CHARSET),
+                        ContentFormat.Name.TEXT_PLAIN_UTF8);
+                log.warn("Send BAD OPTION response: {}", coapResponse);
+                sendMessage(ctx, ex.getRemoteSocketAddress(), coapResponse);
             }
-
-            else{
-                log.error("This should never happen (DecodingException with unsupported cause!", ex.getCause());
+            catch (InvalidHeaderException | InvalidOptionException | InvalidMessageException e) {
+                log.error("This should never happen (Could not create error response for not-handable option)!", e);
             }
         }
 
         else{
-            log.error("This should never happen (Unexpected Exception while decoding)!", exceptionEvent.getCause());
+            log.error("This should never happen (DecodingException with unsupported cause!", exceptionEvent.getCause());
+            ctx.sendUpstream(exceptionEvent);
         }
     }
 

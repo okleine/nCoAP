@@ -43,6 +43,8 @@ public abstract class Option<T>{
 
     private static Logger log = LoggerFactory.getLogger(Option.class.getName());
 
+    public static long MAX_AGE_MAXIMUM = (long) (Math.pow(2, 32) - 1);
+
     public static class Name{
         //Name          Number      OptionType  MinLength   MaxLength
         public static final int IF_MATCH        = 1;

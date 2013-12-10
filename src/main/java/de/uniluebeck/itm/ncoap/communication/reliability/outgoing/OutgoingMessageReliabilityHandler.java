@@ -195,7 +195,9 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         log.debug("Upstream (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
         if(me.getMessage() instanceof InternalStopUpdateNotificationRetransmissionMessage){
-            InternalStopUpdateNotificationRetransmissionMessage message = (InternalStopUpdateNotificationRetransmissionMessage) me.getMessage();
+            InternalStopUpdateNotificationRetransmissionMessage message =
+                    (InternalStopUpdateNotificationRetransmissionMessage) me.getMessage();
+
             synchronized (reliabilitySchedules){
                 ReliabilitySchedule reliabilitySchedule =
                         reliabilitySchedules.remove(message.getRemoteSocketAddress(), message.getMessageID());
@@ -224,7 +226,16 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 reliabilitySchedule = reliabilitySchedules.remove(remoteSocketAddress, coapMessage.getMessageID());
             }
 
-            if(!(reliabilitySchedule == null)){
+            //RST messages can be used as PING on application layer
+            if(reliabilitySchedule == null && coapMessage.getMessageTypeName() == MessageType.Name.RST){
+                log.info("Received empty RST as application layer ping: {}", coapMessage);
+
+                CoapMessage pingResponse = CoapMessage.createEmptyReset(coapMessage.getMessageID());
+                sendMessage(ctx, (InetSocketAddress) me.getRemoteAddress(), pingResponse);
+                return;
+            }
+
+            else if(!(reliabilitySchedule == null)){
                 reliabilitySchedule.cancelRemainingTasks();
                 if(coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
                     if(coapMessage.getMessageTypeName() == MessageType.Name.ACK){
@@ -238,9 +249,22 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                         ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), emptyAcknowledgementReceivedMessage,
                                 me.getRemoteAddress()));
                     }
+
+                    else if(coapMessage.getMessageTypeName() == MessageType.Name.RST){
+
+                        log.info("Received empty RST for message ID {} from {}", coapMessage.getMessageID(),
+                                remoteSocketAddress);
+
+                        InternalEmptyResetReceivedMessage emptyAcknowledgementReceivedMessage =
+                                new InternalEmptyResetReceivedMessage(reliabilitySchedule.getToken());
+
+                        ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), emptyAcknowledgementReceivedMessage,
+                                me.getRemoteAddress()));
+                    }
                 }
             }
             else {
+
                 log.debug("No open CON found for messageID {} to {}. IGNORE.", coapMessage.getMessageID(),
                         remoteSocketAddress);
             }
@@ -249,7 +273,19 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         ctx.sendUpstream(me);
     }
 
+    private void sendMessage(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
+                             final CoapMessage coapMessage){
 
+        ChannelFuture future = Channels.future(ctx.getChannel());
+        Channels.write(ctx, Channels.future(ctx.getChannel()), coapMessage, remoteSocketAddress);
+
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                log.info("Sent message to {}: {}", remoteSocketAddress, coapMessage);
+            }
+        });
+    }
 
 
 //    @Override

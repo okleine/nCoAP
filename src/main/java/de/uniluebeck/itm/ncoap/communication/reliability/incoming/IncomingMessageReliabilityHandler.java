@@ -49,9 +49,8 @@ package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
-import de.uniluebeck.itm.ncoap.communication.codec.OptionDecodingException;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
+import de.uniluebeck.itm.ncoap.communication.codec.OptionDecodingException;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -112,44 +111,6 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Upstream from {}: {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof InternalCodecExceptionMessage){
-            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
-            Throwable ex = message.getCause();
-
-            //Exception during request decoding (owing message: 4.x error response)
-            if(MessageCode.isRequest(message.getMessageCode()) && ex instanceof OptionDecodingException){
-                InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-
-                if(message.getMessageType() == MessageType.Name.CON.getNumber()){
-                    scheduleEmptyAcknowlegement(ctx, remoteSocketAddress , message.getMessageID());
-                }
-                else{
-                    synchronized (owingResponses){
-                        owingResponses.put(remoteSocketAddress, message.getMessageID(), MessageType.Name.NON);
-                        log.debug("No. of owing responses: {}", owingResponses.size());
-                    }
-                }
-            }
-
-            if(MessageCode.isResponse(message.getMessageCode()) && ex instanceof OptionDecodingException){
-                if(message.getMessageType() == MessageType.Name.CON.getNumber()
-                        || message.getMessageType() == MessageType.Name.NON.getNumber()){
-                    InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-                    writeReset(ctx, remoteSocketAddress, message.getMessageID(), message.getToken());
-                }
-            }
-
-            //Exception during response encoding (owing message: 5.x error response)
-            if(MessageCode.isResponse(message.getMessageCode()) && ex instanceof EncodingException){
-                InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-                synchronized (owingResponses){
-                    owingResponses.put(remoteSocketAddress, message.getMessageID(),
-                            MessageType.Name.getName(message.getMessageType()));
-                    log.debug("No. of owing responses: {}", owingResponses.size());
-                }
-            }
-        }
-
         if(!(me.getMessage() instanceof CoapMessage)){
             ctx.sendUpstream(me);
             return;
@@ -191,14 +152,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         }
 
         //Incoming responses
-        else if(coapMessage instanceof CoapResponse){
-            //Incoming confirmable responses
-            if(coapMessage.getMessageTypeName() == MessageType.Name.CON){
-                writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
-            }
+        else if(coapMessage instanceof CoapResponse && coapMessage.getMessageTypeName() == MessageType.Name.CON){
+            writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
         }
-
-
 
         ctx.sendUpstream(me);
     }
@@ -299,24 +255,24 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
 
 
-    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
-                                           final int messageID, final Token token){
-        try{
-            CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
-            resetMessage.setToken(token);
-            ChannelFuture future = Channels.future(ctx.getChannel());
-            Channels.write(ctx, future, resetMessage, remoteSocketAddress);
-
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    log.info("RST for message ID {} and token {} succesfully sent to {}.", new Object[]{messageID,
-                            token, remoteSocketAddress});
-                }
-            });
-        }
-        catch (InvalidHeaderException e) {
-            log.error("This should never happen.", e);
-        }
-    }
+//    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
+//                                           final int messageID, final Token token){
+//        try{
+//            CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
+//            resetMessage.setToken(token);
+//            ChannelFuture future = Channels.future(ctx.getChannel());
+//            Channels.write(ctx, future, resetMessage, remoteSocketAddress);
+//
+//            future.addListener(new ChannelFutureListener() {
+//                @Override
+//                public void operationComplete(ChannelFuture future) throws Exception {
+//                    log.info("RST for message ID {} and token {} succesfully sent to {}.", new Object[]{messageID,
+//                            token, remoteSocketAddress});
+//                }
+//            });
+//        }
+//        catch (InvalidHeaderException e) {
+//            log.error("This should never happen.", e);
+//        }
+//    }
 }

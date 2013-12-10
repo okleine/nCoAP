@@ -99,10 +99,11 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     private long resourceStatusExpiryDate;
 
 
-    protected ObservableWebservice(String path, T initialStatus){
+    protected ObservableWebservice(String path, T initialStatus, long validitySeconds){
         this.path = path;
-        this.resourceStatus = initialStatus;
+        this.setResourceStatus(initialStatus, validitySeconds);
     }
+
 
     public void setCoapServerApplication(CoapServerApplication serverApplication){
         this.coapServerApplication = serverApplication;
@@ -238,10 +239,10 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         }
     }
 
-    @Override
-    public synchronized  byte[] getEtag(){
-        return this.etag;
-    }
+//    @Override
+//    public synchronized  byte[] getEtag(){
+//        return this.etag;
+//    }
 
     @Override
     public final synchronized long getMaxAge() {

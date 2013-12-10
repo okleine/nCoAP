@@ -87,7 +87,7 @@ public interface Webservice<T> {
      *
      * @return the object of type T that holds the actual resourceStatus of the resource
      */
-    public T getResourceStatus();
+    //public T getResourceStatus();
 
 //    /**
 //     * Method to set the new status of the resource represented by this {@link Webservice}. This method is the
@@ -158,8 +158,9 @@ public interface Webservice<T> {
      *
      * @return the actual ETAG, i.e. hashvalue, on the resource status (not the payload!)
      */
-    public byte[] getEtag();
+    public byte[] getEtag(long contentFormatValue);
 
+    public byte[] getEtag(byte[] serializedResourceStatus);
     /**
      * This method is called by the nCoAP framework when this {@link Webservice} is removed from the
      * {@link CoapServerApplication} instance. If any one could e.g. try to cancel scheduled tasks. There might even
@@ -177,6 +178,9 @@ public interface Webservice<T> {
     public void setCoapServerApplication(CoapServerApplication serverApplication);
 
     public CoapServerApplication getCoapServerApplication();
+
+    public byte[] getSerializedResourceStatus(long contentFormatNumber)
+            throws AcceptedContentFormatNotSupportedException;
 
     /**
      * Implementing classes must provide this method such that it returns <code>true</code> if

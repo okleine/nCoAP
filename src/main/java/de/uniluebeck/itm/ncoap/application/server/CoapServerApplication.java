@@ -83,7 +83,6 @@ import de.uniluebeck.itm.ncoap.application.server.webservice.AcceptedContentForm
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
-import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
 import de.uniluebeck.itm.ncoap.communication.codec.OptionDecodingException;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableResourceRegistrationMessage;
@@ -222,11 +221,11 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
         log.debug("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof InternalCodecExceptionMessage){
-            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
-            handleCodecException(ctx, (InetSocketAddress) me.getRemoteAddress(), message);
-            return;
-        }
+//        if(me.getMessage() instanceof InternalCodecExceptionMessage){
+//            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
+//            handleCodecException(ctx, (InetSocketAddress) me.getRemoteAddress(), message);
+//            return;
+//        }
 
         if(!(me.getMessage() instanceof CoapRequest)){
             log.warn("Server received inadequeate message: {}", me.getMessage());
@@ -242,11 +241,6 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         //log.debug("Contains key: {}", openRequests.containsKey(remoteSocketAddress));
         //log.debug("Contains value: {}", openRequests.containsValue(coapRequest));
 
-        //Avoid duplicate request processing!
-        if(openRequests.containsEntry(me.getRemoteAddress(), coapRequest)){
-            log.warn("Received duplicate request (IGNORE): {}", coapRequest);
-            return;
-        }
 
         //Create settable future to wait for response
         final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
@@ -332,14 +326,14 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
             if(etag.length == 0 || Arrays.equals(etag, currentEtag)){
                 log.debug("ETAG from IF-MATCH option matches: " + OpaqueOption.toHexString(etag));
                 webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
-                break;
+                return;
             }
             else{
                 log.debug("ETAG from IF-MATCH option does not match: " + OpaqueOption.toHexString(etag));
             }
         }
 
-        //This is only reached if there is no matching ETAG contained as IF-MATCH option
+        //This is only reached if there no matching ETAG contained as IF-MATCH option
         if(!coapRequest.getIfMatch().isEmpty()){
             try {
                 String message = "None of the ETAGs contained as IF-MATCH option matches."
@@ -348,6 +342,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                 CoapResponse coapResponse = new CoapResponse(MessageCode.Name.PRECONDITION_FAILED_412);
                 coapResponse.setContent(message.getBytes(CoapMessage.CHARSET));
                 responseFuture.set(coapResponse);
+                return;
             }
             catch (InvalidHeaderException | InvalidMessageException e) {
                 log.error("This should never happen.", e);
@@ -362,9 +357,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                 try {
                     log.debug("Valid ETAG option found in request: {}", OpaqueOption.toHexString(etag));
                     CoapResponse coapResponse = new CoapResponse(MessageCode.Name.VALID_203);
-                    //coapResponse.setMessageID(coapRequest.getMessageID());
-                    //coapResponse.setEtag(etag);
                     responseFuture.set(coapResponse);
+                    return;
                 }
                 catch (InvalidHeaderException e) {
                     log.error("This should never happen.", e);
@@ -377,69 +371,69 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
         boolean added = openRequests.put((InetSocketAddress) me.getRemoteAddress(), coapRequest);
         if(added)
-            log.warn("Added request from {} to list of open requests: {}", me.getRemoteAddress(), coapRequest);
+            log.info("Added request from {} to list of open requests: {}", me.getRemoteAddress(), coapRequest);
         else
             log.error("NOT ADDED!");
 
         webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
     }
 
-    private void handleCodecException(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
-                                      InternalCodecExceptionMessage message) {
-
-        try{
-            Throwable ex = message.getCause();
-            CoapResponse coapResponse;
-            byte[] content;
-
-            //Handle excpetions from incoming message decoding
-            if(ex instanceof OptionDecodingException){
-
-                if(ex.getCause() != null && ex.getCause() instanceof InvalidOptionException)
-                    coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
-                else
-                    coapResponse = new CoapResponse(MessageCode.Name.BAD_REQUEST_400);
-
-
-                if(message.getMessageType() == MessageType.Name.CON.getNumber())
-                    coapResponse.setMessageType(MessageType.Name.ACK.getNumber());
-                else
-                    coapResponse.setMessageType(MessageType.Name.NON.getNumber());
-
-
-                content = ex.getCause().getMessage().getBytes(CoapMessage.CHARSET);
-
-            }
-
-            //Handle excpetions from outgoing  message encoding (actually this should never happen!)
-            else if(ex instanceof EncodingException){
-
-                log.error("This should never happen!", ex.getCause());
-                coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-                coapResponse.setMessageType(message.getMessageType());
-
-                content = ex.getCause().getMessage().getBytes(CoapMessage.CHARSET);
-            }
-
-            else{
-
-                coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-                content = ex.getCause().getMessage().getBytes(CoapMessage.CHARSET);
-
-            }
-
-            //Set the message ID and the content of the error message
-            coapResponse.setMessageID(message.getMessageID());
-            coapResponse.setContent(content);
-
-
-            sendCoapResponse(ctx, coapResponse, remoteAddress);
-
-        }
-        catch (InvalidHeaderException | InvalidMessageException e1) {
-            log.error("This should never happen.", e1);
-        }
-    }
+//    private void handleCodecException(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
+//                                      InternalCodecExceptionMessage message) {
+//
+//        try{
+//            Throwable ex = message.getCause();
+//            CoapResponse coapResponse;
+//            byte[] content;
+//
+//            //Handle excpetions from incoming message decoding
+//            if(ex instanceof OptionDecodingException){
+//
+//                if(ex.getCause() != null && ex.getCause() instanceof InvalidOptionException)
+//                    coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
+//                else
+//                    coapResponse = new CoapResponse(MessageCode.Name.BAD_REQUEST_400);
+//
+//
+//                if(message.getMessageType() == MessageType.Name.CON.getNumber())
+//                    coapResponse.setMessageType(MessageType.Name.ACK.getNumber());
+//                else
+//                    coapResponse.setMessageType(MessageType.Name.NON.getNumber());
+//
+//
+//                content = ex.getCause().getMessage().getBytes(CoapMessage.CHARSET);
+//
+//            }
+//
+//            //Handle excpetions from outgoing  message encoding (actually this should never happen!)
+//            if(ex instanceof EncodingException){
+//
+//                log.error("This should never happen!", ex.getCause());
+//                coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+//                coapResponse.setMessageType(message.getMessageType());
+//
+//                content = ex.getCause().getMessage().getBytes(CoapMessage.CHARSET);
+//            }
+//
+//            else{
+//
+//                coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+//                content = ex.getCause().getMessage().getBytes(CoapMessage.CHARSET);
+//
+//            }
+//
+//            //Set the message ID and the content of the error message
+//            coapResponse.setMessageID(message.getMessageID());
+//            coapResponse.setContent(content);
+//
+//
+//            sendCoapResponse(ctx, coapResponse, remoteAddress);
+//
+//        }
+//        catch (InvalidHeaderException | InvalidMessageException e1) {
+//            log.error("This should never happen.", e1);
+//        }
+//    }
 
     private void sendCoapResponse(final ChannelHandlerContext ctx, final CoapResponse coapResponse,
                                   final InetSocketAddress remoteAddress){
@@ -595,6 +589,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         }
     }
 
+
     private class CoapResponseSender implements Runnable{
 
         private final SettableFuture<CoapResponse> responseFuture;
@@ -634,20 +629,20 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
                 if(webservice != null){
 
-                    //Set Max-Age Option according to the value returned by the Webservice
-                    try{
-                        coapResponse.setMaxAge(webservice.getMaxAge());
-                    }
-                    catch(InvalidOptionException e){
-                        log.debug("IGNORE invalid option exception:", e);
-                    }
-
-                    try{
-                        coapResponse.setEtag(webservice.getEtag());
-                    }
-                    catch(InvalidOptionException e){
-                        log.debug("IGNORE invalid option exception:", e);
-                    }
+//                    //Set Max-Age Option according to the value returned by the Webservice
+//                    try{
+//                        coapResponse.setMaxAge(webservice.getMaxAge());
+//                    }
+//                    catch(InvalidOptionException e){
+//                        log.debug("IGNORE invalid option exception:", e);
+//                    }
+//
+//                    try{
+//                        coapResponse.setEtag(webservice.getEtag());
+//                    }
+//                    catch(InvalidOptionException e){
+//                        log.debug("IGNORE invalid option exception:", e);
+//                    }
 
                     if(coapRequest.isObserveSet() && webservice instanceof ObservableWebservice)
                         coapResponse.setObservationSequenceNumber(0);

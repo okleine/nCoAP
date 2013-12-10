@@ -233,16 +233,16 @@ public class CoapRequest extends CoapMessage {
      */
     public Set<byte[]> getIfMatch(){
 
-        if(options.containsKey(Option.Name.IF_MATCH)){
-            Set<byte[]> result = new HashSet<>();
-            Iterator<Option> iterator = options.get(Option.Name.IF_MATCH).iterator();
+        Set<Option> ifMatchOptions = options.get(Option.Name.IF_MATCH);
+        Set<byte[]> result = new HashSet<>(ifMatchOptions.size());
+
+        if(ifMatchOptions.size() > 0){
+            Iterator<Option> iterator = ifMatchOptions.iterator();
             while(iterator.hasNext())
                 result.add(((OpaqueOption) iterator.next()).getDecodedValue());
-
-            return result;
         }
 
-        return new HashSet<>(0);
+        return result;
     }
 
     /**
