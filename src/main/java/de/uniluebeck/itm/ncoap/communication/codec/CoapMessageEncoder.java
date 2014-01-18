@@ -106,10 +106,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         log.info("CoapMessage to be encoded: {}", coapMessage);
 
         if(coapMessage.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED)
-            return new InternalCodecExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
-                    coapMessage.getMessageID(), coapMessage.getToken(),
-                    new EncodingException(new InvalidHeaderException("Message ID is not defined."))
-            );
+            throw new EncodingException(new InvalidHeaderException("Message ID is not defined."));
 
         //Start encoding
         ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer(0);
@@ -128,8 +125,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             encodeOptions(encodedMessage, coapMessage);
         }
         catch(InvalidOptionException e){
-            return new InternalCodecExceptionMessage(coapMessage.getMessageType(), coapMessage.getMessageCode(),
-                    coapMessage.getMessageID(), coapMessage.getToken(), new EncodingException(e));
+            return new EncodingException(e);
         }
 
         log.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
@@ -149,9 +145,9 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
         byte[] token = coapMessage.getToken().getBytes();
 
-        int encodedHeader = ((coapMessage.getProtocolVersion()  & 0b11)     << 30)
-                          | ((coapMessage.getMessageType()      & 0b11)     << 28)
-                          | ((token.length                      & 0b1111)   << 24)
+        int encodedHeader = ((coapMessage.getProtocolVersion()  & 0x03)     << 30)
+                          | ((coapMessage.getMessageType()      & 0x03)     << 28)
+                          | ((token.length                      & 0x0E)     << 24)
                           | ((coapMessage.getMessageCode()      & 0xFF)     << 16)
                           | ((coapMessage.getMessageID()        & 0xFFFF));
 

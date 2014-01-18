@@ -25,14 +25,16 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 04.11.13
- * Time: 13:09
- * To change this template use File | Settings | File Templates.
+ * Exception to be thrown when there is an unknown option number involved, e.g. during creation of an {@link Option}
+ * instance or while checking option restrictions using the static methods provided by {@link Option}.
+ *
+ * @author Oliver Kleine
  */
 public class UnknownOptionException extends OptionException{
 
+    /**
+     * @param optionNumber the option number that caused this exception
+     */
     public UnknownOptionException(int optionNumber){
         super(optionNumber, "Unknown option number: " + optionNumber);
     }

@@ -56,8 +56,10 @@ import de.uniluebeck.itm.ncoap.message.options.Option;
 
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
 * This is the interface to be implemented to realize a CoAP webservice. The generic type T means, that the object
@@ -74,6 +76,8 @@ public interface Webservice<T> {
      */
     public String getPath();
 
+    public ReadWriteLock getReadWriteLock();
+
     /**
      * Returns the object of type T that holds the actual status of the resource represented by this
      * {@link NotObservableWebservice}.
@@ -87,22 +91,7 @@ public interface Webservice<T> {
      *
      * @return the object of type T that holds the actual resourceStatus of the resource
      */
-    //public T getResourceStatus();
-
-//    /**
-//     * Method to set the new status of the resource represented by this {@link Webservice}. This method is the
-//     * one and only recommended way to change the status.
-//     *
-//     * Note, that this status is internal and thus independent from the payload of the {@link CoapResponse} to be
-//     * returned by the inherited method {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}.
-//     *
-//     * Example: Assume this webservice represents a switch that has two states "on" and "off". The payload of the
-//     * previously mentioned {@link CoapResponse} could then be either "on" or "off". But since there are only
-//     * two possible states {@link T} could be of type {@link Boolean}.
-//     *
-//     * @param newStatus the object of type {@link T} representing the new status
-//     */
-//    public void setResourceStatus(T newStatus);
+    public T getResourceStatus();
 
     /**
      * Method to set the new status of the resource represented by this {@link Webservice}. This method is the
@@ -116,7 +105,7 @@ public interface Webservice<T> {
      * two possible states {@link T} could be of type {@link Boolean}.
      *
      * @param newStatus the object of type {@link T} representing the new status
-     * @param lifetimeSeconds the number of seconds this status is valid.
+     * @param lifetimeSeconds the number of seconds this status is valid, i.e. cachable by clients or proxies.
      */
     public void setResourceStatus(T newStatus, long lifetimeSeconds);
 
@@ -128,8 +117,6 @@ public interface Webservice<T> {
      * @param executorService a {@link ScheduledExecutorService} instance.
      */
     public void setScheduledExecutorService(ScheduledExecutorService executorService);
-
-    //public void setListeningExecutorService(ListeningExecutorService listeningExecutorService);
 
     /**
      * Returns the {@link ScheduledExecutorService} instance which is used to schedule and execute any
@@ -158,9 +145,14 @@ public interface Webservice<T> {
      *
      * @return the actual ETAG, i.e. hashvalue, on the resource status (not the payload!)
      */
-    public byte[] getEtag(long contentFormatValue);
+    public byte[] getEtag();
 
-    public byte[] getEtag(byte[] serializedResourceStatus);
+    public void setEtag(byte[] etag) throws IllegalArgumentException;
+
+    public void updateEtag(T resourceStatus);
+
+    //public Collection<byte[]> getAllEtags();
+
     /**
      * This method is called by the nCoAP framework when this {@link Webservice} is removed from the
      * {@link CoapServerApplication} instance. If any one could e.g. try to cancel scheduled tasks. There might even
@@ -181,6 +173,7 @@ public interface Webservice<T> {
 
     public byte[] getSerializedResourceStatus(long contentFormatNumber)
             throws AcceptedContentFormatNotSupportedException;
+
 
     /**
      * Implementing classes must provide this method such that it returns <code>true</code> if
@@ -207,9 +200,6 @@ public interface Webservice<T> {
      */
     @Override
     public int hashCode();
-
-
-
 
     /**
      * Sets the length of the {@link Option.Name#ETAG} that is automatically set by the nCoAP framework for outgoing

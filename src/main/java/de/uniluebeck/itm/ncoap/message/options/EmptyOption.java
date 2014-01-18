@@ -25,13 +25,20 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
 /**
+ * An {@link EmptyOption} achieves it's goal just by being present in a message or not. Thus, there is no value.
  *
  * @author Oliver Kleine
  */
 public class EmptyOption extends Option<byte[]>{
 
+    /**
+     * @param optionNumber the option number of the {@link EmptyOption} to be created
+     *
+     * @throws InvalidOptionException this should never happen as empty options don't have a value that can be invalid
+     * @throws UnknownOptionException if the given option number is unknown
+     */
     public EmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
-        super(optionNumber, new byte[0]);
+       super(optionNumber, new byte[0]);
     }
 
     /**

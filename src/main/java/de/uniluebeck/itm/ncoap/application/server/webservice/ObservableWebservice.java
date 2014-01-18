@@ -51,7 +51,6 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageType;
@@ -62,11 +61,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Observable;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -83,14 +81,14 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     private static Logger log = LoggerFactory.getLogger(ObservableWebservice.class.getName());
 
     private CoapServerApplication coapServerApplication;
-
     private String path;
+
+    private ReadWriteLock readWriteLock;
+
     private T resourceStatus;
 
-    private int etagLength = Option.ETAG_LENGTH_DEFAULT;
+    private int etagLength;
     private byte[] etag;
-
-    private Object monitor = new Object();
 
     private boolean isUpdateNotificationConfirmable = true;
 
@@ -98,10 +96,20 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     private ListeningExecutorService listeningExecutorService;
     private long resourceStatusExpiryDate;
 
+    protected ObservableWebservice(String path, T initialStatus){
+        this(path, initialStatus, Option.MAX_AGE_DEFAULT, Option.ETAG_LENGTH_DEFAULT);
+    }
 
     protected ObservableWebservice(String path, T initialStatus, long validitySeconds){
+        this(path, initialStatus, validitySeconds, Option.ETAG_LENGTH_DEFAULT);
+    }
+
+    protected ObservableWebservice(String path, T initialStatus, long validitySeconds, int etagLength){
+        this.readWriteLock = new ReentrantReadWriteLock(false);
         this.path = path;
-        this.setResourceStatus(initialStatus, validitySeconds);
+
+        setEtagLength(etagLength);
+        setResourceStatus(initialStatus, validitySeconds);
     }
 
 
@@ -113,6 +121,12 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         return this.coapServerApplication;
     }
 
+    @Override
+    public final String getPath() {
+        return this.path;
+    }
+
+
     /**
      * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
      * {@link CoapServerApplication} instance (using {@link CoapServerApplication#registerService(Webservice)}.
@@ -122,8 +136,8 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      */
     @Override
     public void setScheduledExecutorService(ScheduledExecutorService executorService){
-        if(this.scheduledExecutorService != null)
-            this.scheduledExecutorService.shutdownNow();
+//        if(this.scheduledExecutorService != null)
+//            this.scheduledExecutorService.shutdownNow();
 
         this.scheduledExecutorService = executorService;
         this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
@@ -136,25 +150,59 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
 
+    /**
+     * Returns an instance of {@link ListeningExecutorService} to execute asynchronous webservice internal tasks, e.g.
+     * database access. Actually, the underlying {@link java.util.concurrent.ExecutorService} is the same instance as
+     * returned by {@link #getScheduledExecutorService()} but decorated using {@link MoreExecutors#listeningDecorator}.
+     *
+     * @return an instance of {@link ListeningExecutorService} to execute asynchronous webservice internal tasks
+     */
     public ListeningExecutorService getListeningExecutorService() {
         return listeningExecutorService;
     }
 
     @Override
+    public final ReadWriteLock getReadWriteLock(){
+        return this.readWriteLock;
+    }
+
+
+    @Override
     public abstract void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                             InetSocketAddress remoteAddress);
 
-    protected final Object getMonitor(){
-        return this.monitor;
+
+    @Override
+    public final T getResourceStatus(){
+        return this.resourceStatus;
+    }
+
+
+    @Override
+    public synchronized final void setResourceStatus(T resourceStatus, long lifetimeSeconds){
+        try{
+            readWriteLock.writeLock().lock();
+            this.resourceStatus = resourceStatus;
+            this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
+
+            this.updateEtag(resourceStatus);
+
+            log.debug("New status of {} successfully set (expires in {} seconds).", this.path, lifetimeSeconds);
+
+            //Notify observers (methods inherited from abstract class Observable)
+            setChanged();
+            notifyObservers();
+        }
+
+        finally {
+            readWriteLock.writeLock().unlock();
+        }
     }
 
     /**
      * Returns the payload to be contained in {@link CoapResponse}s on incoming {@link CoapRequest}s. This method
      * is invoked by the framework upon invocation of {@link #setResourceStatus(T, long)}. The implementation
      * of this method is supposed to be fast, since it is invoked for every observer.
-     *
-     * Note: Extending classes should synchronize the method body using the object from {@link #getMonitor()} to
-     * ensure, that the nCoAP framework sets MAX-AGE and ETAG properly.
      *
      * @param contentFormat the number representing the format of the serialized resource status
      *
@@ -163,6 +211,27 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     public abstract byte[] getSerializedResourceStatus(long contentFormat)
             throws AcceptedContentFormatNotSupportedException;
 
+
+    @Override
+    public final void setEtag(byte[] etag) throws IllegalArgumentException{
+        if(etag.length != this.etagLength)
+            throw new IllegalArgumentException("ETAG length for this webservice is " + this.etagLength
+                    + " but this byte array has length " + etag.length);
+
+        this.etag = etag;
+    }
+
+
+    @Override
+    public byte[] getEtag(){
+        return this.etag;
+    }
+
+
+    @Override
+    public final long getMaxAge() {
+        return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
+    }
 
     /**
      * Returns whether update notifications should be sent with {@link MessageType.Name#CON} or
@@ -190,37 +259,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         this.isUpdateNotificationConfirmable = isConfirmable;
     }
 
-
-    @Override
-    public final String getPath() {
-       return this.path;
-    }
-
-    @Override
-    public final synchronized T getResourceStatus(){
-        return this.resourceStatus;
-    }
-
-    @Override
-    public synchronized final void setResourceStatus(T newStatus, long lifetimeSeconds){
-        this.resourceStatus = newStatus;
-        this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
-
-        //Notify observers (methods inherited from abstract class Observable)
-        setChanged();
-        notifyObservers();
-
-        try{
-            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-            this.etag = Arrays.copyOfRange(messageDigest.digest(newStatus.toString()
-                                                                         .getBytes(CoapMessage.CHARSET)),
-                        0, etagLength);
-        }
-        catch (NoSuchAlgorithmException e) {
-            log.error("This should never happen.", e);
-        }
-    }
-
     @Override
     public void setEtagLength(int etagLength) throws IllegalArgumentException {
         try{
@@ -239,14 +277,8 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         }
     }
 
-//    @Override
-//    public synchronized  byte[] getEtag(){
-//        return this.etag;
-//    }
-
-    @Override
-    public final synchronized long getMaxAge() {
-        return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
+    public int getEtagLength(){
+        return this.etagLength;
     }
 
 //    /**

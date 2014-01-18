@@ -96,7 +96,7 @@ class ObservationParameter {
     }
 
     public void nextResourceUpdate(){
-        this.notificationCount += OutgoingMessageReliabilityHandler.MAX_RETRANSMIT + 1;
+        this.notificationCount += OutgoingMessageReliabilityHandler.MAX_RETRANSMIT;
     }
 
     /**

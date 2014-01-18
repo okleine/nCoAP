@@ -29,7 +29,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
-import de.uniluebeck.itm.ncoap.communication.codec.InternalCodecExceptionMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -260,20 +259,20 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
             return;
         }
 
-        if(me.getMessage() instanceof InternalCodecExceptionMessage){
-            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
-
-            CoapResponseProcessor callback = responseProcessors.get(me.getRemoteAddress(), message.getToken());
-
-            if(callback != null && callback instanceof CodecExceptionReceiver)
-                ((CodecExceptionReceiver) callback).handleCodecException(message.getCause());
-            else
-                log.info("No CodecExceptionReceiver found for token {} and remote address {}",
-                        message.getToken(), me.getRemoteAddress());
-
-            me.getFuture().setSuccess();
-            return;
-        }
+//        if(me.getMessage() instanceof InternalCodecExceptionMessage){
+//            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
+//
+//            CoapResponseProcessor callback = responseProcessors.get(me.getRemoteAddress(), message.getToken());
+//
+//            if(callback != null && callback instanceof CodecExceptionReceiver)
+//                ((CodecExceptionReceiver) callback).handleCodecException(message.getCause());
+//            else
+//                log.info("No CodecExceptionReceiver found for token {} and remote address {}",
+//                        message.getToken(), me.getRemoteAddress());
+//
+//            me.getFuture().setSuccess();
+//            return;
+//        }
 
         if(me.getMessage() instanceof CoapResponse){
 

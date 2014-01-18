@@ -234,7 +234,7 @@ public class CoapRequest extends CoapMessage {
     public Set<byte[]> getIfMatch(){
 
         Set<Option> ifMatchOptions = options.get(Option.Name.IF_MATCH);
-        Set<byte[]> result = new HashSet<>(ifMatchOptions.size());
+        Set<byte[]> result = new HashSet<byte[]>(ifMatchOptions.size());
 
         if(ifMatchOptions.size() > 0){
             Iterator<Option> iterator = ifMatchOptions.iterator();
@@ -296,7 +296,7 @@ public class CoapRequest extends CoapMessage {
      * {@link CoapRequest}. If there is no such option, then the returned set is empty.
      */
     public Set<byte[]> getEtags(){
-        Set<byte[]> result = new HashSet<>();
+        Set<byte[]> result = new HashSet<byte[]>();
 
         if(options.containsKey(Option.Name.ETAG)){
             Iterator<Option> iterator = options.get(Option.Name.ETAG).iterator();
@@ -352,7 +352,10 @@ public class CoapRequest extends CoapMessage {
                 this.removeOptions(Option.Name.OBSERVE);
             }
         }
-        catch (InvalidOptionException | UnknownOptionException e) {
+        catch (InvalidOptionException e) {
+            log.error("This should never happen.", e);
+        }
+        catch (UnknownOptionException e) {
             log.error("This should never happen.", e);
         }
     }
@@ -444,7 +447,7 @@ public class CoapRequest extends CoapMessage {
      * @return a {@link Set<Long>} containing the numbers representing the accepted content formats.
      */
     public Set<Long> getAcceptedContentFormats(){
-        Set<Long> result = new HashSet<>();
+        Set<Long> result = new HashSet<Long>();
 
         for(Option option : options.get(Option.Name.ACCEPT))
             result.add(((UintOption) option).getDecodedValue());

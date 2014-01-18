@@ -140,7 +140,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
 
 
         //Schedule retransmissionSchedules
-        Set<ScheduledFuture> retransmissionFutures = new HashSet<>();
+        Set<ScheduledFuture> retransmissionFutures = new HashSet<ScheduledFuture>();
         for(int counter = 0; counter < MAX_RETRANSMIT; counter++){
 
             MessageRetransmission messageRetransmission
@@ -186,8 +186,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
      * This method is invoked with an upstream message event. If the message has one of the codes ACK or RESET it is
      * a response for a request waiting for a response. Thus the corresponding request is removed from
      * the list of open requests and the request will not be retransmitted anymore.
+     *
      * @param ctx The {@link ChannelHandlerContext}
      * @param me The {@link MessageEvent}
+     *
      * @throws Exception
      */
     @Override

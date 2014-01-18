@@ -39,70 +39,81 @@ public class StringOption extends Option<String>{
 
     private static Logger log = LoggerFactory.getLogger(StringOption.class.getName());
 
+    /**
+     * @param optionNumber the option number of the {@link StringOption} to be created
+     * @param value the value of the {@link StringOption} to be created
+     *
+     * @throws InvalidOptionException if the given value is either the default value or exceeds
+     * the defined limits for options with the given option number in terms of length.
+     *
+     * @throws UnknownOptionException if the given option number is unknown, i.e. not supported
+     */
+    public StringOption(int optionNumber, byte[] value)
+            throws InvalidOptionException, UnknownOptionException {
 
-//    public StringOption(OptionName optionName, String value) throws InvalidOptionException{
-//        super(optionName,
-//                optionName == URI_HOST ?
-//                        value.toLowerCase(Locale.ENGLISH).getBytes(CHARSET) :
-//                            convertToByteArrayWithoutPercentEncoding(optionName, value));
-//    }
-
-    public StringOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, value);
     }
 
-    public StringOption(int optionNumber, String value) throws InvalidOptionException, UnknownOptionException {
+    /**
+     * Creates an instance of {@link StringOption} according to the rules defined for CoAP. The pre-processing of the
+     * given value before encoding using {@link CoapMessage#CHARSET} depends on the given option number:
+     *
+     * <ul>
+     *     <li>
+     *         {@link Option.Name#URI_HOST}: convert to lower case and remove percent encoding (if present)
+     *     </li>
+     *     <li>
+     *         {@link Option.Name#URI_PATH} and {@link Option.Name#URI_QUERY}: remove percent encoding (if present)
+     *     </li>
+     *     <li>
+     *         others: no pre-processing.
+     *     </li>
+     * </ul>
+     *
+     * @param optionNumber the option number of the {@link StringOption} to be created
+     * @param value the value of the {@link StringOption} to be created
+     *
+     * @throws InvalidOptionException if the given value is either the default value or (after encoding) exceeds
+     * the defined limits for options with the given option number in terms of length
+     * (see {@link Option#getMinLength(int)} and {@link Option#getMaxLength(int)}.
+     *
+     * @throws UnknownOptionException if the given option number is unknown, i.e. not supported
+     *
+     * @throws IllegalArgumentException if the given option value contains invalid percent encoding
+     */
+    public StringOption(int optionNumber, String value)
+            throws InvalidOptionException, UnknownOptionException, IllegalArgumentException{
+
         this(optionNumber, optionNumber == Option.Name.URI_HOST ?
-                convertToByteArrayWithoutPercentEncoding(optionNumber, value.toLowerCase(Locale.ENGLISH)) :
-                convertToByteArrayWithoutPercentEncoding(optionNumber, value));
+                convertToByteArrayWithoutPercentEncoding(value.toLowerCase(Locale.ENGLISH)) :
+                ((optionNumber == Option.Name.URI_PATH || optionNumber == Option.Name.URI_QUERY) ?
+                            convertToByteArrayWithoutPercentEncoding(value) :
+                                    value.getBytes(CoapMessage.CHARSET)));
     }
 
+    /**
+     * Returns the decoded value of this option assuming the byte array returned by {@link #getValue()} is an encoded
+     * String using {@link CoapMessage#CHARSET}.
+     *
+     * @return the decoded value of this option assuming the byte array returned by {@link #getValue()} is an encoded
+     * String using {@link CoapMessage#CHARSET}.
+     */
     @Override
     public String getDecodedValue() {
         return new String(value, CoapMessage.CHARSET);
     }
 
-//    @Override
-//    public boolean equals(Object object) {
-//        if(!(object instanceof StringOption))
-//            return false;
-//
-//        StringOption other = (StringOption) object;
-//        return this.getDecodedValue().equals(other.getDecodedValue());
-//    }
+    /**
+     * Replaces percent-encoding from the given {@link String} and returns a byte array containing the encoded string
+     * using {@link CoapMessage#CHARSET}.
+     *
+     * @param s the {@link String} to be encoded
+     *
+     * @return a byte array containing the encoded string using {@link CoapMessage#CHARSET} without percent-encoding.
+     */
+    public static byte[] convertToByteArrayWithoutPercentEncoding(String s) throws IllegalArgumentException{
 
-
-//    @Override
-//    public boolean equals(Object o) {
-//        if(!(o instanceof StringOption)){
-//            return false;
-//        }
-//        StringOption opt = (StringOption) o;
-//        if((this.optionNumber == opt.optionNumber) && Arrays.equals(this.encodedValue, opt.encodedValue)){
-//            return true;
-//        }
-//        return false;
-//    }
-
-//    /**
-//     * Returns the options value as decoded String assuming the value to be UTF-8 encoded
-//     * @return the options value as decoded String assuming the value to be UTF-8 encoded
-//     */
-//    public String getDecodedValue() {
-//        String result = null;
-//        try {
-//            result = new String(encodedValue, CHARSET);
-//        } catch (UnsupportedEncodingException e) {
-//           log.debug("This should never happen:\n", e);
-//        }
-//        return result;
-//    }
-
-    //Replaces percent-encoding from ASCII Strings with UTF-8 encoding
-    public static byte[] convertToByteArrayWithoutPercentEncoding(int optionNumber, String s)
-            throws InvalidOptionException {
-
-        ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(CoapMessage.CHARSET));;
+        ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(CoapMessage.CHARSET));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         int i;
@@ -121,7 +132,7 @@ public class StringOption extends Option<String>{
 
                 if(d1 == -1 || d2 == -1){
                     //Unexpected end of stream (at least one byte missing after '%')
-                    throw new InvalidOptionException(optionNumber, "Invalid percent encoding in: " + s);
+                    throw new IllegalArgumentException("Invalid percent encoding in: " + s);
                 }
 
                 //Write decoded value to output stream (e.g. sequence [0x02, 0x00] results into byte 0x20

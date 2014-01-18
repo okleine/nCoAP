@@ -37,8 +37,12 @@ import java.util.concurrent.TimeUnit;
 *
 * @author Oliver Kleine
 */
-public class MessageIDFactory extends Observable{
+public class MessageIDFactory{
 
+    /**
+     * The number of seconds, i.e. 120, a message ID is allocated by the nCoAP framework to avoid duplicate usage
+     * of the same message ID.
+     */
     public static int ALLOCATION_TIMEOUT = 120;
 
     private Random random;
@@ -61,16 +65,6 @@ public class MessageIDFactory extends Observable{
     }
 
     /**
-     * Calls of this method cause the given {@link Observer} to be informed whenever there was a message ID reallocated,
-     * i.e. this message ID could be returned by any future call of {@link #nextMessageID()}.
-     *
-     * @param observer the {@link Observer} to be informed whenever there was a message ID reallocated
-     */
-    public void registerObserver(Observer observer){
-        this.addObserver(observer);
-    }
-
-    /**
      * Returns the next available message ID within range 1 to (2^16)-1 and allocates this message ID for
      * {@link MessageIDFactory#ALLOCATION_TIMEOUT} milliseconds. That means, the same message ID will not be used
      * as long as it is allocated.
@@ -90,8 +84,8 @@ public class MessageIDFactory extends Observable{
                 else
                     log.error("Message ID " + messageID + " could not be removed! This should never happen.");
 
-                setChanged();
-                notifyObservers(messageID);
+//                setChanged();
+//                notifyObservers(messageID);
             }
         }, ALLOCATION_TIMEOUT, TimeUnit.SECONDS);
 

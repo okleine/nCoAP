@@ -49,10 +49,7 @@ package de.uniluebeck.itm.ncoap.communication.codec;
 
 import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
-import de.uniluebeck.itm.ncoap.message.options.Option;
-import de.uniluebeck.itm.ncoap.message.options.OptionException;
+import de.uniluebeck.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -90,6 +87,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
             else{
                 InetSocketAddress remoteSocketAddress = (InetSocketAddress) messageEvent.getRemoteAddress();
                 CoapMessage coapMessage = decode(remoteSocketAddress, (ChannelBuffer) originalMessage);
+
                 fireMessageReceived(ctx, coapMessage, remoteSocketAddress);
             }
         }
@@ -178,6 +176,9 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
             else if(messageType == MessageType.Name.RST.getNumber())
                 return CoapMessage.createEmptyReset(messageID);
 
+            else if(messageType == MessageType.Name.CON.getNumber())
+                return CoapMessage.createEmptyConfirmableMessage(messageID);
+
             else
                 throw new MessageFormatDecodingException(remoteSocketAddress, messageID,
                     "Empty message received which is neither an ACK nor a RST (Type: " + messageType + ").");
@@ -232,7 +233,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
     }
 
 
-    private void setOptions(CoapMessage coapMessage, ChannelBuffer buffer) throws OptionException {
+    private void setOptions(CoapMessage coapMessage, ChannelBuffer buffer) throws OptionException{
 
         //Decode the options
         int previousOptionNumber = 0;
@@ -268,7 +269,30 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
             try {
                 byte[] optionValue = new byte[optionLength];
                 buffer.readBytes(optionValue);
-                coapMessage.addOption(actualOptionNumber, Option.createOption(actualOptionNumber, optionValue));
+
+                switch(Option.getOptionType(actualOptionNumber)){
+
+                    case Option.Type.EMPTY:
+                        coapMessage.addOption(actualOptionNumber, new EmptyOption(actualOptionNumber));
+                        break;
+
+                    case Option.Type.OPAQUE:
+                        coapMessage.addOption(actualOptionNumber, new OpaqueOption(actualOptionNumber, optionValue));
+                        break;
+
+                    case Option.Type.STRING:
+                        coapMessage.addOption(actualOptionNumber, new StringOption(actualOptionNumber, optionValue));
+                        break;
+
+                    case Option.Type.UINT:
+                        coapMessage.addOption(actualOptionNumber, new UintOption(actualOptionNumber, optionValue));
+                        break;
+
+                    default:
+                        log.error("This should never happen!");
+                        throw new UnknownOptionException(actualOptionNumber);
+                }
+
             }
             catch (OptionException e) {
 
@@ -330,11 +354,17 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
                 coapResponse.setMessageID(ex.getMessageID());
                 coapResponse.setToken(ex.getToken());
                 coapResponse.setContent(ex.getCause().getMessage().getBytes(CoapMessage.CHARSET),
-                        ContentFormat.Name.TEXT_PLAIN_UTF8);
+                        ContentFormat.TEXT_PLAIN_UTF8);
                 log.warn("Send BAD OPTION response: {}", coapResponse);
                 sendMessage(ctx, ex.getRemoteSocketAddress(), coapResponse);
             }
-            catch (InvalidHeaderException | InvalidOptionException | InvalidMessageException e) {
+            catch (InvalidHeaderException e) {
+                log.error("This should never happen (Could not create error response for not-handable option)!", e);
+            }
+            catch (InvalidOptionException e) {
+                log.error("This should never happen (Could not create error response for not-handable option)!", e);
+            }
+            catch (InvalidMessageException e) {
                 log.error("This should never happen (Could not create error response for not-handable option)!", e);
             }
         }

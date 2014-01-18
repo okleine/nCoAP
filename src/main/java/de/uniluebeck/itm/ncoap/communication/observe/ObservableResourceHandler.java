@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 */
 public class ObservableResourceHandler extends SimpleChannelHandler implements Observer {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private Logger log = LoggerFactory.getLogger(ObservableResourceHandler.class.getName());
 
     //This table is to relate the first response on a observation request with the service path
     private HashBasedTable<InetSocketAddress, Token, String> observationsPerToken;
@@ -114,6 +114,8 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                     (InternalObservableResourceRegistrationMessage) me.getMessage();
 
             message.getWebservice().addObserver(this);
+
+            me.getFuture().setSuccess();
             return;
         }
 
@@ -191,9 +193,13 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         log.info("UPDATE of service {}", webservicePath);
 
         Map<InetSocketAddress, ObservationParameter> applyingObservations = observationsPerPath.column(webservicePath);
-        Map<Long, ChannelBuffer> formattedContent = new HashMap<>();
+        log.info("Found {} observers for service {}.", applyingObservations.size(), webservicePath);
+
+        Map<Long, ChannelBuffer> formattedContent = new HashMap<Long, ChannelBuffer>();
 
         for(InetSocketAddress remoteSocketAddress : applyingObservations.keySet()){
+            log.debug("Try to notify {}.", remoteSocketAddress);
+
             ObservationParameter observationParameter = applyingObservations.get(remoteSocketAddress);
             observationParameter.nextResourceUpdate();
 
@@ -220,40 +226,43 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                 executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, updateNotification,
                         observationParameter.getLatestMessageID(), observationParameter.getChannel()
                 ), 0, TimeUnit.MILLISECONDS);
+
+                log.debug("Update notification for {} scheduled.", remoteSocketAddress);
             }
 
-            catch (AcceptedContentFormatNotSupportedException e) {
-                handleContentFormatNotSupportedException(remoteSocketAddress, observationParameter, e);
-                continue;
+//            catch (AcceptedContentFormatNotSupportedException e) {
+//                handleContentFormatNotSupportedException(remoteSocketAddress, observationParameter, e);
+//            }
+            catch (Exception e) {
+                log.error("Error while trying to create and schedule update notification.", e);
             }
-            catch (InvalidHeaderException | InvalidMessageException | InvalidOptionException e) {
-                log.error("This should never happen.", e);
-                continue;
-            }
-
         }
     }
 
-    private void handleContentFormatNotSupportedException(InetSocketAddress remoteSocketAddress,
-                ObservationParameter observationParameter, AcceptedContentFormatNotSupportedException e){
-        try {
 
-            String webservice = observationsPerToken.get(remoteSocketAddress, observationParameter.getToken());
-            stopObservation(remoteSocketAddress, webservice);
-
-            CoapResponse updateNotification = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-            String message = "Not supported anymore: Content Format No. " + e.getUnsupportedContentFormatsAsString();
-            updateNotification.setContent(message.getBytes(CoapMessage.CHARSET));
-
-            executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, updateNotification,
-                    observationParameter.getLatestMessageID(), observationParameter.getChannel()
-            ), 0, TimeUnit.MILLISECONDS);
-        }
-        catch (InvalidHeaderException | InvalidMessageException e1) {
-            log.error("This should never happen.", e1);
-        }
-
-    }
+//    private void handleContentFormatNotSupportedException(InetSocketAddress remoteSocketAddress,
+//                ObservationParameter observationParameter, AcceptedContentFormatNotSupportedException e){
+//
+//        try {
+//            String webservice = observationsPerToken.get(remoteSocketAddress, observationParameter.getToken());
+//            stopObservation(remoteSocketAddress, webservice);
+//
+//            CoapResponse updateNotification = new CoapResponse(MessageCode.Name.NOT_IMPLEMENTED_501);
+//            String message = "Not supported anymore: Content Format No. " + e.getUnsupportedContentFormatsAsString();
+//            updateNotification.setContent(message.getBytes(CoapMessage.CHARSET));
+//
+//            executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, updateNotification,
+//                    observationParameter.getLatestMessageID(), observationParameter.getChannel()
+//            ), 0, TimeUnit.MILLISECONDS);
+//        }
+//        catch (InvalidHeaderException e1) {
+//            log.error("This should never happen.", e1);
+//        }
+//        catch (InvalidMessageException e1) {
+//            log.error("This should never happen.", e1);
+//        }
+//
+//    }
 
     private synchronized void addObservation(InetSocketAddress remoteSocketAddress, String path,
                                              ObservationParameter observationParameter){
@@ -330,7 +339,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
         @Override
         public void run() {
 
-            log.info("Start retransmission: {}", updateNotification);
+            log.info("Start transmission of update notification: {}", updateNotification);
 
             //Stop potentially running retranmissions
             InternalStopUpdateNotificationRetransmissionMessage stopRetransmissionMessage =

@@ -28,7 +28,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 /**
- * This class contains all specific functionality for {@link Option} instances of {@link OptionType.Name#OPAQUE}.
+ * This class contains all specific functionality for {@link Option} instances of {@link Option.Type#OPAQUE}.
  *
  * @author Oliver Kleine
  */
@@ -39,32 +39,40 @@ public class OpaqueOption extends Option<byte[]>{
     }
 
     /**
-     * Returns a {@link ByteBuffer} backed by the byte array that contains the value of this option.
-     * @return a {@link ByteBuffer} backed by the byte array that contains the value of this option.
+     * For {@link OpaqueOption}s the returned value is the same as {@link #getValue()}.
+     *
+     * @return the byte array containing the actual value of this option
      */
     @Override
     public byte[] getDecodedValue() {
         return this.value;
     }
 
-//    @Override
-//    public boolean equals(Object object) {
-//        if(!(object instanceof OpaqueOption))
-//            return false;
-//
-//        OpaqueOption other = (OpaqueOption) object;
-//        return Arrays.equals(this.getDecodedValue(), other.getDecodedValue());
-//    }
 
+    /**
+     * Returns a {@link String} representation of this options value. Basically, this is a shortcut for
+     * {@link #toHexString(byte[])} with {@link #getValue()} as given parameter.
+     *
+     * @return a {@link String} representation of this options value
+     */
     @Override
     public String toString(){
         return toHexString(this.value);
     }
 
-    public static String toHexString(byte[] value){
-        if(value.length == 0)
+    /**
+     * Returns a {@link String} representation of this options value, i.e. the string <code><empty></code> if the
+     * length of the byte array returned by {@link #getValue()} is 0 or a hex-string representing the bytes contained
+     * in that array.
+     *
+     * @param bytes the byte array to get the hex-string representation of
+     *
+     * @return a {@link String} representation of this options value
+     */
+    public static String toHexString(byte[] bytes){
+        if(bytes.length == 0)
             return "<empty>";
         else
-            return "0x" + new BigInteger(1, value).toString(16).toUpperCase();
+            return "0x" + new BigInteger(1, bytes).toString(16).toUpperCase();
     }
 }

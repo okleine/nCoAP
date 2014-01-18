@@ -93,7 +93,7 @@ public class AcceptedContentFormatNotSupportedException extends Exception {
     public AcceptedContentFormatNotSupportedException(long... contentFormats){
         super();
 
-        unsupportedContentFormats = new HashSet<>();
+        unsupportedContentFormats = new HashSet<Long>();
         for(long contentFormat : unsupportedContentFormats){
             this.unsupportedContentFormats.add(contentFormat);
         }

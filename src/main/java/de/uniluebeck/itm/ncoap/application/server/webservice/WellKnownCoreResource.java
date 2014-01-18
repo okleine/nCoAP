@@ -56,6 +56,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -84,7 +89,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * {@link MessageCode.Name#CONTENT_205} and with a payload listing all paths to the available resources
      * (i.e. {@link Webservice} instances}).
      *
-     * The payload is always formatted in {@link ContentFormat.Name#APP_LINK_FORMAT}.
+     * The payload is always formatted in {@link ContentFormat#APP_LINK_FORMAT}.
      *
      * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
      *                       the list of available services in CoRE link format.
@@ -103,8 +108,8 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
             CoapResponse response = new CoapResponse(MessageCode.Name.CONTENT_205);
 
             try {
-                byte[] payload = getSerializedResourceStatus(ContentFormat.Name.APP_LINK_FORMAT);
-                response.setContent(ChannelBuffers.wrappedBuffer(payload), ContentFormat.Name.APP_LINK_FORMAT);
+                byte[] payload = getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT);
+                response.setContent(ChannelBuffers.wrappedBuffer(payload), ContentFormat.APP_LINK_FORMAT);
 
             } catch (Exception e) {
                 log.error("This should never happen.", e);
@@ -118,7 +123,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
         }
     }
 
-//    @Override
+    @Override
     public byte[] getSerializedResourceStatus(long contentFormat) throws AcceptedContentFormatNotSupportedException {
         StringBuffer buffer = new StringBuffer();
 
@@ -135,8 +140,16 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
 
 
     @Override
-    public byte[] getEtag(long contentFormatValue) {
-        return new byte[0];
+    public void updateEtag(Map<String, Webservice> resourceStatus) {
+        StringBuffer result = new StringBuffer();
+        result.append("");
+        for(String service : getResourceStatus().keySet()){
+            result.append(service);
+        }
+
+        byte[] hash = this.getDigest().digest(result.toString().getBytes(CoapMessage.CHARSET));
+        setEtag(Arrays.copyOfRange(hash, 0, getEtagLength()));
+
     }
 
     @Override

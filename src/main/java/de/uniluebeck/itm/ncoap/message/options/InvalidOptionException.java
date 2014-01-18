@@ -22,21 +22,28 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 
 package de.uniluebeck.itm.ncoap.message.options;
 
 /**
+ * Exception to be thrown whenever the {@link Option} instance causing this exception, e.g. while being created,
+ * is invalid, mostly because of an invalid value. Use {@link #getMessage()} for further details on the reason.
  *
  * @author Oliver Kleine
  */
 public class InvalidOptionException extends OptionException {
 
+    /**
+     * @param optionNumber the option number of the {@link Option} that caused this exception
+     * @param msg a human-readable message to explain why this exception was thrown
+     */
     public InvalidOptionException(int optionNumber, String msg){
         super(optionNumber, msg);
+    }
+
+    @Override
+    public String getMessage(){
+        return "Option No. " + this.getOptionNumber() + "caused: " + super.getMessage();
     }
 
 }

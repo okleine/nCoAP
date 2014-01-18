@@ -48,9 +48,6 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
-import de.uniluebeck.itm.ncoap.communication.codec.OptionDecodingException;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -156,6 +153,12 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
         }
 
+        //Incoming empty CON messages are considered application layer pings
+        else if(coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY &&
+                coapMessage.getMessageTypeName() == MessageType.Name.CON){
+
+            writeReset(ctx, remoteSocketAddress, messageID);
+        }
         ctx.sendUpstream(me);
     }
 
@@ -255,24 +258,22 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
 
 
-//    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
-//                                           final int messageID, final Token token){
-//        try{
-//            CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
-//            resetMessage.setToken(token);
-//            ChannelFuture future = Channels.future(ctx.getChannel());
-//            Channels.write(ctx, future, resetMessage, remoteSocketAddress);
-//
-//            future.addListener(new ChannelFutureListener() {
-//                @Override
-//                public void operationComplete(ChannelFuture future) throws Exception {
-//                    log.info("RST for message ID {} and token {} succesfully sent to {}.", new Object[]{messageID,
-//                            token, remoteSocketAddress});
-//                }
-//            });
-//        }
-//        catch (InvalidHeaderException e) {
-//            log.error("This should never happen.", e);
-//        }
-//    }
+    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
+                                           final int messageID){
+        try{
+            CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
+            ChannelFuture future = Channels.future(ctx.getChannel());
+            Channels.write(ctx, future, resetMessage, remoteSocketAddress);
+
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    log.info("RST for message ID {} succesfully sent to {}.", messageID, remoteSocketAddress);
+                }
+            });
+        }
+        catch (InvalidHeaderException e) {
+            log.error("This should never happen.", e);
+        }
+    }
 }

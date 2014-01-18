@@ -83,10 +83,9 @@ import de.uniluebeck.itm.ncoap.application.server.webservice.AcceptedContentForm
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
-import de.uniluebeck.itm.ncoap.communication.codec.OptionDecodingException;
-import de.uniluebeck.itm.ncoap.communication.codec.EncodingException;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableResourceRegistrationMessage;
 import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.OpaqueOption;
 import org.jboss.netty.channel.*;
@@ -123,12 +122,11 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    //private DatagramChannel channel;
     private Multimap<InetSocketAddress, CoapRequest> openRequests =
             Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, CoapRequest>create());
 
-    //This map holds all registered webservice (key: URI path, value: Webservice instance)
-    private HashMap<String, Webservice> registeredServices = new HashMap<>();
+    //This map holds all registered webservices (key: URI path, value: Webservice instance)
+    private HashMap<String, Webservice> registeredServices = new HashMap<String, Webservice>();
 
 
     private ListeningExecutorService listeningExecutorService;
@@ -136,9 +134,13 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
     private WebServiceCreator webServiceCreator;
 
-    private Set<Channel> serverChannels;
+    private Set<DatagramChannel> serverChannels;
 
-
+    /**
+     * This constructor creates an instance of {@link CoapServerApplication}
+     * @param webServiceCreator
+     * @param listeningSockets
+     */
     public CoapServerApplication(WebServiceCreator webServiceCreator, InetSocketAddress... listeningSockets){
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Server I/O Thread#%d").build();
 
@@ -148,7 +150,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         ScheduledExecutorService ioExecutorService =
                 Executors.newScheduledThreadPool(numberOfThreads, threadFactory);
 
-        this.serverChannels = new HashSet<>();
+        this.serverChannels = new HashSet<DatagramChannel>();
 
         for(InetSocketAddress listeningSocket : listeningSockets){
             CoapServerDatagramChannelFactory factory =
@@ -195,6 +197,10 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
     public CoapServerApplication(WebServiceCreator webServiceCreator){
         this(webServiceCreator, DEFAULT_COAP_SERVER_PORT);
+    }
+
+    public Set<DatagramChannel> getChannels(){
+        return this.serverChannels;
     }
 
     /**
@@ -310,7 +316,11 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                 coapResponse.setContent(message.getBytes(CoapMessage.CHARSET));
                 responseFuture.set(coapResponse);
             }
-            catch (InvalidHeaderException | InvalidMessageException e) {
+            catch (InvalidHeaderException e) {
+                log.error("This should never happen.", e);
+                responseFuture.setException(e);
+            }
+            catch (InvalidMessageException e) {
                 log.error("This should never happen.", e);
                 responseFuture.setException(e);
             }
@@ -318,33 +328,43 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
 
         //Check for ETAG related options
-        byte[] currentEtag = webservice.getEtag();
+        byte[] resourceEtag = webservice.getEtag();
 
         //Check for IF-MATCH option
-        for(byte[] etag : coapRequest.getIfMatch()){
+        for(byte[] ifMatchEtag : coapRequest.getIfMatch()){
             //EMPTY string means existence of the service
-            if(etag.length == 0 || Arrays.equals(etag, currentEtag)){
-                log.debug("ETAG from IF-MATCH option matches: " + OpaqueOption.toHexString(etag));
+            if(ifMatchEtag.length == 0 || Arrays.equals(ifMatchEtag, resourceEtag)){
+                log.debug("ETAG from IF-MATCH option matches: {}", OpaqueOption.toHexString(ifMatchEtag));
                 webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
                 return;
             }
+
             else{
-                log.debug("ETAG from IF-MATCH option does not match: " + OpaqueOption.toHexString(etag));
+                log.debug("ETAG from IF-MATCH option does not match: " + OpaqueOption.toHexString(ifMatchEtag));
             }
         }
 
         //This is only reached if there no matching ETAG contained as IF-MATCH option
         if(!coapRequest.getIfMatch().isEmpty()){
             try {
-                String message = "None of the ETAGs contained as IF-MATCH option matches."
-                        + " Current ETAG is " + OpaqueOption.toHexString(webservice.getEtag());
+                String message = "None of the ETAGs contained as IF-MATCH option matches. "
+                    + "Current ETAG is " + resourceEtag;
+
                 log.debug(message);
                 CoapResponse coapResponse = new CoapResponse(MessageCode.Name.PRECONDITION_FAILED_412);
-                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET));
+                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
                 responseFuture.set(coapResponse);
                 return;
             }
-            catch (InvalidHeaderException | InvalidMessageException e) {
+            catch (InvalidHeaderException e) {
+                log.error("This should never happen.", e);
+                return;
+            }
+            catch (InvalidMessageException e) {
+                log.error("This should never happen.", e);
+                return;
+            }
+            catch (InvalidOptionException e) {
                 log.error("This should never happen.", e);
                 return;
             }
@@ -353,7 +373,8 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 
         //Check for ETAG options
         for(byte[] etag : coapRequest.getEtags()){
-            if(Arrays.equals(etag, currentEtag)){
+
+            if(Arrays.equals(etag, resourceEtag)){
                 try {
                     log.debug("Valid ETAG option found in request: {}", OpaqueOption.toHexString(etag));
                     CoapResponse coapResponse = new CoapResponse(MessageCode.Name.VALID_203);
@@ -445,7 +466,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.debug("Response for token {} successfully sent to recipient {}.", coapResponse.getToken(),
+                log.info("Response for token {} successfully sent to recipient {}.", coapResponse.getToken(),
                         remoteAddress);
             }
         });
@@ -477,7 +498,7 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
      * Prior to doing so this methods removes all registered {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instances from the server, i.e.
      * invokes the {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice#shutdown()} method of all registered services.
      */
-    public void shutdown() throws InterruptedException {
+    public void shutdown() {
 
         //remove all webservices
         Webservice[] services;
@@ -491,7 +512,12 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
         }
 
         //some time to send possible update notifications (404_NOT_FOUND) to observers
-        Thread.sleep(1000);
+        try{
+            Thread.sleep(1000);
+        }
+        catch (InterruptedException e) {
+            log.error("Interrupted while shutting down CoapServerApplication!", e);
+        }
 
         //Close the datagram datagramChannel (includes unbind)
         for(final Channel channel : serverChannels){
@@ -561,10 +587,13 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
 //            removedService.shutdown();
 //        }
 
-        if(removedService != null)
+        if(removedService != null){
             log.info("Service {} removed from server.", uriPath);
-        else
-            log.info("Service {} could not be removed. Does not exist.", uriPath);
+            removedService.shutdown();
+        }
+        else{
+            log.warn("Service {} could not be removed. Does not exist.", uriPath);
+        }
 
         return removedService == null;
     }
@@ -628,21 +657,20 @@ public class CoapServerApplication extends SimpleChannelUpstreamHandler {
                 }
 
                 if(webservice != null){
-
-//                    //Set Max-Age Option according to the value returned by the Webservice
+                    //Set Max-Age Option according to the value returned by the Webservice
 //                    try{
 //                        coapResponse.setMaxAge(webservice.getMaxAge());
 //                    }
 //                    catch(InvalidOptionException e){
 //                        log.debug("IGNORE invalid option exception:", e);
 //                    }
-//
-//                    try{
-//                        coapResponse.setEtag(webservice.getEtag());
-//                    }
-//                    catch(InvalidOptionException e){
-//                        log.debug("IGNORE invalid option exception:", e);
-//                    }
+
+                    try{
+                        coapResponse.setEtag(webservice.getEtag());
+                    }
+                    catch(InvalidOptionException e){
+                        log.debug("IGNORE invalid option exception:", e);
+                    }
 
                     if(coapRequest.isObserveSet() && webservice instanceof ObservableWebservice)
                         coapResponse.setObservationSequenceNumber(0);

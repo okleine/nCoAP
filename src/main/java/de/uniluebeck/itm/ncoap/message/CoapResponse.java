@@ -85,7 +85,10 @@ public class CoapResponse extends CoapMessage {
         try {
             this.addUintOption(Option.Name.OBSERVE, sequenceNumber);
         }
-        catch (UnknownOptionException | InvalidOptionException e) {
+        catch (UnknownOptionException e){
+            log.error("This should never happen.", e);
+        }
+        catch (InvalidOptionException e) {
             log.error("This should never happen.", e);
         }
     }

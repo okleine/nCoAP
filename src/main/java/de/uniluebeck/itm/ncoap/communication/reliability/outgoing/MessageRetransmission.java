@@ -39,8 +39,10 @@ import org.jboss.netty.channel.UpstreamMessageEvent;
 
 
 /**
-* Implementation of {@link Runnable} to retransmit a confirmable message in exponentially increasing
-* intervals.
+ * Implementation of {@link Runnable} to retransmit a confirmable message in exponentially increasing
+ * intervals.
+ *
+ * @author Oliver Kleine
 */
 class MessageRetransmission implements Runnable {
 
@@ -73,7 +75,7 @@ class MessageRetransmission implements Runnable {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Retransmition completed {}", MessageRetransmission.this);
+                log.info("Retransmition completed: {}", MessageRetransmission.this);
                 UpstreamMessageEvent upstreamEvent = new UpstreamMessageEvent(ctx.getChannel(),
                         new InternalMessageRetransmissionMessage(rcptAddress, coapMessage.getToken()), null);
 

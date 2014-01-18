@@ -59,7 +59,7 @@ import java.util.HashSet;
 
 public abstract class MessageCode {
 
-    private static final HashMap<Integer, Name> validNumbers = new HashMap<>();
+    private static final HashMap<Integer, Name> validNumbers = new HashMap<Integer, Name>();
 
     public static enum Name{
          UNKNOWN(-1),

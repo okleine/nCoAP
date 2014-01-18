@@ -55,7 +55,7 @@ import java.util.HashMap;
  */
 public abstract class MessageType {
 
-    private static final HashMap<Integer, Name> validNumbers = new HashMap<>();
+    private static final HashMap<Integer, Name> validNumbers = new HashMap<Integer, Name>();
 
     public static enum Name{
 

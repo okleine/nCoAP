@@ -29,11 +29,10 @@ import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 17.11.13
- * Time: 12:42
- * To change this template use File | Settings | File Templates.
+ * Instances of {@link WebServiceCreator} are supposed to handle incoming {@link CoapRequest}s that may intend
+ * to create one ore more new webservices. The framework calls the method
+ * {@link #handleWebServiceCreationRequest(SettableFuture, CoapRequest)} for incoming requests with
+ * {@link de.uniluebeck.itm.ncoap.message.MessageCode.Name#PUT} or
  */
 public abstract class WebServiceCreator {
 

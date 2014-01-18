@@ -178,46 +178,46 @@ public abstract class CoapMessage {
     protected SetMultimap<Integer, Option> options;
     private ChannelBuffer content;
 
-    public static CoapMessage createCoapMessage(int messageType, int messageCode, int messageID, Token token)
-            throws InvalidHeaderException {
-
-        if(MessageCode.isRequest(messageCode)){
-            CoapRequest coapRequest= new CoapRequest(messageType, messageCode);
-            coapRequest.setMessageID(messageID);
-            coapRequest.setToken(token);
-            return coapRequest;
-        }
-
-        else if(MessageCode.isResponse(messageCode)){
-            CoapResponse coapResponse = new  CoapResponse(messageCode);
-            coapResponse.setMessageType(messageType);
-            coapResponse.setMessageID(messageID);
-            coapResponse.setToken(token);
-            return coapResponse;
-        }
-
-        else if(messageCode == MessageCode.Name.EMPTY.getNumber()){
-            if(messageType == MessageType.Name.ACK.getNumber()){
-                if(token.getBytes().length == 0)
-                    return createEmptyAcknowledgement(messageID);
-                else
-                    throw new InvalidHeaderException("Empty ACK must have no token, i.e. token of length 0");
-            }
-            else if(messageType == MessageType.Name.RST.getNumber()){
-                if(token.getBytes().length == 0)
-                    return createEmptyReset(messageID);
-                else
-                    throw new InvalidHeaderException("Empty RST must have no token, i.e. token of length 0");
-            }
-            else{
-                throw new InvalidHeaderException("Code EMPTY but neither ACK or RST.");
-            }
-        }
-
-        throw new InvalidHeaderException("Message is neither request, nor response nor EMPTY.");
-
-
-    }
+//    public static CoapMessage createCoapMessage(int messageType, int messageCode, int messageID, Token token)
+//            throws InvalidHeaderException {
+//
+//        if(MessageCode.isRequest(messageCode)){
+//            CoapRequest coapRequest= new CoapRequest(messageType, messageCode);
+//            coapRequest.setMessageID(messageID);
+//            coapRequest.setToken(token);
+//            return coapRequest;
+//        }
+//
+//        else if(MessageCode.isResponse(messageCode)){
+//            CoapResponse coapResponse = new  CoapResponse(messageCode);
+//            coapResponse.setMessageType(messageType);
+//            coapResponse.setMessageID(messageID);
+//            coapResponse.setToken(token);
+//            return coapResponse;
+//        }
+//
+//        else if(messageCode == MessageCode.Name.EMPTY.getNumber()){
+//            if(messageType == MessageType.Name.ACK.getNumber()){
+//                if(token.getBytes().length == 0)
+//                    return createEmptyAcknowledgement(messageID);
+//                else
+//                    throw new InvalidHeaderException("Empty ACK must have no token, i.e. token of length 0");
+//            }
+//            else if(messageType == MessageType.Name.RST.getNumber()){
+//                if(token.getBytes().length == 0)
+//                    return createEmptyReset(messageID);
+//                else
+//                    throw new InvalidHeaderException("Empty RST must have no token, i.e. token of length 0");
+//            }
+//            else{
+//                throw new InvalidHeaderException("Code EMPTY but neither ACK or RST.");
+//            }
+//        }
+//
+//        throw new InvalidHeaderException("Message is neither request, nor response nor EMPTY.");
+//
+//
+//    }
 
     protected CoapMessage(int messageType, int messageCode, int messageID, Token token)
             throws InvalidHeaderException {
@@ -280,6 +280,12 @@ public abstract class CoapMessage {
                 new Token(new byte[0])){};
     }
 
+
+    public static CoapMessage createEmptyConfirmableMessage(int messageID) throws InvalidHeaderException {
+        return new CoapMessage(MessageType.Name.CON.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
+                new Token(new byte[0])){};
+    }
+
     /**
      * Sets the message type of this {@link CoapMessage}. Usually there is no need to use this method as the value
      * is either set via constructor parameter (for requests) or automatically by the nCoAP framework (for responses).
@@ -331,7 +337,7 @@ public abstract class CoapMessage {
     protected void addStringOption(int optionNumber, String value) throws UnknownOptionException,
             InvalidOptionException {
 
-        if(!(Option.getOptionType(optionNumber) == OptionType.Name.STRING))
+        if(!(Option.getOptionType(optionNumber) == Option.Type.STRING))
             throw new InvalidOptionException(optionNumber, "Option number {} is no string-option.");
 
         //Add new option to option list
@@ -342,7 +348,7 @@ public abstract class CoapMessage {
 
     protected void addUintOption(int optionNumber, long value) throws UnknownOptionException, InvalidOptionException {
 
-        if(!(Option.getOptionType(optionNumber) == OptionType.Name.UINT))
+        if(!(Option.getOptionType(optionNumber) == Option.Type.UINT))
             throw new InvalidOptionException(optionNumber, "Option number {} is no uint-option.");
 
         //Add new option to option list
@@ -358,7 +364,7 @@ public abstract class CoapMessage {
 
     protected void addOpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
 
-        if(!(Option.getOptionType(optionNumber) == OptionType.Name.OPAQUE))
+        if(!(Option.getOptionType(optionNumber) == Option.Type.OPAQUE))
             throw new InvalidOptionException(optionNumber, "Option number {} is no opaque option.");
 
         //Add new option to option list
@@ -369,7 +375,7 @@ public abstract class CoapMessage {
 
     protected void addEmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
 
-        if(!(Option.getOptionType(optionNumber) == OptionType.Name.EMPTY))
+        if(!(Option.getOptionType(optionNumber) == Option.Type.EMPTY))
             throw new InvalidOptionException(optionNumber, "Option number {} is no empty option.");
 
         //Add new option to option list
@@ -488,7 +494,7 @@ public abstract class CoapMessage {
 //    }
 
     /**
-     * Returns the number representing the format of the content or {@link ContentFormat.Name#UNDEFINED} if no such
+     * Returns the number representing the format of the content or {@link ContentFormat#UNDEFINED} if no such
      * option is present in this {@link CoapMessage}. See {@link ContentFormat} for some constants for predefined numbers.
      *
      * @return the number representing the format of the content or <code>null</code> if no such option is present
@@ -498,7 +504,7 @@ public abstract class CoapMessage {
         if(options.containsKey(Option.Name.CONTENT_FORMAT))
             return ((UintOption) options.get(Option.Name.CONTENT_FORMAT).iterator().next()).getDecodedValue();
 
-        return ContentFormat.Name.UNDEFINED;
+        return ContentFormat.UNDEFINED;
     }
 
     /**
@@ -565,7 +571,12 @@ public abstract class CoapMessage {
             this.addUintOption(Option.Name.CONTENT_FORMAT, contentFormat);
             setContent(content);
         }
-        catch (InvalidOptionException | InvalidMessageException e) {
+        catch (InvalidOptionException e) {
+            this.content = ChannelBuffers.EMPTY_BUFFER;
+            this.removeOptions(Option.Name.CONTENT_FORMAT);
+            throw e;
+        }
+        catch(InvalidMessageException e){
             this.content = ChannelBuffers.EMPTY_BUFFER;
             this.removeOptions(Option.Name.CONTENT_FORMAT);
             throw e;
@@ -747,7 +758,7 @@ public abstract class CoapMessage {
 
         @Override
         public LinkedHashSet<Option> get() {
-            return new LinkedHashSet<>();
+            return new LinkedHashSet<Option>();
         }
     }
 }
