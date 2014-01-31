@@ -85,6 +85,7 @@ public class CoapRequest extends CoapMessage {
         log.debug("New request created: {}.", this);
     }
 
+
     public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri,
                        InetAddress proxyAddress) throws InvalidOptionException, InvalidHeaderException {
 

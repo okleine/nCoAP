@@ -48,32 +48,28 @@
 */
 package de.uniluebeck.itm.ncoap.application.server;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 
 /**
-* This internal message is sent downstream when a {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance was removed from the
+* This internal message is sent downstream by the framework when a {@link Webservice} instance was removed from the
 * {@link CoapServerApplication} instance.
 *
 * @author Oliver Kleine, Stefan Hüske
 */
 public class InternalServiceRemovedFromServerMessage {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private String servicePath;
 
     /**
-     * @param servicePath the path of the removed {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
+     * @param servicePath the path of the removed {@link Webservice} instance
      */
     public InternalServiceRemovedFromServerMessage(String servicePath) {
         this.servicePath = servicePath;
-
-        log.info("Internal service removed from path message created for path " + servicePath);
     }
 
     /**
-     * Returns the path of the removed {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
-     * @return the path of the removed {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
+     * Returns the path of the removed {@link Webservice} instance
+     * @return the path of the removed {@link Webservice} instance
      */
     public String getServicePath() {
         return servicePath;

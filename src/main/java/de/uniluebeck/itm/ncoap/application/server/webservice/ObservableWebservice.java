@@ -48,15 +48,12 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageType;
-import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.options.Option;
-import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,45 +77,50 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
     private static Logger log = LoggerFactory.getLogger(ObservableWebservice.class.getName());
 
-    private CoapServerApplication coapServerApplication;
+    private WebserviceManager webserviceManager;
     private String path;
 
     private ReadWriteLock readWriteLock;
 
     private T resourceStatus;
-
-    private int etagLength;
-    private byte[] etag;
+    private long resourceStatusExpiryDate;
 
     private boolean isUpdateNotificationConfirmable = true;
 
     private ScheduledExecutorService scheduledExecutorService;
-    private ListeningExecutorService listeningExecutorService;
-    private long resourceStatusExpiryDate;
 
+    /**
+     * Using this constructor is the same as {@link #ObservableWebservice(String, Object, long)} with parameter
+     * <code>lifetimeSeconds</code> to {@link Option#MAX_AGE_DEFAULT}.
+     *
+     * @param path the path this {@link ObservableWebservice} is registered at.
+     * @param initialStatus the initial status of this {@link ObservableWebservice}.
+     */
     protected ObservableWebservice(String path, T initialStatus){
-        this(path, initialStatus, Option.MAX_AGE_DEFAULT, Option.ETAG_LENGTH_DEFAULT);
+        this(path, initialStatus, Option.MAX_AGE_DEFAULT);
     }
 
-    protected ObservableWebservice(String path, T initialStatus, long validitySeconds){
-        this(path, initialStatus, validitySeconds, Option.ETAG_LENGTH_DEFAULT);
-    }
-
-    protected ObservableWebservice(String path, T initialStatus, long validitySeconds, int etagLength){
+    /**
+     * @param path the path this {@link ObservableWebservice} is registered at.
+     * @param initialStatus the initial status of this {@link ObservableWebservice}.
+     * @param lifetimeSeconds the number of seconds the initial status may be considered fresh, i.e. cachable by
+     *                        proxies or clients.
+     */
+    protected ObservableWebservice(String path, T initialStatus, long lifetimeSeconds){
         this.readWriteLock = new ReentrantReadWriteLock(false);
         this.path = path;
 
-        setEtagLength(etagLength);
-        setResourceStatus(initialStatus, validitySeconds);
+        setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
-
-    public void setCoapServerApplication(CoapServerApplication serverApplication){
-        this.coapServerApplication = serverApplication;
+    @Override
+    public void setWebserviceManager(WebserviceManager webserviceManager){
+        this.webserviceManager = webserviceManager;
     }
 
-    public CoapServerApplication getCoapServerApplication(){
-        return this.coapServerApplication;
+    @Override
+    public WebserviceManager getWebserviceManager(){
+        return this.webserviceManager;
     }
 
     @Override
@@ -127,20 +129,9 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
 
-    /**
-     * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
-     * {@link CoapServerApplication} instance (using {@link CoapServerApplication#registerService(Webservice)}.
-     * So, usually there is no need to set another {@link ScheduledExecutorService} instance manually.
-     *
-     * @param executorService a {@link ScheduledExecutorService} instance.
-     */
     @Override
-    public void setScheduledExecutorService(ScheduledExecutorService executorService){
-//        if(this.scheduledExecutorService != null)
-//            this.scheduledExecutorService.shutdownNow();
-
+    public final void setScheduledExecutorService(ScheduledExecutorService executorService){
         this.scheduledExecutorService = executorService;
-        this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
     }
 
 
@@ -149,17 +140,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         return this.scheduledExecutorService;
     }
 
-
-    /**
-     * Returns an instance of {@link ListeningExecutorService} to execute asynchronous webservice internal tasks, e.g.
-     * database access. Actually, the underlying {@link java.util.concurrent.ExecutorService} is the same instance as
-     * returned by {@link #getScheduledExecutorService()} but decorated using {@link MoreExecutors#listeningDecorator}.
-     *
-     * @return an instance of {@link ListeningExecutorService} to execute asynchronous webservice internal tasks
-     */
-    public ListeningExecutorService getListeningExecutorService() {
-        return listeningExecutorService;
-    }
 
     @Override
     public final ReadWriteLock getReadWriteLock(){
@@ -208,30 +188,25 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      *
      * @return the serialized resource status
      */
-    public abstract byte[] getSerializedResourceStatus(long contentFormat)
-            throws AcceptedContentFormatNotSupportedException;
+    public abstract byte[] getSerializedResourceStatus(long contentFormat);
 
 
-    @Override
-    public final void setEtag(byte[] etag) throws IllegalArgumentException{
-        if(etag.length != this.etagLength)
-            throw new IllegalArgumentException("ETAG length for this webservice is " + this.etagLength
-                    + " but this byte array has length " + etag.length);
-
-        this.etag = etag;
+    /**
+     * Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies
+     * or clients. The returned number is calculated using the parameter <code>lifetimeSeconds</code> on
+     * invocation of {@link #setResourceStatus(Object, long)} or {@link #ObservableWebservice(String, Object, long)}
+     * (which internally invokes {@link #setResourceStatus(Object, long)}).
+     *
+     * If the number of seconds passed after the last invocation of {@link #setResourceStatus(Object, long)} is larger
+     * than the number of seconds given as parameter <code>lifetimeSeconds</code>, this method returns zero.
+     *
+     * @return the number of seconds the actual resource state can be considered fresh for status caching on proxies
+     * or clients.
+     */
+    protected final long getMaxAge(){
+        return Math.max(this.resourceStatusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
 
-
-    @Override
-    public byte[] getEtag(){
-        return this.etag;
-    }
-
-
-    @Override
-    public final long getMaxAge() {
-        return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
-    }
 
     /**
      * Returns whether update notifications should be sent with {@link MessageType.Name#CON} or
@@ -259,85 +234,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         this.isUpdateNotificationConfirmable = isConfirmable;
     }
 
-    @Override
-    public void setEtagLength(int etagLength) throws IllegalArgumentException {
-        try{
-            if(etagLength > Option.getMaxLength(Option.Name.ETAG))
-                throw new IllegalArgumentException("Maximum length for ETAG option is " +
-                        Option.getMaxLength(Option.Name.ETAG));
-
-            if(etagLength < Option.getMinLength(Option.Name.ETAG))
-                throw new IllegalArgumentException("Minimum length for ETAG option is " +
-                        Option.getMinLength(Option.Name.ETAG));
-
-            this.etagLength = etagLength;
-        }
-        catch (UnknownOptionException e) {
-            log.error("This should never happen.", e);
-        }
-    }
-
-    public int getEtagLength(){
-        return this.etagLength;
-    }
-
-//    /**
-//     * The max age value represents the validity period (in seconds) of the actual status. With
-//     * {@link ObservableWebservice} instances the nCoAP framework uses this value
-//     * <ul>
-//     *     <li>
-//     *          to set the {@link Option.Name#MAX_AGE} option in every {@link CoapResponse} that was produced by
-//     *          {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}
-//     *          (if not set to another value before {@link SettableFuture<CoapResponse>#set(CoapResponse)}).
-//     *     </li>
-//     *     <li>
-//     *         to send update notifications to all observers of this service every {@link #maxAge} seconds.
-//     *     </li>
-//     * </ul>
-//     *
-//     * The default (if not set otherwise) is {@link Option#MAX_AGE_DEFAULT}
-//     *
-//     * @return the current value of {@link #maxAge}
-//     */
-//    public long getMaxAge() {
-//        return maxAge;
-//    }
-
-//    /**
-//     * The max age value represents the validity period (in seconds) of the actual status. With
-//     * {@link ObservableWebservice} instances the nCoAP framework uses this value
-//     * <ul>
-//     *     <li>
-//     *         to set the {@link Option.Name#MAX_AGE} option in every {@link CoapResponse} that was produced by
-//     *          {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}
-//     *          (if not set to another value before {@link SettableFuture<CoapResponse>#set(CoapResponse)}).
-//     *     </li>
-//     *     <li>
-//     *         to send update notifications to all observers of this service every {@link #maxAge} seconds.
-//     *     </li>
-//     * </ul>
-//     *
-//     * @param maxAge  the new max age value
-//     */
-//    public void setMaxAge(long maxAge) {
-//        this.maxAge = maxAge;
-//    }
-
-//    private void scheduleMaxAgeNotifications(){
-//        maxAgeFuture = scheduledExecutorService.schedule(new Runnable() {
-//            @Override
-//            public void run() {
-//                synchronized (ObservableWebservice.this){
-//                    log.info("Send max-age notifications for {} with status {}.", getPath(), getResourceStatus());
-//
-//                    setChanged();
-//                    notifyObservers();
-//
-//                    scheduleMaxAgeNotifications();
-//                }
-//            }
-//        }, getMaxAge(), TimeUnit.SECONDS);
-//    }
 
     /**
      * The hash code of is {@link ObservableWebservice} instance is produced as {@code this.getPath().hashCode()}.

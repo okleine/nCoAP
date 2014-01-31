@@ -50,15 +50,11 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.options.Option;
-import de.uniluebeck.itm.ncoap.message.options.UnknownOptionException;
+import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -78,7 +74,7 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
     private static Logger log = LoggerFactory.getLogger(NotObservableWebservice.class.getName());
 
-    private CoapServerApplication coapServerApplication;
+    private WebserviceManager webserviceManager;
 
     private String path;
 
@@ -87,57 +83,30 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     private T resourceStatus;
     private long resourceStatusExpiryDate;
 
-    private MessageDigest digest;
-    private int etagLength;
-    private byte[] etag;
-
     private ScheduledExecutorService scheduledExecutorService;
-    private ListeningExecutorService listeningExecutorService;
 
-
-    protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds, int etagLength){
-        try{
-            this.readWriteLock = new ReentrantReadWriteLock(false);
-
-            this.path = servicePath;
-            this.digest = MessageDigest.getInstance("MD5");
-
-            setEtagLength(etagLength);
-            setResourceStatus(initialStatus, lifetimeSeconds);
-        }
-        catch (NoSuchAlgorithmException e) {
-            log.error("This should never happen.", e);
-        }
-
-    }
-
-    /**
-     * @param servicePath the path of the webservice
-     * @param initialStatus
-     * @param lifetimeSeconds
-     */
     protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds){
-        this(servicePath, initialStatus, lifetimeSeconds, Option.ETAG_LENGTH_DEFAULT);
+        this.readWriteLock = new ReentrantReadWriteLock(false);
+        this.path = servicePath;
+        setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
 
-    /**
-     * Set the {@link CoapServerApplication} this {@link Webservice} instance is registered at. This method is
-     * automatically invoked by the nCoAP framework.
-     */
-    public final void setCoapServerApplication(CoapServerApplication serverApplication){
-        this.coapServerApplication = serverApplication;
+    @Override
+    public final void setWebserviceManager(WebserviceManager webserviceManager){
+        this.webserviceManager = webserviceManager;
     }
 
 
-    /**
-     * Returns the {@link CoapServerApplication} this {@link Webservice} instance is registered at. This is useful, e.g.
-     * to create and register or modify {@link Webservice} instances upon reception of a POST request.
-     *
-     * @return the {@link CoapServerApplication} this {@link Webservice} instance is registered at
-     */
-    public final CoapServerApplication getCoapServerApplication(){
-        return this.coapServerApplication;
+    @Override
+    public final WebserviceManager getWebserviceManager(){
+        return this.webserviceManager;
+    }
+
+
+    @Override
+    public final ReadWriteLock getReadWriteLock(){
+        return this.readWriteLock;
     }
 
 
@@ -150,7 +119,6 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     @Override
     public final void setScheduledExecutorService(ScheduledExecutorService executorService){
         this.scheduledExecutorService = executorService;
-        this.listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
     }
 
 
@@ -159,49 +127,21 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
         return this.scheduledExecutorService;
     }
 
-    /**
-     * Returns an instance of {@link ListeningExecutorService} to execute asynchronous webservice internal tasks, e.g.
-     * database access. Actually, the underlying {@link java.util.concurrent.ExecutorService} is the same instance as
-     * returned by {@link #getScheduledExecutorService()} but decorated using {@link MoreExecutors#listeningDecorator}.
-     *
-     * @return an instance of {@link ListeningExecutorService} to execute asynchronous webservice internal tasks
-     */
-    public final ListeningExecutorService getListeningExecutorService() {
-        return listeningExecutorService;
-    }
-
-
-    protected MessageDigest getDigest(){
-        return this.digest;
-    }
 
     /**
-     * To ensure that resource status, max-age and etag are properly set, the calls for the methods
-     * {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}, {@link #getEtag()},
-     * and {@link #getMaxAge()} must be encapsulated within {@link #getReadWriteLock().readLock().lock()} and
-     * {@link {@link #getReadWriteLock().readLock().unlock()}}.
+     * This method is the one and only recommended way to change the status. This method locks the service specific
+     * {@link ReadWriteLock#writeLock()} from {@link #getReadWriteLock()} for the update process.
      *
-     * @return the {@link ReadWriteLock} for this {@link Webservice} instance
+     * @param resourceStatus the new status of the resource
+     * @param lifetimeSeconds the number of seconds this status is valid, i.e. cachable by clients or proxies.
      */
-    public final ReadWriteLock getReadWriteLock(){
-        return this.readWriteLock;
-    }
-
-
-    @Override
-    public final long getMaxAge() {
-        return Math.max((this.resourceStatusExpiryDate - System.currentTimeMillis()) / 1000, 0);
-    }
-
-
     @Override
     public final void setResourceStatus(T resourceStatus, long lifetimeSeconds){
         try{
             readWriteLock.writeLock().lock();
             this.resourceStatus = resourceStatus;
             this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
-
-            this.updateEtag(resourceStatus);
+            updateEtag(resourceStatus);
 
             log.debug("New status of {} set (expires in {} seconds).", this.path, lifetimeSeconds);
         }
@@ -217,41 +157,22 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     }
 
 
-    @Override
-    public final void setEtag(byte[] etag) throws IllegalArgumentException{
-        if(etag.length != this.etagLength)
-            throw new IllegalArgumentException("ETAG length for this webservice is " + this.etagLength
-                    + " but this byte array has length " + etag.length);
-
-        this.etag = etag;
+    /**
+     * Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies
+     * or clients. The returned number is calculated using the parameter <code>lifetimeSeconds</code> on
+     * invocation of {@link #setResourceStatus(Object, long)} or {@link #NotObservableWebservice(String, Object, long)}
+     * (which internally invokes {@link #setResourceStatus(Object, long)}).
+     *
+     * If the number of seconds passed after the last invocation of {@link #setResourceStatus(Object, long)} is larger
+     * than the number of seconds given as parameter <code>lifetimeSeconds</code>, this method returns zero.
+     *
+     * @return the number of seconds the actual resource state can be considered fresh for status caching on proxies
+     * or clients.
+     */
+    protected final long getMaxAge(){
+        return Math.max(this.resourceStatusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
 
-    @Override
-    public void setEtagLength(int etagLength) throws IllegalArgumentException {
-        try{
-            if(etagLength > Option.getMaxLength(Option.Name.ETAG))
-                throw new IllegalArgumentException("Maximum length for ETAG option is " +
-                        Option.getMaxLength(Option.Name.ETAG));
-
-            if(etagLength < Option.getMinLength(Option.Name.ETAG))
-                throw new IllegalArgumentException("Minimum length for ETAG option is " +
-                        Option.getMinLength(Option.Name.ETAG));
-
-            this.etagLength = etagLength;
-        }
-        catch (UnknownOptionException e) {
-            log.error("This should never happen.", e);
-        }
-    }
-
-    public int getEtagLength(){
-        return this.etagLength;
-    }
-
-    @Override
-    public byte[] getEtag(){
-        return this.etag;
-    }
 
     @Override
     public int hashCode(){

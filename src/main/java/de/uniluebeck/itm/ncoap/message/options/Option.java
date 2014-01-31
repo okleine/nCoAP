@@ -177,10 +177,11 @@ public abstract class Option<T>{
     public static final byte[] ENCODED_URI_PORT_DEFAULT =
             new BigInteger(1, Longs.toByteArray(URI_PORT_DEFAULT)).toByteArray();
 
-    /**
-     * Corresponds to 4, i.e. default ETAG length is 4 bytes
-     */
-    public static final int ETAG_LENGTH_DEFAULT = 4;
+//    /**
+//     * Corresponds to 4, i.e. default ETAG length is 4 bytes
+//     */
+//    public static final int ETAG_LENGTH_DEFAULT = 4;
+
     private static HashMap<Integer, Integer[]> characteristics = new HashMap<Integer, Integer[]>();
     static{
         characteristics.put(    Name.IF_MATCH,       new Integer[]{Type.OPAQUE,       0,      8       });

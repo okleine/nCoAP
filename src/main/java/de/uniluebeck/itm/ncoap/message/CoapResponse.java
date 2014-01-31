@@ -24,6 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
+import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,21 @@ public class CoapResponse extends CoapMessage {
         this(messageCode.getNumber());
     }
 
+    public static CoapResponse createInternalServerErrorResponse(Throwable cause, int messageID, Token token){
+        try {
+            CoapResponse coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+            coapResponse.setContent(cause.getMessage().getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+
+            coapResponse.setMessageID(messageID);
+            coapResponse.setToken(token);
+
+            return coapResponse;
+        }
+        catch (Exception e) {
+            log.error("This should never happen.", e);
+            return null;
+        }
+    }
 
     public void setEtag(byte[] etag) throws InvalidOptionException {
         try {

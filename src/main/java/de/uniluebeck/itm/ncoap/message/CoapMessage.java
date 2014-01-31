@@ -29,6 +29,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
+import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.message.options.*;
@@ -178,46 +179,6 @@ public abstract class CoapMessage {
     protected SetMultimap<Integer, Option> options;
     private ChannelBuffer content;
 
-//    public static CoapMessage createCoapMessage(int messageType, int messageCode, int messageID, Token token)
-//            throws InvalidHeaderException {
-//
-//        if(MessageCode.isRequest(messageCode)){
-//            CoapRequest coapRequest= new CoapRequest(messageType, messageCode);
-//            coapRequest.setMessageID(messageID);
-//            coapRequest.setToken(token);
-//            return coapRequest;
-//        }
-//
-//        else if(MessageCode.isResponse(messageCode)){
-//            CoapResponse coapResponse = new  CoapResponse(messageCode);
-//            coapResponse.setMessageType(messageType);
-//            coapResponse.setMessageID(messageID);
-//            coapResponse.setToken(token);
-//            return coapResponse;
-//        }
-//
-//        else if(messageCode == MessageCode.Name.EMPTY.getNumber()){
-//            if(messageType == MessageType.Name.ACK.getNumber()){
-//                if(token.getBytes().length == 0)
-//                    return createEmptyAcknowledgement(messageID);
-//                else
-//                    throw new InvalidHeaderException("Empty ACK must have no token, i.e. token of length 0");
-//            }
-//            else if(messageType == MessageType.Name.RST.getNumber()){
-//                if(token.getBytes().length == 0)
-//                    return createEmptyReset(messageID);
-//                else
-//                    throw new InvalidHeaderException("Empty RST must have no token, i.e. token of length 0");
-//            }
-//            else{
-//                throw new InvalidHeaderException("Code EMPTY but neither ACK or RST.");
-//            }
-//        }
-//
-//        throw new InvalidHeaderException("Message is neither request, nor response nor EMPTY.");
-//
-//
-//    }
 
     protected CoapMessage(int messageType, int messageCode, int messageID, Token token)
             throws InvalidHeaderException {
@@ -421,7 +382,6 @@ public abstract class CoapMessage {
      *
      * @param messageID the message ID for the message
      */
-
     public void setMessageID(int messageID) throws InvalidHeaderException {
 
         if(messageID < -1 || messageID > 65535)
@@ -431,14 +391,12 @@ public abstract class CoapMessage {
     }
 
     /**
-     * Returns the message ID (-1 if not set, yet)
-     *
-     * @return the message ID (-1 if not set, yet)
+     * Returns the message ID (-1 if not set)
+     * @return the message ID (-1 if not set)
      */
     public int getMessageID() {
         return this.messageID;
     }
-
 
     public int getMessageType() {
         return this.messageType;

@@ -48,20 +48,20 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
+import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
+import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
+import de.uniluebeck.itm.ncoap.message.options.OpaqueOption;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
 * The .well-known/core resource is a standard webservice to be provided by every CoAP webserver as defined in
@@ -72,6 +72,8 @@ import java.util.Map;
 public final class WellKnownCoreResource extends NotObservableWebservice<Map<String, Webservice>> {
 
     private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
+
+    private byte[] etag;
 
     /**
      * Creates the well-known/core resource at path /.well-known/core as defined in the CoAP draft
@@ -100,56 +102,50 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest request,
                                    InetSocketAddress remoteAddress) {
         try{
-            if(request.getMessageCode() != MessageCode.Name.GET.getNumber()){
-                responseFuture.set(new CoapResponse(MessageCode.Name.METHOD_NOT_ALLOWED_405));
-                return;
+            //Handle GET request
+            if(request.getMessageCodeName() == MessageCode.Name.GET){
+                CoapResponse response = new CoapResponse(MessageCode.Name.CONTENT_205);
+                response.setContent(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT),
+                        ContentFormat.APP_LINK_FORMAT);
+                response.setEtag(this.etag);
+                System.out.println("ETAG: " + OpaqueOption.toHexString(this.etag));
+                responseFuture.set(response);
             }
 
-            CoapResponse response = new CoapResponse(MessageCode.Name.CONTENT_205);
-
-            try {
-                byte[] payload = getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT);
-                response.setContent(ChannelBuffers.wrappedBuffer(payload), ContentFormat.APP_LINK_FORMAT);
-
-            } catch (Exception e) {
-                log.error("This should never happen.", e);
+            //Send error response if the incoming request has a code other than GET
+            else{
+                CoapResponse coapResponse = new CoapResponse(MessageCode.Name.METHOD_NOT_ALLOWED_405);
+                String message = "Service \"/.well-known/core\" only allows GET requests.";
+                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+                responseFuture.set(coapResponse);
             }
-
-            responseFuture.set(response);
         }
-        catch (InvalidHeaderException e) {
+        catch (Exception e) {
             log.error("This should never happen.", e);
             responseFuture.setException(e);
         }
     }
 
     @Override
-    public byte[] getSerializedResourceStatus(long contentFormat) throws AcceptedContentFormatNotSupportedException {
+    public byte[] getSerializedResourceStatus(long contentFormat){
         StringBuffer buffer = new StringBuffer();
 
         //TODO make this real CoRE link format
         for(String path : getResourceStatus().keySet()){
-            buffer.append("<" + path + ">,\n");
+            buffer.append("<").append(path).append(">,\n");
         }
-        buffer.deleteCharAt(buffer.length()-2);
+
+        if(buffer.length() > 3)
+            buffer.deleteCharAt(buffer.length() - 2);
 
         log.debug("Content: \n{}", buffer.toString());
 
         return buffer.toString().getBytes(CoapMessage.CHARSET);
     }
 
-
     @Override
-    public void updateEtag(Map<String, Webservice> resourceStatus) {
-        StringBuffer result = new StringBuffer();
-        result.append("");
-        for(String service : getResourceStatus().keySet()){
-            result.append(service);
-        }
-
-        byte[] hash = this.getDigest().digest(result.toString().getBytes(CoapMessage.CHARSET));
-        setEtag(Arrays.copyOfRange(hash, 0, getEtagLength()));
-
+    public boolean allowsDelete() {
+        return false;
     }
 
     @Override
@@ -158,7 +154,12 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
     }
 
     @Override
-    public boolean allowsDelete() {
-        return false;
+    public byte[] getEtag(long contentFormat) {
+        return this.etag;
+    }
+
+    @Override
+    public void updateEtag(Map<String, Webservice> resourceStatus) {
+        this.etag = Ints.toByteArray(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT).hashCode());
     }
 }

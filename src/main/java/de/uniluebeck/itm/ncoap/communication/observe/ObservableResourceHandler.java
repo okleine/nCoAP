@@ -26,11 +26,9 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.application.server.webservice.AcceptedContentFormatNotSupportedException;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -219,7 +217,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                 CoapResponse updateNotification = new CoapResponse(MessageCode.Name.CONTENT_205);
                 updateNotification.setMessageType(webservice.getMessageTypeForUpdateNotifications().getNumber());
                 updateNotification.setToken(observationParameter.getToken());
-                updateNotification.setEtag(webservice.getEtag());
+                updateNotification.setEtag(webservice.getEtag(contentFormat));
                 updateNotification.setObservationSequenceNumber(observationParameter.getNotificationCount());
                 updateNotification.setContent(serializedResourceStatus, contentFormat);
 

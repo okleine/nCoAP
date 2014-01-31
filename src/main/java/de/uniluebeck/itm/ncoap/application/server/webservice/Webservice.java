@@ -50,13 +50,13 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
+import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.options.Option;
-
+import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -71,12 +71,40 @@ import java.util.concurrent.locks.ReadWriteLock;
 public interface Webservice<T> {
 
     /**
-     * Returns the (relative) path this service is listening at
-     * @return relative path of the service (e.g. /path/to/service)
+     * Returns the (relative) path this service is registered at.
+     *
+     * @return the (relative) path this service is registered at.
      */
     public String getPath();
 
+
+    /**
+     * Returns the {@link ReadWriteLock} for this {@link Webservice} instance.
+     *
+     * @return the {@link ReadWriteLock} for this {@link Webservice} instance.
+     */
     public ReadWriteLock getReadWriteLock();
+
+
+    /**
+     * This method is invoked by the framework to set the {@link WebserviceManager} of the CoAP server this
+     * {@link Webservice} instance is registered at.
+     *
+     * @param webserviceManager the {@link WebserviceManager} of the CoAP server this
+     * {@link Webservice} instance is registered at.
+     */
+    public void setWebserviceManager(WebserviceManager webserviceManager);
+
+
+    /**
+     * Returns the {@link WebserviceManager} this {@link Webservice} instance is registered at. This is useful, e.g.
+     * to create and register or modify {@link Webservice} instances upon reception of a {@link CoapRequest} with
+     * {@link MessageCode.Name#POST}.
+     *
+     * @return the {@link CoapServerApplication} this {@link Webservice} instance is registered at.
+     */
+    public WebserviceManager getWebserviceManager();
+
 
     /**
      * Returns the object of type T that holds the actual status of the resource represented by this
@@ -93,12 +121,9 @@ public interface Webservice<T> {
      */
     public T getResourceStatus();
 
+
     /**
-     * Method to set the new status of the resource represented by this {@link Webservice}. This method is the
-     * one and only recommended way to change the status.
-     *
-     * Note, that this status is internal and thus independent from the payload of the {@link CoapResponse} to be
-     * returned by the inherited method {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}.
+     * Method to set the new status of the resource represented by this {@link Webservice}.
      *
      * Example: Assume this webservice represents a switch that has two states "on" and "off". The payload of the
      * previously mentioned {@link CoapResponse} could then be either "on" or "off". But since there are only
@@ -109,14 +134,16 @@ public interface Webservice<T> {
      */
     public void setResourceStatus(T newStatus, long lifetimeSeconds);
 
+
     /**
      * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
-     * {@link CoapServerApplication} instance (using {@link CoapServerApplication#registerService(Webservice)}.
+     * {@link CoapServerApplication} instance (using {@link WebserviceManager#registerService(Webservice)}.
      * So, usually there is no need to set another {@link ScheduledExecutorService} instance manually.
      *
      * @param executorService a {@link ScheduledExecutorService} instance.
      */
     public void setScheduledExecutorService(ScheduledExecutorService executorService);
+
 
     /**
      * Returns the {@link ScheduledExecutorService} instance which is used to schedule and execute any
@@ -127,31 +154,37 @@ public interface Webservice<T> {
      */
     public ScheduledExecutorService getScheduledExecutorService();
 
-    //public ListeningExecutorService getListeningExecutorService();
 
     /**
-     * The max-age value represents the validity period (in seconds) of the actual status. The nCoap framework uses
-     * this value to set the {@link Option.Name#MAX_AGE} wherever necessary or useful. The framework does not change
-     * or remove manually set max-age options in {@link CoapResponse} instances, i.e. using
-     * {@code response.setMaxAge(int)}.
+     * Returns the actual ETAG for the given content format (see {@link ContentFormat} for some pre-defined constants).
      *
-     * @return the max-age value of this {@link Webservice} instance. If not set to another value implementing classes must
-     * return {@link Option#MAX_AGE_DEFAULT} as default value.
+     * @param contentFormat the number representing a content format (see {@link ContentFormat} for some pre-defined
+     *                      constants).
+     *
+     * @return the actual ETAG for the given content format.
      */
-    public long getMaxAge();
+    public byte[] getEtag(long contentFormat);
+
 
     /**
-     * Returns the actual ETAG, i.e. hashvalue, on the resource status (not the payload!)
+     * Sets the ETAG(s) of this {@link Webservice}. {@link Webservice}s can implement this method in several ways
+     * depending on the desired strength of the ETAG.
      *
-     * @return the actual ETAG, i.e. hashvalue, on the resource status (not the payload!)
+     * <ul>
+     *     <li>
+     *         <b>Strong ETAG:</b> Different ETAGs for every supported content format, i.e. an ETAG depends on both,
+     *         the resource status and the content format.
+     *     </li>
+     *     <li>
+     *         <b>Weak ETAG:</b> The same ETAG for all supported content formats, i.e. the ETAG only depends on
+     *         the resource status
+     *     </li>
+     * </ul>
+     *
+     * @param resourceStatus the (abstract) resource status to be used to compute the new ETAG(s).
      */
-    public byte[] getEtag();
-
-    public void setEtag(byte[] etag) throws IllegalArgumentException;
-
     public void updateEtag(T resourceStatus);
 
-    //public Collection<byte[]> getAllEtags();
 
     /**
      * This method is called by the nCoAP framework when this {@link Webservice} is removed from the
@@ -164,15 +197,51 @@ public interface Webservice<T> {
      */
     public void shutdown();
 
+    /**
+     * Returns <code>true</code> if this {@link Webservice} can be removed from the server with a {@link CoapRequest}
+     * with {@link MessageCode.Name#DELETE} and <code>false</code> otherwise. This method is invoked by the framework
+     * if such a request is addressed to the path this {@link Webservice} is registered at.
+     *
+     * @return <code>true</code> if this {@link Webservice} can be removed from the server with a {@link CoapRequest}
+     * with {@link MessageCode.Name#DELETE} and <code>false</code> otherwise.
+     */
     public boolean allowsDelete();
 
 
-    public void setCoapServerApplication(CoapServerApplication serverApplication);
+    /**
+     * Method to process an incoming {@link CoapRequest} asynchronously. The implementation of this method is dependant
+     * on the concrete webservice. Processing a message might cause a new status of the resource or even the deletion
+     * of the complete resource, i.e. this {@link Webservice} instance.
+     *
+     * Implementing classes MUST make sure that {@link SettableFuture<CoapResponse>#set(CoapResponse)} is invoked
+     * after some time. Furthermore implementing classes are supposed to lock the {@link ReadWriteLock#readLock()} from
+     * {@link #getReadWriteLock()} while processing incoming reading requests. Both, {@link ObservableWebservice} and
+     * {@link NotObservableWebservice} implement the method {@link #setResourceStatus(Object, long)} in a way, that
+     * they lock the {@link ReadWriteLock#writeLock()} for the whole update process. That means, resource status updates are
+     * only possible, when the {@link ReadWriteLock#readLock()} is not locked. However, multiple read locks are
+     * possible to process multiple reading requests in parallel.
+     *
+     * @param responseFuture the {@link SettableFuture} instance to set the {@link CoapResponse} which is the result
+     *                       of the incoming {@link CoapRequest}. Use
+     *                       {@link SettableFuture<CoapResponse>#set(CoapResponse)} to send it to the client.
+     * @param request The {@link CoapRequest} to be processed by the {@link Webservice} instance
+     * @param remoteAddress The address of the sender of the request
+     */
+    public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest request,
+                                   InetSocketAddress remoteAddress);
 
-    public CoapServerApplication getCoapServerApplication();
 
-    public byte[] getSerializedResourceStatus(long contentFormatNumber)
-            throws AcceptedContentFormatNotSupportedException;
+    /**
+     * Returns a byte array that contains the serialized payload for a {@link CoapResponse} in the desired content
+     * format.
+     *
+     * @param contentFormatNumber the number indicating the desired format of the returned content, see
+     *                            {@link ContentFormat} for some pre-defined constants.
+     *
+     * @return a byte array that contains the serialized payload for a {@link CoapResponse} in the desired content
+     * format.
+     */
+    public byte[] getSerializedResourceStatus(long contentFormatNumber);
 
 
     /**
@@ -194,6 +263,7 @@ public interface Webservice<T> {
      */
     public boolean equals(Object object);
 
+
     /**
      * This method must return a hash value for the Webservice instance based on the URI path of the webservice. Same
      * path must return the same hash value whereas different paths should have hash values as distinct as possible.
@@ -201,35 +271,4 @@ public interface Webservice<T> {
     @Override
     public int hashCode();
 
-    /**
-     * Sets the length of the {@link Option.Name#ETAG} that is automatically set by the nCoAP framework for outgoing
-     * instances of {@link CoapResponse}. If not explicitly set to another value using this method, the default length
-     * is {@link Option#ETAG_LENGTH_DEFAULT}.
-     *
-     * @param etagLength the length of the value for the {@link Option.Name#ETAG}
-     *
-     * @throws IllegalArgumentException
-     */
-    public void setEtagLength(int etagLength) throws IllegalArgumentException;
-
-    /**
-     * Method to process an incoming {@link CoapRequest} asynchronously. The implementation of this method is dependant
-     * on the concrete webservice. Processing a message might cause a new status of the resource or even the deletion
-     * of the complete resource, i.e. this {@link Webservice} instance.
-     *
-     * Implementing classes have to make sure that {@link SettableFuture<CoapResponse>#set(CoapResponse)} is invoked
-     * after some time. Otherwise the {@link CoapServerApplication} will wait forever, even though non-blocking.
-     *
-     * The way to process the incoming request is basically to be implemented based on the {@link de.uniluebeck.itm.ncoap.message.MessageCode},
-     * the {@link de.uniluebeck.itm.ncoap.message.MessageType}, the contained {@link Option}s (if any) and (if any) the payload of the request.
-     *
-     * @param responseFuture the {@link SettableFuture} instance to set the {@link CoapResponse} which is the result
-     *                       of the incoming {@link CoapRequest}. Use
-     *                       {@link SettableFuture<CoapResponse>#set(CoapResponse)} to send it to the client.
-     * @param request The {@link CoapRequest} to be processed by the {@link Webservice} instance
-     * @param remoteAddress The address of the sender of the request
-     *
-     */
-    public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest request,
-                                   InetSocketAddress remoteAddress);
 }
