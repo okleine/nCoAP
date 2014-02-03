@@ -2,8 +2,7 @@ Java implementation of the CoAP protocol (draft 18)
 ===================================================
 see: http://tools.ietf.org/html/draft-ietf-core-coap-18
 
-Draft-18 is the one to become an RFC at sometime, i.e. there are (if any) only few and minor changes
-expected in the future.
+Draft-18 is the one to become an RFC at sometime, i.e. there are (if any) only few and minor changes expected in the future.
 
 This implementation is usable for both clients and servers including extensions:
 
@@ -22,7 +21,7 @@ To use the latest SNAPSHOT nCoAP Maven artifact add the following to your pom.xm
 ...
     <repository>
         <id>itm-maven-repository-snapshot-site</id>
-        <url>https://maven.itm.uni-luebeck.de/content/repositories/releases/</url>
+        <url>https://maven.itm.uni-luebeck.de/content/repositories/snapshots/</url>
     </repository>
 ...
 </repositories>
