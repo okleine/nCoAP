@@ -1,29 +1,27 @@
-Java implementation of the CoAP protocol (draft 08)
+Java implementation of the CoAP protocol (draft 18)
 ===================================================
-see: http://tools.ietf.org/html/draft-ietf-core-coap-08
+see: http://tools.ietf.org/html/draft-ietf-core-coap-18
 
-usable for both clients and servers including extensions:
+Draft-18 is the one to become an RFC at sometime, i.e. there are (if any) only few and minor changes
+expected in the future.
 
-* CoAP observe (draft 06)
+This implementation is usable for both clients and servers including extensions:
+
+* CoAP observe (draft-11)
 -----------------------
 see: http://tools.ietf.org/html/draft-ietf-core-observe-06
 
-* CoAP block-transfer (draft 04, partially)
------------------------------------------
-see: http://tools.ietf.org/html/draft-ietf-core-block-04
-
-For now, the blockwise transfer only works for clients receiving blockwise responses
 
 
 Maven
 =====
 
-To use the latest released nCoAP Maven artifact add the following to your pom.xml
+To use the latest SNAPSHOT nCoAP Maven artifact add the following to your pom.xml
 
 <repositories>
 ...
     <repository>
-        <id>itm-maven-repository-releases-site</id>
+        <id>itm-maven-repository-snapshot-site</id>
         <url>https://maven.itm.uni-luebeck.de/content/repositories/releases/</url>
     </repository>
 ...
