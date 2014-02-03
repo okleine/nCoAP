@@ -118,6 +118,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
         final int messageID = coapMessage.getMessageID();
 
+        //Empty CON messages can be used as application layer PING (is endpoint alive?)
+        if(coapMessage.getMessageTypeName() == MessageType.Name.CON &&
+                coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
+
+            me.getFuture().setSuccess();
+            writeReset(ctx, remoteSocketAddress, coapMessage.getMessageID());
+            return;
+        }
 
         //Incoming requests
         if(coapMessage instanceof CoapRequest){

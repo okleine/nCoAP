@@ -95,10 +95,19 @@ public class CoapResponse extends CoapMessage {
             return null;
     }
 
-
+    /**
+     * Adds an {@link Option.Name#OBSERVE} option with the given sequence number. The value of the option will
+     * correspond to the 3 least significant bytes of a (big endian) byte representation of the given sequence number,
+     * i.e. a given sequence number of <code>2^24 + 1</code> leads to a value of <code>1</code>.
+     *
+     * <b>Note:</b> This method will override a possibly previously contained {@link Option.Name#OBSERVE} option.
+     *
+     * @param sequenceNumber the sequence number for the {@link Option.Name#OBSERVE} option to be set.
+     */
     public void setObservationSequenceNumber(long sequenceNumber){
-        sequenceNumber = sequenceNumber & 0xFFFFFF;
         try {
+            this.removeOptions(Option.Name.OBSERVE);
+            sequenceNumber = sequenceNumber & 0xFFFFFF;
             this.addUintOption(Option.Name.OBSERVE, sequenceNumber);
         }
         catch (UnknownOptionException e){
@@ -109,15 +118,16 @@ public class CoapResponse extends CoapMessage {
         }
     }
 
+
     public long getObservationSequenceNumber(){
         if(!options.containsKey(Option.Name.OBSERVE))
-            return -1;
+            return UintOption.NOT_SET;
         else
             return (Long) options.get(Option.Name.OBSERVE).iterator().next().getDecodedValue();
     }
 
     public boolean isUpdateNotification(){
-        return this.getObservationSequenceNumber() != -1;
+        return this.getObservationSequenceNumber() != UintOption.NOT_SET;
     }
 
     /**
@@ -169,17 +179,16 @@ public class CoapResponse extends CoapMessage {
      * @return the URI reconstructed from the location URI related options contained in the message or null if there
      * are no location URI related options
      *
-     * @throws {@link java.net.URISyntaxException} if the URI to be reconstructed from options is invalid
+     * @throws URISyntaxException if the URI to be reconstructed from options is invalid
      */
     public URI getLocationURI() throws URISyntaxException {
 
         //Reconstruct path
-        StringBuffer locationPath = new StringBuffer();
+        StringBuilder locationPath = new StringBuilder();
 
         if(options.containsKey(Option.Name.LOCATION_PATH)){
-            Iterator<Option> pathComponentIterator = options.get(Option.Name.LOCATION_PATH).iterator();
-            while(pathComponentIterator.hasNext())
-                    locationPath.append("/" + ((StringOption) pathComponentIterator.next()).getDecodedValue());
+            for (Option option : options.get(Option.Name.LOCATION_PATH))
+                locationPath.append("/").append(((StringOption) option).getDecodedValue());
         }
 
        //Reconstruct query
@@ -195,7 +204,8 @@ public class CoapResponse extends CoapMessage {
         if(locationPath.length() == 0 && locationQuery.length() == 0)
             return null;
 
-        return new URI(null, null, null, -1, locationPath.toString(), locationQuery.toString(), null);
+        return new URI(null, null, null, (int) UintOption.NOT_SET, locationPath.toString(), locationQuery.toString(),
+                null);
     }
 
 //    /**

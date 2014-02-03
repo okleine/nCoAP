@@ -147,7 +147,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
         int encodedHeader = ((coapMessage.getProtocolVersion()  & 0x03)     << 30)
                           | ((coapMessage.getMessageType()      & 0x03)     << 28)
-                          | ((token.length                      & 0x0E)     << 24)
+                          | ((token.length                      & 0x0F)     << 24)
                           | ((coapMessage.getMessageCode()      & 0xFF)     << 16)
                           | ((coapMessage.getMessageID()        & 0xFFFF));
 

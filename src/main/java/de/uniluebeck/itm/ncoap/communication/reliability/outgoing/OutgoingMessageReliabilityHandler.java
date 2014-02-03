@@ -228,16 +228,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                 reliabilitySchedule = reliabilitySchedules.remove(remoteSocketAddress, coapMessage.getMessageID());
             }
 
-            //RST messages can be used as PING on application layer
-            if(reliabilitySchedule == null && coapMessage.getMessageTypeName() == MessageType.Name.RST){
-                log.info("Received empty RST as application layer ping: {}", coapMessage);
-
-                CoapMessage pingResponse = CoapMessage.createEmptyReset(coapMessage.getMessageID());
-                sendMessage(ctx, (InetSocketAddress) me.getRemoteAddress(), pingResponse);
-                return;
-            }
-
-            else if(!(reliabilitySchedule == null)){
+            if(!(reliabilitySchedule == null)){
                 reliabilitySchedule.cancelRemainingTasks();
                 if(coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
                     if(coapMessage.getMessageTypeName() == MessageType.Name.ACK){

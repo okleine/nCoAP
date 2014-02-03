@@ -50,18 +50,18 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
-import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.message.options.OpaqueOption;
-import org.jboss.netty.buffer.ChannelBuffers;
+import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
 
 /**
 * The .well-known/core resource is a standard webservice to be provided by every CoAP webserver as defined in
@@ -91,19 +91,24 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * {@link MessageCode.Name#CONTENT_205} and with a payload listing all paths to the available resources
      * (i.e. {@link Webservice} instances}).
      *
-     * The payload is always formatted in {@link ContentFormat#APP_LINK_FORMAT}.
+     * <b>Note:</b> The payload is always formatted in {@link ContentFormat#APP_LINK_FORMAT}, possibly contained
+     * {@link Option.Name#ACCEPT} options in incoming {@link CoapRequest}s are ignored!
      *
      * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
      *                       the list of available services in CoRE link format.
-     * @param request The {@link CoapRequest} to be processed by the {@link Webservice} instance
-     * @param remoteAddress The address of the sender of the request
+     * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
+     * @param remoteSocketAddress The address of the sender of the request
+     *
+     * @throws Exception Implementing classes may throw any {@link Exception}. Thrown {@link Exception}s cause the
+     * framework to send a {@link CoapResponse} with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} to the
+     * client.
      */
     @Override
-    public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest request,
-                                   InetSocketAddress remoteAddress) {
-        try{
+    public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+                                   InetSocketAddress remoteSocketAddress) throws Exception{
+
             //Handle GET request
-            if(request.getMessageCodeName() == MessageCode.Name.GET){
+            if(coapRequest.getMessageCodeName() == MessageCode.Name.GET){
                 CoapResponse response = new CoapResponse(MessageCode.Name.CONTENT_205);
                 response.setContent(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT),
                         ContentFormat.APP_LINK_FORMAT);
@@ -119,16 +124,11 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
                 coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
                 responseFuture.set(coapResponse);
             }
-        }
-        catch (Exception e) {
-            log.error("This should never happen.", e);
-            responseFuture.setException(e);
-        }
     }
 
     @Override
     public byte[] getSerializedResourceStatus(long contentFormat){
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
 
         //TODO make this real CoRE link format
         for(String path : getResourceStatus().keySet()){

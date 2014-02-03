@@ -48,15 +48,10 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -127,6 +122,18 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
         return this.scheduledExecutorService;
     }
 
+
+//    @Override
+//    public final void preprocessCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+//                                                 InetSocketAddress remoteSocketAddress){
+//        try{
+//            processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
+//        }
+//        catch(Exception e){
+//            log.warn("Exception while processing CoAP request.", e);
+//            responseFuture.setException(e);
+//        }
+//    }
 
     /**
      * This method is the one and only recommended way to change the status. This method locks the service specific

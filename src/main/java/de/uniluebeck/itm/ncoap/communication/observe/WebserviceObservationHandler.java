@@ -29,7 +29,6 @@ import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
@@ -48,9 +47,9 @@ import java.util.concurrent.TimeUnit;
 * Time: 16:41
 * To change this template use File | Settings | File Templates.
 */
-public class ObservableResourceHandler extends SimpleChannelHandler implements Observer {
+public class WebserviceObservationHandler extends SimpleChannelHandler implements Observer {
 
-    private Logger log = LoggerFactory.getLogger(ObservableResourceHandler.class.getName());
+    private Logger log = LoggerFactory.getLogger(WebserviceObservationHandler.class.getName());
 
     //This table is to relate the first response on a observation request with the service path
     private HashBasedTable<InetSocketAddress, Token, String> observationsPerToken;
@@ -60,7 +59,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
     private ScheduledExecutorService executorService;
 
-    public ObservableResourceHandler(ScheduledExecutorService executorService){
+    public WebserviceObservationHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
         observationsPerPath = HashBasedTable.create();
         observationsPerToken = HashBasedTable.create();
@@ -74,13 +73,17 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
             CoapMessage coapMessage = (CoapMessage) me.getMessage();
             InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
 
-
+            //Running observations can be cancelled by observing clients by responding with an RST message upon
+            //reception of an update notification. The RST must contain the message ID of the latest update
+            //notification
             if(coapMessage.getMessageTypeName() == MessageType.Name.RST){
                 int resetedMessageID = coapMessage.getMessageID();
 
+                //Find running observation by the remote host
                 Map<String, ObservationParameter> observationsForRemoteHost =
-                        observationsPerPath.row((InetSocketAddress) me.getRemoteAddress());
+                        observationsPerPath.row(remoteSocketAddress);
 
+                //Check if the message ID contained in the RST matches any of the running observations
                 for(String servicePath : observationsForRemoteHost.keySet()){
                     ObservationParameter observationParameter = observationsForRemoteHost.get(servicePath);
 
@@ -91,10 +94,16 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                 }
             }
 
+            //If the message is no RST message but a CoAP request then
             else if(coapMessage instanceof CoapRequest){
                 CoapRequest coapRequest = (CoapRequest) coapMessage;
-                stopObservation(ctx, remoteSocketAddress, coapRequest.getToken());
+                Token token = coapRequest.getToken();
 
+                //Stop observation if there is an already running observation from the remote host with the same token
+                if(observationsPerToken.contains(remoteSocketAddress, token))
+                    stopObservation(ctx, remoteSocketAddress, token);
+
+                //Start new observation if the received CoAP request contains the observe option
                 if(coapRequest.isObserveSet())
                     addObservationPerToken((InetSocketAddress) me.getRemoteAddress(), coapRequest.getToken(),
                             coapRequest.getUriPath());
@@ -107,17 +116,16 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
 
-        if(me.getMessage() instanceof InternalObservableResourceRegistrationMessage){
-            InternalObservableResourceRegistrationMessage message =
-                    (InternalObservableResourceRegistrationMessage) me.getMessage();
-
-            message.getWebservice().addObserver(this);
+        if(me.getMessage() instanceof InternalObservableWebserviceRegistrationMessage){
+            registerObservableWebservice(
+                    ((InternalObservableWebserviceRegistrationMessage) me.getMessage()).getWebservice()
+            );
 
             me.getFuture().setSuccess();
             return;
         }
 
-        if(me.getMessage() instanceof CoapResponse){
+        else if(me.getMessage() instanceof CoapResponse){
             CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
             InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
@@ -127,34 +135,29 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
             String webservicePath = this.observationsPerToken.get(remoteSocketAddress, token);
 
             //Start new observation (otherwise webservice path will be null)
-            if(coapResponse.isUpdateNotification()){
-                if(webservicePath != null){
-                    if(!this.observationsPerPath.contains(remoteSocketAddress, webservicePath)){
-                        //This is a new observation
-                        log.debug("Start observation of service {} (observer: {}, token: {}, messageID: {})",
-                                new Object[]{webservicePath, remoteSocketAddress, token,
-                                             messageID
-                                });
+            if(webservicePath != null){
+                if(!this.observationsPerPath.contains(remoteSocketAddress, webservicePath)){
+                    //This is a new observation
+                    log.debug("Start observation of service {} (observer: {}, token: {}, messageID: {})",
+                            new Object[]{webservicePath, remoteSocketAddress, token,
+                                         messageID
+                            });
 
-                        ObservationParameter observationParameter =
-                                new ObservationParameter(coapResponse.getMessageID(), token,
-                                        coapResponse.getContentFormat(), ctx.getChannel());
+                    ObservationParameter observationParameter =
+                            new ObservationParameter(coapResponse.getMessageID(), token,
+                                    coapResponse.getContentFormat(), ctx.getChannel());
 
-                        addObservation(remoteSocketAddress, webservicePath, observationParameter);
-                    }
-
-                    else{
-                        log.debug("Update observation of service {} (observer: {}, token: {}, messageID: {})",
-                                new Object[]{webservicePath, remoteSocketAddress, token,
-                                             messageID
-                                });
-
-                        //Update the the latest message ID to the one set by the Outgoing Reliability Handler
-                        updateLatestMessageID(remoteSocketAddress, token, messageID);
-                    }
+                    addObservation(remoteSocketAddress, webservicePath, observationParameter);
                 }
 
-                coapResponse.removeOptions(Option.Name.OBSERVE);
+                else{
+                    log.debug("Update observation of service {} (observer: {}, token: {}, messageID: {})",
+                            new Object[]{webservicePath, remoteSocketAddress, token, messageID});
+
+                    //Update the the latest message ID to the one set by the Outgoing Reliability Handler
+                    updateLatestMessageID(remoteSocketAddress, token, messageID);
+                }
+
                 coapResponse.setObservationSequenceNumber(getNextUpdateNotificationCount(remoteSocketAddress, token));
             }
 
@@ -165,6 +168,12 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
 
         ctx.sendDownstream(me);
     }
+
+
+    private void registerObservableWebservice(ObservableWebservice webservice){
+        webservice.addObserver(this);
+    }
+
 
     private synchronized void updateLatestMessageID(InetSocketAddress remoteSocketAddress, Token token, int messageID){
         String servicePath = this.observationsPerToken.get(remoteSocketAddress, token);
@@ -228,9 +237,6 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
                 log.debug("Update notification for {} scheduled.", remoteSocketAddress);
             }
 
-//            catch (AcceptedContentFormatNotSupportedException e) {
-//                handleContentFormatNotSupportedException(remoteSocketAddress, observationParameter, e);
-//            }
             catch (Exception e) {
                 log.error("Error while trying to create and schedule update notification.", e);
             }
@@ -343,7 +349,7 @@ public class ObservableResourceHandler extends SimpleChannelHandler implements O
             InternalStopUpdateNotificationRetransmissionMessage stopRetransmissionMessage =
                     new InternalStopUpdateNotificationRetransmissionMessage(remoteSocketAddress, latestMessageID);
 
-            ChannelHandlerContext ctx1 = channel.getPipeline().getContext(ObservableResourceHandler.class);
+            ChannelHandlerContext ctx1 = channel.getPipeline().getContext(WebserviceObservationHandler.class);
             ctx1.sendUpstream(new UpstreamMessageEvent(channel, stopRetransmissionMessage, null));
 
             //Send new update notification

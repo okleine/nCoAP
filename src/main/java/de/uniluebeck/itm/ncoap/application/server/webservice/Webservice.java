@@ -208,6 +208,10 @@ public interface Webservice<T> {
     public boolean allowsDelete();
 
 
+
+//    public void startCoapRequestProcessing(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+//                                           InetSocketAddress remoteSocketAddress);
+
     /**
      * Method to process an incoming {@link CoapRequest} asynchronously. The implementation of this method is dependant
      * on the concrete webservice. Processing a message might cause a new status of the resource or even the deletion
@@ -222,13 +226,15 @@ public interface Webservice<T> {
      * possible to process multiple reading requests in parallel.
      *
      * @param responseFuture the {@link SettableFuture} instance to set the {@link CoapResponse} which is the result
-     *                       of the incoming {@link CoapRequest}. Use
+     *                       of the incoming {@link CoapRequest}.
      *                       {@link SettableFuture<CoapResponse>#set(CoapResponse)} to send it to the client.
-     * @param request The {@link CoapRequest} to be processed by the {@link Webservice} instance
-     * @param remoteAddress The address of the sender of the request
+     * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
+     * @param remoteSocketAddress The address of the sender of the request
+     *
+     * @throws Exception
      */
-    public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest request,
-                                   InetSocketAddress remoteAddress);
+    public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+                                   InetSocketAddress remoteSocketAddress) throws Exception;
 
 
     /**

@@ -34,14 +34,14 @@ import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 *
 * @author Oliver Kleine
 */
-public class InternalObservableResourceRegistrationMessage {
+public class InternalObservableWebserviceRegistrationMessage {
 
     private ObservableWebservice webservice;
 
     /**
      * @param webservice the newly registered {@link ObservableWebservice} instance
      */
-    public InternalObservableResourceRegistrationMessage(ObservableWebservice webservice){
+    public InternalObservableWebserviceRegistrationMessage(ObservableWebservice webservice){
         this.webservice = webservice;
     }
 

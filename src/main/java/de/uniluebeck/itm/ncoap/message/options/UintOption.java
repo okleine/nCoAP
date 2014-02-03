@@ -41,7 +41,14 @@ import java.util.Arrays;
  */
 public class UintOption extends Option<Long>{
 
+    /**
+     * Corresponds to a value of <code>-1</code> to indicate that there is no value for that option set.
+     */
+    public static final long NOT_SET = -1;
+
     private static Logger log = LoggerFactory.getLogger(UintOption.class.getName());
+
+
 
     public UintOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, shortenValue(value));

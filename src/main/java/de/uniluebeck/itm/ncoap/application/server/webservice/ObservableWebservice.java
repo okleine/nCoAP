@@ -48,17 +48,25 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
+import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.SettableFuture;
+import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
+import de.uniluebeck.itm.ncoap.message.options.OpaqueOption;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Observable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -75,6 +83,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 */
 public abstract class ObservableWebservice<T> extends Observable implements Webservice<T> {
 
+    private static final long NO_RUNNING_OBSERVATION = -1;
+
     private static Logger log = LoggerFactory.getLogger(ObservableWebservice.class.getName());
 
     private WebserviceManager webserviceManager;
@@ -87,7 +97,10 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
     private boolean isUpdateNotificationConfirmable = true;
 
+    private HashBasedTable<InetSocketAddress, Token, Long> observations;
+
     private ScheduledExecutorService scheduledExecutorService;
+
 
     /**
      * Using this constructor is the same as {@link #ObservableWebservice(String, Object, long)} with parameter
@@ -100,6 +113,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         this(path, initialStatus, Option.MAX_AGE_DEFAULT);
     }
 
+
     /**
      * @param path the path this {@link ObservableWebservice} is registered at.
      * @param initialStatus the initial status of this {@link ObservableWebservice}.
@@ -109,19 +123,120 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     protected ObservableWebservice(String path, T initialStatus, long lifetimeSeconds){
         this.readWriteLock = new ReentrantReadWriteLock(false);
         this.path = path;
+        this.observations = HashBasedTable.create();
 
         setResourceStatus(initialStatus, lifetimeSeconds);
     }
+
+
+//    /**
+//     * This method is called by the framework to pre-process incoming {@link CoapRequest}s, i.e. implementing classes
+//     * should process any tasks that are not directly related to the creation of a {@link CoapResponse} here.
+//     *
+//     * Furthermore implementing classes are supposed to invoke
+//     * {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} as the framework will not call
+//     * that method at all.
+//     *
+//     * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
+//     * @param remoteSocketAddress The address of the sender of the request
+//     */
+//    public final void preprocessCoapRequest(final SettableFuture<CoapResponse> responseFuture,
+//                                            final CoapRequest coapRequest, final InetSocketAddress remoteSocketAddress)
+//            throws Exception{
+//
+//
+//        if(observations.contains(remoteSocketAddress, coapRequest.getToken()))
+//            removeObserver(remoteSocketAddress, coapRequest.getToken());
+//
+//        if(coapRequest.isObserveSet())
+//            addObserver(remoteSocketAddress, coapRequest.getToken());
+//
+//
+//        final SettableFuture<CoapResponse> responseFuture2 = SettableFuture.create();
+//
+//        responseFuture2.addListener(new Runnable(){
+//
+//            @Override
+//            public void run() {
+//                try {
+//                    CoapResponse coapResponse = responseFuture2.get();
+//
+//                    if(coapRequest.isObserveSet()){
+//                        //Stop the observation if the request processing caused an error message
+//                        if(MessageCode.isErrorMessage(coapResponse.getMessageCode())){
+//                            removeObserver(remoteSocketAddress, coapRequest.getToken());
+//                        }
+//
+//                        //Set the proper observation sequence number
+//                        else{
+//                            long observationSequenceNumber =
+//                                    getNextObservationSequenceNumber(remoteSocketAddress, coapRequest.getToken());
+//                            coapResponse.setObservationSequenceNumber(observationSequenceNumber);
+//                        }
+//                    }
+//
+//                    responseFuture.set(coapResponse);
+//
+//                }
+//                catch (Exception e) {
+//                    log.error("This should never happen.", e);
+//
+//                    //Stop the observation if the request processing caused an error message
+//                    if(coapRequest.isObserveSet())
+//                        removeObserver(remoteSocketAddress, coapRequest.getToken());
+//
+//                    responseFuture.setException(e);
+//                }
+//            }
+//        }, getScheduledExecutorService());
+//
+//        processCoapRequest(responseFuture2, coapRequest, remoteSocketAddress);
+//    }
+
+
+    private synchronized void removeObserver(InetSocketAddress remoteSocketAddress, Token token){
+        if(observations.remove(remoteSocketAddress, token) != null){
+            log.info("Removed {} with token {} as observer for service {}",
+                    new Object[]{remoteSocketAddress, token, getPath()});
+        }
+    }
+
+
+//    private synchronized void addObserver(InetSocketAddress remoteSocketAddress, Token token){
+//        observations.put(remoteSocketAddress, token, 1L);
+//        log.info("Added {} with tokeb {} as observer for service {}",
+//                new Object[]{remoteSocketAddress, token, getPath()});
+//    }
+
+    private synchronized long getNextObservationSequenceNumber(InetSocketAddress remoteSocketAddress, Token token){
+
+        Long actualSequenceNumber = observations.get(remoteSocketAddress, token);
+
+        if(actualSequenceNumber != null){
+            actualSequenceNumber += (OutgoingMessageReliabilityHandler.MAX_RETRANSMIT + 1);
+            observations.put(remoteSocketAddress, token, actualSequenceNumber);
+
+            return actualSequenceNumber;
+        }
+
+        return NO_RUNNING_OBSERVATION;
+    }
+
+//    public final long getNextUpdateNotificationCount(InetSocketAddress remoteAddress, Token token){
+//        return observations.get(remoteAddress, token);
+//    }
 
     @Override
     public void setWebserviceManager(WebserviceManager webserviceManager){
         this.webserviceManager = webserviceManager;
     }
 
+
     @Override
     public WebserviceManager getWebserviceManager(){
         return this.webserviceManager;
     }
+
 
     @Override
     public final String getPath() {
@@ -130,7 +245,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
 
     @Override
-    public final void setScheduledExecutorService(ScheduledExecutorService executorService){
+    public void setScheduledExecutorService(ScheduledExecutorService executorService){
         this.scheduledExecutorService = executorService;
     }
 
@@ -145,11 +260,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     public final ReadWriteLock getReadWriteLock(){
         return this.readWriteLock;
     }
-
-
-    @Override
-    public abstract void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                            InetSocketAddress remoteAddress);
 
 
     @Override
@@ -179,16 +289,22 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         }
     }
 
-    /**
-     * Returns the payload to be contained in {@link CoapResponse}s on incoming {@link CoapRequest}s. This method
-     * is invoked by the framework upon invocation of {@link #setResourceStatus(T, long)}. The implementation
-     * of this method is supposed to be fast, since it is invoked for every observer.
-     *
-     * @param contentFormat the number representing the format of the serialized resource status
-     *
-     * @return the serialized resource status
-     */
-    public abstract byte[] getSerializedResourceStatus(long contentFormat);
+
+//    private void notifyObservers(){
+//
+//    }
+
+//    /**
+//     * Returns the payload to be contained in {@link CoapResponse}s on incoming {@link CoapRequest}s. This method
+//     * is invoked by the framework upon invocation of {@link #setResourceStatus(T, long)}. The implementation
+//     * of this method is supposed to be fast, since it is invoked for every observer.
+//     *
+//     * @param contentFormat the number representing the format of the serialized resource status
+//     *
+//     * @return the serialized resource status
+//     */
+//    @Override
+//    public abstract byte[] getSerializedResourceStatus(long contentFormat);
 
 
     /**

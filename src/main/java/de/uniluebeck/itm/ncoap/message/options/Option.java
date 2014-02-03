@@ -160,6 +160,9 @@ public abstract class Option<T>{
      */
     public static final long MAX_AGE_DEFAULT    = 60;
 
+
+    public static final long MAX_AGE_MAX        = 0xFFFFFFFFL;
+
     /**
      * Corresponds to the encoded value of {@link #MAX_AGE_DEFAULT}
      */

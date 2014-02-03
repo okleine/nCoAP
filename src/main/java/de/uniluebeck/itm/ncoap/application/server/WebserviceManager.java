@@ -1,3 +1,27 @@
+/**
+ * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * All rights reserved
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.collect.HashMultimap;
@@ -7,8 +31,11 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
-import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableResourceRegistrationMessage;
-import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableWebserviceRegistrationMessage;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.channel.*;
@@ -81,31 +108,42 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         registerService(new WellKnownCoreResource(registeredServices));
     }
 
-    public void setChannel(Channel channel){
+
+    /**
+     * This method is called by the framework to enable the {@link WebserviceManager} to send messages
+     * to other handlers in the {@link ChannelPipeline}.
+     *
+     * @param channel the {@link Channel} to be used for messages to be sent to other handlers in that channel
+     */
+    void setChannel(Channel channel){
         this.channel = channel;
     }
 
+
     /**
-     * This method is called by the Netty framework whenever a new message is received to be processed by the server.
-     * For each incoming request a new Thread is created to handle the request (by invoking the method
-     * <code>receiveCoapRequest</code>).
+     * This method is called by the Netty framework whenever a new message is received to be processed. If the
+     * received messages was a {@link CoapRequest}, this method deals with the handling of that request,
+     * e.g. by invoking the method
+     * {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} of the addressed
+     * {@link Webservice} instance.
      *
-     * @param ctx The {@link org.jboss.netty.channel.ChannelHandlerContext} connecting relating this class (which implements the
-     * {@link org.jboss.netty.channel.ChannelUpstreamHandler} interface) to the datagramChannel that received the message.
-     * @param me the {@link org.jboss.netty.channel.MessageEvent} containing the actual message
+     * @param ctx The {@link ChannelHandlerContext} connecting relating this class (which implements the
+     * {@link ChannelUpstreamHandler} interface) to the datagramChannel that received the message.
+     *
+     * @param me the {@link MessageEvent} containing the actual message
      */
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
         log.debug("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof CoapRequest){
+        if(me.getMessage() instanceof CoapRequest)
             messageReceived(ctx, (CoapRequest) me.getMessage(), (InetSocketAddress) me.getRemoteAddress());
-            me.getFuture().setSuccess();
-        }
-        else {
-            log.warn("Server received inadequeate message: {}", me.getMessage());
-            ctx.sendUpstream(me);
-        }
+
+        else
+            log.warn("Server ignores incoming message: {}", me.getMessage());
+
+
+        me.getFuture().setSuccess();
     }
 
 
@@ -122,52 +160,58 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         //Create settable future to wait for response
         final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
 
-        responseFuture.addListener(new Runnable() {
-            @Override
-            public void run() {
-                try{
-                    if(openRequests.remove(remoteSocketAddress, coapRequest))
-                        log.info("Removed message {} from {} from list of open requests!",
-                                coapRequest, remoteSocketAddress);
-                    else
-                        log.warn("Could not remove message {} from {} from list of open requests!",
-                                coapRequest, remoteSocketAddress);
-
-                    CoapResponse coapResponse = responseFuture.get();
-                    coapResponse.setMessageID(coapRequest.getMessageID());
-                    coapResponse.setToken(coapRequest.getToken());
-                    sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
-                }
-                catch (Exception e) {
-                    log.error("Exception while processing incoming request", e);
-                    CoapResponse coapResponse = CoapResponse.createInternalServerErrorResponse(e,
-                            coapRequest.getMessageID(), coapRequest.getToken());
-                    sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
-                }
-            }
-        }, executorService);
-
 
         //Look up web service instance to handle the request
         final Webservice webservice = registeredServices.get(coapRequest.getUriPath());
 
         try{
             //The requested Webservice does not exist
-            if(webservice == null)
+            if(webservice == null){
                 handleRequestForNotExistingService(coapRequest, responseFuture);
+            }
 
-            //The IF-NON-MATCH option indicates that the request is only to be processed if the webservice does not
-            //(yet) exist. But it does. So send an error response
-            else if(coapRequest.isIfNonMatchSet())
-                sendPreconditionFailed(coapRequest.getUriPath(), responseFuture);
+            else{
+                //The IF-NON-MATCH option indicates that the request is only to be processed if the webservice does not
+                //(yet) exist. But it does. So send an error response
+                if(coapRequest.isIfNonMatchSet())
+                    sendPreconditionFailed(coapRequest.getUriPath(), responseFuture);
 
-            //The incoming request intends do delete the addresses service
-            else if(coapRequest.getMessageCodeName() == MessageCode.Name.DELETE)
-                handleDeleteRequest(webservice, responseFuture);
+                //The incoming request intends do delete the addresses service
+                else if(coapRequest.getMessageCodeName() == MessageCode.Name.DELETE)
+                    handleDeleteRequest(webservice, responseFuture);
 
-            //The incoming request is to be handled by the addressed service
-            else
-                webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
+                //The incoming request is to be handled by the addressed service
+                else
+                    webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
+
+
+                responseFuture.addListener(new Runnable() {
+                    @Override
+                    public void run() {
+                        try{
+                            if(openRequests.remove(remoteSocketAddress, coapRequest))
+                                log.info("Removed message {} from {} from list of open requests!",
+                                        coapRequest, remoteSocketAddress);
+                            else
+                                log.warn("Could not remove message {} from {} from list of open requests!",
+                                        coapRequest, remoteSocketAddress);
+
+                            CoapResponse coapResponse = responseFuture.get();
+                            coapResponse.setMessageID(coapRequest.getMessageID());
+                            coapResponse.setToken(coapRequest.getToken());
+
+                            sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
+                        }
+                        catch (Exception e) {
+                            log.error("Exception while processing incoming request", e);
+                            CoapResponse coapResponse = CoapResponse.createInternalServerErrorResponse(e,
+                                    coapRequest.getMessageID(), coapRequest.getToken());
+                            sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
+                        }
+                    }
+                }, executorService);
+            }
+
         }
         catch (Exception e) {
             log.error("This should never happen.", e);
@@ -335,8 +379,8 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         log.info("Registered new service at " + webservice.getPath());
 
         if(webservice instanceof ObservableWebservice){
-            InternalObservableResourceRegistrationMessage message =
-                    new InternalObservableResourceRegistrationMessage((ObservableWebservice) webservice);
+            InternalObservableWebserviceRegistrationMessage message =
+                    new InternalObservableWebserviceRegistrationMessage((ObservableWebservice) webservice);
 
             ChannelFuture future = Channels.write(channel, message);
             future.addListener(new ChannelFutureListener() {
