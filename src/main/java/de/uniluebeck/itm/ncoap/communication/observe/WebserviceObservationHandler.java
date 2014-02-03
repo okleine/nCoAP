@@ -29,6 +29,7 @@ import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
@@ -190,8 +191,8 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
     }
 
     @Override
-    public void update(Observable object, Object arg) {
-        if(!(object instanceof ObservableWebservice))
+    public void update(Observable object, Object serviceShutdown) {
+        if(!(object instanceof ObservableWebservice && serviceShutdown instanceof Boolean))
             return;
 
         ObservableWebservice webservice = (ObservableWebservice) object;
@@ -202,12 +203,51 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
         Map<InetSocketAddress, ObservationParameter> applyingObservations = observationsPerPath.column(webservicePath);
         log.info("Found {} observers for service {}.", applyingObservations.size(), webservicePath);
 
-        Map<Long, ChannelBuffer> formattedContent = new HashMap<Long, ChannelBuffer>();
+        if(!((Boolean) serviceShutdown))
+            sendUpdateNotification(applyingObservations, webservice);
+        else
+            sendErrorMessage(applyingObservations, webservice);
+    }
 
-        for(InetSocketAddress remoteSocketAddress : applyingObservations.keySet()){
+
+    private void sendErrorMessage(Map<InetSocketAddress, ObservationParameter> runningObservations,
+                                  ObservableWebservice webservice){
+
+        for(InetSocketAddress remoteSocketAddress : runningObservations.keySet()){
             log.debug("Try to notify {}.", remoteSocketAddress);
 
-            ObservationParameter observationParameter = applyingObservations.get(remoteSocketAddress);
+            ObservationParameter observationParameter = runningObservations.get(remoteSocketAddress);
+
+            try{
+                CoapResponse coapResponse = new CoapResponse(MessageCode.Name.NOT_FOUND_404);
+                coapResponse.setMessageType(webservice.getMessageTypeForUpdateNotifications().getNumber());
+
+                String message = "Sorry, the service \"" + webservice.getPath() + "\" is not anymore available";
+                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+                coapResponse.setToken(observationParameter.getToken());
+
+                executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, coapResponse,
+                        observationParameter.getLatestMessageID(), observationParameter.getChannel()
+                ), 0, TimeUnit.MILLISECONDS);
+
+                stopObservation(remoteSocketAddress, webservice.getPath());
+            }
+            catch(Exception e){
+                log.error("This should never happen!", e);
+            }
+
+        }
+    }
+
+    private void sendUpdateNotification(Map<InetSocketAddress, ObservationParameter> runningObservations,
+                                        ObservableWebservice webservice){
+
+        Map<Long, ChannelBuffer> formattedContent = new HashMap<Long, ChannelBuffer>();
+
+        for(InetSocketAddress remoteSocketAddress : runningObservations.keySet()){
+            log.debug("Try to notify {}.", remoteSocketAddress);
+
+            ObservationParameter observationParameter = runningObservations.get(remoteSocketAddress);
             observationParameter.nextResourceUpdate();
 
             long contentFormat = observationParameter.getContentFormat();
@@ -243,7 +283,6 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
         }
     }
 
-
 //    private void handleContentFormatNotSupportedException(InetSocketAddress remoteSocketAddress,
 //                ObservationParameter observationParameter, AcceptedContentFormatNotSupportedException e){
 //
@@ -275,6 +314,14 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
         log.info("Added {} as observer for service {}", remoteSocketAddress, path);
     }
 
+
+//    private synchronized void stopObservation(InetSocketAddress remoteSocketAddress, Token token){
+//
+//        String servicePath = this.observationsPerToken.remove(remoteSocketAddress, token);
+//
+//        if(servicePath != null)
+//            this.observationsPerPath.remove(remoteSocketAddress, servicePath);
+//    }
 
     private synchronized void stopObservation(ChannelHandlerContext ctx, InetSocketAddress remoteSocketAddress,
                                               Token token){

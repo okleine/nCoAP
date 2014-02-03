@@ -8,7 +8,7 @@ This implementation is usable for both clients and servers including extensions:
 
 * CoAP observe (draft-11)
 -----------------------
-see: http://tools.ietf.org/html/draft-ietf-core-observe-06
+see: http://tools.ietf.org/html/draft-ietf-core-observe-11
 
 
 

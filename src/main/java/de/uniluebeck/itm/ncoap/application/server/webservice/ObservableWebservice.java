@@ -281,7 +281,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
             //Notify observers (methods inherited from abstract class Observable)
             setChanged();
-            notifyObservers();
+            notifyObservers(false);
         }
 
         finally {
@@ -289,6 +289,10 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         }
     }
 
+    public void prepareShutdown(){
+        setChanged();
+        notifyObservers(true);
+    }
 
 //    private void notifyObservers(){
 //

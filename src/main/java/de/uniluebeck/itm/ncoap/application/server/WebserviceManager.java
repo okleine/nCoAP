@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -325,7 +326,9 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      */
     public void shutdownAllServices() {
 
-        for(String servicePath : registeredServices.keySet()){
+        String[] webservices = registeredServices.keySet().toArray(new String[registeredServices.size()]);
+
+        for(String servicePath : webservices){
             shutdownService(servicePath);
         }
 
@@ -351,6 +354,10 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
         if(removedService != null){
             log.info("Service {} removed from server.", uriPath);
+
+            if(removedService instanceof ObservableWebservice)
+                ((ObservableWebservice) removedService).prepareShutdown();
+
             removedService.shutdown();
 
             if(removedService instanceof ObservableWebservice)
