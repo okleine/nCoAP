@@ -71,6 +71,10 @@ import java.util.Map;
 */
 public final class WellKnownCoreResource extends NotObservableWebservice<Map<String, Webservice>> {
 
+    private static final byte[] METHOD_NOT_ALLOWED_MESSAGE =
+            "Service \"/.well-known/core\" only allows GET requests.".getBytes(CoapMessage.CHARSET);
+
+
     private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
 
     private byte[] etag;
@@ -109,19 +113,23 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
 
             //Handle GET request
             if(coapRequest.getMessageCodeName() == MessageCode.Name.GET){
-                CoapResponse response = new CoapResponse(MessageCode.Name.CONTENT_205);
+                CoapResponse response =
+                        new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.CONTENT_205);
+
                 response.setContent(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT),
                         ContentFormat.APP_LINK_FORMAT);
+
                 response.setEtag(this.etag);
-                System.out.println("ETAG: " + OpaqueOption.toHexString(this.etag));
+
                 responseFuture.set(response);
             }
 
             //Send error response if the incoming request has a code other than GET
             else{
-                CoapResponse coapResponse = new CoapResponse(MessageCode.Name.METHOD_NOT_ALLOWED_405);
-                String message = "Service \"/.well-known/core\" only allows GET requests.";
-                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+                CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageTypeName(),
+                        MessageCode.Name.METHOD_NOT_ALLOWED_405);
+
+                coapResponse.setContent(METHOD_NOT_ALLOWED_MESSAGE, ContentFormat.TEXT_PLAIN_UTF8);
                 responseFuture.set(coapResponse);
             }
     }
@@ -141,11 +149,6 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
         log.debug("Content: \n{}", buffer.toString());
 
         return buffer.toString().getBytes(CoapMessage.CHARSET);
-    }
-
-    @Override
-    public boolean allowsDelete() {
-        return false;
     }
 
     @Override

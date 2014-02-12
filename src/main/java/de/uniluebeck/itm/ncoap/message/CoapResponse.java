@@ -50,21 +50,31 @@ public class CoapResponse extends CoapMessage {
      *
      * @throws
      */
-    public CoapResponse(int messageCode) throws InvalidHeaderException {
-        super(messageCode);
+    public CoapResponse(int messageType, int messageCode) throws InvalidHeaderException {
+        super(messageType, messageCode);
 
         if(!MessageCode.isResponse(messageCode))
             throw new InvalidHeaderException("Message code no." + messageCode + " is no response code.");
     }
 
 
-    public CoapResponse(MessageCode.Name messageCode) throws InvalidHeaderException {
-        this(messageCode.getNumber());
+    public CoapResponse(MessageType.Name messageType, MessageCode.Name messageCode) throws InvalidHeaderException {
+        this(messageType.getNumber(), messageCode.getNumber());
     }
 
-    public static CoapResponse createInternalServerErrorResponse(Throwable cause, int messageID, Token token){
+
+    public static CoapResponse createInternalServerErrorResponse(boolean confirmable, int messageID, Token token,
+                                                                 Throwable cause){
+
         try {
-            CoapResponse coapResponse = new CoapResponse(MessageCode.Name.INTERNAL_SERVER_ERROR_500);
+            MessageType.Name messagaType;
+
+            if(confirmable)
+                messagaType = MessageType.Name.CON;
+            else
+                messagaType = MessageType.Name.NON;
+
+            CoapResponse coapResponse = new CoapResponse(messagaType, MessageCode.Name.INTERNAL_SERVER_ERROR_500);
             coapResponse.setContent(cause.getMessage().getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 
             coapResponse.setMessageID(messageID);
@@ -77,6 +87,7 @@ public class CoapResponse extends CoapMessage {
             return null;
         }
     }
+
 
     public void setEtag(byte[] etag) throws InvalidOptionException {
         try {

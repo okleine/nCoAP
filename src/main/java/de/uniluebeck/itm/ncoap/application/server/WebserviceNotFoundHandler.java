@@ -32,21 +32,24 @@ import de.uniluebeck.itm.ncoap.message.MessageCode.Name;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+
 /**
- * Instances of {@link WebserviceCreator} are supposed to handle incoming {@link CoapRequest}s that intend
- * to create one ore more new {@link Webservice} instances on the server.
+ * Instances of {@link WebserviceNotFoundHandler} are supposed to handle incoming {@link CoapRequest}s that are
+ * addresses to a not (yet?) existing {@link Webservice}.
  *
- * The framework calls the method {@link #handlePutRequest(SettableFuture, CoapRequest)} for incoming requests with
- * {@link Name#PUT} if the addressed {@link Webservice} does NOT exist (if the addressed {@link Webservice} exists
- * the framework invokes {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, java.net.InetSocketAddress)}
+ * The framework calls the method {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} for
+ * incoming {@link CoapRequest}s if the addressed {@link Webservice} does NOT exist (if the addressed
+ * {@link Webservice} exists the framework invokes
+ * {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}.
  *
  * @author Oliver Kleine
  */
-public abstract class WebserviceCreator {
+public abstract class WebserviceNotFoundHandler {
 
     private WebserviceManager webserviceManager;
 
-    private static Logger log = LoggerFactory.getLogger(WebserviceCreator.class.getName());
+    private static Logger log = LoggerFactory.getLogger(WebserviceNotFoundHandler.class.getName());
 
     /**
      * This method is invoked by the framework to set the {@link WebserviceManager} that is supposed to be used to
@@ -61,9 +64,8 @@ public abstract class WebserviceCreator {
 
 
     /**
-     * @return the {@link WebserviceManager} for this CoAP server. This {@link WebserviceManager} instance is
-     * supposed to be used to register new {@link Webservice} instances using
-     * {@link WebserviceManager#registerService(Webservice)}.
+     * @return the {@link WebserviceManager} for this CoAP server. The {@link WebserviceManager} instance can be e.g.
+     * used to register new {@link Webservice} instances using {@link WebserviceManager#registerService(Webservice)}.
      */
     protected WebserviceManager getWebserviceManager(){
         return this.webserviceManager;
@@ -77,25 +79,34 @@ public abstract class WebserviceCreator {
      *                       whether there was a new {@link Webservice} created or not.
      *
      * @param coapRequest the {@link CoapRequest} to be processed
+     *
+     * @param remoteSocketAddress the {@link InetSocketAddress} of the {@link CoapRequest}s origin.
      */
-    public abstract void handlePutRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest);
+    public abstract void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+                                            InetSocketAddress remoteSocketAddress);
 
 
     /**
-     * Returns the default implementation of {@link WebserviceCreator}. The default {@link WebserviceCreator} does not
-     * create new instances of {@link Webservice} but sets the given {@link SettableFuture} with a {@link CoapResponse}
-     * with code 404 NOT FOUND.
+     * Returns the default implementation of {@link WebserviceNotFoundHandler}. The default
+     * {@link WebserviceNotFoundHandler} does not create new instances of {@link Webservice} but sets the given
+     * {@link SettableFuture} with a {@link CoapResponse} with {@link MessageCode.Name#NOT_FOUND_404}.
      *
-     * @return a new default {@link WebserviceCreator} instance
+     * @return a new default {@link WebserviceNotFoundHandler} instance
      */
-    public static WebserviceCreator getDefault(){
-        return new WebserviceCreator() {
+    public static WebserviceNotFoundHandler getDefault(){
+        return new WebserviceNotFoundHandler() {
+
+            private String message = "Webservice \"%s\" not found.";
+
             @Override
-            public void handlePutRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest) {
+            public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+                                           InetSocketAddress remoteSocketAddress) {
                 try {
-                    CoapResponse coapResponse = new CoapResponse(MessageCode.Name.NOT_FOUND_404);
-                    String content = "Service \"" + coapRequest.getUriPath() + "\" not found"
-                            + " and this server does not allow service creation using PUT.";
+
+                    CoapResponse coapResponse =
+                            new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.NOT_FOUND_404);
+
+                    String content = String.format(message, coapRequest.getUriPath());
 
                     coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
                     responseFuture.set(coapResponse);

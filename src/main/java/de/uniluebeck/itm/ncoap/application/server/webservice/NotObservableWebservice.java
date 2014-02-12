@@ -123,18 +123,6 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     }
 
 
-//    @Override
-//    public final void preprocessCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-//                                                 InetSocketAddress remoteSocketAddress){
-//        try{
-//            processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
-//        }
-//        catch(Exception e){
-//            log.warn("Exception while processing CoAP request.", e);
-//            responseFuture.setException(e);
-//        }
-//    }
-
     /**
      * This method is the one and only recommended way to change the status. This method locks the service specific
      * {@link ReadWriteLock#writeLock()} from {@link #getReadWriteLock()} for the update process.

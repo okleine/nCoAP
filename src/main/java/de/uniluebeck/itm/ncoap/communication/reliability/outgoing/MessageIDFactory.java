@@ -24,80 +24,202 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.*;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
 * This class is to create and manage message IDs for outgoing messages. The usage of this class to create
-* new message IDs ensures that a message ID is not used twice within {@link #ALLOCATION_TIMEOUT} seconds.
+* new message IDs ensures that a message ID is not used twice within {@link #EXCHANGE_LIFETIME} seconds.
 *
 * @author Oliver Kleine
 */
 public class MessageIDFactory{
 
     /**
-     * The number of seconds, i.e. 120, a message ID is allocated by the nCoAP framework to avoid duplicate usage
+     * The number of seconds, i.e. 247, a message ID is allocated by the nCoAP framework to avoid duplicate usage
      * of the same message ID.
      */
-    public static int ALLOCATION_TIMEOUT = 120;
+    public static final int EXCHANGE_LIFETIME = 247000;
 
-    private Random random;
+    private static final int MODULUS = 65536;
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
-    private ScheduledExecutorService executorService;
 
-    //Allocated message IDs
-    private final Set<Integer> allocatedMessageIDs = Collections.synchronizedSet(new HashSet<Integer>());
+    private LinkedHashMultimap<InetSocketAddress, SettableFuture<Integer>> waitingMessageIDFutures =
+            LinkedHashMultimap.create();
 
-    private int nextMessageID = 0;
+    private HashMultimap<InetSocketAddress, Integer> usedMessageIDs;
+    private HashMap<InetSocketAddress, Integer> latestMessageIDs;
+
+    private TreeMultimap<Long, Pair<Integer, InetSocketAddress>> messageIDRetirementSchedule;
 
     /**
      * @param executorService the {@link ScheduledExecutorService} to provide the thread(s) for operations to
      *                        provide available message IDs
      */
     public MessageIDFactory(ScheduledExecutorService executorService){
-        this.executorService = executorService;
-        random = new Random(System.currentTimeMillis());
+        this.usedMessageIDs = HashMultimap.create();
+        this.latestMessageIDs = new HashMap<>();
+        this.messageIDRetirementSchedule = TreeMultimap.create();
+
+        executorService.scheduleAtFixedRate(new MessageIDRetirementTask(), 5, 5, TimeUnit.SECONDS);
     }
 
-    /**
-     * Returns the next available message ID within range 1 to (2^16)-1 and allocates this message ID for
-     * {@link MessageIDFactory#ALLOCATION_TIMEOUT} milliseconds. That means, the same message ID will not be used
-     * as long as it is allocated.
-     *
-     * @return the next available message ID within range 1 to (2^16)-1
-     */
-    public synchronized int nextMessageID(){
-        produceNextMessageID();
 
-        final int messageID = nextMessageID;
-        executorService.schedule(new Runnable(){
+    public synchronized ListenableFuture<Integer> getNextMessageID(InetSocketAddress remoteSocketAddress){
 
-            @Override
-            public void run() {
-                if(allocatedMessageIDs.remove(messageID))
-                    log.debug("Deallocated message ID " + messageID);
-                else
-                    log.error("Message ID " + messageID + " could not be removed! This should never happen.");
+        final SettableFuture<Integer> messageIDFuture = SettableFuture.create();
+        int nextMessageID;
 
-//                setChanged();
-//                notifyObservers(messageID);
+//        messageIDFuture.set(1);
+
+        //there are message IDs in use for this remote endpoint
+        if(usedMessageIDs.containsKey(remoteSocketAddress)){
+            log.debug("There are message IDs in use for {}.", remoteSocketAddress);
+
+            //The next message ID is (latestMessageID + 1) % MODULUS
+            nextMessageID = (latestMessageIDs.get(remoteSocketAddress) + 1) % MODULUS;
+
+            log.debug("Next message ID {} for {} is {}in use.", new Object[]{ nextMessageID, remoteSocketAddress,
+                    usedMessageIDs.containsEntry(remoteSocketAddress, nextMessageID) ? "" : "NOT "});
+
+            //If message ID considered next is in use, than all 65536 possible message IDs for this remote
+            //endpoint are in use (which is rather unlikely but possible). So, wait for the next available
+            //message ID...
+            if(usedMessageIDs.containsEntry(remoteSocketAddress, nextMessageID)){
+                waitingMessageIDFutures.put(remoteSocketAddress, messageIDFuture);
             }
-        }, ALLOCATION_TIMEOUT, TimeUnit.SECONDS);
 
-        return messageID;
-    }
-
-    private void produceNextMessageID(){
-        boolean created;
-        do{
-            nextMessageID = random.nextInt() & 0x0000FFFF;
-            created = allocatedMessageIDs.add(nextMessageID);
+            //Use the next available message ID and schedule
+            else{
+                messageIDFuture.set(nextMessageID);
+                allocateMessageID(remoteSocketAddress, nextMessageID);
+            }
         }
-        while(!created);
+        else{
+            log.debug("There are NO message IDs in use for {}.", remoteSocketAddress);
+            nextMessageID = 0;
+            messageIDFuture.set(nextMessageID);
+            allocateMessageID(remoteSocketAddress, nextMessageID);
+        }
+
+        return messageIDFuture;
     }
+
+    private void allocateMessageID(InetSocketAddress remoteSocketAddress, int messageID){
+        log.debug("Allocate message ID {} for {}", messageID, remoteSocketAddress);
+
+        this.usedMessageIDs.put(remoteSocketAddress, messageID);
+        this.latestMessageIDs.put(remoteSocketAddress, messageID);
+        this.messageIDRetirementSchedule.put(System.currentTimeMillis() + EXCHANGE_LIFETIME,
+                new Pair<>(messageID, remoteSocketAddress));
+    }
+
+
+    private class MessageIDRetirementTask implements Runnable{
+
+        @Override
+        public void run() {
+            try{
+                System.out.println("Start message ID retirement task!");
+                synchronized (MessageIDFactory.this){
+                    final long currentTime = System.currentTimeMillis();
+
+                    SetMultimap<Long, Pair<Integer, InetSocketAddress>> filteredMultimap =
+                            Multimaps.filterKeys(messageIDRetirementSchedule, new Predicate<Long>() {
+                                @Override
+                                public boolean apply(Long input) {
+                                    return input <= currentTime;
+                                }
+                            });
+
+
+                    SortedSet<Pair<Integer, InetSocketAddress>> retiredMessageIDs = new TreeSet<>();
+                    retiredMessageIDs.addAll(filteredMultimap.values());
+
+                    for (Pair<Integer, InetSocketAddress> retiredMessageID : retiredMessageIDs) {
+                        Integer messageID = retiredMessageID.getFirstElement();
+                        InetSocketAddress remoteSocketAddress = retiredMessageID.getSecondElement();
+
+                        //Remove the retired message ID from the list of used message IDs
+                        usedMessageIDs.remove(remoteSocketAddress, messageID);
+
+                        //Check if there is message ID future waiting for a retiring message ID
+                        Iterator<SettableFuture<Integer>> waitingMessageIDFutures =
+                                MessageIDFactory.this.waitingMessageIDFutures.get(remoteSocketAddress).iterator();
+
+                        if (waitingMessageIDFutures.hasNext()) {
+                            SettableFuture<Integer> waitingMessageIDFuture = waitingMessageIDFutures.next();
+
+                            MessageIDFactory.this.waitingMessageIDFutures.remove(remoteSocketAddress,
+                                    waitingMessageIDFuture);
+
+                            waitingMessageIDFuture.set(messageID);
+                            allocateMessageID(remoteSocketAddress, messageID);
+                        }
+                    }
+
+                    //Remove past message ID retirements
+                    Set<Long> pastRetirmentTimesSet = filteredMultimap.keySet();
+                    Long[] pastRetirmentTimes = pastRetirmentTimesSet.toArray(new Long[pastRetirmentTimesSet.size()]);
+
+                    for(Long time : pastRetirmentTimes)
+                        filteredMultimap.removeAll(time);
+
+
+                    //Remove latest message IDs if there is no message ID in use anymore
+                    Set<InetSocketAddress> addressesSet = latestMessageIDs.keySet();
+                    InetSocketAddress[] remoteAddresses = addressesSet.toArray(new InetSocketAddress[addressesSet.size()]);
+
+                    for(InetSocketAddress remoteSocketAddress : remoteAddresses){
+                        if(usedMessageIDs.get(remoteSocketAddress).isEmpty()){
+                            latestMessageIDs.remove(remoteSocketAddress);
+
+                            if(MessageIDFactory.this.waitingMessageIDFutures.get(remoteSocketAddress).isEmpty())
+                                log.error("There are waiting message ID futures but there is no message ID in use!");
+                        }
+                    }
+                }
+            }
+            catch(Exception e){
+                log.error("Exception!", e);
+            }
+        }
+    }
+
+
+    private class Pair<A extends Comparable<A>, B> implements Comparable<Pair<A, B>>{
+
+        private A firstElement;
+        private B secondElement;
+
+        public Pair(A firstElement, B secondElement){
+            this.firstElement = firstElement;
+            this.secondElement = secondElement;
+        }
+
+        public A getFirstElement() {
+            return firstElement;
+        }
+
+        public B getSecondElement() {
+            return secondElement;
+        }
+
+        @Override
+        public int compareTo(Pair<A, B> other){
+            return this.getFirstElement().compareTo(other.getFirstElement());
+        }
+    }
+
+
 }

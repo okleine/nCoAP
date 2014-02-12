@@ -24,18 +24,12 @@
  */
 package de.uniluebeck.itm.ncoap.application.server;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableWebserviceRegistrationMessage;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.MessageCode;
+import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.channel.*;
@@ -44,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -54,22 +47,19 @@ import java.util.concurrent.ScheduledExecutorService;
  * <ul>
  *     <li>invoke the method {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} of
  *     the addressed {@link Webservice} instance (if it exists) or</li>
- *     <li>invoke the method {@link WebserviceCreator#handlePutRequest(SettableFuture, CoapRequest)} if the
- *     incoming {@link CoapRequest} has {@link MessageCode.Name#PUT} and the addresses service does not (yet) exist.
+ *     <li>invoke the method
+ *     {@link WebserviceNotFoundHandler#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} if the
+ *     incoming {@link CoapRequest} addresses a service that does not (yet) exist.
  *     </li>
  * </ul>
  *
- * Upon invocation of the method it awaits a proper {@link CoapResponse} and  sends that response downstream, i.e.
+ * Upon invocation of the method it awaits a proper {@link CoapResponse} and sends that response downstream, i.e.
  * in the direction of the local socket, i.e. to the client that sent the {@link CoapRequest}.
  *
  * However, the {@link WebserviceManager} is aware of all registered {@link Webservice} instances and is thus to be
  * used to register new {@link Webservice} instances, e.g. while processing an incoming {@link CoapRequest} with
  * {@link MessageCode.Name#POST}. That is why all {@link Webservice} instances can reference their
  * {@link WebserviceManager} via {@link Webservice#getWebserviceManager()}.
- *
- * Furthermore, on incoming {@link CoapRequest}s with {@link MessageCode.Name#DELETE} it shuts down the addresses
- * {@link Webservice} if the method {@link Webservice#allowsDelete()} returns <code>true</code>. Otherwise, it sends
- * a proper error message to the client.
  *
  * Last but not least it checks whether the {@link Option.Name#IF_NONE_MATCH} is set on incoming {@link CoapRequest}s
  * and sends a {@link CoapResponse} with {@link MessageCode.Name#PRECONDITION_FAILED_412} if the option was set but the
@@ -81,30 +71,30 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    //This map holds all open, i.e. not yet answered requests to avoid duplicate request processing
-    private Multimap<InetSocketAddress, CoapRequest> openRequests;            
+//    //This map holds all open, i.e. not yet answered requests to avoid duplicate request processing
+//    private Multimap<InetSocketAddress, CoapRequest> openRequests;
 
     //This map holds all registered webservices (key: URI path, value: Webservice instance)
     private HashMap<String, Webservice> registeredServices;
 
     private ScheduledExecutorService executorService;
-    private WebserviceCreator webServiceCreator;
+    private WebserviceNotFoundHandler webServiceNotFoundHandler;
     private Channel channel;
 
 
     /**
-     * @param webServiceCreator Instance of {@link WebserviceCreator} to deal with incoming {@link CoapRequest}s with
+     * @param webServiceNotFoundHandler Instance of {@link WebserviceNotFoundHandler} to deal with incoming {@link CoapRequest}s with
      *                          {@link MessageCode.Name#PUT} if the addresses {@link Webservice} does not exist.
      *
      * @param executorService the {@link ScheduledExecutorService} to process the task to send a {@link CoapResponse}
      *                        and
      */
-    public WebserviceManager(WebserviceCreator webServiceCreator, ScheduledExecutorService executorService){
+    public WebserviceManager(WebserviceNotFoundHandler webServiceNotFoundHandler, ScheduledExecutorService executorService){
 
-        this.openRequests = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, CoapRequest>create());
+//        this.openRequests = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, CoapRequest>create());
         this.registeredServices = new HashMap<String, Webservice>();
         this.executorService = executorService;
-        this.webServiceCreator = webServiceCreator;
+        this.webServiceNotFoundHandler = webServiceNotFoundHandler;
         
         registerService(new WellKnownCoreResource(registeredServices));
     }
@@ -151,15 +141,27 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
     private void messageReceived(final ChannelHandlerContext ctx, final CoapRequest coapRequest,
                                 final InetSocketAddress remoteSocketAddress){
 
-        //Add incoming request to list of open requests (to avoid duplicates)
-        if(!openRequests.put(remoteSocketAddress, coapRequest)){
-            log.warn("Received request duplicate from {}: {}", remoteSocketAddress, coapRequest);
-            return;
-        }
-
-
         //Create settable future to wait for response
         final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
+
+        responseFuture.addListener(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    CoapResponse coapResponse = responseFuture.get();
+                    coapResponse.setMessageID(coapRequest.getMessageID());
+                    coapResponse.setToken(coapRequest.getToken());
+
+                    sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
+                }
+                catch (Exception e) {
+                    log.error("Exception while processing incoming request", e);
+                    CoapResponse coapResponse = CoapResponse.createInternalServerErrorResponse(true,
+                            coapRequest.getMessageID(), coapRequest.getToken(), e);
+                    sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
+                }
+            }
+        }, executorService);
 
 
         //Look up web service instance to handle the request
@@ -167,51 +169,17 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
         try{
             //The requested Webservice does not exist
-            if(webservice == null){
-                handleRequestForNotExistingService(coapRequest, responseFuture);
-            }
+            if(webservice == null)
+                webServiceNotFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
 
-            else{
-                //The IF-NON-MATCH option indicates that the request is only to be processed if the webservice does not
-                //(yet) exist. But it does. So send an error response
-                if(coapRequest.isIfNonMatchSet())
-                    sendPreconditionFailed(coapRequest.getUriPath(), responseFuture);
+            //The IF-NON-MATCH option indicates that the request is only to be processed if the webservice does not
+            //(yet) exist. But it does. So send an error response
+            else if(coapRequest.isIfNonMatchSet())
+                sendPreconditionFailed(coapRequest.getMessageTypeName(), coapRequest.getUriPath(), responseFuture);
 
-                //The incoming request intends do delete the addresses service
-                else if(coapRequest.getMessageCodeName() == MessageCode.Name.DELETE)
-                    handleDeleteRequest(webservice, responseFuture);
-
-                //The incoming request is to be handled by the addressed service
-                else
-                    webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
-
-
-                responseFuture.addListener(new Runnable() {
-                    @Override
-                    public void run() {
-                        try{
-                            if(openRequests.remove(remoteSocketAddress, coapRequest))
-                                log.info("Removed message {} from {} from list of open requests!",
-                                        coapRequest, remoteSocketAddress);
-                            else
-                                log.warn("Could not remove message {} from {} from list of open requests!",
-                                        coapRequest, remoteSocketAddress);
-
-                            CoapResponse coapResponse = responseFuture.get();
-                            coapResponse.setMessageID(coapRequest.getMessageID());
-                            coapResponse.setToken(coapRequest.getToken());
-
-                            sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
-                        }
-                        catch (Exception e) {
-                            log.error("Exception while processing incoming request", e);
-                            CoapResponse coapResponse = CoapResponse.createInternalServerErrorResponse(e,
-                                    coapRequest.getMessageID(), coapRequest.getToken());
-                            sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
-                        }
-                    }
-                }, executorService);
-            }
+            //The incoming request is to be handled by the addressed service
+            else
+                webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
 
         }
         catch (Exception e) {
@@ -225,77 +193,78 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
                                   final CoapResponse coapResponse){
         //Write response
         log.info("Write response to {}: {}", remoteAddress, coapResponse);
-        ChannelFuture future = Channels.write(ctx.getChannel(), coapResponse, remoteAddress);
+        Channels.write(ctx.getChannel(), coapResponse, remoteAddress);
 
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Response for token {} successfully sent to recipient {}.", coapResponse.getToken(),
-                        remoteAddress);
-            }
-        });
+//        future.addListener(new ChannelFutureListener() {
+//            @Override
+//            public void operationComplete(ChannelFuture future) throws Exception {
+//                log.info("Response for token {} successfully sent to recipient {}.", coapResponse.getToken(),
+//                        remoteAddress);
+//            }
+//        });
 
     }
 
 
-    private void handleDeleteRequest(Webservice webservice, SettableFuture<CoapResponse> responseFuture)
+//    private void handleDeleteRequest(Webservice webservice, SettableFuture<CoapResponse> responseFuture)
+//            throws Exception{
+//
+//        log.info("Webservice to be deleted {}", webservice.getPath());
+//
+//        MessageCode.Name messageCode;
+//        String content;
+//
+//        if(webservice.allowsDelete()){
+//            if(this.shutdownService(webservice.getPath())){
+//                webservice.shutdown();
+//                messageCode = MessageCode.Name.DELETED_202;
+//                content = "Deleted service " + webservice.getPath();
+//            }
+//            else{
+//                messageCode = MessageCode.Name.INTERNAL_SERVER_ERROR_500;
+//                content = "Could not delete webservice " + webservice.getPath();
+//                log.error(content);
+//            }
+//        }
+//        else{
+//            messageCode = MessageCode.Name.METHOD_NOT_ALLOWED_405;
+//            content = "Service \"" + webservice.getPath() + "\" does not allow deletion using DELETE requests.";
+//        }
+//
+//        CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, messageCode);
+//        coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+//        responseFuture.set(coapResponse);
+//    }
+
+
+    private void sendPreconditionFailed(MessageType.Name messageType, String servicePath,
+                                        SettableFuture<CoapResponse> responseFuture)
             throws Exception{
 
-        log.info("Webservice to be deleted {}", webservice.getPath());
-
-        MessageCode.Name messageCode;
-        String content;
-
-        if(webservice.allowsDelete()){
-            if(this.shutdownService(webservice.getPath())){
-                webservice.shutdown();
-                messageCode = MessageCode.Name.DELETED_202;
-                content = "Deleted service " + webservice.getPath();
-            }
-            else{
-                messageCode = MessageCode.Name.INTERNAL_SERVER_ERROR_500;
-                content = "Could not delete webservice " + webservice.getPath();
-                log.error(content);
-            }
-        }
-        else{
-            messageCode = MessageCode.Name.METHOD_NOT_ALLOWED_405;
-            content = "Service \"" + webservice.getPath() + "\" does not allow deletion using DELETE requests.";
-        }
-
-        CoapResponse coapResponse = new CoapResponse(messageCode);
-        coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
-        responseFuture.set(coapResponse);
-    }
-
-
-    private void sendPreconditionFailed(String servicePath, SettableFuture<CoapResponse> responseFuture)
-            throws Exception{
-
-        CoapResponse coapResponse = new CoapResponse(MessageCode.Name.PRECONDITION_FAILED_412);
+        CoapResponse coapResponse = new CoapResponse(messageType, MessageCode.Name.PRECONDITION_FAILED_412);
         String message = "IF-NONE-MATCH option was set but service \"" + servicePath + "\" exists.";
         coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         responseFuture.set(coapResponse);
     }
 
 
-    private void handleRequestForNotExistingService(CoapRequest coapRequest,
-                                                    SettableFuture<CoapResponse> responseFuture) throws Exception{
-
-        if(coapRequest.getMessageCodeName() == MessageCode.Name.PUT){
-            //Call the WebserviceCreator
-            log.info("Incoming PUT request to create resource {}.", coapRequest.getUriPath());
-            this.webServiceCreator.handlePutRequest(responseFuture, coapRequest);
-        }
-        else{
-            //Write error response if there is no such webservice instance registered at this server instance
-            log.info("Requested service {} not found. Send 404 NOT FOUND response.", coapRequest.getUriPath());
-            CoapResponse coapResponse = new CoapResponse(MessageCode.Name.NOT_FOUND_404);
-            coapResponse.setContent(("Requested service \"" + coapRequest.getUriPath() +
-                    "\" not found.").getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
-            responseFuture.set(coapResponse);
-        }
-    }
+//    private void handleRequestForNotExistingService(CoapRequest coapRequest,
+//                                                    SettableFuture<CoapResponse> responseFuture) throws Exception{
+//
+//        if(coapRequest.getMessageCodeName() == MessageCode.Name.PUT){
+//            //Call the WebserviceNotFoundHandler
+//            log.info("Incoming PUT request to create resource {}.", coapRequest.getUriPath());
+//            this.webServiceNotFoundHandler.processCoapRequest(responseFuture, coapRequest,);
+//        }
+//        else{
+//            //Write error response if there is no such webservice instance registered at this server instance
+//            log.info("Requested service {} not found. Send 404 NOT FOUND response.", coapRequest.getUriPath());
+//            CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, MessageCode.Name.NOT_FOUND_404);
+//            coapResponse.setContent(("Requested service \"" + coapRequest.getUriPath() +
+//                    "\" not found.").getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+//            responseFuture.set(coapResponse);
+//        }
+//    }
 
 
     /**

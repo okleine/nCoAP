@@ -22,33 +22,28 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
+package de.uniluebeck.itm.ncoap.application.client;
 
-import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
 
 /**
- * Interface to be implemented by instances of {@link CoapResponseProcessor}
- * that want to somehow know about each transmission attempt of the related {@link CoapRequest}, e.g. in order to print
- * it on screen or log it.
- *
- * @author Oliver Kleine
+ * Created by olli on 08.02.14.
  */
+public class InternalCoapRequestToBeSentMessage {
 
-public interface TransmissionInformationProcessor {
+    private final CoapRequest coapRequest;
+    private final CoapResponseProcessor coapResponseProcessor;
 
-    /**
-     * Method invoked by the {@link CoapClientApplication} for each attempt to send the {@link CoapRequest} related
-     * to this {@link CoapResponseProcessor}, i.e. this {@link CoapResponseProcessor} is supposed to process the
-     * awaited {@link CoapResponse}.
-     *
-     * This happens 5 times at maximum, once for the original request and 4 times for retransmission attempts if the
-     * {@link CoapRequest} was confirmable.
-     *
-     * @param retransmission <code>false</code> if the {@link CoapRequest} was transmitted for the first time (for both,
-     *                       {@link MessageType.Name#CON} and {@link MessageType.Name#NON) and <code>true</code> for
-     *                       retransmissions (for {@link MessageType.Name#CON} only).
-     */
-    public void messageTransmitted(boolean retransmission);
+    public InternalCoapRequestToBeSentMessage(CoapRequest coapRequest, CoapResponseProcessor coapResponseProcessor){
+        this.coapRequest = coapRequest;
+        this.coapResponseProcessor = coapResponseProcessor;
+    }
+
+    public CoapRequest getCoapRequest() {
+        return coapRequest;
+    }
+
+    public CoapResponseProcessor getCoapResponseProcessor() {
+        return coapResponseProcessor;
+    }
 }

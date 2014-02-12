@@ -26,6 +26,8 @@ package de.uniluebeck.itm.ncoap.application;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedLongs;
 
 import java.util.Arrays;
 
@@ -36,7 +38,9 @@ import java.util.Arrays;
  * Time: 18:35
  * To change this template use File | Settings | File Templates.
  */
-public class Token {
+public class Token implements Comparable<Token>{
+
+    private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     private byte[] token;
 
@@ -48,6 +52,7 @@ public class Token {
         return this.token;
     }
 
+
     /**
      * Returns a String representation of the token in form of a hex-String
      *
@@ -55,11 +60,18 @@ public class Token {
      */
     @Override
     public String toString(){
-        StringBuffer result = new StringBuffer();
-        for(int i = 0; i < token.length; i++)
-            result.append(Integer.toHexString(token[i] & 0xFF));
+        return "0x" + bytesToHex(getBytes());
+    }
 
-        return "0x" + result.toString().toUpperCase();
+
+    private static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 
     @Override
@@ -74,5 +86,21 @@ public class Token {
     @Override
     public int hashCode(){
         return Ints.fromByteArray(Bytes.concat(token, new byte[4]));
+    }
+
+    @Override
+    public int compareTo(Token other) {
+
+        if(other.equals(this))
+            return 0;
+
+        if(this.getBytes().length < other.getBytes().length)
+            return -1;
+
+        if(this.getBytes().length > other.getBytes().length)
+            return 1;
+
+        return UnsignedLongs.compare(Longs.fromByteArray(Bytes.concat(this.getBytes(), new byte[8])),
+                                     Longs.fromByteArray(Bytes.concat(other.getBytes(), new byte[8])));
     }
 }

@@ -197,15 +197,15 @@ public interface Webservice<T> {
      */
     public void shutdown();
 
-    /**
-     * Returns <code>true</code> if this {@link Webservice} can be removed from the server with a {@link CoapRequest}
-     * with {@link MessageCode.Name#DELETE} and <code>false</code> otherwise. This method is invoked by the framework
-     * if such a request is addressed to the path this {@link Webservice} is registered at.
-     *
-     * @return <code>true</code> if this {@link Webservice} can be removed from the server with a {@link CoapRequest}
-     * with {@link MessageCode.Name#DELETE} and <code>false</code> otherwise.
-     */
-    public boolean allowsDelete();
+//    /**
+//     * Returns <code>true</code> if this {@link Webservice} can be removed from the server with a {@link CoapRequest}
+//     * with {@link MessageCode.Name#DELETE} and <code>false</code> otherwise. This method is invoked by the framework
+//     * if such a request is addressed to the path this {@link Webservice} is registered at.
+//     *
+//     * @return <code>true</code> if this {@link Webservice} can be removed from the server with a {@link CoapRequest}
+//     * with {@link MessageCode.Name#DELETE} and <code>false</code> otherwise.
+//     */
+//    public boolean allowsDelete();
 
 
 

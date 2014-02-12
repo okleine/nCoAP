@@ -25,69 +25,43 @@
 
 package de.uniluebeck.itm.ncoap.application.client;
 
+import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
+import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 
 /**
 * Factory to provide the {@link ChannelPipeline} for newly created {@link DatagramChannel}s via
-* {@link CoapClientDatagramChannelFactory}.
+* {@link ClientChannelPipelineFactory}.
 *
 * @author Oliver Kleine
 */
-public class CoapClientPipelineFactory implements ChannelPipelineFactory {
-
-    private ExecutionHandler executionHandler;
-
-    //Encoding
-    private CoapMessageEncoder encoder;
-    private CoapMessageDecoder decoder;
-
-    //Reliability
-    private OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler;
-    private IncomingMessageReliabilityHandler incomingMessageReliabilityHandler;
-
-//    //Blockwise
-//    private BlockwiseTransferHandler blockwiseTransferHandler;
-
+public class ClientChannelPipelineFactory extends AbstractCoapChannelPipelineFactory {
     /**
-     * @param ioExecutorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      */
-    public CoapClientPipelineFactory(ScheduledExecutorService ioExecutorService){
+    public ClientChannelPipelineFactory(ScheduledExecutorService executorService, TokenFactory tokenFactory){
 
-        this.executionHandler = new ExecutionHandler(ioExecutorService);
+//        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(8, 0, 0)));
+        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(executorService));
 
-        encoder = new CoapMessageEncoder();
-        decoder = new CoapMessageDecoder();
+        addChannelHandler(ENCODER, new CoapMessageEncoder());
+        addChannelHandler(DECODER, new CoapMessageDecoder());
 
-        outgoingMessageReliabilityHandler = new OutgoingMessageReliabilityHandler(ioExecutorService);
-        incomingMessageReliabilityHandler = new IncomingMessageReliabilityHandler(ioExecutorService);
-//
-//        blockwiseTransferHandler = new BlockwiseTransferHandler();
+        addChannelHandler(OUTGOING_MESSAGE_RELIABILITY_HANDLER, new OutgoingMessageReliabilityHandler(executorService));
+
+        addChannelHandler(INCOMING_MESSAGE_RELIABILITY_HANDLER, new IncomingMessageReliabilityHandler(executorService));
+
+        addChannelHandler(RESPONSE_DISPATCHER, new CoapResponseDispatcher(executorService, tokenFactory));
     }
 
-    @Override
-    public ChannelPipeline getPipeline() throws Exception {
-        ChannelPipeline pipeline = Channels.pipeline();
-
-        pipeline.addLast("Execution Handler", executionHandler);
-
-        pipeline.addLast("CoAP Message Encoder", encoder);
-        pipeline.addLast("CoAP Message Decoder", decoder);
-
-        pipeline.addLast("Outgoing Message Reliability Handler", outgoingMessageReliabilityHandler);
-        pipeline.addLast("Incoming Message Reliability Handler", incomingMessageReliabilityHandler);
-//        pipeline.addLast("Blockwise Transfer Handler", blockwiseTransferHandler);
-
-        return pipeline;
-    }
 }

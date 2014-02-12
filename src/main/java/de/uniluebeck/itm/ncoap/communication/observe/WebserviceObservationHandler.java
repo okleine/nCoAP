@@ -219,7 +219,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
             ObservationParameter observationParameter = runningObservations.get(remoteSocketAddress);
 
             try{
-                CoapResponse coapResponse = new CoapResponse(MessageCode.Name.NOT_FOUND_404);
+                CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, MessageCode.Name.NOT_FOUND_404);
                 coapResponse.setMessageType(webservice.getMessageTypeForUpdateNotifications().getNumber());
 
                 String message = "Sorry, the service \"" + webservice.getPath() + "\" is not anymore available";
@@ -263,8 +263,9 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
                     formattedContent.put(contentFormat, ChannelBuffers.copiedBuffer(serializedResourceStatus));
                 }
 
-                CoapResponse updateNotification = new CoapResponse(MessageCode.Name.CONTENT_205);
-                updateNotification.setMessageType(webservice.getMessageTypeForUpdateNotifications().getNumber());
+                MessageType.Name messageType = webservice.getMessageTypeForUpdateNotifications();
+                CoapResponse updateNotification = new CoapResponse(messageType, MessageCode.Name.CONTENT_205);
+
                 updateNotification.setToken(observationParameter.getToken());
                 updateNotification.setEtag(webservice.getEtag(contentFormat));
                 updateNotification.setObservationSequenceNumber(observationParameter.getNotificationCount());

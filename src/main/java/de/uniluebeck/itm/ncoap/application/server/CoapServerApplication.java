@@ -29,6 +29,7 @@ import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
+import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 
 
@@ -60,41 +62,44 @@ public class CoapServerApplication{
 
     /**
      * This constructor creates an instance of {@link CoapServerApplication}
-     * @param webServiceCreator
+     * @param webServiceNotFoundHandler
      */
-    public CoapServerApplication(WebserviceCreator webServiceCreator, InetSocketAddress localSocketAddress){
+    public CoapServerApplication(WebserviceNotFoundHandler webServiceNotFoundHandler,
+                                 InetSocketAddress localSocketAddress){
+
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Server I/O Thread#%d").build();
 
-        int numberOfThreads = Runtime.getRuntime().availableProcessors() * 2;
+        int numberOfThreads = Math.max(Runtime.getRuntime().availableProcessors() * 2, 4);
         log.info("No. of I/O Threads: {}", numberOfThreads);
 
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(numberOfThreads, threadFactory);
-
+        ScheduledThreadPoolExecutor executorService = new ScheduledThreadPoolExecutor(numberOfThreads, threadFactory);
+        executorService.setRemoveOnCancelPolicy(true);
 
         //Create bootstrap
-        ChannelFactory channelFactory =
-                new OioDatagramChannelFactory(executorService);
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService, numberOfThreads/2);
+        ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
 
         ServerChannelPipelineFactory pipelineFactory =
-                new ServerChannelPipelineFactory(executorService, webServiceCreator);
+                new ServerChannelPipelineFactory(executorService, webServiceNotFoundHandler);
 
-        ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
+
         bootstrap.setPipelineFactory(pipelineFactory);
 
         this.channel = bootstrap.bind(localSocketAddress);
+        log.debug("Bound to local address: {}", this.channel.getLocalAddress());
 
         this.webserviceManager =
                 (WebserviceManager) pipelineFactory.getChannelHandler(ServerChannelPipelineFactory.WEBSERVICE_MANAGER);
 
         this.webserviceManager.setChannel(channel);
 
-        webServiceCreator.setWebserviceManager(webserviceManager);
+        webServiceNotFoundHandler.setWebserviceManager(webserviceManager);
 
 
     }
 
     public CoapServerApplication(InetSocketAddress localSocketAddress){
-        this(WebserviceCreator.getDefault(), localSocketAddress);
+        this(WebserviceNotFoundHandler.getDefault(), localSocketAddress);
     }
 
 
@@ -103,11 +108,11 @@ public class CoapServerApplication{
      * and already provides the default <code>.well-known/core</code> resource
      */
     public CoapServerApplication(int serverPort){
-        this(WebserviceCreator.getDefault(), new InetSocketAddress(serverPort));
+        this(WebserviceNotFoundHandler.getDefault(), new InetSocketAddress(serverPort));
     }
 
-    public CoapServerApplication(WebserviceCreator webServiceCreator, int serverPort){
-        this(webServiceCreator, new InetSocketAddress(serverPort));
+    public CoapServerApplication(WebserviceNotFoundHandler webServiceNotFoundHandler, int serverPort){
+        this(webServiceNotFoundHandler, new InetSocketAddress(serverPort));
     }
 
     /**
@@ -118,8 +123,8 @@ public class CoapServerApplication{
         this(DEFAULT_COAP_SERVER_PORT);
     }
 
-    public CoapServerApplication(WebserviceCreator webServiceCreator){
-        this(webServiceCreator, DEFAULT_COAP_SERVER_PORT);
+    public CoapServerApplication(WebserviceNotFoundHandler webServiceNotFoundHandler){
+        this(webServiceNotFoundHandler, DEFAULT_COAP_SERVER_PORT);
     }
 
     public void registerService(Webservice webservice){
@@ -133,21 +138,24 @@ public class CoapServerApplication{
     public void shutdown(){
         this.webserviceManager.shutdownAllServices();
 
-        ChannelFuture future = this.channel.close();
+        ChannelFuture channelClosedFuture = this.channel.close();
 
         //Await the closure and let the factory release its external resource to finalize the shutdown
-        future.addListener(new ChannelFutureListener() {
+        channelClosedFuture.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
                 log.info("Server channel closed (port {}).", closedChannel.getLocalAddress().getPort());
 
                 channel.getFactory().releaseExternalResources();
-                log.info("External resources released, shutdown completed (port {}).",
-                        closedChannel.getLocalAddress().getPort());
             }
         });
 
-        future.awaitUninterruptibly();
+        channelClosedFuture.awaitUninterruptibly().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                log.warn("Shutdown completed!");
+            }
+        });
     }
 }

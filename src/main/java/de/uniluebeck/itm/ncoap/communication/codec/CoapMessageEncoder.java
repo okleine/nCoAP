@@ -130,13 +130,14 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
         log.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
 
-        //Add END-OF-OPTIONS marker only if there is payload
-        if(coapMessage.getContent().readableBytes() > 0)
+        if(coapMessage.getContent().readableBytes() > 0){
+            //Add END-OF-OPTIONS marker only if there is payload
             encodedMessage.writeByte(255);
 
-        //Add CONTENT
-        encodedMessage = ChannelBuffers.wrappedBuffer(encodedMessage, coapMessage.getContent());
-        log.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
+            //Add CONTENT
+            encodedMessage = ChannelBuffers.wrappedBuffer(encodedMessage, coapMessage.getContent());
+            log.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
+        }
 
         return encodedMessage;
     }

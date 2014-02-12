@@ -169,7 +169,7 @@ public abstract class CoapMessage {
 
 
 
-    protected InetAddress recipientAddress;
+    //protected InetAddress recipientAddress;
 
     private int messageType;
     private int messageCode;
@@ -192,6 +192,7 @@ public abstract class CoapMessage {
         this.setMessageType(messageType);
         this.setMessageCode(messageCode);
         log.debug("Set Message Code to {} ({}).", MessageCode.Name.getName(messageCode), messageCode);
+
         this.setMessageID(messageID);
         this.setToken(token);
 
@@ -263,9 +264,9 @@ public abstract class CoapMessage {
         this.messageType = messageType;
     }
 
-    public void setRecipientAddress(InetAddress recipientAddress){
-        this.recipientAddress = recipientAddress;
-    }
+//    public void setRecipientAddress(InetAddress recipientAddress){
+//        this.recipientAddress = recipientAddress;
+//    }
 
 
     /**
@@ -391,12 +392,13 @@ public abstract class CoapMessage {
     }
 
     /**
-     * Returns the message ID (-1 if not set)
-     * @return the message ID (-1 if not set)
+     * Returns the message ID (or {@link CoapMessage#MESSAGE_ID_UNDEFINED} if not set)
+     * @return the message ID (or {@link CoapMessage#MESSAGE_ID_UNDEFINED} if not set)
      */
     public int getMessageID() {
         return this.messageID;
     }
+
 
     public int getMessageType() {
         return this.messageType;

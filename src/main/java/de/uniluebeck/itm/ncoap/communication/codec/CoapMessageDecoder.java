@@ -192,7 +192,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
             coapMessage = new CoapRequest(messageType, messageCode);
 
         else if(MessageCode.isResponse(messageCode)){
-            coapMessage = new CoapResponse(messageCode);
+            coapMessage = new CoapResponse(messageType, messageCode);
             coapMessage.setMessageType(messageType);
         }
 
@@ -350,7 +350,9 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
             log.warn("Received request with not-handable option (Reason: {})", ex.getCause().getMessage());
 
             try{
-                final CoapResponse coapResponse = new CoapResponse(MessageCode.Name.BAD_OPTION_402);
+                final CoapResponse coapResponse =
+                        new CoapResponse(MessageType.Name.NON, MessageCode.Name.BAD_OPTION_402);
+
                 coapResponse.setMessageID(ex.getMessageID());
                 coapResponse.setToken(ex.getToken());
                 coapResponse.setContent(ex.getCause().getMessage().getBytes(CoapMessage.CHARSET),

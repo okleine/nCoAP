@@ -48,6 +48,8 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -55,6 +57,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 
@@ -76,8 +79,11 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     private static Logger log = LoggerFactory.getLogger(IncomingMessageReliabilityHandler.class.getName());
 
     //Remote socket address, message ID, acknowledgement status for incoming confirmable requests
-    private final HashBasedTable<InetSocketAddress, Integer, MessageType.Name> owingResponses
+    private final HashBasedTable<InetSocketAddress, Integer, ScheduledFuture> scheduledEmptyACKs
             = HashBasedTable.create();
+
+//    private final Multimap<InetSocketAddress, Integer> receivedMessageIDsForDuplicateDetection =
+//            HashMultimap.<InetSocketAddress, Integer>create();
 
 
     private ScheduledExecutorService executorService;
@@ -89,6 +95,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public IncomingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
     }
+
 
     /**
      * If the incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty
@@ -118,7 +125,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
         final int messageID = coapMessage.getMessageID();
 
-        //Empty CON messages can be used as application layer PING (is endpoint alive?)
+        //Empty CON messages can be used as application layer PING (is CoAP endpoint alive?)
         if(coapMessage.getMessageTypeName() == MessageType.Name.CON &&
                 coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
 
@@ -128,76 +135,31 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         }
 
         //Incoming requests
-        if(coapMessage instanceof CoapRequest){
+        if(coapMessage instanceof CoapRequest && coapMessage.getMessageTypeName() == MessageType.Name.CON){
 
             //Do not further process duplicates
-            if(owingResponses.contains(remoteSocketAddress, messageID)){
-                log.debug("Duplicate received: {}", coapMessage);
+            if(scheduledEmptyACKs.contains(remoteSocketAddress, messageID)){
+                log.warn("Duplicate received: {}", coapMessage);
 
-                if(coapMessage.getMessageTypeName() == MessageType.Name.CON)
-                    writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
-
+                writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
                 me.getFuture().setSuccess();
                 return;
             }
 
-            //Incoming confirmable requests
-            if(coapMessage.getMessageTypeName() == MessageType.Name.CON){
+            else{
                 scheduleEmptyAcknowlegement(ctx, remoteSocketAddress, messageID);
                 log.debug("Scheduled empty ACK for {}.", coapMessage);
             }
-
-            //Incoming non-confirmable requests
-            else{
-                synchronized (owingResponses){
-                    owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.NON);
-                    log.debug("No. of owing responses: {}", owingResponses.size());
-                }
-            }
         }
 
-        //Incoming responses
+        //Incoming CON responses require an immediate ACK
         else if(coapMessage instanceof CoapResponse && coapMessage.getMessageTypeName() == MessageType.Name.CON){
             writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
         }
 
-        //Incoming empty CON messages are considered application layer pings
-        else if(coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY &&
-                coapMessage.getMessageTypeName() == MessageType.Name.CON){
-
-            writeReset(ctx, remoteSocketAddress, messageID);
-        }
         ctx.sendUpstream(me);
     }
 
-
-    private void scheduleEmptyAcknowlegement(final ChannelHandlerContext ctx,
-                                             final InetSocketAddress remoteSocketAddress, final int messageID){
-
-        synchronized (owingResponses){
-            owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.ACK);
-            log.debug("No. of owing responses: {}", owingResponses.size());
-        }
-
-        //Schedule empty ACK fo incoming request for in 1900ms
-        executorService.schedule(new Runnable(){
-
-            @Override
-            public void run() {
-                synchronized (owingResponses){
-                    if(owingResponses.contains(remoteSocketAddress, messageID)){
-                        owingResponses.put(remoteSocketAddress, messageID, MessageType.Name.CON);
-                        log.debug("No. of owing responses: {}", owingResponses.size());
-                        writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
-                    }
-                    else{
-                        log.debug("ACK for {} from {} was already sent as piggy-backed response.",
-                                messageID, remoteSocketAddress);
-                    }
-                }
-            }
-        }, EMPTY_ACK_DELAY_MILLIS, TimeUnit.MILLISECONDS);
-    }
 
     /**
      * If the message to be written is a {@link CoapResponse} this method decides whether the message type is
@@ -216,31 +178,52 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
-        try{
-            if(me.getMessage() instanceof CoapResponse){
+        if(me.getMessage() instanceof CoapResponse){
 
-                CoapResponse coapResponse = (CoapResponse) me.getMessage();
-                InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-                int messageID = coapResponse.getMessageID();
+            CoapResponse coapResponse = (CoapResponse) me.getMessage();
+            InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+            int messageID = coapResponse.getMessageID();
 
-                MessageType.Name messageTypeName;
-                synchronized (owingResponses){
-                    messageTypeName = owingResponses.remove(remoteSocketAddress, messageID);
-                    log.debug("No. of owing responses: {}", owingResponses.size());
-                }
+            ScheduledFuture emptyACKFuture = scheduledEmptyACKs.remove(remoteSocketAddress, messageID);
 
-                if(messageTypeName == MessageType.Name.CON)
-                    coapResponse.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
-
-                log.info("Set messageType to {}", messageTypeName);
-                coapResponse.setMessageType(messageTypeName.getNumber());
+            if(emptyACKFuture != null && (!(emptyACKFuture.isDone()) && emptyACKFuture.cancel(false))){
+                //Set message type to ACK because the request was a not yet confirmed CON request
+                coapResponse.setMessageType(MessageType.Name.ACK.getNumber());
             }
+            else{
+                coapResponse.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
+            }
+        }
 
-            ctx.sendDownstream(me);
+        ctx.sendDownstream(me);
+
+    }
+
+
+    private void scheduleEmptyAcknowlegement(final ChannelHandlerContext ctx,
+                                             final InetSocketAddress remoteSocketAddress, final int messageID){
+
+        synchronized (scheduledEmptyACKs){
+
+            //Schedule empty ACK fo incoming request for in 1900ms
+            ScheduledFuture future = executorService.schedule(new Runnable() {
+
+                @Override
+                public void run() {
+                    ScheduledFuture future;
+                    synchronized (scheduledEmptyACKs) {
+                        future = scheduledEmptyACKs.remove(remoteSocketAddress, messageID);
+                    }
+
+                    if(future != null && !(future.isCancelled())){
+                        writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
+                    }
+                }
+            }, EMPTY_ACK_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+
+            scheduledEmptyACKs.put(remoteSocketAddress, messageID, future);
         }
-        catch (InvalidHeaderException e) {
-            log.error("This should never happen.", e);
-        }
+
     }
 
 

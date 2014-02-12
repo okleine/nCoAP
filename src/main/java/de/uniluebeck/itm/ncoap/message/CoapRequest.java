@@ -55,8 +55,15 @@ public class CoapRequest extends CoapMessage {
     public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri) throws
             InvalidOptionException, URISyntaxException, UnknownHostException, InvalidHeaderException {
 
-        this(messageType.getNumber(), messageCode.getNumber(), targetUri);
+        this(messageType.getNumber(), messageCode.getNumber(), targetUri, false);
     }
+
+    public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri, boolean useProxy)
+            throws InvalidOptionException, InvalidHeaderException, URISyntaxException {
+
+        this(messageType.getNumber(), messageCode.getNumber(), targetUri, useProxy);
+    }
+
 
     /**
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
@@ -72,33 +79,48 @@ public class CoapRequest extends CoapMessage {
      * @throws UnknownHostException if the host given in the targetUri could not be resolved to an IP address
      */
     public CoapRequest(int messageType, int messageCode, URI targetUri) throws
-            InvalidOptionException, URISyntaxException, UnknownHostException, InvalidHeaderException {
+            InvalidOptionException, URISyntaxException, InvalidHeaderException {
+
+        this(messageType, messageCode, targetUri, false);
+    }
+
+    /**
+     * Creates a {@link CoapRequest} instance with initial CoAP header and options according to the given parameters.
+     *
+     * @param messageType the number representing the message type for the {@link CoapRequest}.
+     * @param messageCode the number representing the message code for the {@link CoapRequest}.
+     * @param targetUri the {@link URI} representing the webservice this {@link CoapRequest} is to be sent to.
+     * @param useProxy <code>true</code> if the {@link CoapRequest} is to be sent via forward-proxy or
+     *                 <code>false</code> if the {@link CoapRequest} is to be sent directly to the addressed webservice
+     *                 host.
+     *                 <br>
+     *                 <b>Note:</b>the value of this parameter only affects the way, the given target URI is
+     *                 represented in the created {@link CoapRequest}, i.e. as {@link Option.Name#PROXY_URI} if
+     *                 <code>useProxy</code> is set to <code>true</code> or as {@link Option.Name#URI_HOST},
+     *                 {@link Option.Name#URI_PORT}, {@link Option.Name#URI_PATH}, and {@link Option.Name#URI_QUERY} if
+     *                 <code>useProxy</code> is set to <code>false</code.
+     *
+     * @throws InvalidOptionException if an error occurred while setting the target URI related options
+     * @throws InvalidHeaderException if the given message type or message code are not suitable for requests
+     * @throws URISyntaxException if the given target URI is not suitable for any reason
+     */
+    public CoapRequest(int messageType, int messageCode, URI targetUri, boolean useProxy)
+            throws InvalidOptionException, InvalidHeaderException, URISyntaxException {
 
         super(messageType, messageCode);
+
+        if(messageType > MessageType.Name.NON.getNumber() || messageType < MessageType.Name.CON.getNumber())
+            throw new InvalidHeaderException("Message type for requests must either be CON (0) or NON (-1)");
+
 
         if(!(MessageCode.isRequest(messageCode)))
             throw new InvalidHeaderException("Message code no." + messageCode + " is no request code.");
 
-        setTargetUriOptions(targetUri);
-        this.recipientAddress = InetAddress.getByName(targetUri.getHost());
 
-        log.debug("New request created: {}.", this);
-    }
-
-
-    public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri,
-                       InetAddress proxyAddress) throws InvalidOptionException, InvalidHeaderException {
-
-        this(messageType.getNumber(), messageCode.getNumber(), targetUri, proxyAddress);
-    }
-
-    public CoapRequest(int messageType, int messageCode, URI targetUri, InetAddress proxyAddress)
-            throws InvalidOptionException, InvalidHeaderException {
-
-        super(messageType, messageCode);
-
-        setProxyURIOption(targetUri);
-        this.recipientAddress = proxyAddress;
+        if(useProxy)
+            setProxyURIOption(targetUri);
+        else
+            setTargetUriOptions(targetUri);
 
         log.debug("New request created: {}.", this);
     }
@@ -250,7 +272,7 @@ public class CoapRequest extends CoapMessage {
      * Returns the value of the URI host option or a literal representation of the recipients IP address if the URI
      * host option is not present in this {@link CoapRequest}.
      *
-     * @return the value of the URI host option or a literal representation of the recipients IP address if the URI
+     * @return the value of the URI host option or <code>null</code> if the URI
      * host option is not present in this {@link CoapRequest}.
      */
     public String getUriHost(){
@@ -258,7 +280,7 @@ public class CoapRequest extends CoapMessage {
         if(options.containsKey(Option.Name.URI_HOST))
             return ((StringOption) options.get(Option.Name.URI_HOST).iterator().next()).getDecodedValue();
 
-        return InetAddresses.toUriString(recipientAddress);
+        return null;
     }
 
 
@@ -456,25 +478,26 @@ public class CoapRequest extends CoapMessage {
         return result;
     }
 
-    public long[] getAcceptedContentFormatsAsArray(){
-        Set<Long> tmp = getAcceptedContentFormats();
-        long[] result = new long[tmp.size()];
-
-        int i = 0;
-        Iterator<Long> iterator = tmp.iterator();
-        while(iterator.hasNext()){
-            result[i] = iterator.next();
-            i++;
-        }
-
-        return result;
-    }
+//    public long[] getAcceptedContentFormatsAsArray(){
+//        Set<Long> tmp = getAcceptedContentFormats();
+//        long[] result = new long[tmp.size()];
+//
+//        int i = 0;
+//        Iterator<Long> iterator = tmp.iterator();
+//        while(iterator.hasNext()){
+//            result[i] = iterator.next();
+//            i++;
+//        }
+//
+//        return result;
+//    }
 
     /**
      * Returns the value of the Proxy URI option if such an option is present in this {@link CoapRequest}. If no such
      * option is present but a Proxy Scheme option, then the returned {@link URI} is reconstructed from the
-     * Proxy Scheme option and the URI host, URI port, URI path and URI query options, resp. their default values if
-     * not explicitly set. If both options, Proxy URI and Proxy Scheme are not present in this {@link CoapRequest} this
+     * Proxy Scheme option and the URI host, URI port, URI path and URI query options.
+     *
+     * If both options, Proxy URI and Proxy Scheme are not present in this {@link CoapRequest} this
      * method returns <code>null</code>.
      *
      * @return the URI of the requested resource if this {@link CoapRequest} was (or is supposed to be) sent via a
@@ -501,6 +524,9 @@ public class CoapRequest extends CoapMessage {
         return null;
     }
 
+//    public InetAddress getFinalDestinationHostAddress() {
+//        return recipientAddress;
+//    }
 
 //
 //    /**
@@ -533,7 +559,5 @@ public class CoapRequest extends CoapMessage {
 //    }
 
 
-    public InetAddress getRecipientAddress() {
-        return recipientAddress;
-    }
+
 }
