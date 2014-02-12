@@ -37,20 +37,25 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
-* This class is to create and manage message IDs for outgoing messages. The usage of this class to create
-* new message IDs ensures that a message ID is not used twice within {@link #EXCHANGE_LIFETIME} seconds.
-*
-* @author Oliver Kleine
+ * An instances of {@link MessageIDFactory} creates and manages message IDs for outgoing messages. On creation of
+ * new message IDs the factory ensures that the same message ID is not used twice for different messages to the
+ * same remote CoAP endpoint within {@link #EXCHANGE_LIFETIME} seconds.
+ *
+ * @author Oliver Kleine
 */
 public class MessageIDFactory{
 
     /**
-     * The number of seconds, i.e. 247, a message ID is allocated by the nCoAP framework to avoid duplicate usage
-     * of the same message ID.
+     * The number of seconds (247) a message ID is allocated by the nCoAP framework to avoid duplicate
+     * usage of the same message ID in communications with the same remote CoAP endpoint.
      */
-    public static final int EXCHANGE_LIFETIME = 247000;
+    public static final int EXCHANGE_LIFETIME = 247;
 
-    private static final int MODULUS = 65536;
+    /**
+     * The number of different message IDs per remote CoAP endpoint (65536), i.e. there are at most 65536
+     * communications with the same endpoint possible within {@link #EXCHANGE_LIFETIME} milliseconds.
+     */
+    public static final int MODULUS = 65536;
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -63,7 +68,7 @@ public class MessageIDFactory{
     private TreeMultimap<Long, Pair<Integer, InetSocketAddress>> messageIDRetirementSchedule;
 
     /**
-     * @param executorService the {@link ScheduledExecutorService} to provide the thread(s) for operations to
+     * @param executorService the {@link ScheduledExecutorService} to provide the thread for operations to
      *                        provide available message IDs
      */
     public MessageIDFactory(ScheduledExecutorService executorService){
@@ -74,7 +79,11 @@ public class MessageIDFactory{
         executorService.scheduleAtFixedRate(new MessageIDRetirementTask(), 5, 5, TimeUnit.SECONDS);
     }
 
-
+    /**
+     *
+     * @param remoteSocketAddress
+     * @return
+     */
     public synchronized ListenableFuture<Integer> getNextMessageID(InetSocketAddress remoteSocketAddress){
 
         final SettableFuture<Integer> messageIDFuture = SettableFuture.create();
@@ -120,7 +129,7 @@ public class MessageIDFactory{
 
         this.usedMessageIDs.put(remoteSocketAddress, messageID);
         this.latestMessageIDs.put(remoteSocketAddress, messageID);
-        this.messageIDRetirementSchedule.put(System.currentTimeMillis() + EXCHANGE_LIFETIME,
+        this.messageIDRetirementSchedule.put(System.currentTimeMillis() + EXCHANGE_LIFETIME * 1000,
                 new Pair<>(messageID, remoteSocketAddress));
     }
 

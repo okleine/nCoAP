@@ -25,6 +25,7 @@
 
 package de.uniluebeck.itm.ncoap.application;
 
+import de.uniluebeck.itm.ncoap.application.client.CoapResponseDispatcher;
 import com.google.common.base.Supplier;
 import com.google.common.collect.*;
 import com.google.common.primitives.Bytes;
@@ -38,12 +39,20 @@ import java.net.InetSocketAddress;
 import java.util.*;
 
 /**
-* The TokenFactory generates tokens to match incoming responses with open requests and enable the
-* {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication} to invoke the correct callback method.
-*
-*
-* @author Oliver Kleine
-*/
+ * The TokenFactory generates tokens to match incoming responses with open requests and enable the
+ * {@link CoapResponseDispatcher} to invoke the correct callback method.
+ *
+ * The CoAP specification makes no assumptions how to interpret the bytes returned by {@link Token#getBytes()()}, i.e.
+ * a {@link Token} instances where {@link Token#getBytes()} returns an empty byte array is different from a
+ * {@link Token} where {@link Token#getBytes()} returns a byte array containing one "zero byte" (all bits set to 0).
+ * Furthermore, both of these {@link Token}s differ from another {@link Token} that is backed by a byte array
+ * containing of two "zero bytes" and so on...
+ *
+ * This leads to 257 (<code>(2^8) + 1</code>) different tokens for a maximum token length of 1 or 65793 different
+ * tokens (<code>(2^16) + (2^8) + 1</code>) for a maximum token length of 2 and so on and so forth...
+ *
+ * @author Oliver Kleine
+ */
 public class TokenFactory {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
@@ -57,11 +66,13 @@ public class TokenFactory {
     private Multimap<InetSocketAddress, Token> releasedTokens;
 
 
-    public TokenFactory(){
-        this(8);
-    }
-
-
+    /**
+     * Creates a new instance of {@link TokenFactory} producing {@link Token}s where the length
+     * {@link Token#getBytes()} is not longer than the given maximum length.
+     *
+     * @param maxTokenLength the maximum length of {@link Token#getBytes()} for {@link Token}s produced by this
+     *                       factory.
+     */
     public TokenFactory(int maxTokenLength){
         this.maxTokenLength = maxTokenLength;
 
@@ -77,7 +88,19 @@ public class TokenFactory {
     }
 
 
-
+    /**
+     * Returns a {@link ListenableFuture<Token>} that will be set with the next available {@link Token} for the given
+     * remote address. This {@link Token} is ensured to be unique in combination with the given
+     * {@link InetSocketAddress}, i.e. as long as there are any other ongoing communications with the same
+     * CoAP server, the returned {@link ListenableFuture<Token>} will be set with a {@link Token} that is different
+     * from all other {@link Token}s used for those communications.
+     *
+     * @param remoteSocketAddress the {@link InetSocketAddress} of the CoAP server this token is supposed to be used
+     *                            to communicate with.
+     *
+     * @return a {@link ListenableFuture<Token>} that will be set with a {@link Token} that is not already in use to
+     * for ongoing communications with the given {@link InetSocketAddress}.
+     */
     public synchronized ListenableFuture<Token> getNextToken(InetSocketAddress remoteSocketAddress){
 
         SettableFuture<Token> tokenFuture = SettableFuture.create();
@@ -143,8 +166,12 @@ public class TokenFactory {
 
 
     /**
-     * Pass the token back to make it re-usable for upcoming requests
-     * @param token the token not used anymore
+     * This method is invoked by the framework to pass back a {@link Token} for the given
+     * {@link InetSocketAddress} to make it re-usable for upcoming communication with the same CoAP server.
+     *
+     * @param token the {@link Token} that is not used anymore
+     * @param remoteSocketAddress the {@link InetSocketAddress} of the CoAP server, the {@link Token} was used to
+     *                            communicate with
      */
     public synchronized boolean passBackToken(InetSocketAddress remoteSocketAddress, Token token){
 
