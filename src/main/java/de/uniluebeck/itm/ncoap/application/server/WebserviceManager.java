@@ -92,7 +92,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
     public WebserviceManager(WebserviceNotFoundHandler webServiceNotFoundHandler, ScheduledExecutorService executorService){
 
 //        this.openRequests = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, CoapRequest>create());
-        this.registeredServices = new HashMap<String, Webservice>();
+        this.registeredServices = new HashMap<>();
         this.executorService = executorService;
         this.webServiceNotFoundHandler = webServiceNotFoundHandler;
         
@@ -194,47 +194,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         //Write response
         log.info("Write response to {}: {}", remoteAddress, coapResponse);
         Channels.write(ctx.getChannel(), coapResponse, remoteAddress);
-
-//        future.addListener(new ChannelFutureListener() {
-//            @Override
-//            public void operationComplete(ChannelFuture future) throws Exception {
-//                log.info("Response for token {} successfully sent to recipient {}.", coapResponse.getToken(),
-//                        remoteAddress);
-//            }
-//        });
-
     }
-
-
-//    private void handleDeleteRequest(Webservice webservice, SettableFuture<CoapResponse> responseFuture)
-//            throws Exception{
-//
-//        log.info("Webservice to be deleted {}", webservice.getPath());
-//
-//        MessageCode.Name messageCode;
-//        String content;
-//
-//        if(webservice.allowsDelete()){
-//            if(this.shutdownService(webservice.getPath())){
-//                webservice.shutdown();
-//                messageCode = MessageCode.Name.DELETED_202;
-//                content = "Deleted service " + webservice.getPath();
-//            }
-//            else{
-//                messageCode = MessageCode.Name.INTERNAL_SERVER_ERROR_500;
-//                content = "Could not delete webservice " + webservice.getPath();
-//                log.error(content);
-//            }
-//        }
-//        else{
-//            messageCode = MessageCode.Name.METHOD_NOT_ALLOWED_405;
-//            content = "Service \"" + webservice.getPath() + "\" does not allow deletion using DELETE requests.";
-//        }
-//
-//        CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, messageCode);
-//        coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
-//        responseFuture.set(coapResponse);
-//    }
 
 
     private void sendPreconditionFailed(MessageType.Name messageType, String servicePath,

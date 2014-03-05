@@ -50,8 +50,8 @@ public class ServerChannelPipelineFactory extends AbstractCoapChannelPipelineFac
     public ServerChannelPipelineFactory(ScheduledExecutorService executorService,
                                         WebserviceNotFoundHandler webserviceNotFoundHandler){
 
-        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(executorService));
-//        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(8, 0, 0)));
+//        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(executorService));
+        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(8, 0, 0)));
 
         addChannelHandler(ENCODER, new CoapMessageEncoder());
         addChannelHandler(DECODER, new CoapMessageDecoder());

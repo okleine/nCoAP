@@ -74,17 +74,13 @@ import java.util.concurrent.TimeUnit;
 */
 public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
-    public static final int EMPTY_ACK_DELAY_MILLIS = 1900;
+    public static final int EMPTY_ACK_DELAY_MILLIS = 1000;
 
     private static Logger log = LoggerFactory.getLogger(IncomingMessageReliabilityHandler.class.getName());
 
     //Remote socket address, message ID, acknowledgement status for incoming confirmable requests
     private final HashBasedTable<InetSocketAddress, Integer, ScheduledFuture> scheduledEmptyACKs
             = HashBasedTable.create();
-
-//    private final Multimap<InetSocketAddress, Integer> receivedMessageIDsForDuplicateDetection =
-//            HashMultimap.<InetSocketAddress, Integer>create();
-
 
     private ScheduledExecutorService executorService;
 
@@ -184,7 +180,12 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
             int messageID = coapResponse.getMessageID();
 
-            ScheduledFuture emptyACKFuture = scheduledEmptyACKs.remove(remoteSocketAddress, messageID);
+            ScheduledFuture emptyACKFuture = null;
+            if(scheduledEmptyACKs.contains(remoteSocketAddress, messageID)){
+                synchronized (scheduledEmptyACKs){
+                    emptyACKFuture = scheduledEmptyACKs.remove(remoteSocketAddress, messageID);
+                }
+            }
 
             if(emptyACKFuture != null && (!(emptyACKFuture.isDone()) && emptyACKFuture.cancel(false))){
                 //Set message type to ACK because the request was a not yet confirmed CON request
@@ -238,7 +239,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
-                    log.info("Empty ACK for message ID {} succesfully sent to {}.", messageID, remoteAddress);
+                    log.warn("Empty ACK for message ID {} succesfully sent to {}.", messageID, remoteAddress);
                 }
             });
         }

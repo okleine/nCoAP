@@ -81,6 +81,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     public OutgoingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
         messageIDFactory = new MessageIDFactory(executorService);
+
+//        executorService.scheduleAtFixedRate(new Runnable() {
+//            @Override
+//            public void run() {
+//                System.out.println("Number of open requests: " + reliabilitySchedules.size());
+//            }
+//        }, 5, 5, TimeUnit.SECONDS);
+
     }
 
     /**
@@ -93,60 +101,60 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
     @Override
     public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent me) throws Exception{
 
-        final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-
-        log.debug("Downstream to {}: {}.", remoteSocketAddress, me.getMessage());
-
-        if(!(me.getMessage() instanceof CoapMessage)){
+        if((me.getMessage() instanceof CoapMessage))
+            writeRequested(ctx, (CoapMessage) me.getMessage(), (InetSocketAddress) me.getRemoteAddress(),
+                    me.getFuture());
+        else
             ctx.sendDownstream(me);
-            return;
-        }
-
-        final CoapMessage coapMessage = (CoapMessage) me.getMessage();
-
-        //Set message ID
-        if(coapMessage.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED){
-
-            ListenableFuture<Integer> messageIDFuture = messageIDFactory.getNextMessageID(remoteSocketAddress);
-            Futures.addCallback(messageIDFuture, new FutureCallback<Integer>() {
-                @Override
-                public void onSuccess(Integer result) {
-                    try{
-                        coapMessage.setMessageID(result);
-
-                        log.debug("Message ID set to " + coapMessage.getMessageID());
-
-                        if (coapMessage.getMessageTypeName() == MessageType.Name.CON) {
-                            //schedule retransmissionSchedules
-                            if (!reliabilitySchedules.contains(me.getRemoteAddress(), coapMessage.getMessageID())) {
-                                scheduleRetransmissions(ctx, remoteSocketAddress, coapMessage);
-                            } else {
-                                log.error("Retransmission already in progress for: {}.", coapMessage);
-                                return;
-                            }
-                        }
-
-                        ctx.sendDownstream(me);
-                    }
-                    catch (InvalidHeaderException e) {
-                        log.error("This should never happen.", e);
-                    }
-                }
-
-                @Override
-                public void onFailure(Throwable t) {
-                    log.error("This should never happen.", t);
-                }
-            }, executorService);
-        }
-
-        else{
-            ctx.sendDownstream(me);
-        }
-
-
     }
 
+
+
+
+
+    private void writeRequested(ChannelHandlerContext ctx, CoapMessage coapMessage,
+                                InetSocketAddress remoteSocketAddress, ChannelFuture future){
+
+        try{
+            //Set message ID
+            if(coapMessage.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED){
+                int messageID = messageIDFactory.getNextMessageID(remoteSocketAddress);
+                coapMessage.setMessageID(messageID);
+
+                log.debug("Message ID set to " + coapMessage.getMessageID());
+
+                if (coapMessage.getMessageTypeName() == MessageType.Name.CON) {
+
+                    //schedule retransmissions
+                    synchronized (reliabilitySchedules){
+                        if (!reliabilitySchedules.contains(remoteSocketAddress, coapMessage.getMessageID())) {
+                            scheduleRetransmissions(ctx, remoteSocketAddress, coapMessage);
+                        }
+                        else {
+                            log.error("Retransmission already in progress for: {}.", coapMessage);
+                            future.setFailure(new Exception("..."));
+                        }
+                    }
+                }
+            }
+
+            Channels.write(ctx, future, coapMessage, remoteSocketAddress);
+        }
+        catch (InvalidHeaderException e) {
+            log.error("This should never happen.", e);
+            future.setFailure(e);
+        }
+        catch(NoMessageIDAvailableException e){
+            log.warn("No message ID available for {}!", remoteSocketAddress);
+            future.setFailure(e);
+
+            InternalNoMessageIDAvailableMessage errorMessage =
+                    new InternalNoMessageIDAvailableMessage(remoteSocketAddress, coapMessage.getToken(),
+                            e.getWaitingPeriod());
+
+            ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), errorMessage, remoteSocketAddress));
+        }
+    }
 
     private void scheduleRetransmissions(final ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
                                          final CoapMessage coapMessage){
@@ -241,7 +249,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
         InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
 
         if (coapMessage.getMessageTypeName() == MessageType.Name.ACK ||
-                coapMessage.getMessageTypeName() == MessageType.Name.RST) {
+            coapMessage.getMessageTypeName() == MessageType.Name.RST) {
 
             //Look up remaining retransmissionSchedules
             ReliabilitySchedule reliabilitySchedule;
@@ -280,48 +288,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler {
                         return;
                     }
                 }
+
             }
             else {
-                log.debug("No open CON found for messageID {} to {}. IGNORE.", coapMessage.getMessageID(),
-                        remoteSocketAddress);
-
+                log.error("No open CON found for message (IGNORE!) {}", coapMessage);
                 return;
             }
         }
 
         ctx.sendUpstream(me);
     }
-
-
-    private void sendMessage(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
-                             final CoapMessage coapMessage){
-
-        ChannelFuture future = Channels.future(ctx.getChannel());
-        Channels.write(ctx, Channels.future(ctx.getChannel()), coapMessage, remoteSocketAddress);
-
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Sent message to {}: {}", remoteSocketAddress, coapMessage);
-            }
-        });
-    }
-
-
-//    @Override
-//    public void update(Observable o, Object arg) {
-//        if(!(o instanceof MessageIDFactory)){
-//            return;
-//        }
-//
-//        Integer messageID = (Integer) arg;
-//        if(observations.rowKeySet().contains(messageID)){
-//            Map<InetSocketAddress, String> observer = observations.row(messageID);
-//            for(Map.Entry<InetSocketAddress, String> entry : observer.entrySet()){
-//                log.info("Observation of {} by {} cannot be stopped with RST {} anymore.",
-//                        new Object[]{entry.getValue(), entry.getKey(), messageID});
-//
-//            }
-//        }
-//    }
 }

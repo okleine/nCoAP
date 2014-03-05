@@ -22,28 +22,15 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.client;
+package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 08.02.14.
+ * Created by olli on 05.03.14.
  */
-public class InternalCoapRequestToBeSentMessage {
+public interface NoMessageIDAvailableProcessor {
 
-    private final CoapRequest coapRequest;
-    private final CoapResponseProcessor coapResponseProcessor;
+    public void handleNoMessageIDAvailable(InetSocketAddress remoteSocketAddress, long waitingPeriod);
 
-    public InternalCoapRequestToBeSentMessage(CoapRequest coapRequest, CoapResponseProcessor coapResponseProcessor){
-        this.coapRequest = coapRequest;
-        this.coapResponseProcessor = coapResponseProcessor;
-    }
-
-    public CoapRequest getCoapRequest() {
-        return coapRequest;
-    }
-
-    public CoapResponseProcessor getCoapResponseProcessor() {
-        return coapResponseProcessor;
-    }
 }

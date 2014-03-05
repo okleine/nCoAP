@@ -118,19 +118,21 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
 
             @Override
             public void run() {
-                InternalCoapRequestToBeSentMessage message =
-                        new InternalCoapRequestToBeSentMessage(coapRequest, coapResponseProcessor);
+                InternalSendCoapRequestMessage message =
+                        new InternalSendCoapRequestMessage(coapRequest, coapResponseProcessor);
 
                 ChannelFuture future = Channels.write(channel, message, remoteSocketAddress);
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        log.debug("Sent to {}:{}: {}",
-                                new Object[]{remoteSocketAddress.getAddress().getHostAddress(),
-                                        remoteSocketAddress.getPort(), coapRequest});
+                        if(future.isSuccess()){
+                            log.debug("Sent to {}:{}: {}",
+                                    new Object[]{remoteSocketAddress.getAddress().getHostAddress(),
+                                            remoteSocketAddress.getPort(), coapRequest});
 
-                        if (coapResponseProcessor instanceof TransmissionInformationProcessor)
-                            ((TransmissionInformationProcessor) coapResponseProcessor).messageTransmitted(false);
+                            if (coapResponseProcessor instanceof TransmissionInformationProcessor)
+                                ((TransmissionInformationProcessor) coapResponseProcessor).messageTransmitted(false);
+                        }
                     }
                 });
             }

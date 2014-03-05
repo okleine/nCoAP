@@ -443,6 +443,20 @@ public class CoapRequest extends CoapMessage {
         return "";
     }
 
+    public String getUriQueryParameterValue(String parameter){
+        if(!parameter.endsWith("="))
+            parameter += "=";
+
+        for(Option option : options.get(Option.Name.URI_QUERY)){
+            String value = ((StringOption) option).getDecodedValue();
+
+            if(value.startsWith(parameter))
+                return value.substring(parameter.length());
+        }
+
+        return null;
+    }
+
     /**
      * Sets the content formats the client is willing to accept. See {@link ContentFormat} for a predefined set of such
      * numbers.

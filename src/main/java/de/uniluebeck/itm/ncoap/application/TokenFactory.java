@@ -121,7 +121,8 @@ public class TokenFactory {
             waitingTokenFutures.put(remoteSocketAddress, tokenFuture);
         }
         else{
-            usedTokens.put(remoteSocketAddress, nextToken);
+            if(!usedTokens.put(remoteSocketAddress, nextToken))
+                log.error("Token {} for {} was already in use!!!", nextToken, remoteSocketAddress);
         }
 
         log.debug("Future was set: {}", tokenFuture.isDone());
@@ -131,13 +132,17 @@ public class TokenFactory {
 
 
     private Token getNextReleasedToken(InetSocketAddress remoteSocketAddress){
-        try{
-            Token result = releasedTokens.get(remoteSocketAddress).iterator().next();
-            releasedTokens.remove(remoteSocketAddress, result);
-            log.debug("Token {} for {} was released and will now be re-used.", result, remoteSocketAddress);
-            return result;
+        if(!releasedTokens.get(remoteSocketAddress).isEmpty()){
+            Token token = releasedTokens.get(remoteSocketAddress).iterator().next();
+
+            if(!releasedTokens.remove(remoteSocketAddress, token))
+                log.error("Could not remove from released Tokens: {} for {}", token, remoteSocketAddress);
+            else
+                log.debug("Token {} for {} was released and will now be re-used.", token, remoteSocketAddress);
+
+            return token;
         }
-        catch(NoSuchElementException e){
+        else{
             log.debug("No released token found for {}", remoteSocketAddress);
             return null;
         }
@@ -185,9 +190,12 @@ public class TokenFactory {
             //If there is a future waiting for this token immediately re-use the released token
             if(!futures.isEmpty()){
                 SettableFuture<Token> tokenFuture = futures.iterator().next();
-                waitingTokenFutures.remove(remoteSocketAddress, tokenFuture);
+                if(!waitingTokenFutures.remove(remoteSocketAddress, tokenFuture))
+                    log.error("Could not remove token future for {}.", remoteSocketAddress);
 
-                usedTokens.put(remoteSocketAddress, token);
+                if(!usedTokens.put(remoteSocketAddress, token))
+                    log.error("Token {} for {} was already in use!!!", token, remoteSocketAddress);
+
                 log.debug("Reuse token {} (length: {}) for {}. (Now {} tokens in use.)",
                         new Object[]{token, token.getBytes().length, remoteSocketAddress,
                                 usedTokens.get(remoteSocketAddress).size()});
@@ -198,13 +206,14 @@ public class TokenFactory {
             //If there is no future waiting for a token put it on the list of released tokens
             else{
                 log.debug("Put token {} for {} on list of released tokens.", token, remoteSocketAddress);
-                releasedTokens.put(remoteSocketAddress, token);
+                if(!releasedTokens.put(remoteSocketAddress, token))
+                    log.error("Token {} from {} was already released!!!");
             }
 
             return true;
         }
         else{
-            log.error("Could not pass back token {} (length: {}) from {}. (Still {} tokens in use.)",
+            log.warn("Could not pass back token {} (length: {}) from {}. (Still {} tokens in use.)",
                     new Object[]{token, token.getBytes().length, remoteSocketAddress,
                             usedTokens.get(remoteSocketAddress).size()});
             return false;
