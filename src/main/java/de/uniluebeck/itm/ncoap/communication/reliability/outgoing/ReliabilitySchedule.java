@@ -69,7 +69,6 @@ class ReliabilitySchedule {
     private ScheduledFuture timeoutNotificationFuture;
     private Token token;
 
-
     public ReliabilitySchedule(Set<ScheduledFuture> retransmissionFutures, ScheduledFuture timeoutNotificationFuture,
                                Token token) {
 
@@ -85,6 +84,7 @@ class ReliabilitySchedule {
             if(retransmissionFuture.cancel(true))
                 counter++;
         }
+
         log.debug("Canceled {} retransmissions.", counter);
 
         if(timeoutNotificationFuture.cancel(true))

@@ -22,42 +22,17 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
+package de.uniluebeck.itm.ncoap.application;
 
-import de.uniluebeck.itm.ncoap.application.Token;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+
+import java.net.InetSocketAddress;
 
 /**
- * Instances are sent upstream (i.e. to the plugtest) by the {@link OutgoingMessageReliabilityHandler}
- * when there was an empty acknowledgement received indicating that a recipient received a a confirmable
- * message.
- *
- * @author Oliver Kleine
+ * Created by olli on 06.03.14.
  */
-public class InternalEmptyResetReceivedMessage {
+public interface NoTokenAvailableProcessor extends CoapResponseProcessor{
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
-    private Token token;
+    public void processNoTokenAvailable(InetSocketAddress remoteSocketAddress);
 
-    /**
-     * @param token the token of the confirmed message
-     */
-    public InternalEmptyResetReceivedMessage(Token token){
-        this.token = token;
-        log.debug("Internal acknowledgement message created for token {}.", token);
-    }
-
-    /**
-     * Returns the token of the confirmed message
-     * @return the token of the confirmed message
-     */
-    public Token getToken(){
-        return token;
-    }
-
-    @Override
-    public String toString(){
-        return "InternalEmptyResetReceivedMessage: " + token + " (token)";
-    }
 }

@@ -28,6 +28,8 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import de.uniluebeck.itm.ncoap.application.NoTokenAvailableException;
+import de.uniluebeck.itm.ncoap.application.NoTokenAvailableProcessor;
 import de.uniluebeck.itm.ncoap.application.Token;
 import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
@@ -51,12 +53,9 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
     private TokenFactory tokenFactory;
 
-    private final Object monitor = new Object();
-
     private HashBasedTable<InetSocketAddress, Token, CoapResponseProcessor> responseProcessors;
 
     private ScheduledExecutorService scheduledExecutorService;
-
 
 
     public CoapResponseDispatcher(ScheduledExecutorService scheduledExecutorService, TokenFactory tokenFactory){
@@ -75,10 +74,8 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         }
 
         scheduledExecutorService.schedule(new Runnable() {
-
             @Override
             public void run() {
-
                 //Extract parameters for message transmission
                 final CoapRequest coapRequest =
                         ((InternalSendCoapRequestMessage) me.getMessage()).getCoapRequest();
@@ -88,27 +85,27 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
                 final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
 
-                //Prepare CoAP request, the response reception and then send the CoAP request
-                final ListenableFuture<Token> tokenFuture = tokenFactory.getNextToken(remoteSocketAddress);
-                Futures.addCallback(tokenFuture, new FutureCallback<Token>() {
-                    @Override
-                    public void onSuccess(Token result) {
-                        coapRequest.setToken(result);
-//
-                            //Add the response callback to wait for the incoming response
-                            addResponseCallback(remoteSocketAddress, coapRequest.getToken(), coapResponseProcessor);
+                try {
+                    //Prepare CoAP request, the response reception and then send the CoAP request
+                    coapRequest.setToken(tokenFactory.getNextToken(remoteSocketAddress));
 
-                            //Send the request
-                            sendCoapRequest(ctx, me.getFuture(), coapRequest, remoteSocketAddress);
+                    //Add the response callback to wait for the incoming response
+                    addResponseCallback(remoteSocketAddress, coapRequest.getToken(), coapResponseProcessor);
+
+                    //Send the request
+                    sendCoapRequest(ctx, me.getFuture(), coapRequest, remoteSocketAddress);
+
+                }
+                catch (NoTokenAvailableException e) {
+                    if(coapResponseProcessor instanceof NoTokenAvailableProcessor){
+                        NoTokenAvailableProcessor processor = (NoTokenAvailableProcessor) coapResponseProcessor;
+                        processor.processNoTokenAvailable(remoteSocketAddress);
                     }
-
-                    @Override
-                    public void onFailure(Throwable t) {
-                        log.error("Exception while waiting for token!", t);
-                    }
-
-                }, scheduledExecutorService);
-
+                }
+                catch(Exception e){
+                    log.error("This should never happen!", e);
+                    removeResponseCallback(remoteSocketAddress, coapRequest.getToken());
+                }
             }
 
         }, 0, TimeUnit.MILLISECONDS);
@@ -116,10 +113,42 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
 
 
-    private void sendCoapRequest(ChannelHandlerContext ctx, ChannelFuture future, final CoapRequest coapRequest,
-                                 final InetSocketAddress remoteSocketAddress){
+    private void sendCoapRequest(ChannelHandlerContext ctx, ChannelFuture future, CoapRequest coapRequest,
+                                 InetSocketAddress remoteSocketAddress){
 
         log.info("Write CoAP request: {}", coapRequest);
+
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if(!future.isSuccess()){
+                    Throwable cause = future.getCause();
+
+                    if(cause instanceof NoMessageIDAvailableException){
+                        NoMessageIDAvailableException exception = (NoMessageIDAvailableException) cause;
+
+                        InetSocketAddress remoteSocketAddress = exception.getRemoteSocketAddress();
+                        Token token = exception.getToken();
+
+                        CoapResponseProcessor callback = removeResponseCallback(remoteSocketAddress, token);
+
+                        if(callback != null && callback instanceof NoMessageIDAvailableProcessor){
+                            ((NoMessageIDAvailableProcessor) callback).handleNoMessageIDAvailable(
+                                    remoteSocketAddress, exception.getWaitingPeriod()
+                            );
+                        }
+                        else{
+                            log.error("Removed response callback for token {} for {}", token, remoteSocketAddress);
+                        }
+
+                    }
+                    else{
+                        log.error("Unexpected Exception:", cause);
+                    }
+                }
+            }
+        });
+
         Channels.write(ctx, future, coapRequest, remoteSocketAddress);
     }
 
@@ -127,10 +156,11 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
     private synchronized void addResponseCallback(InetSocketAddress remoteSocketAddress, Token token,
                                                   CoapResponseProcessor coapResponseProcessor){
 
-        responseProcessors.put(remoteSocketAddress, token, coapResponseProcessor);
-        log.debug("Added response processor for token {} from {}.", token,
-                remoteSocketAddress);
-        log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
+        if(!(responseProcessors.put(remoteSocketAddress, token, coapResponseProcessor) == null))
+            log.error("Tried to use token {} for {} twice!", token, remoteSocketAddress);
+        else
+            log.debug("Added response processor for token {} from {}.", token,
+                    remoteSocketAddress);
     }
 
 
@@ -148,7 +178,7 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
     }
 
     /**
-     * This method is automaically invoked by the framework and relates incoming responses to open requests and invokes
+     * This method is automatically invoked by the framework and relates incoming responses to open requests and invokes
      * the appropriate method of the {@link CoapResponseProcessor} instance given with the {@link CoapRequest}.
      *
      * The invoked method depends on the message contained in the {@link org.jboss.netty.channel.MessageEvent}. See
@@ -160,23 +190,6 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
         log.debug("Received: {}.", me.getMessage());
-
-        if(me.getMessage() instanceof InternalNoMessageIDAvailableMessage){
-            InternalNoMessageIDAvailableMessage message =
-                    (InternalNoMessageIDAvailableMessage) me.getMessage();
-
-            CoapResponseProcessor callback =
-                    responseProcessors.get(me.getRemoteAddress(), message.getToken());
-
-            if(callback != null && callback instanceof NoMessageIDAvailableProcessor){
-                ((NoMessageIDAvailableProcessor) callback).handleNoMessageIDAvailable(
-                        message.getRemoteSocketAddress(), message.getWaitingPeriod()
-                );
-            }
-
-            me.getFuture().setSuccess();
-            return;
-        }
 
         if(me.getMessage() instanceof InternalEmptyAcknowledgementReceivedMessage){
             InternalEmptyAcknowledgementReceivedMessage message =
@@ -199,7 +212,6 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         }
 
         if(me.getMessage() instanceof InternalRetransmissionTimeoutMessage){
-            log.error("Retransmission timeout!");
             InternalRetransmissionTimeoutMessage timeoutMessage = (InternalRetransmissionTimeoutMessage) me.getMessage();
 
             //Find proper callback
@@ -229,28 +241,10 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
             if(callback != null && callback instanceof TransmissionInformationProcessor)
                 ((TransmissionInformationProcessor) callback).messageTransmitted(true);
-            else
-                log.warn("No TransmissionInformationProcessor found for token {} and remote address {}",
-                        retransmissionMessage.getToken(), retransmissionMessage.getRemoteAddress());
 
-            me.getFuture().setSuccess();
             return;
         }
 
-//        if(me.getMessage() instanceof InternalCodecExceptionMessage){
-//            InternalCodecExceptionMessage message = (InternalCodecExceptionMessage) me.getMessage();
-//
-//            CoapResponseProcessor callback = responseProcessors.get(me.getRemoteAddress(), message.getToken());
-//
-//            if(callback != null && callback instanceof CodecExceptionReceiver)
-//                ((CodecExceptionReceiver) callback).handleCodecException(message.getCause());
-//            else
-//                log.info("No CodecExceptionReceiver found for token {} and remote address {}",
-//                        message.getToken(), me.getRemoteAddress());
-//
-//            me.getFuture().setSuccess();
-//            return;
-//        }
 
         if(me.getMessage() instanceof CoapResponse){
 
@@ -275,8 +269,10 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                 responseProcessor.processCoapResponse(coapResponse);
             }
             else{
-                log.error("No responseProcessor found for token {}. (Response: {})",
+                log.error("No response processor found for token {}. (Response: {})",
                         coapResponse.getToken(), coapResponse);
+
+                log.debug("...");
             }
 
             me.getFuture().setSuccess();

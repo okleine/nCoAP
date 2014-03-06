@@ -24,6 +24,8 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
+import de.uniluebeck.itm.ncoap.application.Token;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -33,6 +35,7 @@ public class NoMessageIDAvailableException extends Exception{
 
     private InetSocketAddress remoteSocketAddress;
     private long waitingPeriod;
+    private Token token;
 
     public NoMessageIDAvailableException(InetSocketAddress remoteSocketAddress, long waitingPeriod){
         super("All message IDs for " + remoteSocketAddress + " are in use. Wait for " + waitingPeriod + " milliseconds");
@@ -40,11 +43,23 @@ public class NoMessageIDAvailableException extends Exception{
         this.waitingPeriod = waitingPeriod;
     }
 
+
+    public void setToken(Token token){
+        this.token = token;
+    }
+
+
     public InetSocketAddress getRemoteSocketAddress() {
         return remoteSocketAddress;
     }
 
+
     public long getWaitingPeriod() {
         return waitingPeriod;
+    }
+
+
+    public Token getToken() {
+        return token;
     }
 }

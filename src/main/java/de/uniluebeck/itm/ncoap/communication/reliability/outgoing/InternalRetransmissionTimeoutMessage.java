@@ -72,7 +72,7 @@ public class InternalRetransmissionTimeoutMessage {
      * @param remoteAddress the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that
      *                      did not acknowledge the reception
      */
-    public InternalRetransmissionTimeoutMessage(Token token, InetSocketAddress remoteAddress){
+    public InternalRetransmissionTimeoutMessage(InetSocketAddress remoteAddress, Token token){
         this.token = token;
         this.remoteAddress = remoteAddress;
     }

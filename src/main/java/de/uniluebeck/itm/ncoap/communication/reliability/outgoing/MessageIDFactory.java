@@ -39,13 +39,13 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Oliver Kleine
 */
-public class MessageIDFactory{
+public class MessageIDFactory extends Observable {
 
     /**
      * The number of seconds (247) a message ID is allocated by the nCoAP framework to avoid duplicate
      * usage of the same message ID in communications with the same remote CoAP endpoint.
      */
-    public static final int EXCHANGE_LIFETIME = 247;
+    public static final int EXCHANGE_LIFETIME = 30;
 
     /**
      * The number of different message IDs per remote CoAP endpoint (65536), i.e. there are at most 65536
@@ -87,12 +87,21 @@ public class MessageIDFactory{
                                 if(retiringMessageID.getRetirementDate() > now)
                                     break;
 
-                                else
-                                    retiringMessageIDs.removeFirst();
+                                else{
+                                    RetiringMessageID retiredMessageID = retiringMessageIDs.removeFirst();
+
+                                    setChanged();
+                                    notifyObservers(new Object[]{
+                                            retirementsForRemoteAddress.getKey(),
+                                            retiredMessageID.getMessageID()
+                                    });
+                                }
                             }
 
                             if(retiringMessageIDs.isEmpty())
                                 retirementsIterator.remove();
+
+
                         }
                     }
                     catch(Exception e){
@@ -114,7 +123,7 @@ public class MessageIDFactory{
 
         Deque<RetiringMessageID> retiringMessageIDsForRemoteAddress = retiringMessageIDs.get(remoteSocketAddress);
 
-        //all message IDs are in use for the given endpoint
+        //check if all message IDs are in use for the given endpoint
         if(retiringMessageIDsForRemoteAddress != null && retiringMessageIDsForRemoteAddress.size() == MODULUS){
             long waitingPeriod =
                     retiringMessageIDsForRemoteAddress.getFirst().getRetirementDate() - System.currentTimeMillis();
@@ -129,7 +138,6 @@ public class MessageIDFactory{
             if(retiringMessageIDsForRemoteAddress != null && retiringMessageIDsForRemoteAddress.size() > 0)
                     messageID = (retiringMessageIDsForRemoteAddress.getLast().getMessageID() + 1) % MODULUS;
 
-//            System.out.println("Next message ID:" + messageID);
             allocateMessageID(remoteSocketAddress, messageID);
 
             return messageID;
@@ -152,32 +160,6 @@ public class MessageIDFactory{
     }
 
 
-
-
-//    private synchronized void deallocateMessageID(InetSocketAddress remoteSocketAddress, int messageID){
-//        usedMessageIDs.remove(remoteSocketAddress, messageID);
-//
-//        if(latestMessageIDs.get(remoteSocketAddress) == messageID)
-//            latestMessageIDs.remove(remoteSocketAddress);
-//    }
-//
-//
-//    private synchronized SettableFuture<Integer> getNextMessageIDFuture(InetSocketAddress remoteSocketAddress){
-//        //Check if there is message ID future waiting...
-//        Iterator<SettableFuture<Integer>> futureIterator =
-//                waitingMessageIDFutures.get(remoteSocketAddress).iterator();
-//
-//
-//        if(futureIterator.hasNext()){
-//            SettableFuture<Integer> messageIDFuture = futureIterator.next();
-//            waitingMessageIDFutures.remove(remoteSocketAddress, messageIDFuture);
-//            return messageIDFuture;
-//        }
-//
-//        return null;
-//    }
-
-
     private class RetiringMessageID{
 
         private Integer messageID;
@@ -198,30 +180,4 @@ public class MessageIDFactory{
         }
 
     }
-
-//    private class Deallocation{
-//
-//        private Long deallocationDate;
-//        private InetSocketAddress remoteSocketAddress;
-//        private Integer messageID;
-//
-//
-//        private Deallocation(Long deallocationDate, InetSocketAddress remoteSocketAddress, Integer messageID) {
-//            this.deallocationDate = deallocationDate;
-//            this.remoteSocketAddress = remoteSocketAddress;
-//            this.messageID = messageID;
-//        }
-//
-//        public Long getDeallocationDate() {
-//            return deallocationDate;
-//        }
-//
-//        public InetSocketAddress getRemoteSocketAddress() {
-//            return remoteSocketAddress;
-//        }
-//
-//        public Integer getMessageID() {
-//            return messageID;
-//        }
-//    }
 }

@@ -22,37 +22,23 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
-
-import de.uniluebeck.itm.ncoap.application.Token;
+package de.uniluebeck.itm.ncoap.application;
 
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 05.03.14.
+ * Created by olli on 06.03.14.
  */
-public class InternalNoMessageIDAvailableMessage {
+public class NoTokenAvailableException extends Exception {
 
-    private InetSocketAddress remoteSocketAddress;
-    private Token token;
-    private long waitingPeriod;
+    private InetSocketAddress remoteAddress;
 
+    public NoTokenAvailableException(InetSocketAddress remoteAddress){
 
-    public InternalNoMessageIDAvailableMessage(InetSocketAddress remoteSocketAddress, Token token, long waitingPeriod) {
-        this.remoteSocketAddress = remoteSocketAddress;
-        this.token = token;
-        this.waitingPeriod = waitingPeriod;
+        this.remoteAddress = remoteAddress;
     }
 
-    public InetSocketAddress getRemoteSocketAddress() {
-        return remoteSocketAddress;
-    }
-
-    public Token getToken() {
-        return token;
-    }
-
-    public long getWaitingPeriod() {
-        return waitingPeriod;
+    public InetSocketAddress getRemoteAddress() {
+        return remoteAddress;
     }
 }

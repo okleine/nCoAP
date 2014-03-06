@@ -28,6 +28,8 @@ import de.uniluebeck.itm.ncoap.application.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+
 /**
 * Instances are sent upstream (i.e. to the plugtest) by the {@link OutgoingMessageReliabilityHandler}
 * when there was an empty acknowledgement received indicating that a recipient received a a confirmable
@@ -37,15 +39,15 @@ import org.slf4j.LoggerFactory;
 */
 public class InternalEmptyAcknowledgementReceivedMessage {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private InetSocketAddress remoteSocketAddress;
     private Token token;
 
     /**
      * @param token the token of the confirmed message
      */
-    public InternalEmptyAcknowledgementReceivedMessage(Token token){
+    public InternalEmptyAcknowledgementReceivedMessage(InetSocketAddress remoteSocketAddress, Token token){
+        this.remoteSocketAddress = remoteSocketAddress;
         this.token = token;
-        log.debug("Internal acknowledgement message created for token {}.", token);
     }
 
     /**
@@ -56,8 +58,15 @@ public class InternalEmptyAcknowledgementReceivedMessage {
         return token;
     }
 
+
+    public InetSocketAddress getRemoteSocketAddress() {
+        return remoteSocketAddress;
+    }
+
     @Override
     public String toString(){
-        return "InternalEmptyAcknowledgementReceivedMessage: " + token + " (token)";
+        return "[Internal message for empty ACK reception] "
+                + "Remote address: " + this.remoteSocketAddress.toString()
+                + ", Token: " + token.toString();
     }
 }

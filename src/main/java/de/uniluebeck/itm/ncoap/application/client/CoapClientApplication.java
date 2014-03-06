@@ -49,7 +49,7 @@ import java.util.concurrent.*;
 *
 * @author Oliver Kleine
 */
-public class CoapClientApplication extends SimpleChannelUpstreamHandler {
+public class CoapClientApplication {
 
     public static final int RECEIVE_BUFFER_SIZE = 65536;
 
@@ -58,16 +58,20 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
     private ScheduledThreadPoolExecutor scheduledExecutorService;
     private DatagramChannel channel;
 
+    private String name;
 
-    public CoapClientApplication(int port, int numberOfThreads, int maxTokenLength){
+    public CoapClientApplication(String name, int port, int numberOfThreads, int maxTokenLength){
+
+        this.name = name;
 
         if(maxTokenLength < 0 || maxTokenLength > 8)
             throw new IllegalArgumentException("Token length must be between 0 and 8 (both inclusive)");
 
         int threads = Math.max(numberOfThreads, 4);
 
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("New I/O worker #%d (out)").build();
-        //this.scheduledExecutorService = Executors.newScheduledThreadPool(threads, threadFactory);
+        ThreadFactory threadFactory =
+                new ThreadFactoryBuilder().setNameFormat(name + " I/O worker #%d").build();
+
         this.scheduledExecutorService = new ScheduledThreadPoolExecutor(threads, threadFactory);
         this.scheduledExecutorService.setRemoveOnCancelPolicy(true);
 
@@ -90,18 +94,25 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
         log.info("New client channel created for address {}", this.channel.getLocalAddress());
     }
 
+    public CoapClientApplication(int port, int numberOfThreads, int maxTokenLength){
+        this("CoAP Client", port, numberOfThreads, maxTokenLength);
+    }
+
 
     /**
      * Creates a new instance of {@link CoapClientApplication} which is bound to a local socket and provides all
      * functionality to send {@link CoapRequest}s and receive {@link CoapResponse}s.
      */
     public CoapClientApplication(){
-        this(0, 8);
+        this("Coap Client", 0, 8);
     }
 
+    public CoapClientApplication(String name){
+        this(name, 0, 8);
+    }
 
-    public CoapClientApplication(int port, int maxTokenLength){
-        this(port, Runtime.getRuntime().availableProcessors() * 2, maxTokenLength);
+    public CoapClientApplication(String name, int port, int maxTokenLength){
+        this(name, port, Runtime.getRuntime().availableProcessors() * 2, maxTokenLength);
     }
 
 
@@ -173,5 +184,9 @@ public class CoapClientApplication extends SimpleChannelUpstreamHandler {
                 log.info("Shutdown completed!");
             }
         });
+    }
+
+    public String getName() {
+        return name;
     }
 }

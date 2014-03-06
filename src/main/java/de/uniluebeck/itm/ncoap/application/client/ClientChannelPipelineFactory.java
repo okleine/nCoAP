@@ -51,8 +51,8 @@ public class ClientChannelPipelineFactory extends AbstractCoapChannelPipelineFac
      */
     public ClientChannelPipelineFactory(ScheduledExecutorService executorService, TokenFactory tokenFactory){
 
-        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(4, 0, 0)));
-//        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(executorService));
+//        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(4, 0, 0)));
+        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(executorService));
 
         addChannelHandler(ENCODER, new CoapMessageEncoder());
         addChannelHandler(DECODER, new CoapMessageDecoder());

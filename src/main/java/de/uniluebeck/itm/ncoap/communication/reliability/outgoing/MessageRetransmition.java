@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import org.jboss.netty.channel.UpstreamMessageEvent;
 
 
 /**
@@ -44,9 +43,9 @@ import org.jboss.netty.channel.UpstreamMessageEvent;
  *
  * @author Oliver Kleine
 */
-class MessageRetransmission implements Runnable {
+class MessageRetransmition implements Runnable {
 
-    private Logger log = LoggerFactory.getLogger(MessageRetransmission.class.getName());
+    private Logger log = LoggerFactory.getLogger(MessageRetransmition.class.getName());
 
     private CoapMessage coapMessage;
     private InetSocketAddress rcptAddress;
@@ -60,8 +59,8 @@ class MessageRetransmission implements Runnable {
      * @param coapMessage the {@link CoapMessage} to be retransmitted
      * @param retransmissionNumber the number of previously scheduled retransmissions plus 1
      */
-    public MessageRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress rcptAddress,
-                                 int retransmissionNumber){
+    public MessageRetransmition(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress rcptAddress,
+                                int retransmissionNumber){
         this.coapMessage = coapMessage;
         this.rcptAddress = rcptAddress;
         this.retransmissionNumber = retransmissionNumber;
@@ -75,11 +74,11 @@ class MessageRetransmission implements Runnable {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Retransmition completed: {}", MessageRetransmission.this);
-                UpstreamMessageEvent upstreamEvent = new UpstreamMessageEvent(ctx.getChannel(),
-                        new InternalMessageRetransmissionMessage(rcptAddress, coapMessage.getToken()), null);
+                log.info("Retransmition completed: {}", MessageRetransmition.this);
+                InternalMessageRetransmissionMessage internalMessage =
+                    new InternalMessageRetransmissionMessage(rcptAddress, coapMessage.getToken());
 
-                ctx.sendUpstream(upstreamEvent);
+                Channels.fireMessageReceived(ctx, internalMessage);
             }
         });
 

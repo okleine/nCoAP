@@ -24,15 +24,46 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.Token;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 05.03.14.
+ * Instances are sent upstream (i.e. to the plugtest) by the {@link OutgoingMessageReliabilityHandler}
+ * when there was an empty acknowledgement received indicating that a recipient received a a confirmable
+ * message.
+ *
+ * @author Oliver Kleine
  */
-public interface NoMessageIDAvailableProcessor extends CoapResponseProcessor{
+public class InternalResetReceivedMessage {
 
-    public void handleNoMessageIDAvailable(InetSocketAddress remoteSocketAddress, long waitingPeriod);
+    private InetSocketAddress remoteSocketAddress;
+    private Token token;
 
+    /**
+     * @param token the token of the confirmed message
+     */
+    public InternalResetReceivedMessage(InetSocketAddress remoteSocketAddress, Token token){
+        this.remoteSocketAddress = remoteSocketAddress;
+        this.token = token;
+    }
+
+    /**
+     * Returns the token of the confirmed message
+     * @return the token of the confirmed message
+     */
+    public Token getToken(){
+        return token;
+    }
+
+    @Override
+    public String toString(){
+        return "InternalResetReceivedMessage: " + token + " (token)";
+    }
+
+    public InetSocketAddress getRemoteSocketAddress() {
+        return remoteSocketAddress;
+    }
 }
