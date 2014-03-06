@@ -25,9 +25,6 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import de.uniluebeck.itm.ncoap.application.NoTokenAvailableException;
 import de.uniluebeck.itm.ncoap.application.NoTokenAvailableProcessor;
 import de.uniluebeck.itm.ncoap.application.Token;
@@ -227,14 +224,17 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                 log.error("Could not pass back token {} for {} from retransmission timeout!",
                         timeoutMessage.getToken(), timeoutMessage.getRemoteAddress());
             }
+            else{
+                log.error("Passed back token from timeout message!");
+            }
 
             me.getFuture().setSuccess();
             return;
         }
 
-        if(me.getMessage() instanceof InternalMessageRetransmissionMessage){
-            InternalMessageRetransmissionMessage retransmissionMessage =
-                    (InternalMessageRetransmissionMessage) me.getMessage();
+        if(me.getMessage() instanceof InternalMessageRetransmittedMessage){
+            InternalMessageRetransmittedMessage retransmissionMessage =
+                    (InternalMessageRetransmittedMessage) me.getMessage();
 
             CoapResponseProcessor callback =
                     responseProcessors.get(retransmissionMessage.getRemoteAddress(), retransmissionMessage.getToken());

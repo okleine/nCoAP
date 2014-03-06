@@ -43,51 +43,49 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
 */
-class MessageRetransmition implements Runnable {
-
-    private Logger log = LoggerFactory.getLogger(MessageRetransmition.class.getName());
-
-    private CoapMessage coapMessage;
-    private InetSocketAddress rcptAddress;
-    private int retransmissionNumber;
-    private ChannelHandlerContext ctx;
-
-    /**
-     * @param ctx the {@link ChannelHandlerContext} to get the {@link DatagramChannel} to be used to send the
-     *            outgoing {@link CoapMessage}s
-     * @param rcptAddress the address of the recipient
-     * @param coapMessage the {@link CoapMessage} to be retransmitted
-     * @param retransmissionNumber the number of previously scheduled retransmissions plus 1
-     */
-    public MessageRetransmition(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress rcptAddress,
-                                int retransmissionNumber){
-        this.coapMessage = coapMessage;
-        this.rcptAddress = rcptAddress;
-        this.retransmissionNumber = retransmissionNumber;
-        this.ctx = ctx;
-    }
-
-    @Override
-    public void run() {
-        ChannelFuture future = Channels.future(ctx.getChannel());
-
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Retransmition completed: {}", MessageRetransmition.this);
-                InternalMessageRetransmissionMessage internalMessage =
-                    new InternalMessageRetransmissionMessage(rcptAddress, coapMessage.getToken());
-
-                Channels.fireMessageReceived(ctx, internalMessage);
-            }
-        });
-
-       Channels.write(ctx, future, coapMessage, rcptAddress);
-    }
-
-    @Override
-    public String toString() {
-        return "Retransmission no. " + retransmissionNumber + " for " + coapMessage;
-    }
-
-}
+//class MessageRetransmission implements Runnable {
+//
+//    private Logger log = LoggerFactory.getLogger(MessageRetransmission.class.getName());
+//
+//    private ChannelHandlerContext ctx;
+//    private CoapMessage coapMessage;
+//    private InetSocketAddress rcptAddress;
+//    private int retransmissionCounter;
+//
+//    /**
+//     * @param ctx the {@link ChannelHandlerContext} to get the {@link DatagramChannel} to be used to send the
+//     *            outgoing {@link CoapMessage}s
+//     * @param rcptAddress the address of the recipient
+//     * @param coapMessage the {@link CoapMessage} to be retransmitted
+//     * @param retransmissionNumber the number of previously scheduled retransmissions plus 1
+//     */
+//    public MessageRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress rcptAddress){
+//        this.ctx = ctx;
+//        this.coapMessage = coapMessage;
+//        this.rcptAddress = rcptAddress;
+//    }
+//
+//    @Override
+//    public void run() {
+//        ChannelFuture future = Channels.future(ctx.getChannel());
+//
+//        future.addListener(new ChannelFutureListener() {
+//            @Override
+//            public void operationComplete(ChannelFuture future) throws Exception {
+//                log.info("Retransmition completed: {}", MessageRetransmission.this);
+//                InternalMessageRetransmittedMessage internalMessage =
+//                    new InternalMessageRetransmittedMessage(rcptAddress, coapMessage.getToken());
+//
+//                Channels.fireMessageReceived(ctx, internalMessage);
+//            }
+//        });
+//
+//       Channels.write(ctx, future, coapMessage, rcptAddress);
+//    }
+//
+//    @Override
+//    public String toString() {
+//        return "Retransmission no. " + retransmissionNumber + " for " + coapMessage;
+//    }
+//
+//}

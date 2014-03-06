@@ -58,13 +58,14 @@ public abstract class AbstractCoapChannelPipelineFactory implements ChannelPipel
 
 
     protected AbstractCoapChannelPipelineFactory(){
-        this.handler = new LinkedHashMap<String, ChannelHandler>();
+        this.handler = new LinkedHashMap<>();
     }
 
 
     protected void addChannelHandler(String name, ChannelHandler channelHandler){
         this.handler.put(name, channelHandler);
     }
+
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {

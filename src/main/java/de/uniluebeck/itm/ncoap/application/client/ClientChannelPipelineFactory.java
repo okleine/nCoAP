@@ -46,12 +46,12 @@ import java.util.concurrent.ScheduledExecutorService;
 * @author Oliver Kleine
 */
 public class ClientChannelPipelineFactory extends AbstractCoapChannelPipelineFactory {
+
     /**
      * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      */
     public ClientChannelPipelineFactory(ScheduledExecutorService executorService, TokenFactory tokenFactory){
 
-//        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(4, 0, 0)));
         addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(executorService));
 
         addChannelHandler(ENCODER, new CoapMessageEncoder());

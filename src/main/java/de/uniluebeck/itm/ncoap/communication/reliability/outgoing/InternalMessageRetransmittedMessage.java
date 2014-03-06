@@ -59,7 +59,7 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 *
 * @author Oliver Kleine
 */
-public class InternalMessageRetransmissionMessage {
+public class InternalMessageRetransmittedMessage {
 
     private InetSocketAddress remoteAddress;
     private Token token;
@@ -68,7 +68,7 @@ public class InternalMessageRetransmissionMessage {
      * @param remoteAddress the recipient of the retransmitted message
      * @param token the token of the retransmitted message
      */
-    public InternalMessageRetransmissionMessage(InetSocketAddress remoteAddress, Token token) {
+    public InternalMessageRetransmittedMessage(InetSocketAddress remoteAddress, Token token) {
         this.remoteAddress = remoteAddress;
         this.token = token;
     }
@@ -91,7 +91,7 @@ public class InternalMessageRetransmissionMessage {
 
     @Override
     public String toString(){
-        return "[InternalMessageRetransmissionMessage]: " + remoteAddress + " (remote address), "
+        return "[InternalMessageRetransmittedMessage]: " + remoteAddress + " (remote address), "
                 + token + " (token)";
     }
 }

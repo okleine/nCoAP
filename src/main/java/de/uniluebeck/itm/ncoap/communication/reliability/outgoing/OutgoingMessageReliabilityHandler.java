@@ -24,23 +24,19 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.*;
 import de.uniluebeck.itm.ncoap.communication.observe.InternalStopUpdateNotificationRetransmissionMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -60,18 +56,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    /**
-     * The approximate number of milliseconds between the last retransmission attempt for outgoing {@link CoapMessage}s
-     * with {@link MessageType.Name#CON} and a timeout notification.
-     */
-    public static final int TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION = 5000;
-
     private static final Random RANDOM = new Random(System.currentTimeMillis());
 
     private ScheduledExecutorService executorService;
 
     //Contains remote socket address and message ID of not yet confirmed messages
-    private HashBasedTable<InetSocketAddress, Integer, ReliabilitySchedule> reliabilitySchedules;
+    private HashBasedTable<InetSocketAddress, Integer, MessageRetransmission> owingRetransmissions;
+    private TreeMultimap<Long, MessageRetransmission> retransmissionSchedule;
+
     private final Object monitor = new Object();
 
     private MessageIDFactory messageIDFactory;
@@ -84,7 +76,78 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     public OutgoingMessageReliabilityHandler(ScheduledExecutorService executorService){
         this.executorService = executorService;
         this.messageIDFactory = new MessageIDFactory(executorService);
-        this.reliabilitySchedules = HashBasedTable.create();
+        this.owingRetransmissions = HashBasedTable.create();
+        this.retransmissionSchedule =
+                TreeMultimap.create(Ordering.<Long>natural(), Ordering.<MessageRetransmission>arbitrary());
+
+        //Schedule retransmission task
+        executorService.scheduleAtFixedRate(new Runnable(){
+
+            @Override
+            public void run() {
+                long now = System.currentTimeMillis();
+
+                synchronized (monitor){
+                    Iterator<Map.Entry<Long, Collection<MessageRetransmission>>> actualRetransmissions =
+                    retransmissionSchedule.asMap().headMap(now, true).entrySet().iterator();
+
+                    Multimap<Long, MessageRetransmission> subsequentRetransmissions = HashMultimap.create();
+
+                    while(actualRetransmissions.hasNext()){
+                        Map.Entry<Long, Collection<MessageRetransmission>> part = actualRetransmissions.next();
+
+                        for(MessageRetransmission retransmission : part.getValue()){
+                            if(!retransmission.isStopped()){
+
+                                final ChannelHandlerContext ctx = retransmission.getChannelHandlerContext();
+                                final CoapMessage coapMessage = retransmission.getCoapMessage();
+                                final InetSocketAddress remoteSocketAddress = retransmission.getRemoteSocketAddress();
+
+                                ChannelFuture future =
+                                        Channels.future(retransmission.getChannelHandlerContext().getChannel());
+
+                                Channels.write(ctx, future, coapMessage, remoteSocketAddress);
+
+                                //Create time for next retransmission
+                                int counter = retransmission.increaseRetransmissionCount();
+                                long delay = (long)(Math.pow(2, counter) * ACK_TIMEOUT_MILLIS *
+                                        (1 + RANDOM.nextDouble() / 2));
+
+                                subsequentRetransmissions.put(now + delay, retransmission);
+
+                                future.addListener(new ChannelFutureListener() {
+                                    @Override
+                                    public void operationComplete(ChannelFuture future) throws Exception {
+                                        if(future.isSuccess()){
+                                            InternalMessageRetransmittedMessage internalMessage =
+                                                    new InternalMessageRetransmittedMessage(remoteSocketAddress,
+                                                            coapMessage.getToken());
+
+                                            Channels.fireMessageReceived(ctx, internalMessage);
+                                        }
+                                        else{
+                                            log.error("This should never happen!", future.getCause());
+                                        }
+                                    }
+                                });
+                            }
+
+                            else{
+                                owingRetransmissions.remove(
+                                        retransmission.getRemoteSocketAddress(),
+                                        retransmission.coapMessage.getMessageID()
+                                );
+                            }
+                        }
+
+                        actualRetransmissions.remove();
+                    }
+
+                    retransmissionSchedule.putAll(subsequentRetransmissions);
+                }
+            }
+
+        }, 500, 500, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -117,12 +180,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
                 log.debug("Message ID set to " + coapMessage.getMessageID());
 
-                if (coapMessage.getMessageTypeName() == MessageType.Name.CON) {
-                    //schedule retransmissions
-                    synchronized (monitor){
-                        scheduleRetransmissions(ctx, remoteSocketAddress, coapMessage);
-                    }
-                }
+                if (coapMessage.getMessageTypeName() == MessageType.Name.CON)
+                    ensureTransmissionReliability(ctx, coapMessage, remoteSocketAddress);
             }
 
             ctx.sendDownstream(me);
@@ -137,67 +196,46 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         }
     }
 
-    private void scheduleRetransmissions(final ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
-                                         final CoapMessage coapMessage)
+    private long createNextRetransmissionDelay(int retransmissionNo){
+        return (long)(Math.pow(2, retransmissionNo) * ACK_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() / 2));
+    }
+
+
+    private void ensureTransmissionReliability(ChannelHandlerContext ctx, CoapMessage coapMessage,
+                                               InetSocketAddress remoteSocketAddress)
             throws RetransmissionsAlreadyScheduledException {
 
-        if(reliabilitySchedules.contains(remoteSocketAddress, coapMessage.getMessageID())){
+        if(owingRetransmissions.contains(remoteSocketAddress, coapMessage.getMessageID())){
             log.error("Tried to to schedule retransmissions for already scheduled message: {}", coapMessage);
             throw new RetransmissionsAlreadyScheduledException(remoteSocketAddress, coapMessage.getMessageID());
         }
 
-        //Compute delays for retransmission
-        int[] delays = new int[MAX_RETRANSMIT];
-        int delay = 0;
-        for(int counter = 0; counter < MAX_RETRANSMIT; counter++){
-            delay += (int)(Math.pow(2, counter) * ACK_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() / 2));
-            delays[counter] = delay;
-        }
-
-
-        //Schedule retransmissionSchedules
-        Set<ScheduledFuture> retransmissionFutures = new HashSet<>();
-        for(int counter = 0; counter < MAX_RETRANSMIT; counter++){
-
-            MessageRetransmition messageRetransmition
-                    = new MessageRetransmition(ctx, coapMessage, remoteSocketAddress, counter + 1);
-
-            retransmissionFutures.add(executorService.schedule(messageRetransmition,
-                    delays[counter], TimeUnit.MILLISECONDS));
-
-            log.debug("Scheduled in {} millis: {}", delays[counter], messageRetransmition);
-        }
-
-
-        //Schedule timeout notification
-        delay = delays[MAX_RETRANSMIT - 1] + TIMEOUT_MILLIS_AFTER_LAST_RETRANSMISSION;
-
-        ScheduledFuture timeoutNotificationFuture =
-            executorService.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    InternalRetransmissionTimeoutMessage timeoutMessage =
-                            new InternalRetransmissionTimeoutMessage(remoteSocketAddress, coapMessage.getToken());
-
-                    Channels.fireMessageReceived(ctx, timeoutMessage);
-                }
-            }, delay, TimeUnit.MILLISECONDS);
-
-        log.debug("Timeout notification scheduled in {} millis.", delay);
-
-
-        ReliabilitySchedule reliabilitySchedule =
-                new ReliabilitySchedule(retransmissionFutures, timeoutNotificationFuture, coapMessage.getToken());
-
+        MessageRetransmission retransmission = scheduleFirstRetransmission(ctx, coapMessage, remoteSocketAddress);
 
         synchronized (monitor){
-            if(reliabilitySchedules.contains(remoteSocketAddress, coapMessage.getMessageID())){
+            owingRetransmissions.put(remoteSocketAddress, coapMessage.getMessageID(), retransmission);
+        }
+    }
+
+
+
+    private MessageRetransmission scheduleFirstRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage,
+                                             InetSocketAddress remoteSocketAddress)
+            throws RetransmissionsAlreadyScheduledException {
+
+        long firstRetransmissionTime = System.currentTimeMillis() + createNextRetransmissionDelay(1);
+        MessageRetransmission retransmission = new MessageRetransmission(ctx, coapMessage, remoteSocketAddress);
+
+        synchronized (monitor){
+            if(owingRetransmissions.contains(remoteSocketAddress, coapMessage.getMessageID())){
                 log.error("Tried to to schedule retransmissions for already scheduled message: {}", coapMessage);
                 throw new RetransmissionsAlreadyScheduledException(remoteSocketAddress, coapMessage.getMessageID());
             }
 
-            reliabilitySchedules.put(remoteSocketAddress, coapMessage.getMessageID(), reliabilitySchedule);
+            retransmissionSchedule.put(firstRetransmissionTime, retransmission);
         }
+
+        return retransmission;
     }
 
     /**
@@ -219,7 +257,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         }
 
         else if(me.getMessage() instanceof InternalStopUpdateNotificationRetransmissionMessage){
-            cancelRetransmissions(
+            stopRetransmission(
                     ((InternalStopUpdateNotificationRetransmissionMessage) me.getMessage()).getRemoteSocketAddress(),
                     ((InternalStopUpdateNotificationRetransmissionMessage) me.getMessage()).getMessageID()
             );
@@ -250,7 +288,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
         //Try to cancel open retransmissions (method returns false if there was no open CON)
-        if(!cancelRetransmissions(remoteSocketAddress, coapMessage.getMessageID())){
+        if(stopRetransmission(remoteSocketAddress, coapMessage.getMessageID()) == null){
             log.error("No open CON found for incoming message: {}", coapMessage);
             return;
         }
@@ -268,7 +306,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
         //Try to cancel open retransmissions (method returns false if there was no open CON)
-        if(!cancelRetransmissions(remoteSocketAddress, coapMessage.getMessageID())){
+        if(stopRetransmission(remoteSocketAddress, coapMessage.getMessageID()) == null){
             log.error("No open CON found for incoming message: {}", coapMessage);
             return;
         }
@@ -288,35 +326,83 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     }
 
 
-    private boolean cancelRetransmissions(InetSocketAddress remoteSocketAddress, int messageID){
+    private MessageRetransmission stopRetransmission(InetSocketAddress remoteSocketAddress, int messageID){
 
-        //Look up remaining retransmission schedules (if any)
-        ReliabilitySchedule reliabilitySchedule = null;
-        if(reliabilitySchedules.contains(remoteSocketAddress, messageID)){
+        MessageRetransmission retransmission = null;
+
+        if(owingRetransmissions.contains(remoteSocketAddress, messageID)){
             synchronized(monitor){
-                reliabilitySchedule = reliabilitySchedules.remove(remoteSocketAddress, messageID);
+                retransmission = owingRetransmissions.get(remoteSocketAddress, messageID);
             }
         }
 
-        if (reliabilitySchedule != null){
-            reliabilitySchedule.cancelRemainingTasks();
-            return true;
-        }
-        else{
-            return false;
-        }
+        if (retransmission != null)
+            retransmission.stop();
+
+        return retransmission;
     }
 
 
     @Override
     public void update(Observable o, Object arg) {
         Object[] args = (Object[]) arg;
+        MessageRetransmission retransmission = stopRetransmission((InetSocketAddress) args[0], (Integer) args[1]);
 
-        InetSocketAddress remoteSocketAddress = (InetSocketAddress) args[0];
-        Integer messageID = (Integer) args[1];
+        if(retransmission != null){
+            InternalRetransmissionTimeoutMessage internalMessage = new InternalRetransmissionTimeoutMessage(
+                    retransmission.getRemoteSocketAddress(),
+                    retransmission.getCoapMessage().getToken()
+            );
 
-        if(cancelRetransmissions(remoteSocketAddress, messageID))
-            log.error("Canceled retransmission because of retirement of message ID {} for {}.", messageID,
-                    remoteSocketAddress);
+            Channels.fireMessageReceived(retransmission.getChannelHandlerContext(), internalMessage);
+        }
+    }
+
+
+    private class MessageRetransmission{
+
+        private ChannelHandlerContext ctx;
+        private CoapMessage coapMessage;
+        private InetSocketAddress remoteSocketAddress;
+        private int retransmissionCount;
+        private boolean stopped;
+
+
+        public MessageRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage,
+                                     InetSocketAddress remoteSocketAddress){
+            this.ctx = ctx;
+            this.coapMessage = coapMessage;
+            this.remoteSocketAddress = remoteSocketAddress;
+            this.stopped = false;
+        }
+
+        public ChannelHandlerContext getChannelHandlerContext(){
+            return this.ctx;
+        }
+
+        public CoapMessage getCoapMessage(){
+            return this.coapMessage;
+        }
+
+        public InetSocketAddress getRemoteSocketAddress() {
+            return remoteSocketAddress;
+        }
+
+        public boolean isStopped() {
+            return stopped;
+        }
+
+        public void stop(){
+            this.stopped = true;
+        }
+
+        public int increaseRetransmissionCount(){
+            return ++retransmissionCount;
+        }
+
+        @Override
+        public String toString() {
+            return "Retransmission no. " + retransmissionCount + " for " + coapMessage;
+        }
     }
 }
