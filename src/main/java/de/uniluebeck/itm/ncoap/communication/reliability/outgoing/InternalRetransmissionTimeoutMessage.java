@@ -55,7 +55,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Instances of {@link InternalRetransmissionTimeoutMessage} are sent upstream by the
- * {@link OutgoingMessageReliabilityHandler} if a {@link CoapMessage} of type
+ * {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler} if a {@link CoapMessage} of type
  * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} was not acknowledged despite the maximum number of
  * retransmission attempts.
  *

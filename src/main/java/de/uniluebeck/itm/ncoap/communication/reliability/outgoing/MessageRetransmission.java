@@ -26,66 +26,54 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.socket.DatagramChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
 
-/**
- * Implementation of {@link Runnable} to retransmit a confirmable message in exponentially increasing
- * intervals.
- *
- * @author Oliver Kleine
-*/
-//class MessageRetransmission implements Runnable {
-//
-//    private Logger log = LoggerFactory.getLogger(MessageRetransmission.class.getName());
-//
-//    private ChannelHandlerContext ctx;
-//    private CoapMessage coapMessage;
-//    private InetSocketAddress rcptAddress;
-//    private int retransmissionCounter;
-//
-//    /**
-//     * @param ctx the {@link ChannelHandlerContext} to get the {@link DatagramChannel} to be used to send the
-//     *            outgoing {@link CoapMessage}s
-//     * @param rcptAddress the address of the recipient
-//     * @param coapMessage the {@link CoapMessage} to be retransmitted
-//     * @param retransmissionNumber the number of previously scheduled retransmissions plus 1
-//     */
-//    public MessageRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress rcptAddress){
-//        this.ctx = ctx;
-//        this.coapMessage = coapMessage;
-//        this.rcptAddress = rcptAddress;
-//    }
-//
-//    @Override
-//    public void run() {
-//        ChannelFuture future = Channels.future(ctx.getChannel());
-//
-//        future.addListener(new ChannelFutureListener() {
-//            @Override
-//            public void operationComplete(ChannelFuture future) throws Exception {
-//                log.info("Retransmition completed: {}", MessageRetransmission.this);
-//                InternalMessageRetransmittedMessage internalMessage =
-//                    new InternalMessageRetransmittedMessage(rcptAddress, coapMessage.getToken());
-//
-//                Channels.fireMessageReceived(ctx, internalMessage);
-//            }
-//        });
-//
-//       Channels.write(ctx, future, coapMessage, rcptAddress);
-//    }
-//
-//    @Override
-//    public String toString() {
-//        return "Retransmission no. " + retransmissionNumber + " for " + coapMessage;
-//    }
-//
-//}
+public class MessageRetransmission{
+
+    private ChannelHandlerContext ctx;
+    private CoapMessage coapMessage;
+    private InetSocketAddress remoteSocketAddress;
+    private int retransmissionCount;
+    private boolean stopped;
+
+
+    public MessageRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage,
+                                 InetSocketAddress remoteSocketAddress){
+        this.ctx = ctx;
+        this.coapMessage = coapMessage;
+        this.remoteSocketAddress = remoteSocketAddress;
+        this.stopped = false;
+    }
+
+    public ChannelHandlerContext getChannelHandlerContext(){
+        return this.ctx;
+    }
+
+    public CoapMessage getCoapMessage(){
+        return this.coapMessage;
+    }
+
+    public InetSocketAddress getRemoteSocketAddress() {
+        return remoteSocketAddress;
+    }
+
+    public boolean isStopped() {
+        return stopped;
+    }
+
+    public void stop(){
+        this.stopped = true;
+    }
+
+    public int increaseRetransmissionCount(){
+        return ++retransmissionCount;
+    }
+
+    @Override
+    public String toString() {
+        return "Retransmission no. " + retransmissionCount + " for " + coapMessage;
+    }
+}

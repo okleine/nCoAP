@@ -81,73 +81,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                 TreeMultimap.create(Ordering.<Long>natural(), Ordering.<MessageRetransmission>arbitrary());
 
         //Schedule retransmission task
-        executorService.scheduleAtFixedRate(new Runnable(){
-
-            @Override
-            public void run() {
-                long now = System.currentTimeMillis();
-
-                synchronized (monitor){
-                    Iterator<Map.Entry<Long, Collection<MessageRetransmission>>> actualRetransmissions =
-                    retransmissionSchedule.asMap().headMap(now, true).entrySet().iterator();
-
-                    Multimap<Long, MessageRetransmission> subsequentRetransmissions = HashMultimap.create();
-
-                    while(actualRetransmissions.hasNext()){
-                        Map.Entry<Long, Collection<MessageRetransmission>> part = actualRetransmissions.next();
-
-                        for(MessageRetransmission retransmission : part.getValue()){
-                            if(!retransmission.isStopped()){
-
-                                final ChannelHandlerContext ctx = retransmission.getChannelHandlerContext();
-                                final CoapMessage coapMessage = retransmission.getCoapMessage();
-                                final InetSocketAddress remoteSocketAddress = retransmission.getRemoteSocketAddress();
-
-                                ChannelFuture future =
-                                        Channels.future(retransmission.getChannelHandlerContext().getChannel());
-
-                                Channels.write(ctx, future, coapMessage, remoteSocketAddress);
-
-                                //Create time for next retransmission
-                                int counter = retransmission.increaseRetransmissionCount();
-                                long delay = (long)(Math.pow(2, counter) * ACK_TIMEOUT_MILLIS *
-                                        (1 + RANDOM.nextDouble() / 2));
-
-                                subsequentRetransmissions.put(now + delay, retransmission);
-
-                                future.addListener(new ChannelFutureListener() {
-                                    @Override
-                                    public void operationComplete(ChannelFuture future) throws Exception {
-                                        if(future.isSuccess()){
-                                            InternalMessageRetransmittedMessage internalMessage =
-                                                    new InternalMessageRetransmittedMessage(remoteSocketAddress,
-                                                            coapMessage.getToken());
-
-                                            Channels.fireMessageReceived(ctx, internalMessage);
-                                        }
-                                        else{
-                                            log.error("This should never happen!", future.getCause());
-                                        }
-                                    }
-                                });
-                            }
-
-                            else{
-                                owingRetransmissions.remove(
-                                        retransmission.getRemoteSocketAddress(),
-                                        retransmission.coapMessage.getMessageID()
-                                );
-                            }
-                        }
-
-                        actualRetransmissions.remove();
-                    }
-
-                    retransmissionSchedule.putAll(subsequentRetransmissions);
-                }
-            }
-
-        }, 500, 500, TimeUnit.MILLISECONDS);
+        executorService.scheduleAtFixedRate(new RetransmissionTask(), 500, 500, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -196,10 +130,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         }
     }
 
-    private long createNextRetransmissionDelay(int retransmissionNo){
-        return (long)(Math.pow(2, retransmissionNo) * ACK_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() / 2));
-    }
-
 
     private void ensureTransmissionReliability(ChannelHandlerContext ctx, CoapMessage coapMessage,
                                                InetSocketAddress remoteSocketAddress)
@@ -216,7 +146,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             owingRetransmissions.put(remoteSocketAddress, coapMessage.getMessageID(), retransmission);
         }
     }
-
 
 
     private MessageRetransmission scheduleFirstRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage,
@@ -237,6 +166,12 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
         return retransmission;
     }
+
+
+    private long createNextRetransmissionDelay(int retransmissionNo){
+        return (long)(Math.pow(2, retransmissionNo) * ACK_TIMEOUT_MILLIS * (1 + RANDOM.nextDouble() / 2));
+    }
+
 
     /**
      * This method is invoked with an upstream message event. If the message has one of the codes ACK or RESET it is
@@ -359,50 +294,70 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     }
 
 
-    private class MessageRetransmission{
-
-        private ChannelHandlerContext ctx;
-        private CoapMessage coapMessage;
-        private InetSocketAddress remoteSocketAddress;
-        private int retransmissionCount;
-        private boolean stopped;
-
-
-        public MessageRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage,
-                                     InetSocketAddress remoteSocketAddress){
-            this.ctx = ctx;
-            this.coapMessage = coapMessage;
-            this.remoteSocketAddress = remoteSocketAddress;
-            this.stopped = false;
-        }
-
-        public ChannelHandlerContext getChannelHandlerContext(){
-            return this.ctx;
-        }
-
-        public CoapMessage getCoapMessage(){
-            return this.coapMessage;
-        }
-
-        public InetSocketAddress getRemoteSocketAddress() {
-            return remoteSocketAddress;
-        }
-
-        public boolean isStopped() {
-            return stopped;
-        }
-
-        public void stop(){
-            this.stopped = true;
-        }
-
-        public int increaseRetransmissionCount(){
-            return ++retransmissionCount;
-        }
-
+    private class RetransmissionTask implements Runnable{
         @Override
-        public String toString() {
-            return "Retransmission no. " + retransmissionCount + " for " + coapMessage;
+        public void run() {
+            long now = System.currentTimeMillis();
+
+            synchronized (monitor){
+                Iterator<Map.Entry<Long, Collection<MessageRetransmission>>> actualRetransmissions =
+                        retransmissionSchedule.asMap().headMap(now, true).entrySet().iterator();
+
+                Multimap<Long, MessageRetransmission> subsequentRetransmissions = HashMultimap.create();
+
+                while(actualRetransmissions.hasNext()){
+                    Map.Entry<Long, Collection<MessageRetransmission>> part = actualRetransmissions.next();
+
+                    for(MessageRetransmission retransmission : part.getValue()){
+                        if(!retransmission.isStopped()){
+
+                            final ChannelHandlerContext ctx = retransmission.getChannelHandlerContext();
+                            final CoapMessage coapMessage = retransmission.getCoapMessage();
+                            final InetSocketAddress remoteSocketAddress = retransmission.getRemoteSocketAddress();
+
+                            ChannelFuture future =
+                                    Channels.future(retransmission.getChannelHandlerContext().getChannel());
+
+                            Channels.write(ctx, future, coapMessage, remoteSocketAddress);
+
+                            //Create time for next retransmission
+                            int counter = retransmission.increaseRetransmissionCount();
+                            long delay = (long)(Math.pow(2, counter) * ACK_TIMEOUT_MILLIS *
+                                    (1 + RANDOM.nextDouble() / 2));
+
+                            subsequentRetransmissions.put(part.getKey() + delay, retransmission);
+
+                            future.addListener(new ChannelFutureListener() {
+                                @Override
+                                public void operationComplete(ChannelFuture future) throws Exception {
+                                    if(future.isSuccess()){
+                                        InternalMessageRetransmittedMessage internalMessage =
+                                                new InternalMessageRetransmittedMessage(remoteSocketAddress,
+                                                        coapMessage.getToken());
+
+                                        Channels.fireMessageReceived(ctx, internalMessage);
+                                    }
+                                    else{
+                                        log.error("This should never happen!", future.getCause());
+                                    }
+                                }
+                            });
+                        }
+
+                        else{
+                            owingRetransmissions.remove(
+                                    retransmission.getRemoteSocketAddress(),
+                                    retransmission.getCoapMessage().getMessageID()
+                            );
+                        }
+                    }
+
+                    actualRetransmissions.remove();
+                }
+
+                retransmissionSchedule.putAll(subsequentRetransmissions);
+            }
         }
     }
+
 }
