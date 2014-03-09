@@ -22,28 +22,28 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.observe;
-
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
-
-import java.net.InetSocketAddress;
-
-/**
-* Interface to be implemented by instances of {@link CoapResponseProcessor} to get informed if an running
-* observation timed out because of a max-age expiry. Observable CoAP resources are supposed to send a new
-* update notification when either it's status changed or max-age of the previous update notification is about
-* to exceed.
-*
-* @author Oliver Kleine
-*/
-public interface ObservationTimeoutProcessor extends CoapResponseProcessor{
-
-    /**
-     * This method is automatically invoked by the nCoap framework if an observerd resource did
-     * not send a follow-up update notification after max-age expiry of the previous update notification
-     *
-     * @param remoteAddress the {@link InetSocketAddress} of the host of the observed webservice
-     */
-    public void processObservationTimeout(InetSocketAddress remoteAddress);
-
-}
+//package de.uniluebeck.itm.ncoap.communication.observe;
+//
+//import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+//
+//import java.net.InetSocketAddress;
+//
+///**
+//* Interface to be implemented by instances of {@link CoapResponseProcessor} to get informed if an running
+//* observation timed out because of a max-age expiry. Observable CoAP resources are supposed to send a new
+//* update notification when either it's status changed or max-age of the previous update notification is about
+//* to exceed.
+//*
+//* @author Oliver Kleine
+//*/
+//public interface ObservationTimeoutProcessor extends CoapResponseProcessor{
+//
+//    /**
+//     * This method is automatically invoked by the nCoap framework if an observerd resource did
+//     * not send a follow-up update notification after max-age expiry of the previous update notification
+//     *
+//     * @param remoteAddress the {@link InetSocketAddress} of the host of the observed webservice
+//     */
+//    public void processObservationTimeout(InetSocketAddress remoteAddress);
+//
+//}

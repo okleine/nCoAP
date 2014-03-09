@@ -22,39 +22,39 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.observe;
-
-import java.net.InetSocketAddress;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-
-/**
-* Internal message to be sent downstream, e.g. from the {@link CoapClientApplication} if an observation timed out,
-* i.e. there was no follow-up update notification from the observed resource within the max-age period of the
-* previous update-notification.
-*
-* @author Oliver Kleine
-*/
-public class InternalStopUpdateNotificationRetransmissionMessage {
-
-    private InetSocketAddress remoteSocketAddress;
-    private int messageID;
-
-
-    public InternalStopUpdateNotificationRetransmissionMessage(InetSocketAddress remoteSocketAddress, int messageID){
-
-        this.remoteSocketAddress = remoteSocketAddress;
-        this.messageID = messageID;
-    }
-
-    /**
-     * Returns the {@link InetSocketAddress} of the host that hosts the observed service
-     * @return the {@link InetSocketAddress} of the host that hosts the observed service
-     */
-    public InetSocketAddress getRemoteSocketAddress() {
-        return this.remoteSocketAddress;
-    }
-
-    public int getMessageID() {
-        return this.messageID;
-    }
-}
+//package de.uniluebeck.itm.ncoap.communication.observe;
+//
+//import java.net.InetSocketAddress;
+//import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+//
+///**
+//* Internal message to be sent downstream, e.g. from the {@link CoapClientApplication} if an observation timed out,
+//* i.e. there was no follow-up update notification from the observed resource within the max-age period of the
+//* previous update-notification.
+//*
+//* @author Oliver Kleine
+//*/
+//public class InternalStopUpdateNotificationRetransmissionMessage {
+//
+//    private InetSocketAddress remoteEndpoint;
+//    private int messageID;
+//
+//
+//    public InternalStopUpdateNotificationRetransmissionMessage(InetSocketAddress remoteEndpoint, int messageID){
+//
+//        this.remoteEndpoint = remoteEndpoint;
+//        this.messageID = messageID;
+//    }
+//
+//    /**
+//     * Returns the {@link InetSocketAddress} of the host that hosts the observed service
+//     * @return the {@link InetSocketAddress} of the host that hosts the observed service
+//     */
+//    public InetSocketAddress getRemoteEndpoint() {
+//        return this.remoteEndpoint;
+//    }
+//
+//    public int getMessageID() {
+//        return this.messageID;
+//    }
+//}

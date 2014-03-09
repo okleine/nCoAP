@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.application.Token;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +91,7 @@ public class CoapResponse extends CoapMessage {
 
     public void setEtag(byte[] etag) throws InvalidOptionException {
         try {
-            this.addOpaqueOption(Option.Name.ETAG, etag);
+            this.addOpaqueOption(OptionValue.Name.ETAG, etag);
         }
         catch (UnknownOptionException e) {
             log.error("This should never happen.", e);
@@ -100,26 +100,26 @@ public class CoapResponse extends CoapMessage {
 
 
     public byte[] getEtag(){
-        if(options.containsKey(Option.Name.ETAG))
-            return ((OpaqueOption) options.get(Option.Name.ETAG).iterator().next()).getDecodedValue();
+        if(options.containsKey(OptionValue.Name.ETAG))
+            return ((OpaqueOptionValue) options.get(OptionValue.Name.ETAG).iterator().next()).getDecodedValue();
         else
             return null;
     }
 
     /**
-     * Adds an {@link Option.Name#OBSERVE} option with the given sequence number. The value of the option will
+     * Adds an {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option with the given sequence number. The value of the option will
      * correspond to the 3 least significant bytes of a (big endian) byte representation of the given sequence number,
      * i.e. a given sequence number of <code>2^24 + 1</code> leads to a value of <code>1</code>.
      *
-     * <b>Note:</b> This method will override a possibly previously contained {@link Option.Name#OBSERVE} option.
+     * <b>Note:</b> This method will override a possibly previously contained {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option.
      *
-     * @param sequenceNumber the sequence number for the {@link Option.Name#OBSERVE} option to be set.
+     * @param sequenceNumber the sequence number for the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option to be set.
      */
     public void setObservationSequenceNumber(long sequenceNumber){
         try {
-            this.removeOptions(Option.Name.OBSERVE);
+            this.removeOptions(OptionValue.Name.OBSERVE);
             sequenceNumber = sequenceNumber & 0xFFFFFF;
-            this.addUintOption(Option.Name.OBSERVE, sequenceNumber);
+            this.addUintOption(OptionValue.Name.OBSERVE, sequenceNumber);
         }
         catch (UnknownOptionException e){
             log.error("This should never happen.", e);
@@ -131,14 +131,14 @@ public class CoapResponse extends CoapMessage {
 
 
     public long getObservationSequenceNumber(){
-        if(!options.containsKey(Option.Name.OBSERVE))
-            return UintOption.NOT_SET;
+        if(!options.containsKey(OptionValue.Name.OBSERVE))
+            return UintOptionValue.NOT_SET;
         else
-            return (Long) options.get(Option.Name.OBSERVE).iterator().next().getDecodedValue();
+            return (Long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
     }
 
     public boolean isUpdateNotification(){
-        return this.getObservationSequenceNumber() != UintOption.NOT_SET;
+        return this.getObservationSequenceNumber() != UintOptionValue.NOT_SET;
     }
 
     /**
@@ -152,8 +152,8 @@ public class CoapResponse extends CoapMessage {
      */
     public void setLocationURI(URI locationURI) throws InvalidOptionException {
 
-        options.removeAll(Option.Name.LOCATION_PATH);
-        options.removeAll(Option.Name.LOCATION_QUERY);
+        options.removeAll(OptionValue.Name.LOCATION_PATH);
+        options.removeAll(OptionValue.Name.LOCATION_QUERY);
 
         String locationPath = locationURI.getRawPath();
         String locationQuery = locationURI.getRawQuery();
@@ -165,17 +165,17 @@ public class CoapResponse extends CoapMessage {
                     locationPath = locationPath.substring(1);
 
                 for(String pathComponent : locationPath.split("/"))
-                    this.addStringOption(Option.Name.LOCATION_PATH, pathComponent);
+                    this.addStringOption(OptionValue.Name.LOCATION_PATH, pathComponent);
             }
 
             if(locationQuery != null){
                 for(String queryComponent : locationQuery.split("&"))
-                    this.addStringOption(Option.Name.LOCATION_QUERY, queryComponent);
+                    this.addStringOption(OptionValue.Name.LOCATION_QUERY, queryComponent);
             }
         }
         catch(InvalidOptionException e){
-            options.removeAll(Option.Name.LOCATION_PATH);
-            options.removeAll(Option.Name.LOCATION_QUERY);
+            options.removeAll(OptionValue.Name.LOCATION_PATH);
+            options.removeAll(OptionValue.Name.LOCATION_QUERY);
             throw e;
         }
         catch(UnknownOptionException e){
@@ -197,25 +197,25 @@ public class CoapResponse extends CoapMessage {
         //Reconstruct path
         StringBuilder locationPath = new StringBuilder();
 
-        if(options.containsKey(Option.Name.LOCATION_PATH)){
-            for (Option option : options.get(Option.Name.LOCATION_PATH))
-                locationPath.append("/").append(((StringOption) option).getDecodedValue());
+        if(options.containsKey(OptionValue.Name.LOCATION_PATH)){
+            for (OptionValue optionValue : options.get(OptionValue.Name.LOCATION_PATH))
+                locationPath.append("/").append(((StringOptionValue) optionValue).getDecodedValue());
         }
 
        //Reconstruct query
         StringBuffer locationQuery = new StringBuffer();
 
-        if(options.containsKey(Option.Name.LOCATION_QUERY)){
-            Iterator<Option> queryComponentIterator = options.get(Option.Name.LOCATION_QUERY).iterator();
-            locationQuery.append(((StringOption) queryComponentIterator.next()).getDecodedValue());
+        if(options.containsKey(OptionValue.Name.LOCATION_QUERY)){
+            Iterator<OptionValue> queryComponentIterator = options.get(OptionValue.Name.LOCATION_QUERY).iterator();
+            locationQuery.append(((StringOptionValue) queryComponentIterator.next()).getDecodedValue());
             while(queryComponentIterator.hasNext())
-                locationQuery.append("&" + ((StringOption) queryComponentIterator.next()).getDecodedValue());
+                locationQuery.append("&" + ((StringOptionValue) queryComponentIterator.next()).getDecodedValue());
         }
 
         if(locationPath.length() == 0 && locationQuery.length() == 0)
             return null;
 
-        return new URI(null, null, null, (int) UintOption.NOT_SET, locationPath.toString(), locationQuery.toString(),
+        return new URI(null, null, null, (int) UintOptionValue.NOT_SET, locationPath.toString(), locationQuery.toString(),
                 null);
     }
 

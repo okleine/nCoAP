@@ -22,17 +22,27 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application;
-
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 06.03.14.
+ * Created by olli on 07.03.14.
  */
-public interface NoTokenAvailableProcessor extends CoapResponseProcessor{
+public class IncomingReliableMessageExchange extends IncomingMessageExchange{
 
-    public void processNoTokenAvailable(InetSocketAddress remoteSocketAddress);
+    private boolean acknowledgementSent;
 
+    public IncomingReliableMessageExchange(InetSocketAddress remoteEndpoint, int messageID) {
+        super(remoteEndpoint, messageID);
+        this.acknowledgementSent = false;
+    }
+
+    public boolean isAcknowledgementSent(){
+        return this.acknowledgementSent;
+    }
+
+    public void setAcknowledgementSent(){
+        this.acknowledgementSent = true;
+    }
 }

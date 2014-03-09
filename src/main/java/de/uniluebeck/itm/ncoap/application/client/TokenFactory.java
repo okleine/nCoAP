@@ -23,20 +23,22 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uniluebeck.itm.ncoap.application;
+package de.uniluebeck.itm.ncoap.application.client;
 
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseDispatcher;
 import com.google.common.base.Supplier;
-import com.google.common.collect.*;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SortedSetMultimap;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.TreeSet;
 
 /**
  * The TokenFactory generates tokens to match incoming responses with open requests and enable the
@@ -46,7 +48,7 @@ import java.util.*;
  * a {@link Token} instances where {@link Token#getBytes()} returns an empty byte array is different from a
  * {@link Token} where {@link Token#getBytes()} returns a byte array containing one "zero byte" (all bits set to 0).
  * Furthermore, both of these {@link Token}s differ from another {@link Token} that is backed by a byte array
- * containing of two "zero bytes" and so on...
+ * containing two "zero bytes" and so on...
  *
  * This leads to 257 (<code>(2^8) + 1</code>) different tokens for a maximum token length of 1 or 65793 different
  * tokens (<code>(2^16) + (2^8) + 1</code>) for a maximum token length of 2 and so on and so forth...
@@ -59,9 +61,7 @@ public class TokenFactory {
 
     private int maxTokenLength;
 
-
     private SortedSetMultimap<InetSocketAddress, Token> usedTokens;
-//    private Multimap<InetSocketAddress, Token> releasedTokens;
 
 
     /**
@@ -82,7 +82,7 @@ public class TokenFactory {
         };
 
         usedTokens = Multimaps.newSortedSetMultimap(new HashMap<InetSocketAddress, Collection<Token>>(), factory);
-//        releasedTokens = HashMultimap.create();
+
     }
 
 
@@ -101,11 +101,7 @@ public class TokenFactory {
      */
     public synchronized Token getNextToken(InetSocketAddress remoteSocketAddress) throws NoTokenAvailableException {
 
-        Token nextToken = null;
-//        Token nextToken = getNextReleasedToken(remoteSocketAddress);
-
-        if(nextToken == null)
-            nextToken = getNextTokenInOrder(remoteSocketAddress);
+        Token nextToken = getNextTokenInOrder(remoteSocketAddress);
 
         if(nextToken == null){
             throw new NoTokenAvailableException(remoteSocketAddress);
@@ -115,25 +111,6 @@ public class TokenFactory {
             return nextToken;
         }
     }
-
-
-//    private Token getNextReleasedToken(InetSocketAddress remoteSocketAddress){
-//        if(!releasedTokens.get(remoteSocketAddress).isEmpty()){
-//            Token token = releasedTokens.get(remoteSocketAddress).iterator().next();
-//
-//            if(!releasedTokens.remove(remoteSocketAddress, token))
-//                log.error("Could not remove from released Tokens: {} for {}", token, remoteSocketAddress);
-//            else
-//                log.debug("Token {} for {} was released and will now be re-used.", token, remoteSocketAddress);
-//
-//            return token;
-//        }
-//        else{
-//            log.debug("No released token found for {}", remoteSocketAddress);
-//            return null;
-//        }
-//    }
-
 
 
     private Token getNextTokenInOrder(InetSocketAddress remoteSocketAddress){
@@ -147,7 +124,6 @@ public class TokenFactory {
 
         return result;
     }
-
 
 
     /**
@@ -165,64 +141,21 @@ public class TokenFactory {
                     new Object[]{token, token.getBytes().length, remoteSocketAddress,
                             usedTokens.get(remoteSocketAddress).size()});
 
-//            if(usedTokens.get(remoteSocketAddress).size() == 0)
-//                releasedTokens.removeAll(remoteSocketAddress);
-//
-//            else
-//                if(!releasedTokens.put(remoteSocketAddress, token))
-//                    log.error("Token {} from {} was already released!!!", token, remoteSocketAddress);
-
             return true;
         }
 
         else{
-            log.warn("Could not pass back token {} (length: {}) from {}. (Still {} tokens in use.)",
+            log.error("Could not pass back token {} (length: {}) from {}. (Still {} tokens in use.)",
                     new Object[]{token, token.getBytes().length, remoteSocketAddress,
                             usedTokens.get(remoteSocketAddress).size()});
             return false;
         }
     }
 
-////            Collection<SettableFuture<Token>> futures = waitingTokenFutures.get(remoteSocketAddress);
-////
-////            //If there is a future waiting for this token immediately re-use the released token
-////            if(!futures.isEmpty()){
-////                SettableFuture<Token> tokenFuture = futures.iterator().next();
-////                if(!waitingTokenFutures.remove(remoteSocketAddress, tokenFuture))
-////                    log.error("Could not remove token future for {}.", remoteSocketAddress);
-////
-////                if(!usedTokens.put(remoteSocketAddress, token))
-////                    log.error("Token {} for {} was already in use!!!", token, remoteSocketAddress);
-////
-////                log.debug("Reuse token {} (length: {}) for {}. (Now {} tokens in use.)",
-////                        new Object[]{token, token.getBytes().length, remoteSocketAddress,
-////                                usedTokens.get(remoteSocketAddress).size()});
-////
-////                tokenFuture.set(token);
-////            }
-////
-////            //If there is no future waiting for a token put it on the list of released tokens
-////            else{
-//                log.debug("Put token {} for {} on list of released tokens.", token, remoteSocketAddress);
-//                if(!releasedTokens.put(remoteSocketAddress, token))
-//                    log.error("Token {} from {} was already released!!!");
-//            }
-//
-//            return true;
-//        }
-//        else{
-//            log.warn("Could not pass back token {} (length: {}) from {}. (Still {} tokens in use.)",
-//                    new Object[]{token, token.getBytes().length, remoteSocketAddress,
-//                            usedTokens.get(remoteSocketAddress).size()});
-//            return false;
-//        }
-//    }
-
 
     private Token getSuccessor(Token token){
 
         boolean allBitsSet = true;
-
 
         //Check if all bits in the given byte array are set to 1
         for(byte b : token.getBytes()){

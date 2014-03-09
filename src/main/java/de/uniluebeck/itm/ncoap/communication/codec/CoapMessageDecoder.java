@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.codec;
 
-import de.uniluebeck.itm.ncoap.application.Token;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -244,22 +244,22 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
                 byte[] optionValue = new byte[optionLength];
                 buffer.readBytes(optionValue);
 
-                switch(Option.getOptionType(actualOptionNumber)){
+                switch(OptionValue.getOptionType(actualOptionNumber)){
 
-                    case Option.Type.EMPTY:
-                        coapMessage.addOption(actualOptionNumber, new EmptyOption(actualOptionNumber));
+                    case OptionValue.Type.EMPTY:
+                        coapMessage.addOption(actualOptionNumber, new EmptyOptionValue(actualOptionNumber));
                         break;
 
-                    case Option.Type.OPAQUE:
-                        coapMessage.addOption(actualOptionNumber, new OpaqueOption(actualOptionNumber, optionValue));
+                    case OptionValue.Type.OPAQUE:
+                        coapMessage.addOption(actualOptionNumber, new OpaqueOptionValue(actualOptionNumber, optionValue));
                         break;
 
-                    case Option.Type.STRING:
-                        coapMessage.addOption(actualOptionNumber, new StringOption(actualOptionNumber, optionValue));
+                    case OptionValue.Type.STRING:
+                        coapMessage.addOption(actualOptionNumber, new StringOptionValue(actualOptionNumber, optionValue));
                         break;
 
-                    case Option.Type.UINT:
-                        coapMessage.addOption(actualOptionNumber, new UintOption(actualOptionNumber, optionValue));
+                    case OptionValue.Type.UINT:
+                        coapMessage.addOption(actualOptionNumber, new UintOptionValue(actualOptionNumber, optionValue));
                         break;
 
                     default:
@@ -274,7 +274,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
                     log.warn("Silently ignore option no. " + e.getOptionNumber() + " in incoming response.");
                 }
 
-                else if(Option.isCritical(actualOptionNumber)){
+                else if(OptionValue.isCritical(actualOptionNumber)){
                     throw e;
                 }
 
@@ -312,7 +312,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
                     log.warn("Send empty RST: {}", emptyReset);
                     sendMessage(ctx, ex.getRemoteSocketAddress(), emptyReset);
                 }
-                catch(InvalidHeaderException e){
+                catch(IllegalArgumentException e){
                     log.error("This should never happen!", e);
                 }
             }
@@ -334,13 +334,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler{
                 log.warn("Send BAD OPTION response: {}", coapResponse);
                 sendMessage(ctx, ex.getRemoteSocketAddress(), coapResponse);
             }
-            catch (InvalidHeaderException e) {
-                log.error("This should never happen (Could not create error response for not-handable option)!", e);
-            }
-            catch (InvalidOptionException e) {
-                log.error("This should never happen (Could not create error response for not-handable option)!", e);
-            }
-            catch (InvalidMessageException e) {
+            catch (InvalidHeaderException | InvalidOptionException | InvalidMessageException e) {
                 log.error("This should never happen (Could not create error response for not-handable option)!", e);
             }
         }

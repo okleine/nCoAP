@@ -24,9 +24,8 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.ncoap.application.Token;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 import java.net.InetSocketAddress;
 
@@ -41,13 +40,16 @@ public class InternalResetReceivedMessage {
 
     private InetSocketAddress remoteSocketAddress;
     private Token token;
+    private CoapMessage resetMessage;
 
     /**
      * @param token the token of the confirmed message
      */
-    public InternalResetReceivedMessage(InetSocketAddress remoteSocketAddress, Token token){
+    public InternalResetReceivedMessage(InetSocketAddress remoteSocketAddress, Token token,
+                                        CoapMessage resetMessage){
         this.remoteSocketAddress = remoteSocketAddress;
         this.token = token;
+        this.resetMessage = resetMessage;
     }
 
     /**
@@ -65,5 +67,10 @@ public class InternalResetReceivedMessage {
 
     public InetSocketAddress getRemoteSocketAddress() {
         return remoteSocketAddress;
+    }
+
+
+    public CoapMessage getResetMessage() {
+        return resetMessage;
     }
 }

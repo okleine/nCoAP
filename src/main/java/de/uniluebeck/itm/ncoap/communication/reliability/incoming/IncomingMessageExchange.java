@@ -22,33 +22,24 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
+package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.communication.reliability.MessageExchange;
+
 import java.net.InetSocketAddress;
 
 /**
- * Interface to be implemented by {@link CoapResponseProcessor} instances to be informed when a {@link CoapRequest}
- * could not be sent to a remote CoAP endpoint because all message IDs for that remote endpoint are currently
- * allocated.
- *
- * @author Oliver Kleine
+ * Created by olli on 07.03.14.
  */
-public interface NoMessageIDAvailableProcessor extends CoapResponseProcessor{
+public class IncomingMessageExchange extends MessageExchange {
 
-    /**
-     * This method is invoked by the framework if a {@link CoapRequest} could not be sent to a remote
-     * CoAP endpoint because all 65536 message IDs (the number of available message IDs per communication partner)
-     * have been used for previous {@link CoapRequest}s and none of them has retired, yet.
-     *
-     * A used message ID retires, i.e. is usable for a new {@link CoapRequest}
-     * {@link MessageIDFactory#EXCHANGE_LIFETIME} seconds (247) after it was allocated.
-     *
-     * @param remoteSocketAddress the desired recipient of the {@link CoapRequest} that could not be transmitted.
-     * @param waitingPeriod the number of milliseconds to wait until the next message ID for the remote CoAP endpoint
-     *                      retires, e.g. is ready to be used for a new request.
-     */
-    public void handleNoMessageIDAvailable(InetSocketAddress remoteSocketAddress, long waitingPeriod);
+    public IncomingMessageExchange(InetSocketAddress remoteEndpoint, int messageID){
+        super(remoteEndpoint, messageID);
+    }
 
+
+    @Override
+    public boolean equals(Object object){
+        return object instanceof IncomingMessageExchange && super.equals(object);
+    }
 }

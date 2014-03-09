@@ -47,6 +47,7 @@ public class MessageIDFactory extends Observable {
      */
     public static final int EXCHANGE_LIFETIME = 247;
 
+    public static final int NON_LIFETIME = 145;
     /**
      * The number of different message IDs per remote CoAP endpoint (65536), i.e. there are at most 65536
      * communications with the same endpoint possible within {@link #EXCHANGE_LIFETIME} milliseconds.
@@ -55,7 +56,7 @@ public class MessageIDFactory extends Observable {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private Map<InetSocketAddress, Deque<RetiringMessageID>> retiringMessageIDs;
+    private Map<InetSocketAddress, Deque<AllocatedMessageID>> retiringMessageIDs;
 
     /**
      * @param executorService the {@link ScheduledExecutorService} to provide the thread for operations to
@@ -73,22 +74,22 @@ public class MessageIDFactory extends Observable {
                 synchronized (MessageIDFactory.this){
                     try{
 
-                        Iterator<Map.Entry<InetSocketAddress, Deque<RetiringMessageID>>> retirementsIterator =
+                        Iterator<Map.Entry<InetSocketAddress, Deque<AllocatedMessageID>>> retirementsIterator =
                                 retiringMessageIDs.entrySet().iterator();
 
                         while(retirementsIterator.hasNext()){
-                            Map.Entry<InetSocketAddress, Deque<RetiringMessageID>> retirementsForRemoteAddress
+                            Map.Entry<InetSocketAddress, Deque<AllocatedMessageID>> retirementsForRemoteAddress
                                     = retirementsIterator.next();
 
-                            Deque<RetiringMessageID> retiringMessageIDs = retirementsForRemoteAddress.getValue();
-                            while(!retiringMessageIDs.isEmpty()){
-                                RetiringMessageID retiringMessageID = retiringMessageIDs.getFirst();
+                            Deque<AllocatedMessageID> allocatedMessageIDs = retirementsForRemoteAddress.getValue();
+                            while(!allocatedMessageIDs.isEmpty()){
+                                AllocatedMessageID allocatedMessageID = allocatedMessageIDs.getFirst();
 
-                                if(retiringMessageID.getRetirementDate() > now)
+                                if(allocatedMessageID.getRetirementDate() > now)
                                     break;
 
                                 else{
-                                    RetiringMessageID retiredMessageID = retiringMessageIDs.removeFirst();
+                                    AllocatedMessageID retiredMessageID = allocatedMessageIDs.removeFirst();
 
                                     setChanged();
                                     notifyObservers(new Object[]{
@@ -98,7 +99,7 @@ public class MessageIDFactory extends Observable {
                                 }
                             }
 
-                            if(retiringMessageIDs.isEmpty())
+                            if(allocatedMessageIDs.isEmpty())
                                 retirementsIterator.remove();
 
 
@@ -114,59 +115,64 @@ public class MessageIDFactory extends Observable {
     }
 
     /**
+     * Returns a message ID to be used for outgoing {@link de.uniluebeck.itm.ncoap.message.CoapMessage}s and
+     * allocates this message ID for {@link #EXCHANGE_LIFETIME} seconds, i.e. the returned message ID will not
+     * be returned again within {@link #EXCHANGE_LIFETIME} seconds.
      *
-     * @param remoteSocketAddress
-     * @return
+     * @param remoteEndpoint the recipient of the message the returned message ID is supposed to be used for
+     *
+     * @return the message ID to be used for outgoing messages
      */
-    public synchronized int getNextMessageID(InetSocketAddress remoteSocketAddress)
+    public synchronized int getNextMessageID(InetSocketAddress remoteEndpoint)
             throws NoMessageIDAvailableException {
 
-        Deque<RetiringMessageID> retiringMessageIDsForRemoteAddress = retiringMessageIDs.get(remoteSocketAddress);
+        Deque<AllocatedMessageID> allocatedMessageIDsForRemoteAddreses = retiringMessageIDs.get(remoteEndpoint);
 
         //check if all message IDs are in use for the given endpoint
-        if(retiringMessageIDsForRemoteAddress != null && retiringMessageIDsForRemoteAddress.size() == MODULUS){
+        if(allocatedMessageIDsForRemoteAddreses != null && allocatedMessageIDsForRemoteAddreses.size() == MODULUS){
             long waitingPeriod =
-                    retiringMessageIDsForRemoteAddress.getFirst().getRetirementDate() - System.currentTimeMillis();
+                    allocatedMessageIDsForRemoteAddreses.getFirst().getRetirementDate() - System.currentTimeMillis();
 
-            throw new NoMessageIDAvailableException(remoteSocketAddress, waitingPeriod);
+            throw new NoMessageIDAvailableException(remoteEndpoint, waitingPeriod);
         }
 
         //there are message IDs available for the given endpoint
         else{
             int messageID = 0;
 
-            if(retiringMessageIDsForRemoteAddress != null && retiringMessageIDsForRemoteAddress.size() > 0)
-                    messageID = (retiringMessageIDsForRemoteAddress.getLast().getMessageID() + 1) % MODULUS;
+            if(allocatedMessageIDsForRemoteAddreses != null && allocatedMessageIDsForRemoteAddreses.size() > 0)
+                    messageID = (allocatedMessageIDsForRemoteAddreses.getLast().getMessageID() + 1) % MODULUS;
 
-            allocateMessageID(remoteSocketAddress, messageID);
+            allocateMessageID(remoteEndpoint, messageID);
 
             return messageID;
         }
     }
 
 
-    private void allocateMessageID(final InetSocketAddress remoteSocketAddress, final int messageID){
-        log.debug("Allocate message ID {} for {}", messageID, remoteSocketAddress);
+    private synchronized void allocateMessageID(InetSocketAddress remoteEndpoint, int messageID){
 
-        Deque<RetiringMessageID> retiringMessageIDsForRemoteAddress = retiringMessageIDs.get(remoteSocketAddress);
-        if(retiringMessageIDsForRemoteAddress == null){
-            retiringMessageIDsForRemoteAddress = new ArrayDeque<>();
-            retiringMessageIDs.put(remoteSocketAddress, retiringMessageIDsForRemoteAddress);
+        log.debug("Allocate message ID {} for {}", messageID, remoteEndpoint);
+
+        Deque<AllocatedMessageID> allocatedMessageIDsForRemoteAddreses = retiringMessageIDs.get(remoteEndpoint);
+        if(allocatedMessageIDsForRemoteAddreses == null){
+            allocatedMessageIDsForRemoteAddreses = new ArrayDeque<>();
+            retiringMessageIDs.put(remoteEndpoint, allocatedMessageIDsForRemoteAddreses);
         }
 
         long retirementDate = System.currentTimeMillis() + EXCHANGE_LIFETIME * 1000;
 
-        retiringMessageIDsForRemoteAddress.add(new RetiringMessageID(messageID, retirementDate));
+        allocatedMessageIDsForRemoteAddreses.add(new AllocatedMessageID(messageID, retirementDate));
     }
 
 
-    private class RetiringMessageID{
+    private class AllocatedMessageID {
 
         private Integer messageID;
         private Long retirementDate;
 
 
-        private RetiringMessageID(Integer messageID, Long retirementDate) {
+        private AllocatedMessageID(Integer messageID, Long retirementDate) {
             this.messageID = messageID;
             this.retirementDate = retirementDate;
         }

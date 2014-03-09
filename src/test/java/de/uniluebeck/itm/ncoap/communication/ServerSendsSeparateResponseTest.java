@@ -131,14 +131,14 @@
 //
 //
 //        //write request
-//        client.writeCoapRequest(request, responseProcessor);
+//        client.sendCoapRequest(request, responseProcessor);
 //
 //        //wait (2000 - epsilon) milliseconds
 //        Thread.sleep(1800);
 //
 //        //create and write empty ACK
 //        int messageID =
-//                endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().lastKey()).getMessageID();
+//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getMessageID();
 //        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
 //        endpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", client.getClientPort()));
 //
@@ -147,7 +147,7 @@
 //
 //        //create seperate response to be sent by the message receiver
 //        byte[] token =
-//                endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().lastKey()).getToken();
+//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getToken();
 //        seperateResponse.setToken(token);
 //
 //        //send seperate response
@@ -161,7 +161,7 @@
 //
 //    @Test
 //    public void testReceivedRequestEqualsSentRequest() {
-//        SortedMap<Long, CoapMessage> receivedRequests = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedRequests = endpoint.getReceivedCoapMessages();
 //        String message = "Written and received request do not equal";
 //        assertEquals(message, request, receivedRequests.get(receivedRequests.firstKey()));
 //    }
@@ -169,7 +169,7 @@
 //    @Test
 //    public void testEndpointReceivedTwoMessages() {
 //        String message = "Receiver received wrong number of messages";
-//        assertEquals(message, 2, endpoint.getReceivedMessages().values().size());
+//        assertEquals(message, 2, endpoint.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
@@ -180,7 +180,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageIsEmptyACK() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Second received message is not an EMPTY ACK";
 //        assertEquals(message, MessageCode.EMPTY, receivedMessage.getMessageCode());

@@ -26,10 +26,16 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.ncoap.application.TokenFactory;
+import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
+import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetProcessor;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.MessageType;
+import de.uniluebeck.itm.ncoap.message.MessageCode;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -41,13 +47,16 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.*;
 
 /**
-* An instance of {@link CoapClientApplication} is the entry point to send {@link CoapRequest}s. By
-* {@link #writeCoapRequest(CoapRequest, CoapResponseProcessor, InetSocketAddress)} it provides an
-* easy-to-use method to write CoAP requests to a server.
-*
-* Each instance of {@link CoapClientApplication} is automatically bound to a (random) available local port.
-*
-* @author Oliver Kleine
+ * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapMessage}s to a (remote)
+ * server or proxy.
+ * 
+ * With {@link #sendCoapRequest(CoapRequest, CoapResponseProcessor, InetSocketAddress)} it e.g. provides an
+ * easy-to-use method to write CoAP requests to a server.
+ * 
+ * Furthermore, with {@link #sendCoapPing(ResetProcessor, InetSocketAddress)} it provides a method to test if a remote
+ * CoAP endpoint (i.e. the CoAP application and not only the host(!)) is alive.
+ * 
+ * @author Oliver Kleine
 */
 public class CoapClientApplication {
 
@@ -60,6 +69,20 @@ public class CoapClientApplication {
 
     private String name;
 
+    /**
+     * Creates a new instance of {@link CoapClientApplication}.
+     * 
+     * @param name the name of the application (used for logging purposes)
+     * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
+     *             arbitrary port)
+     * @param numberOfThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
+     *                        if the given number is smaller then 4, the application will use 4 threads.
+     *                        
+     * @param maxTokenLength the maximum length of {@link Token}s to be created by the {@link TokenFactory}. The minimum
+     *                       length is <code>0</code>, the maximum length (and default value) is <code>8</code>. This
+     *                       can be used to limit the amount of parallel requests (see {@link TokenFactory} for
+     *                       details).
+     */
     public CoapClientApplication(String name, int port, int numberOfThreads, int maxTokenLength){
 
         this.name = name;
@@ -91,55 +114,108 @@ public class CoapClientApplication {
         //Create datagram channel
         this.channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(port));
 
+        //Set the ChannelHandlerContext for the outgoing reliability handler
+        OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler =
+                (OutgoingMessageReliabilityHandler) this.channel.getPipeline()
+                        .get(AbstractCoapChannelPipelineFactory.OUTGOING_MESSAGE_RELIABILITY_HANDLER);
+
+        outgoingMessageReliabilityHandler.setChannelHandlerContext(
+            this.channel.getPipeline()
+                    .getContext(AbstractCoapChannelPipelineFactory.OUTGOING_MESSAGE_RELIABILITY_HANDLER)
+        );
+
+        //Set the ChannelHandlerContext for the incoming reliability handler
+        IncomingMessageReliabilityHandler incomingMessageReliabilityHandler =
+                (IncomingMessageReliabilityHandler) this.channel.getPipeline()
+                        .get(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER);
+
+        incomingMessageReliabilityHandler.setChannelHandlerContext(
+                this.channel.getPipeline()
+                        .getContext(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER)
+        );
+
         log.info("New client channel created for address {}", this.channel.getLocalAddress());
     }
 
+    /**
+     * Creates a new instance.
+     * 
+     * Invokation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
+     * <code>"CoAP Client"</code> as parameter name.
+     *
+     * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
+     *             arbitrary port)
+     * @param numberOfThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
+     *                        if the given number is smaller then 4, the application will use 4 threads.
+     *
+     * @param maxTokenLength the maximum length of {@link Token}s to be created by the {@link TokenFactory}. The minimum
+     *                       length is <code>0</code>, the maximum length (and default value) is <code>8</code>. This
+     *                       can be used to limit the amount of parallel requests (see {@link TokenFactory} for
+     *                       details).
+     */
     public CoapClientApplication(int port, int numberOfThreads, int maxTokenLength){
         this("CoAP Client", port, numberOfThreads, maxTokenLength);
     }
 
 
     /**
-     * Creates a new instance of {@link CoapClientApplication} which is bound to a local socket and provides all
-     * functionality to send {@link CoapRequest}s and receive {@link CoapResponse}s.
+     * Creates a new instance of {@link CoapClientApplication} with default parameters.
+     * 
+     * Invokation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int)} with
+     * parameters <code>name = "CoAP Client"</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>.
      */
     public CoapClientApplication(){
-        this("Coap Client", 0, 8);
+        this("CoAP Client", 0, 8);
     }
 
+    /**
+     * Creates a new instance of {@link CoapClientApplication}.
+     *
+     * Invokation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int)} with
+     * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>.
+     */
     public CoapClientApplication(String name){
         this(name, 0, 8);
     }
 
+    /**
+     * Creates a new instance of {@link CoapClientApplication}.
+     *
+     * Invokation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
+     * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>, and
+     * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>
+     */
     public CoapClientApplication(String name, int port, int maxTokenLength){
         this(name, port, Runtime.getRuntime().availableProcessors() * 2, maxTokenLength);
     }
 
 
     /**
+     * Sends a {@link CoapRequest} to the given remote endpoint, i.e. CoAP server or proxy, and registers the
+     * given {@link CoapResponseProcessor} to be called upon reception of a {@link CoapResponse}.
      *
-     * @param coapRequest
-     * @param coapResponseProcessor
-     * @param remoteSocketAddress
+     * @param coapRequest the {@link CoapRequest} to be sent
+     * @param coapResponseProcessor the {@link CoapResponseProcessor} to process the corresponding response
+     * @param remoteEndpoint the desired recipient of the given {@link CoapRequest}
      */
-    public void writeCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor,
-                                 final InetSocketAddress remoteSocketAddress){
+    public void sendCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor,
+                                final InetSocketAddress remoteEndpoint){
 
         scheduledExecutorService.schedule(new Runnable(){
 
             @Override
             public void run() {
-                InternalSendCoapRequestMessage message =
-                        new InternalSendCoapRequestMessage(coapRequest, coapResponseProcessor);
+                InternalWrappedOutgoingCoapMessage message =
+                        new InternalWrappedOutgoingCoapMessage(coapRequest, coapResponseProcessor);
 
-                ChannelFuture future = Channels.write(channel, message, remoteSocketAddress);
+                ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
                         if(future.isSuccess()){
                             log.debug("Sent to {}:{}: {}",
-                                    new Object[]{remoteSocketAddress.getAddress().getHostAddress(),
-                                            remoteSocketAddress.getPort(), coapRequest});
+                                    new Object[]{remoteEndpoint.getAddress().getHostAddress(),
+                                            remoteEndpoint.getPort(), coapRequest});
 
                             if (coapResponseProcessor instanceof TransmissionInformationProcessor)
                                 ((TransmissionInformationProcessor) coapResponseProcessor).messageTransmitted(false);
@@ -152,7 +228,51 @@ public class CoapClientApplication {
     }
 
     /**
+     * Sends a CoAP PING, i.e. a {@link CoapMessage} with {@link MessageType.Name#CON} and
+     * {@link MessageCode.Name#EMPTY} to the given CoAP endpoint and registers the given {@link ResetProcessor}
+     * to be called upon reception of the corresponding {@link MessageType.Name#RST} message (CoAP PONG).
+     *
+     * @param resetProcessor the {@link ResetProcessor} to be called upon reception of the corresponding
+     *                       {@link MessageType.Name#RST} message.
+     * @param remoteEndpoint the desired recipient of the CoAP PING message
+     */
+    public void sendCoapPing(final ResetProcessor resetProcessor, final InetSocketAddress remoteEndpoint){
+
+        scheduledExecutorService.schedule(new Runnable(){
+
+            @Override
+            public void run() {
+
+                final CoapMessage resetMessage =
+                        CoapMessage.createEmptyConfirmableMessage(CoapMessage.MESSAGE_ID_UNDEFINED);
+
+                InternalWrappedOutgoingCoapMessage message =
+                        new InternalWrappedOutgoingCoapMessage(resetMessage, resetProcessor);
+
+                ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if(future.isSuccess()){
+                            log.debug("Sent to {}:{}: {}",
+                                    new Object[]{remoteEndpoint.getAddress().getHostAddress(),
+                                            remoteEndpoint.getPort(), resetMessage});
+
+                            if (resetProcessor instanceof TransmissionInformationProcessor)
+                                ((TransmissionInformationProcessor) resetProcessor).messageTransmitted(false);
+                        }
+                    }
+                });
+            }
+
+        }, 0, TimeUnit.MILLISECONDS);
+
+    }
+
+
+    /**
      * Returns the local port the {@link DatagramChannel} of this {@link CoapClientApplication} is bound to.
+     *
      * @return the local port the {@link DatagramChannel} of this {@link CoapClientApplication} is bound to.
      */
     public int getClientPort() {
@@ -160,10 +280,10 @@ public class CoapClientApplication {
     }
 
     /**
-     * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
-     * by this means free the port. All blocked or bound external resources are released.
+     * Shuts this {@link CoapClientApplication} down by closing its {@link DatagramChannel} which includes to unbind
+     * this {@link DatagramChannel} from the listening port and by this means free the port.
      */
-    public final void shutdown(){
+    public final ChannelFuture shutdown(){
         log.warn("Start to shutdown client...");
 
         //Close the datagram datagramChannel (includes unbind)
@@ -178,14 +298,15 @@ public class CoapClientApplication {
             }
         });
 
-        channelClosedFuture.awaitUninterruptibly().addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                log.info("Shutdown completed!");
-            }
-        });
+        return channelClosedFuture.awaitUninterruptibly();
+
     }
 
+    /**
+     * Returns the name of this {@link CoapClientApplication} instance
+     *
+     * @return the name of this {@link CoapClientApplication} instance
+     */
     public String getName() {
         return name;
     }

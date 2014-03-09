@@ -25,7 +25,10 @@
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
+import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -95,6 +98,25 @@ public class CoapServerApplication{
 
         webServiceNotFoundHandler.setWebserviceManager(webserviceManager);
 
+        //Set the ChannelHandlerContext for the outgoing reliability handler
+        OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler =
+                (OutgoingMessageReliabilityHandler) this.channel.getPipeline()
+                        .get(AbstractCoapChannelPipelineFactory.OUTGOING_MESSAGE_RELIABILITY_HANDLER);
+
+        outgoingMessageReliabilityHandler.setChannelHandlerContext(
+                this.channel.getPipeline()
+                        .getContext(AbstractCoapChannelPipelineFactory.OUTGOING_MESSAGE_RELIABILITY_HANDLER)
+        );
+
+        //Set the ChannelHandlerContext for the incoming reliability handler
+        IncomingMessageReliabilityHandler incomingMessageReliabilityHandler =
+                (IncomingMessageReliabilityHandler) this.channel.getPipeline()
+                        .get(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER);
+
+        incomingMessageReliabilityHandler.setChannelHandlerContext(
+                this.channel.getPipeline()
+                        .getContext(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER)
+        );
 
     }
 

@@ -132,7 +132,7 @@
 //
 //
 //        //write request
-//        client.writeCoapRequest(request, responseProcessor);
+//        client.sendCoapRequest(request, responseProcessor);
 //
 //        Thread.sleep(3000);
 //        service.setResourceStatus(2);

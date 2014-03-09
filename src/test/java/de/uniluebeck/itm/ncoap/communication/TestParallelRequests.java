@@ -126,7 +126,7 @@
 //    public void createTestScenario() throws Exception {
 //
 //        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-//            client.writeCoapRequest(requests[i], responseProcessors[i]);
+//            client.sendCoapRequest(requests[i], responseProcessors[i]);
 //        }
 //
 //        //await responses

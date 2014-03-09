@@ -22,33 +22,58 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
+package de.uniluebeck.itm.ncoap.communication;
 
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.ncoap.applicationcomponents.client.TestResponseProcessor;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.junit.Test;
+
 import java.net.InetSocketAddress;
 
-/**
- * Interface to be implemented by {@link CoapResponseProcessor} instances to be informed when a {@link CoapRequest}
- * could not be sent to a remote CoAP endpoint because all message IDs for that remote endpoint are currently
- * allocated.
- *
- * @author Oliver Kleine
- */
-public interface NoMessageIDAvailableProcessor extends CoapResponseProcessor{
+import static org.junit.Assert.assertFalse;
 
-    /**
-     * This method is invoked by the framework if a {@link CoapRequest} could not be sent to a remote
-     * CoAP endpoint because all 65536 message IDs (the number of available message IDs per communication partner)
-     * have been used for previous {@link CoapRequest}s and none of them has retired, yet.
-     *
-     * A used message ID retires, i.e. is usable for a new {@link CoapRequest}
-     * {@link MessageIDFactory#EXCHANGE_LIFETIME} seconds (247) after it was allocated.
-     *
-     * @param remoteSocketAddress the desired recipient of the {@link CoapRequest} that could not be transmitted.
-     * @param waitingPeriod the number of milliseconds to wait until the next message ID for the remote CoAP endpoint
-     *                      retires, e.g. is ready to be used for a new request.
-     */
-    public void handleNoMessageIDAvailable(InetSocketAddress remoteSocketAddress, long waitingPeriod);
+/**
+ * Created by olli on 08.03.14.
+ */
+public class ClientSendsCoapPing extends AbstractCoapCommunicationTest{
+
+    private static CoapClientApplication coapClientApplication;
+    private static TestResponseProcessor resetProcessor;
+    private static InetSocketAddress remoteEndpoint;
+
+    @Override
+    public void setupComponents() throws Exception {
+        coapClientApplication = new CoapClientApplication();
+        resetProcessor = new TestResponseProcessor();
+        remoteEndpoint = new InetSocketAddress("134.102.218.16", 5683);
+    }
+
+
+    @Override
+    public void createTestScenario() throws Exception {
+        coapClientApplication.sendCoapPing(resetProcessor, remoteEndpoint);
+
+        Thread.sleep(1000);
+    }
+
+
+    @Override
+    public void shutdownComponents() throws Exception {
+        coapClientApplication.shutdown();
+    }
+
+
+    @Override
+    public void setupLogging() throws Exception {
+        Logger.getLogger("de.uniluebeck.itm.ncoap.applicationcomponents").setLevel(Level.DEBUG);
+    }
+
+
+    @Test
+    public void testResetReceived(){
+        assertFalse("No RST (Pong) received.", resetProcessor.getResetReceptionTimes().isEmpty());
+    }
 
 }

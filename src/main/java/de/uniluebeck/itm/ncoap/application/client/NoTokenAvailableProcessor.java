@@ -22,23 +22,17 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application;
+package de.uniluebeck.itm.ncoap.application.client;
+
+import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
 
 import java.net.InetSocketAddress;
 
 /**
  * Created by olli on 06.03.14.
  */
-public class NoTokenAvailableException extends Exception {
+public interface NoTokenAvailableProcessor extends CoapResponseProcessor{
 
-    private InetSocketAddress remoteAddress;
+    public void processNoTokenAvailable(InetSocketAddress remoteSocketAddress);
 
-    public NoTokenAvailableException(InetSocketAddress remoteAddress){
-
-        this.remoteAddress = remoteAddress;
-    }
-
-    public InetSocketAddress getRemoteAddress() {
-        return remoteAddress;
-    }
 }

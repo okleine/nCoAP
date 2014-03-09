@@ -48,15 +48,16 @@
 */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.ncoap.application.Token;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.MessageType;
 
 import java.net.InetSocketAddress;
 
 /**
  * Instances of {@link InternalRetransmissionTimeoutMessage} are sent upstream by the
- * {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler} if a {@link CoapMessage} of type
- * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} was not acknowledged despite the maximum number of
+ * {@link OutgoingMessageReliabilityHandler} if a {@link CoapMessage} of type
+ * {@link MessageType.Name#CON} was not acknowledged despite the maximum number of
  * retransmission attempts.
  *
  * @author Oliver Kleine
@@ -66,9 +67,11 @@ public class InternalRetransmissionTimeoutMessage {
     private Token token;
     private InetSocketAddress remoteAddress;
 
+
     /**
      * @param token a long value representing the token of the outgoing confirmable {@link CoapMessage} that was not
      *              acknowledged by the recipient
+     *
      * @param remoteAddress the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that
      *                      did not acknowledge the reception
      */
@@ -76,6 +79,7 @@ public class InternalRetransmissionTimeoutMessage {
         this.token = token;
         this.remoteAddress = remoteAddress;
     }
+
 
     /**
      * Returns the token of the outgoing confirmable {@link CoapMessage} that was not acknowledged by the recipient
@@ -85,15 +89,18 @@ public class InternalRetransmissionTimeoutMessage {
         return token;
     }
 
+
     /**
      * Returns the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that did not
      * acknowledge the reception.
+     *
      * @return the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that did not
      * acknowledge the reception.
      */
     public InetSocketAddress getRemoteAddress() {
         return remoteAddress;
     }
+
 
     @Override
     public String toString(){

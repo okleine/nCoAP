@@ -34,12 +34,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 /**
- * {@link Option} is the abstract base class for CoAP options. It provides a number of useful static constants and methods
+ * {@link OptionValue} is the abstract base class for CoAP options. It provides a number of useful static constants and methods
  * as well as other methods to be inherited by extending classes.
  *
  * @author Oliver Kleine
  */
-public abstract class Option<T>{
+public abstract class OptionValue<T>{
 
     /**
      * Helper class to provide useful constants for available option types (basically for internal use)
@@ -350,38 +350,20 @@ public abstract class Option<T>{
     }
 
 
-//    public static Option createOption(int optionNumber, byte[] value) throws UnknownOptionException,
-//            InvalidOptionException {
-//
-//        switch(Option.getOptionType(optionNumber)){
-//            case OptionType.Name.STRING:
-//                return new StringOption(optionNumber, value);
-//            case OptionType.Name.UINT:
-//                return new UintOption(optionNumber, value);
-//            case OptionType.Name.OPAQUE:
-//                return new OpaqueOption(optionNumber, value);
-//            case OptionType.Name.EMPTY:
-//                return new EmptyOption(optionNumber);
-//            default:
-//                log.error("This should never happen!");
-//                throw new UnknownOptionException(optionNumber);
-//        }
-//    }
-    
     protected byte[] value;
 
     /**
-     * @param optionNumber the number of the {@link Option} to be created.
+     * @param optionNumber the number of the {@link OptionValue} to be created.
      * @param value the encoded value of the option to be created.
      *
-     * @throws InvalidOptionException if the {@link Option} instance could not be created because either the
+     * @throws InvalidOptionException if the {@link OptionValue} instance could not be created because either the
      * given value is the default value or the length of the given value exceeds the defined limits.
      *
      * @throws UnknownOptionException if the given option number is unknown to the nCoAP framework.
      */
-    protected Option(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+    protected OptionValue(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
 
-        if(Option.isDefaultValue(optionNumber, value))
+        if(OptionValue.isDefaultValue(optionNumber, value))
             throw new InvalidOptionException(optionNumber, "The given value is the default value. No option created.");
 
         if(getMinLength(optionNumber) > value.length || getMaxLength(optionNumber) < value.length)
@@ -392,7 +374,7 @@ public abstract class Option<T>{
     }
 
     /**
-     * Returns the encoded value of this {@link Option} as byte array. The way how to interpret the returned value
+     * Returns the encoded value of this {@link OptionValue} as byte array. The way how to interpret the returned value
      * depends on the {@link Type}. Usually it is more convenient to use {@link #getDecodedValue()} instead.
      *
      * @return the encoded value of this option as byte array
@@ -402,32 +384,29 @@ public abstract class Option<T>{
     }
 
     /**
-     * Returns the decoded value of this {@link Option} as an instance of {@link T}.
+     * Returns the decoded value of this {@link OptionValue} as an instance of {@link T}.
      *
-     * @return the decoded value of this {@link Option} as an instance of {@link T}
+     * @return the decoded value of this {@link OptionValue} as an instance of {@link T}
      */
     public abstract T getDecodedValue();
 
 
+    @Override
+    public abstract int hashCode();
+
     /**
-     * Returns <code>true</code> if the given object is an instance of {@link Option} and both byte arrays returned by
+     * Returns <code>true</code> if the given object is an instance of {@link OptionValue} and both byte arrays returned by
      * respective {@link #getValue()} method contain the same bytes, i.e. the same array length and the same byte
      * values in the same order.
      *
-     * @param object the object to check for equality with this instance of {@link Option}
+     * @param object the object to check for equality with this instance of {@link OptionValue}
      *
-     * @return <code>true</code> if the given object is an instance of {@link Option} and both byte arrays returned by
+     * @return <code>true</code> if the given object is an instance of {@link OptionValue} and both byte arrays returned by
      * respective {@link #getValue()} method contain the same bytes, i.e. the same array length and the same byte
      * values in the same order.
      */
     @Override
-    public boolean equals(Object object){
-        if(!(object instanceof Option))
-            return false;
-
-        Option other = (Option) object;
-        return Arrays.equals(this.getValue(), other.getValue());
-    }
+    public abstract boolean equals(Object object);
 
     /**
      * Returns a {@link String} representation of this option which is the same as

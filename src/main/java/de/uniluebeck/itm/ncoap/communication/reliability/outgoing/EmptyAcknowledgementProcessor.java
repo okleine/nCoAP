@@ -33,7 +33,7 @@ import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
 *
 * @author Oliver Kleine
 */
-public interface EmptyAcknowledgementProcessor {
+public interface EmptyAcknowledgementProcessor extends CoapResponseProcessor{
 
     /**
      * This method is invoked for an incoming empty
@@ -41,5 +41,5 @@ public interface EmptyAcknowledgementProcessor {
      * browser windows telling the user that the server has received the request but needs some time to
      * process it.
      */
-    public void processEmptyAcknowledgement(InternalEmptyAcknowledgementReceivedMessage message);
+    public void processEmptyAcknowledgement();
 }

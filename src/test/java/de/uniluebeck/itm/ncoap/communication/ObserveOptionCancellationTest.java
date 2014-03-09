@@ -189,7 +189,7 @@
 //
 //        //Write reset message to cancel observation
 //        int messageID =
-//                endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().lastKey()).getMessageID();
+//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getMessageID();
 //        endpoint.writeMessage(CoapMessage.createEmptyReset(messageID),
 //                        new InetSocketAddress("localhost", server.getServerPort()));
 //
@@ -202,12 +202,12 @@
 //    @Test
 //    public void testReceiverReceived5Messages() {
 //        String message = "Receiver did not receive 5 messages";
-//        assertEquals(message, 5, endpoint.getReceivedMessages().values().size());
+//        assertEquals(message, 5, endpoint.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testFirstReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //
 //        String message = "1st notification: MessageType is not ACK";
@@ -222,7 +222,7 @@
 //
 //    @Test
 //    public void testSecondReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //
@@ -241,7 +241,7 @@
 //
 //    @Test
 //    public void testThirdReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        timeKeys.next();
@@ -260,7 +260,7 @@
 //
 //    @Test
 //    public void test4thReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        timeKeys.next();
@@ -280,7 +280,7 @@
 //
 //    @Test
 //    public void test5thReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        timeKeys.next();
@@ -301,7 +301,7 @@
 //
 //    @Test
 //    public void testObserveResponseOptions(){
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //
 //        CoapResponse coapResponse1 = (CoapResponse) receivedMessages.get(timeKeys.next());
@@ -330,7 +330,7 @@
 //
 ////    @Test
 ////    public void testObserveOptions() {
-////        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
+////        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedCoapMessages();
 ////        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 ////        //reg1 notification1
 ////        CoapMessage receivedMessage1 = receivedMessages.get(timeKeys.next());
@@ -354,7 +354,7 @@
 ////
 ////    @Test
 ////    public void testFirstNotificationHasSameMsgID() {
-////        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
+////        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedCoapMessages();
 ////        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 ////        String message = "First notification Msg ID does not match with request Msg ID";
 //////        assertEquals(message, coapRequest.getMessageID(), receivedMessage.getMessageID());
@@ -362,7 +362,7 @@
 ////
 ////    @Test
 ////    public void testReg2NotificationsHaveTheSameToken() {
-////        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedMessages();
+////        SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedCoapMessages();
 ////        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 ////        CoapMessage reg1notification1 = receivedMessages.get(timeKeys.next());
 ////        timeKeys.next();

@@ -27,13 +27,11 @@ package de.uniluebeck.itm.ncoap.application.server;
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
-import de.uniluebeck.itm.ncoap.communication.observe.WebserviceObservationHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.handler.execution.ExecutionHandler;
-import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 import java.util.concurrent.ScheduledExecutorService;
 

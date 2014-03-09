@@ -32,35 +32,51 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 /**
- * This class contains all specific functionality for {@link Option} instances of {@link OptionType#UINT}. If there is
- * any need to access {@link Option} instances directly, e.g. to retrieve its value, one could either cast the option
- * to {@link UintOption} and call {@link #getDecodedValue()} or one could all {@link Option#getDecodedValue()} and
+ * This class contains all specific functionality for {@link OptionValue} instances with unsigned integer values. If there is
+ * any need to access {@link OptionValue} instances directly, e.g. to retrieve its value, one could either cast the option
+ * to {@link UintOptionValue} and call {@link #getDecodedValue()} or one could all {@link OptionValue#getDecodedValue()} and
  * cast the return value to {@link Long}.
  *
  * @author Oliver Kleine
  */
-public class UintOption extends Option<Long>{
+public class UintOptionValue extends OptionValue<Long> {
 
     /**
      * Corresponds to a value of <code>-1</code> to indicate that there is no value for that option set.
      */
     public static final long NOT_SET = -1;
 
-    private static Logger log = LoggerFactory.getLogger(UintOption.class.getName());
+    private static Logger log = LoggerFactory.getLogger(UintOptionValue.class.getName());
 
 
 
-    public UintOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+    public UintOptionValue(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, shortenValue(value));
     }
 
-    public UintOption(int optionNumber, long value) throws InvalidOptionException, UnknownOptionException {
+    public UintOptionValue(int optionNumber, long value) throws InvalidOptionException, UnknownOptionException {
         this(optionNumber, value == 0 ? new byte[0] : new BigInteger(1, Longs.toByteArray(value)).toByteArray());
     }
 
     @Override
     public Long getDecodedValue() {
         return new BigInteger(1, value).longValue();
+    }
+
+
+    @Override
+    public int hashCode() {
+        return getDecodedValue().hashCode();
+    }
+
+
+    @Override
+    public boolean equals(Object object) {
+        if(!(object instanceof UintOptionValue))
+            return false;
+
+        UintOptionValue other = (UintOptionValue) object;
+        return Arrays.equals(this.getValue(), other.getValue());
     }
 
 
@@ -72,12 +88,4 @@ public class UintOption extends Option<Long>{
         return Arrays.copyOfRange(value, index, value.length);
     }
 
-//    @Override
-//    public boolean equals(Object object) {
-//        if(!(object instanceof UintOption))
-//            return false;
-//
-//        UintOption other = (UintOption) object;
-//        return this.getDecodedValue() == other.getDecodedValue();
-//    }
 }

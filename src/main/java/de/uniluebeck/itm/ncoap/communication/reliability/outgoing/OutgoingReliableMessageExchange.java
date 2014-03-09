@@ -22,31 +22,46 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message.options;
+package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
+
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+
+import java.net.InetSocketAddress;
 
 /**
- * An {@link EmptyOption} achieves it's goal just by being present in a message or not. Thus, there is no value.
- *
- * @author Oliver Kleine
+ * Created by olli on 08.03.14.
  */
-public class EmptyOption extends Option<byte[]>{
+public class OutgoingReliableMessageExchange extends OutgoingMessageExchange {
 
-    /**
-     * @param optionNumber the option number of the {@link EmptyOption} to be created
-     *
-     * @throws InvalidOptionException this should never happen as empty options don't have a value that can be invalid
-     * @throws UnknownOptionException if the given option number is unknown
-     */
-    public EmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
-       super(optionNumber, new byte[0]);
+    private CoapMessage coapMessage;
+    private int retransmissionCount;
+    private boolean retransmissionStopped;
+
+
+    public OutgoingReliableMessageExchange(InetSocketAddress remoteEndpoint, CoapMessage coapMessage) {
+        super(remoteEndpoint, coapMessage.getMessageID(), coapMessage.getToken());
+        this.coapMessage = coapMessage;
+        this.retransmissionCount = 0;
+        this.retransmissionStopped = false;
     }
 
-    /**
-     * Returns an empty byte array
-     * @return an empty byte array
-     */
-    @Override
-    public byte[] getDecodedValue() {
-        return this.value;
+
+    public CoapMessage getCoapMessage() {
+        return coapMessage;
+    }
+
+
+    public int increaseRetransmissionCounter(){
+        return ++this.retransmissionCount;
+    }
+
+
+    public boolean isRetransmissionStopped() {
+        return this.retransmissionStopped;
+    }
+
+
+    public void stopRetransmission() {
+        this.retransmissionStopped = true;
     }
 }

@@ -125,6 +125,6 @@
 //
 //    @Test
 //    public void testEndpointReceivedOnlyOneResponse(){
-//        assertEquals(1, endpoint.getReceivedMessages().size());
+//        assertEquals(1, endpoint.getReceivedCoapMessages().size());
 //    }
 //}

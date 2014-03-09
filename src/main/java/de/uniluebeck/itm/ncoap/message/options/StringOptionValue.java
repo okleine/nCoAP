@@ -30,63 +30,64 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
  * @author Oliver Kleine
  */
-public class StringOption extends Option<String>{
+public class StringOptionValue extends OptionValue<String> {
 
-    private static Logger log = LoggerFactory.getLogger(StringOption.class.getName());
+    private static Logger log = LoggerFactory.getLogger(StringOptionValue.class.getName());
 
     /**
-     * @param optionNumber the option number of the {@link StringOption} to be created
-     * @param value the value of the {@link StringOption} to be created
+     * @param optionNumber the option number of the {@link StringOptionValue} to be created
+     * @param value the value of the {@link StringOptionValue} to be created
      *
      * @throws InvalidOptionException if the given value is either the default value or exceeds
      * the defined limits for options with the given option number in terms of length.
      *
      * @throws UnknownOptionException if the given option number is unknown, i.e. not supported
      */
-    public StringOption(int optionNumber, byte[] value)
+    public StringOptionValue(int optionNumber, byte[] value)
             throws InvalidOptionException, UnknownOptionException {
 
         super(optionNumber, value);
     }
 
     /**
-     * Creates an instance of {@link StringOption} according to the rules defined for CoAP. The pre-processing of the
+     * Creates an instance of {@link StringOptionValue} according to the rules defined for CoAP. The pre-processing of the
      * given value before encoding using {@link CoapMessage#CHARSET} depends on the given option number:
      *
      * <ul>
      *     <li>
-     *         {@link Option.Name#URI_HOST}: convert to lower case and remove percent encoding (if present)
+     *         {@link OptionValue.Name#URI_HOST}: convert to lower case and remove percent encoding (if present)
      *     </li>
      *     <li>
-     *         {@link Option.Name#URI_PATH} and {@link Option.Name#URI_QUERY}: remove percent encoding (if present)
+     *         {@link OptionValue.Name#URI_PATH} and {@link OptionValue.Name#URI_QUERY}: remove percent encoding (if present)
      *     </li>
      *     <li>
      *         others: no pre-processing.
      *     </li>
      * </ul>
      *
-     * @param optionNumber the option number of the {@link StringOption} to be created
-     * @param value the value of the {@link StringOption} to be created
+     * @param optionNumber the option number of the {@link StringOptionValue} to be created
+     * @param value the value of the {@link StringOptionValue} to be created
      *
      * @throws InvalidOptionException if the given value is either the default value or (after encoding) exceeds
      * the defined limits for options with the given option number in terms of length
-     * (see {@link Option#getMinLength(int)} and {@link Option#getMaxLength(int)}.
+     * (see {@link OptionValue#getMinLength(int)} and {@link OptionValue#getMaxLength(int)}.
      *
      * @throws UnknownOptionException if the given option number is unknown, i.e. not supported
      *
      * @throws IllegalArgumentException if the given option value contains invalid percent encoding
      */
-    public StringOption(int optionNumber, String value)
+    public StringOptionValue(int optionNumber, String value)
             throws InvalidOptionException, UnknownOptionException, IllegalArgumentException{
 
-        this(optionNumber, optionNumber == Option.Name.URI_HOST ?
+        this(optionNumber, optionNumber == OptionValue.Name.URI_HOST ?
                 convertToByteArrayWithoutPercentEncoding(value.toLowerCase(Locale.ENGLISH)) :
-                ((optionNumber == Option.Name.URI_PATH || optionNumber == Option.Name.URI_QUERY) ?
+                ((optionNumber == OptionValue.Name.URI_PATH || optionNumber == OptionValue.Name.URI_QUERY) ?
                             convertToByteArrayWithoutPercentEncoding(value) :
                                     value.getBytes(CoapMessage.CHARSET)));
     }
@@ -101,6 +102,22 @@ public class StringOption extends Option<String>{
     @Override
     public String getDecodedValue() {
         return new String(value, CoapMessage.CHARSET);
+    }
+
+
+    @Override
+    public int hashCode() {
+        return getDecodedValue().hashCode();
+    }
+
+
+    @Override
+    public boolean equals(Object object) {
+        if(!(object instanceof StringOptionValue))
+            return false;
+
+        StringOptionValue other = (StringOptionValue) object;
+        return Arrays.equals(this.getValue(), other.getValue());
     }
 
     /**

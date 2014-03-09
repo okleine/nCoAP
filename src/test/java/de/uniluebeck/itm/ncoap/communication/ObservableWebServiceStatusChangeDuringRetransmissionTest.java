@@ -66,7 +66,7 @@
 //import static junit.framework.Assert.*;
 //
 ///**
-//* Tests if the server adapts MAX_RETRANSMIT to avoid CON timeout before Max-Age ends.
+//* Tests if the server adapts MAX_RETRANSMISSIONS to avoid CON timeout before Max-Age ends.
 //* (Only for observe notifications)
 //*
 //* @author Oliver Kleine, Stefan Hueske
@@ -156,7 +156,7 @@
 //
 //        //wait another 65 seconds to finish the other 2 retransmissions
 //        Thread.sleep(65000);
-//        endpoint.setReceiveEnabled(false);
+//        endpoint.setReceptionEnabled(false);
 //    }
 //
 //
@@ -171,13 +171,13 @@
 //    @Test
 //    public void testEndpointReceived7Messages() {
 //        String message = "Receiver did not receive 7 messages";
-//        assertEquals(message, 7, endpoint.getReceivedMessages().values().size());
+//        assertEquals(message, 7, endpoint.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testFirstMessageIsAck(){
 //        CoapMessage firstMessage =
-//                endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().firstKey());
+//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().firstKey());
 //
 //        assertEquals("First received message was no ACK.", firstMessage.getMessageType(), MessageType.ACK);
 //        assertTrue("First message is no update notification.", ((CoapResponse) firstMessage).isUpdateNotification());
@@ -186,7 +186,7 @@
 //
 //    @Test
 //    public void testLastMessageWasNotSentBeforeMaxAgeEnded(){
-//        long delay = endpoint.getReceivedMessages().lastKey() - observationRequestSent;
+//        long delay = endpoint.getReceivedCoapMessages().lastKey() - observationRequestSent;
 //
 //        assertTrue("Last retransmission was to early (after (" + delay +") millis. But max-age is 90 seconds!",
 //                delay >= 90000);
@@ -195,7 +195,7 @@
 //    @Test
 //    public void testUpdateOfStatusDuringRetransmission(){
 //        CoapMessage[] receivedMessages = new CoapMessage[6];
-//        receivedMessages = endpoint.getReceivedMessages().values().toArray(receivedMessages);
+//        receivedMessages = endpoint.getReceivedCoapMessages().values().toArray(receivedMessages);
 //
 //        Token[] payloads = new Token[5];
 //
@@ -212,7 +212,7 @@
 //    @Test
 //    public void testNotificationCount(){
 //        CoapResponse[] receivedMessages = new CoapResponse[6];
-//        receivedMessages = endpoint.getReceivedMessages().values().toArray(receivedMessages);
+//        receivedMessages = endpoint.getReceivedCoapMessages().values().toArray(receivedMessages);
 //
 //        int exectedNotifications = 7;
 //

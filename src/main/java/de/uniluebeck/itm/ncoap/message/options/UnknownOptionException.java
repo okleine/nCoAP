@@ -25,8 +25,8 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
 /**
- * Exception to be thrown when there is an unknown option number involved, e.g. during creation of an {@link Option}
- * instance or while checking option restrictions using the static methods provided by {@link Option}.
+ * Exception to be thrown when there is an unknown option number involved, e.g. during creation of an {@link OptionValue}
+ * instance or while checking option restrictions using the static methods provided by {@link OptionValue}.
  *
  * @author Oliver Kleine
  */

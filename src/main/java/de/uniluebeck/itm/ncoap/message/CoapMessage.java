@@ -29,16 +29,14 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.ncoap.application.Token;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -55,7 +53,7 @@ public abstract class CoapMessage {
 
     public static final int PROTOCOL_VERSION = 1;
     public static final Charset CHARSET = Charset.forName("UTF-8");
-    //public static final int UNDEFINED = -1;
+
     public static final int MESSAGE_ID_UNDEFINED = -1;
 
     public static final int MAX_TOKEN_LENGTH = 8;
@@ -66,137 +64,135 @@ public abstract class CoapMessage {
     private static HashBasedTable<Integer, Integer, Integer> optionOccurenceConstraints = HashBasedTable.create();
     static{
         //Requests
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.URI_HOST,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.URI_PATH,           MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.URI_QUERY,          MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.PROXY_URI,          ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.PROXY_SCHEME,       ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.ACCEPT,             MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.ETAG,               MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      Option.Name.OBSERVE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.URI_HOST,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.URI_PORT,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.URI_QUERY,          MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.PROXY_URI,          ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.PROXY_SCHEME,       ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.ACCEPT,             MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.ETAG,               MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.OBSERVE,            ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.URI_HOST,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.URI_PATH,           MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.URI_QUERY,          MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.PROXY_URI,          ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.PROXY_SCHEME,       ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.URI_HOST,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.URI_PORT,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.URI_QUERY,          MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.PROXY_URI,          ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.PROXY_SCHEME,       ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.URI_HOST,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.URI_PATH,           MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.URI_QUERY,          MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.PROXY_URI,          ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.PROXY_SCHEME,       ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.CONTENT_FORMAT,     ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.IF_MATCH,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      Option.Name.IF_NONE_MATCH,      ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.URI_HOST,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.URI_PORT,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.URI_QUERY,          MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.PROXY_URI,          ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.PROXY_SCHEME,       ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.IF_MATCH,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.IF_NONE_MATCH,      ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   Option.Name.URI_HOST,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   Option.Name.URI_PORT,           ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   Option.Name.URI_PATH,           MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   Option.Name.URI_QUERY,          MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   Option.Name.PROXY_URI,          ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   Option.Name.PROXY_SCHEME,       ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_HOST,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_PORT,           ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_PATH,           MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_QUERY,          MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.PROXY_URI,          ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.PROXY_SCHEME,       ONCE);
 
         //Response success (2.x)
-        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.ETAG,               ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.OBSERVE,            ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.LOCATION_PATH,      MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.LOCATION_QUERY,     MULTIPLE);
-        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.ETAG,               ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.OBSERVE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.LOCATION_PATH,      MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.LOCATION_QUERY,     MULTIPLE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.OBSERVE,            ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.ETAG,               ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.MAX_AGE,            ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.OBSERVE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.ETAG,               ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.MAX_AGE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.OBSERVE,            ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.MAX_AGE,            ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  Option.Name.ETAG,               ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.OBSERVE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.MAX_AGE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.ETAG,               ONCE);
 
         //Client errors (4.x)
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),                  Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),                  OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(),                 Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(),                 OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),                   Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),                   OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),                    Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),                    OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),                    Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),                    OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),           Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),           OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),               Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),               OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),          Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),          OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),     Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),     Option.Name.SIZE_1,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),     OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),     OptionValue.Name.SIZE_1,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),   Option.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),   OptionValue.Name.MAX_AGE,    ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
         //Server errors (5.x)
-        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),    Option.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),    OptionValue.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),          Option.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),          OptionValue.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),              Option.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),              OptionValue.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),          Option.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),          OptionValue.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),   Option.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),  Option.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),   OptionValue.Name.MAX_AGE,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
     }
 
-
-
-    //protected InetAddress recipientAddress;
 
     private int messageType;
     private int messageCode;
     private int messageID;
     private Token token;
 
-    protected SetMultimap<Integer, Option> options;
+    protected SetMultimap<Integer, OptionValue> options;
     private ChannelBuffer content;
 
 
     protected CoapMessage(int messageType, int messageCode, int messageID, Token token)
-            throws InvalidHeaderException {
+            throws IllegalArgumentException {
 
         if(!MessageType.Name.isMessageType(messageType))
-            throw new InvalidHeaderException("No. " + messageType + " is not corresponding to any message type.");
+            throw new IllegalArgumentException("No. " + messageType + " is not corresponding to any message type.");
 
         if(!MessageCode.Name.isMessageCode(messageCode))
-            throw new InvalidHeaderException("No. " + messageCode + " is not corresponding to any message code.");
+            throw new IllegalArgumentException("No. " + messageCode + " is not corresponding to any message code.");
 
         this.setMessageType(messageType);
         this.setMessageCode(messageCode);
+
         log.debug("Set Message Code to {} ({}).", MessageCode.Name.getName(messageCode), messageCode);
 
         this.setMessageID(messageID);
         this.setToken(token);
 
-        this.options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<Option>>(),
+        this.options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<OptionValue>>(),
                 LinkedHashSetSupplier.getInstance());
 
         this.content = ChannelBuffers.EMPTY_BUFFER;
@@ -222,9 +218,9 @@ public abstract class CoapMessage {
      *
      * @return an instance of {@link CoapMessage} with {@link MessageType.Name#RST}
      *
-     * @throws InvalidHeaderException if the given message ID is out of the allowed range
+     * @throws IllegalArgumentException if the given message ID is out of the allowed range
      */
-    public static CoapMessage createEmptyReset(int messageID) throws InvalidHeaderException {
+    public static CoapMessage createEmptyReset(int messageID) throws IllegalArgumentException {
         return new CoapMessage(MessageType.Name.RST.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
                 new Token(new byte[0])){};
     }
@@ -235,15 +231,24 @@ public abstract class CoapMessage {
      *
      * @return an instance of {@link CoapMessage} with {@link MessageType.Name#ACK}
      *
-     * @throws InvalidHeaderException if the given message ID is out of the allowed range
+     * @throws IllegalArgumentException if the given message ID is out of the allowed range
      */
-    public static CoapMessage createEmptyAcknowledgement(int messageID) throws InvalidHeaderException {
+    public static CoapMessage createEmptyAcknowledgement(int messageID) throws IllegalArgumentException {
         return new CoapMessage(MessageType.Name.ACK.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
                 new Token(new byte[0])){};
     }
 
-
-    public static CoapMessage createEmptyConfirmableMessage(int messageID) throws InvalidHeaderException {
+    /**
+     * Method to create an empty confirmable message which is considered a PIMG message on application layer, i.e.
+     * a message to check if a CoAP endpoint is alive (not the host but the application!).
+     *
+     * @param messageID the message ID of the acknowledgement message.
+     *
+     * @return an instance of {@link CoapMessage} with {@link MessageType.Name#CON}
+     *
+     * @throws IllegalArgumentException if the given message ID is out of the allowed range
+     */
+    public static CoapMessage createEmptyConfirmableMessage(int messageID) throws IllegalArgumentException{
         return new CoapMessage(MessageType.Name.CON.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
                 new Token(new byte[0])){};
     }
@@ -256,9 +261,9 @@ public abstract class CoapMessage {
      *
      * @throws InvalidMessageException if the given message type is not supported.
      */
-    public void setMessageType(int messageType) throws InvalidHeaderException {
+    public void setMessageType(int messageType) throws IllegalArgumentException {
         if(!MessageType.Name.isMessageType(messageType))
-            throw new InvalidHeaderException("Invalid message type (" + messageType +
+            throw new IllegalArgumentException("Invalid message type (" + messageType +
                     "). Only numbers 0-3 are allowed.");
 
         this.messageType = messageType;
@@ -272,45 +277,45 @@ public abstract class CoapMessage {
     /**
      * Adds
      * @param optionNumber
-     * @param option
+     * @param optionValue
      * @throws InvalidOptionException
      */
-    public void addOption(int optionNumber, Option option) throws InvalidOptionException {
+    public void addOption(int optionNumber, OptionValue optionValue) throws InvalidOptionException {
         this.checkOptionPermission(optionNumber);
 
-        if(optionNumber == Option.Name.OBSERVE && MessageCode.isRequest(this.getMessageCode())
-            && option.getValue().length > 0){
+        if(optionNumber == OptionValue.Name.OBSERVE && MessageCode.isRequest(this.getMessageCode())
+            && optionValue.getValue().length > 0){
 
             throw new InvalidOptionException(optionNumber, "Maximum length for option no. 6 in requests is 0");
         }
 
         for(int containedOption : options.keySet()){
-            if(Option.mutuallyExcludes(containedOption, optionNumber))
+            if(OptionValue.mutuallyExcludes(containedOption, optionNumber))
                 throw new InvalidOptionException(optionNumber, "Already contained option no. " + containedOption +
                         " excludes option no. " + optionNumber);
         }
 
-        options.put(optionNumber, option);
+        options.put(optionNumber, optionValue);
 
-        log.debug("Added option (number: {}, value: {})", optionNumber, option.toString());
+        log.debug("Added option (number: {}, value: {})", optionNumber, optionValue.toString());
 
     }
 
     protected void addStringOption(int optionNumber, String value) throws UnknownOptionException,
             InvalidOptionException {
 
-        if(!(Option.getOptionType(optionNumber) == Option.Type.STRING))
+        if(!(OptionValue.getOptionType(optionNumber) == OptionValue.Type.STRING))
             throw new InvalidOptionException(optionNumber, "Option number {} is no string-option.");
 
         //Add new option to option list
-        StringOption option = new StringOption(optionNumber, value);
+        StringOptionValue option = new StringOptionValue(optionNumber, value);
         addOption(optionNumber, option);
     }
 
 
     protected void addUintOption(int optionNumber, long value) throws UnknownOptionException, InvalidOptionException {
 
-        if(!(Option.getOptionType(optionNumber) == Option.Type.UINT))
+        if(!(OptionValue.getOptionType(optionNumber) == OptionValue.Type.UINT))
             throw new InvalidOptionException(optionNumber, "Option number {} is no uint-option.");
 
         //Add new option to option list
@@ -319,29 +324,29 @@ public abstract class CoapMessage {
         while(index < byteValue.length && byteValue[index] == 0)
             index++;
 
-        UintOption option = new UintOption(optionNumber, Arrays.copyOfRange(byteValue, index, byteValue.length));
+        UintOptionValue option = new UintOptionValue(optionNumber, Arrays.copyOfRange(byteValue, index, byteValue.length));
         addOption(optionNumber, option);
 
     }
 
     protected void addOpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
 
-        if(!(Option.getOptionType(optionNumber) == Option.Type.OPAQUE))
+        if(!(OptionValue.getOptionType(optionNumber) == OptionValue.Type.OPAQUE))
             throw new InvalidOptionException(optionNumber, "Option number {} is no opaque option.");
 
         //Add new option to option list
-        OpaqueOption option = new OpaqueOption(optionNumber, value);
+        OpaqueOptionValue option = new OpaqueOptionValue(optionNumber, value);
         addOption(optionNumber, option);
 
     }
 
     protected void addEmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
 
-        if(!(Option.getOptionType(optionNumber) == Option.Type.EMPTY))
+        if(!(OptionValue.getOptionType(optionNumber) == OptionValue.Type.EMPTY))
             throw new InvalidOptionException(optionNumber, "Option number {} is no empty option.");
 
         //Add new option to option list
-        options.put(optionNumber, new EmptyOption(optionNumber));
+        options.put(optionNumber, new EmptyOptionValue(optionNumber));
 
         log.debug("Added empty option (number: {})", optionNumber);
     }
@@ -383,10 +388,10 @@ public abstract class CoapMessage {
      *
      * @param messageID the message ID for the message
      */
-    public void setMessageID(int messageID) throws InvalidHeaderException {
+    public void setMessageID(int messageID) throws IllegalArgumentException {
 
         if(messageID < -1 || messageID > 65535)
-            throw new InvalidHeaderException("Message ID " + messageID + " is either negative or greater than 65535");
+            throw new IllegalArgumentException("Message ID " + messageID + " is either negative or greater than 65535");
 
         this.messageID = messageID;
     }
@@ -461,8 +466,8 @@ public abstract class CoapMessage {
      * in this {@link CoapMessage}.
      */
     public long getContentFormat(){
-        if(options.containsKey(Option.Name.CONTENT_FORMAT))
-            return ((UintOption) options.get(Option.Name.CONTENT_FORMAT).iterator().next()).getDecodedValue();
+        if(options.containsKey(OptionValue.Name.CONTENT_FORMAT))
+            return ((UintOptionValue) options.get(OptionValue.Name.CONTENT_FORMAT).iterator().next()).getDecodedValue();
 
         return ContentFormat.UNDEFINED;
     }
@@ -476,8 +481,8 @@ public abstract class CoapMessage {
      */
     public void setMaxAge(long maxAge) throws InvalidOptionException {
         try{
-            this.options.removeAll(Option.Name.MAX_AGE);
-            this.addUintOption(Option.Name.MAX_AGE, maxAge);
+            this.options.removeAll(OptionValue.Name.MAX_AGE);
+            this.addUintOption(OptionValue.Name.MAX_AGE, maxAge);
         }
         catch (UnknownOptionException e) {
             log.error("This should never happen.", e);
@@ -486,16 +491,16 @@ public abstract class CoapMessage {
 
     /**
      * Returns the value of the Max-Age option of this {@link CoapMessage}. If no such option exists, this method
-     * returns {@link Option#MAX_AGE_DEFAULT}.
+     * returns {@link de.uniluebeck.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
      *
      * @return the value of the Max-Age option of this {@link CoapMessage}. If no such option exists, this method
-     * returns {@link Option#MAX_AGE_DEFAULT}.
+     * returns {@link de.uniluebeck.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
      */
     public long getMaxAge(){
-        if(options.containsKey(Option.Name.MAX_AGE))
-            return ((UintOption) options.get(Option.Name.MAX_AGE).iterator().next()).getDecodedValue();
+        if(options.containsKey(OptionValue.Name.MAX_AGE))
+            return ((UintOptionValue) options.get(OptionValue.Name.MAX_AGE).iterator().next()).getDecodedValue();
         else
-            return Option.MAX_AGE_DEFAULT;
+            return OptionValue.MAX_AGE_DEFAULT;
     }
 
     /**
@@ -528,17 +533,17 @@ public abstract class CoapMessage {
             InvalidOptionException {
 
         try {
-            this.addUintOption(Option.Name.CONTENT_FORMAT, contentFormat);
+            this.addUintOption(OptionValue.Name.CONTENT_FORMAT, contentFormat);
             setContent(content);
         }
         catch (InvalidOptionException e) {
             this.content = ChannelBuffers.EMPTY_BUFFER;
-            this.removeOptions(Option.Name.CONTENT_FORMAT);
+            this.removeOptions(OptionValue.Name.CONTENT_FORMAT);
             throw e;
         }
         catch(InvalidMessageException e){
             this.content = ChannelBuffers.EMPTY_BUFFER;
-            this.removeOptions(Option.Name.CONTENT_FORMAT);
+            this.removeOptions(OptionValue.Name.CONTENT_FORMAT);
             throw e;
         }
         catch (UnknownOptionException e) {
@@ -592,26 +597,26 @@ public abstract class CoapMessage {
 
 
     /**
-     * Returns a {@link Multimap<Integer, Option>} with the option numbers as keys and {@link Option}s as values.
+     * Returns a {@link Multimap} with the option numbers as keys and {@link de.uniluebeck.itm.ncoap.message.options.OptionValue}s as values.
      * The returned multimap does not contain options with default values.
      *
-     * @return a {@link Multimap<Integer, Option>} with the option numbers as keys and {@link Option}s as values.
+     * @return a {@link Multimap} with the option numbers as keys and {@link de.uniluebeck.itm.ncoap.message.options.OptionValue}s as values.
      */
-    public Multimap<Integer, Option> getAllOptions(){
+    public SetMultimap<Integer, OptionValue> getAllOptions(){
         return this.options;
     }
 
 
     /**
-     * Returns a {@link Set<Option>} containing the options that are explicitly set in this {@link CoapMessage}. The
+     * Returns a {@link Set< de.uniluebeck.itm.ncoap.message.options.OptionValue >} containing the options that are explicitly set in this {@link CoapMessage}. The
      * returned set does not contain options with default values. If this {@link CoapMessage} does not contain any
      * options of the given option number, then the returned set is empty.
      *
      * @param optionNumber the option number
      *
-     * @return a {@link Set<Option>} containing the options that are explicitly set in this {@link CoapMessage}.
+     * @return a {@link Set< de.uniluebeck.itm.ncoap.message.options.OptionValue >} containing the options that are explicitly set in this {@link CoapMessage}.
      */
-    public Set<Option> getOptions(int optionNumber){
+    public Set<OptionValue> getOptions(int optionNumber){
         return this.options.get(optionNumber);
     }
 
@@ -634,29 +639,58 @@ public abstract class CoapMessage {
     public boolean equals(Object object){
 
         if(!(object instanceof CoapMessage)){
+            log.error("Different type");
             return false;
         }
 
         CoapMessage other = (CoapMessage) object;
 
-        if(this.getAllOptions().size() != other.getAllOptions().size())
+        //Check header fields
+        if(this.getProtocolVersion() != other.getProtocolVersion())
             return false;
 
-        for(Map.Entry<Integer, Option> entry : this.getAllOptions().entries()){
-            if(other.getAllOptions().containsEntry(entry.getKey(), entry.getValue()))
+        if(this.getMessageType() != other.getMessageType())
+            return false;
+
+        if(this.getMessageCode() != other.getMessageCode())
+            return false;
+
+        if(this.getMessageID() != other.getMessageID())
+            return false;
+
+        if(!this.getToken().equals(other.getToken()))
+            return false;
+
+
+        //Iterators iterate over the contained options
+        Iterator<Map.Entry<Integer, OptionValue>> iterator1 = this.getAllOptions().entries().iterator();
+        Iterator<Map.Entry<Integer, OptionValue>> iterator2 = other.getAllOptions().entries().iterator();
+
+        //Check if both CoAP Messages contain the same options in the same order
+        while(iterator1.hasNext()){
+
+            //Check if iterator2 has no more options while iterator1 has at least one more
+            if(!iterator2.hasNext())
+                return false;
+
+            Map.Entry<Integer, OptionValue> entry1 = iterator1.next();
+            Map.Entry<Integer, OptionValue> entry2 = iterator2.next();
+
+            if(!entry1.getKey().equals(entry2.getKey()))
+                return false;
+
+            if(!entry1.getValue().equals(entry2.getValue()))
                 return false;
         }
 
+        //Check if iterator2 has at least one more option while iterator1 has no more
+        if(iterator2.hasNext())
+            return false;
 
-        return this.getProtocolVersion() == other.getProtocolVersion()
-            && this.getMessageType() == other.getMessageType()
-            && this.getMessageCode() == other.getMessageCode()
-            && this.getMessageID() == other.getMessageID()
-            && this.getToken() == other.getToken()
-//            && this.getAllOptions().equals(other.getAllOptions())
-            && this.getContent().equals(other.getContent());
-
+        //Check content
+        return this.getContent().equals(other.getContent());
     }
+
 
     @Override
     public String toString(){
@@ -664,7 +698,7 @@ public abstract class CoapMessage {
         StringBuffer result =  new StringBuffer();
 
         //Header + Token
-        result.append("CoAP Message: [Header: (V) " + getProtocolVersion() + ", (T) " + getMessageTypeName() + ", (TKL) "
+        result.append("CoAP: [Header: (V) " + getProtocolVersion() + ", (T) " + getMessageTypeName() + ", (TKL) "
             + token.getBytes().length + ", (C) " + getMessageCodeName() + ", (ID) " + getMessageID() + " | (Token) "
             + token + " | ");
 
@@ -672,9 +706,9 @@ public abstract class CoapMessage {
         result.append("Options:");
         for(int optionNumber : getAllOptions().keySet()){
             result.append(" (No. " + optionNumber + ") ");
-            Iterator<Option> iterator = this.getOptions(optionNumber).iterator();
-            Option option = iterator.next();
-            result.append(option.toString());
+            Iterator<OptionValue> iterator = this.getOptions(optionNumber).iterator();
+            OptionValue optionValue = iterator.next();
+            result.append(optionValue.toString());
             while(iterator.hasNext())
                 result.append(" / " + iterator.next().toString());
         }
@@ -693,32 +727,32 @@ public abstract class CoapMessage {
 
     }
 
-    public void setMessageCode(int messageCode) throws InvalidHeaderException {
+    public void setMessageCode(int messageCode) throws IllegalArgumentException {
         if(!MessageCode.Name.isMessageCode(messageCode))
-            throw new InvalidHeaderException("Invalid message code no. " + messageCode);
+            throw new IllegalArgumentException("Invalid message code no. " + messageCode);
 
         this.messageCode = messageCode;
     }
 
 
     /**
-     * This is the supplier to provide the {@link LinkedHashSet} to contain the {@link Option} instances. There
+     * This is the supplier to provide the {@link LinkedHashSet} to contain the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue} instances. There
      * is one {@link LinkedHashSet} provided per option number. The order prevention of the values contained
      * in such a set is necessary to keep the order of multiple values for one option (e.g. URI path).
      */
-    private final static class LinkedHashSetSupplier implements Supplier<LinkedHashSet<Option>> {
+    private final static class LinkedHashSetSupplier implements Supplier<LinkedHashSet<OptionValue>> {
 
         public static LinkedHashSetSupplier instance = new LinkedHashSetSupplier();
 
-        private LinkedHashSetSupplier(){};
+        private LinkedHashSetSupplier(){}
 
         public static LinkedHashSetSupplier getInstance(){
             return instance;
         }
 
         @Override
-        public LinkedHashSet<Option> get() {
-            return new LinkedHashSet<Option>();
+        public LinkedHashSet<OptionValue> get() {
+            return new LinkedHashSet<>();
         }
     }
 }

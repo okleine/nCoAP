@@ -50,7 +50,7 @@ package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import java.net.InetSocketAddress;
 
-import de.uniluebeck.itm.ncoap.application.Token;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
@@ -88,6 +88,7 @@ public class InternalMessageRetransmittedMessage {
     public Token getToken() {
         return token;
     }
+
 
     @Override
     public String toString(){

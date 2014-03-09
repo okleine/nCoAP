@@ -25,27 +25,43 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
- * This class contains all specific functionality for {@link Option} instances of {@link Option.Type#OPAQUE}.
+ * This class contains all specific functionality for {@link OptionValue} instances of {@link OptionValue.Type#OPAQUE}.
  *
  * @author Oliver Kleine
  */
-public class OpaqueOption extends Option<byte[]>{
+public class OpaqueOptionValue extends OptionValue<byte[]> {
 
-    public OpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+    public OpaqueOptionValue(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
         super(optionNumber, value);
     }
 
     /**
-     * For {@link OpaqueOption}s the returned value is the same as {@link #getValue()}.
+     * For {@link OpaqueOptionValue}s the returned value is the same as {@link #getValue()}.
      *
      * @return the byte array containing the actual value of this option
      */
     @Override
     public byte[] getDecodedValue() {
         return this.value;
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(getDecodedValue());
+    }
+
+
+    @Override
+    public boolean equals(Object object) {
+        if(!(object instanceof OpaqueOptionValue))
+            return false;
+
+        OpaqueOptionValue other = (OpaqueOptionValue) object;
+        return Arrays.equals(this.getValue(), other.getValue());
     }
 
 

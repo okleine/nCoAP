@@ -28,10 +28,8 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
-import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableWebserviceRegistrationMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
-import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +59,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * {@link MessageCode.Name#POST}. That is why all {@link Webservice} instances can reference their
  * {@link WebserviceManager} via {@link Webservice#getWebserviceManager()}.
  *
- * Last but not least it checks whether the {@link Option.Name#IF_NONE_MATCH} is set on incoming {@link CoapRequest}s
+ * Last but not least it checks whether the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#IF_NONE_MATCH} is set on incoming {@link CoapRequest}s
  * and sends a {@link CoapResponse} with {@link MessageCode.Name#PRECONDITION_FAILED_412} if the option was set but the
  * addressed {@link Webservice} already exists.
  *
@@ -314,18 +312,18 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         registeredServices.put(webservice.getPath(), webservice);
         log.info("Registered new service at " + webservice.getPath());
 
-        if(webservice instanceof ObservableWebservice){
-            InternalObservableWebserviceRegistrationMessage message =
-                    new InternalObservableWebserviceRegistrationMessage((ObservableWebservice) webservice);
-
-            ChannelFuture future = Channels.write(channel, message);
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    log.info("Registered {} at observable resource handler.", webservice.getPath());
-                }
-            });
-        }
+//        if(webservice instanceof ObservableWebservice){
+//            InternalObservableWebserviceRegistrationMessage message =
+//                    new InternalObservableWebserviceRegistrationMessage((ObservableWebservice) webservice);
+//
+//            ChannelFuture future = Channels.write(channel, message);
+//            future.addListener(new ChannelFutureListener() {
+//                @Override
+//                public void operationComplete(ChannelFuture future) throws Exception {
+//                    log.info("Registered {} at observable resource handler.", webservice.getPath());
+//                }
+//            });
+//        }
 
         webservice.setScheduledExecutorService(executorService);
     }

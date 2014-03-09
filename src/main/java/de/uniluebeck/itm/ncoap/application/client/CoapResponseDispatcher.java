@@ -25,14 +25,11 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.ncoap.application.NoTokenAvailableException;
-import de.uniluebeck.itm.ncoap.application.NoTokenAvailableProcessor;
-import de.uniluebeck.itm.ncoap.application.Token;
-import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalMessageRetransmittedMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -45,7 +42,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by olli on 08.02.14.
+ * The {@link CoapResponseDispatcher} is responsible for
  */
 public class CoapResponseDispatcher extends SimpleChannelHandler{
 
@@ -55,12 +52,12 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
     private HashBasedTable<InetSocketAddress, Token, CoapResponseProcessor> responseProcessors;
 
-    private ScheduledExecutorService scheduledExecutorService;
+    private ScheduledExecutorService executorService;
 
 
-    public CoapResponseDispatcher(ScheduledExecutorService scheduledExecutorService, TokenFactory tokenFactory){
+    public CoapResponseDispatcher(ScheduledExecutorService executorService, TokenFactory tokenFactory){
         this.responseProcessors = HashBasedTable.create();
-        this.scheduledExecutorService = scheduledExecutorService;
+        this.executorService = executorService;
         this.tokenFactory = tokenFactory;
     }
 
@@ -68,43 +65,42 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
     @Override
     public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent me){
 
-        if(!(me.getMessage() instanceof InternalSendCoapRequestMessage)){
+        if(!(me.getMessage() instanceof InternalWrappedOutgoingCoapMessage)){
             ctx.sendDownstream(me);
             return;
         }
 
-        scheduledExecutorService.schedule(new Runnable() {
+        executorService.schedule(new Runnable() {
             @Override
             public void run() {
+
                 //Extract parameters for message transmission
-                final CoapRequest coapRequest =
-                        ((InternalSendCoapRequestMessage) me.getMessage()).getCoapRequest();
+                final CoapMessage coapMessage =
+                        ((InternalWrappedOutgoingCoapMessage) me.getMessage()).getCoapRequest();
 
                 final CoapResponseProcessor coapResponseProcessor =
-                        ((InternalSendCoapRequestMessage) me.getMessage()).getCoapResponseProcessor();
+                        ((InternalWrappedOutgoingCoapMessage) me.getMessage()).getCoapResponseProcessor();
 
                 final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
 
                 try {
                     //Prepare CoAP request, the response reception and then send the CoAP request
-                    coapRequest.setToken(tokenFactory.getNextToken(remoteSocketAddress));
+                    coapMessage.setToken(tokenFactory.getNextToken(remoteSocketAddress));
 
                     //Add the response callback to wait for the incoming response
-                    addResponseCallback(remoteSocketAddress, coapRequest.getToken(), coapResponseProcessor);
+                    addResponseCallback(remoteSocketAddress, coapMessage.getToken(), coapResponseProcessor);
 
                     //Send the request
-                    sendCoapRequest(ctx, me.getFuture(), coapRequest, remoteSocketAddress);
+                    sendCoapMessage(ctx, me.getFuture(), coapMessage, remoteSocketAddress);
 
-                }
-                catch (NoTokenAvailableException e) {
-                    if(coapResponseProcessor instanceof NoTokenAvailableProcessor){
+                } catch (NoTokenAvailableException e) {
+                    if (coapResponseProcessor instanceof NoTokenAvailableProcessor) {
                         NoTokenAvailableProcessor processor = (NoTokenAvailableProcessor) coapResponseProcessor;
                         processor.processNoTokenAvailable(remoteSocketAddress);
                     }
-                }
-                catch(Exception e){
+                } catch (Exception e) {
                     log.error("This should never happen!", e);
-                    removeResponseCallback(remoteSocketAddress, coapRequest.getToken());
+                    removeResponseCallback(remoteSocketAddress, coapMessage.getToken());
                 }
             }
 
@@ -113,10 +109,10 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
 
 
-    private void sendCoapRequest(ChannelHandlerContext ctx, ChannelFuture future, CoapRequest coapRequest,
+    private void sendCoapMessage(ChannelHandlerContext ctx, ChannelFuture future, CoapMessage coapMessage,
                                  InetSocketAddress remoteSocketAddress){
 
-        log.info("Write CoAP request: {}", coapRequest);
+        log.info("Write CoAP request: {}", coapMessage);
 
         future.addListener(new ChannelFutureListener() {
             @Override
@@ -149,7 +145,7 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
             }
         });
 
-        Channels.write(ctx, future, coapRequest, remoteSocketAddress);
+        Channels.write(ctx, future, coapMessage, remoteSocketAddress);
     }
 
 
@@ -191,100 +187,119 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
         log.debug("Received: {}.", me.getMessage());
 
-        if(me.getMessage() instanceof InternalEmptyAcknowledgementReceivedMessage){
-            InternalEmptyAcknowledgementReceivedMessage message =
-                    (InternalEmptyAcknowledgementReceivedMessage) me.getMessage();
+        if(me.getMessage() instanceof CoapResponse)
+            handleCoapResponse((CoapResponse) me.getMessage(), (InetSocketAddress) me.getRemoteAddress());
 
-            //find proper callback
-            CoapResponseProcessor callback =
-                    responseProcessors.get(me.getRemoteAddress(), message.getToken());
+        else if(me.getMessage() instanceof InternalEmptyAcknowledgementReceivedMessage)
+            handleEmptyAcknowledgement((InternalEmptyAcknowledgementReceivedMessage) me.getMessage());
 
-            if(callback != null && callback instanceof EmptyAcknowledgementProcessor){
-                log.debug("Found processor for {}", message);
-                ((EmptyAcknowledgementProcessor) callback).processEmptyAcknowledgement(message);
-            }
-            else{
-                log.debug("No processor found for {}", message);
-            }
+        else if(me.getMessage() instanceof InternalResetReceivedMessage)
+            handleReset((InternalResetReceivedMessage) me.getMessage());
 
-            me.getFuture().setSuccess();
-            return;
+        else if(me.getMessage() instanceof InternalRetransmissionTimeoutMessage)
+            handleRetransmissionTimeoutMessage((InternalRetransmissionTimeoutMessage) me.getMessage());
+
+        else if(me.getMessage() instanceof InternalMessageRetransmittedMessage)
+            handleMessageRetransmittedMessage((InternalMessageRetransmittedMessage) me.getMessage());
+
+        else
+            log.warn("Could not deal with message: {}", me.getMessage());
+    }
+
+
+    private void handleCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteSocketAddress){
+        log.debug("CoAP response received: {}.", coapResponse);
+
+        final CoapResponseProcessor responseProcessor;
+
+        //if the response is a (regular, i.e. no error) update notification, keep the response processor in use
+        if(coapResponse.isUpdateNotification() && !MessageCode.isErrorMessage(coapResponse.getMessageCode())){
+            responseProcessor = responseProcessors.get(remoteSocketAddress, coapResponse.getToken());
         }
 
-        if(me.getMessage() instanceof InternalRetransmissionTimeoutMessage){
-            InternalRetransmissionTimeoutMessage timeoutMessage = (InternalRetransmissionTimeoutMessage) me.getMessage();
-
-            //Find proper callback
-            CoapResponseProcessor callback =
-                    removeResponseCallback(timeoutMessage.getRemoteAddress(), timeoutMessage.getToken());
-
-            //Invoke method of callback instance
-            if(callback != null && callback instanceof RetransmissionTimeoutProcessor)
-                ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout(timeoutMessage);
-
-            //pass the token back
-            if(!tokenFactory.passBackToken(timeoutMessage.getRemoteAddress(), timeoutMessage.getToken())){
-                log.error("Could not pass back token {} for {} from retransmission timeout!",
-                        timeoutMessage.getToken(), timeoutMessage.getRemoteAddress());
-            }
-            else{
-                log.error("Passed back token from timeout message!");
-            }
-
-            me.getFuture().setSuccess();
-            return;
+        //for regular responses, i.e. no update notifications, remove the response processor and pass back the token
+        else{
+            responseProcessor = removeResponseCallback(remoteSocketAddress, coapResponse.getToken());
+            if(!tokenFactory.passBackToken(remoteSocketAddress, coapResponse.getToken()))
+                log.error("Could not pass back token from message: {}", coapResponse);
         }
 
-        if(me.getMessage() instanceof InternalMessageRetransmittedMessage){
-            InternalMessageRetransmittedMessage retransmissionMessage =
-                    (InternalMessageRetransmittedMessage) me.getMessage();
-
-            CoapResponseProcessor callback =
-                    responseProcessors.get(retransmissionMessage.getRemoteAddress(), retransmissionMessage.getToken());
-
-            if(callback != null && callback instanceof TransmissionInformationProcessor)
-                ((TransmissionInformationProcessor) callback).messageTransmitted(true);
-
-            return;
-        }
-
-
-        if(me.getMessage() instanceof CoapResponse){
-
-            final CoapResponse coapResponse = (CoapResponse) me.getMessage();
-            log.info("Response received: {}.", coapResponse);
-
-            InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-
-            final CoapResponseProcessor responseProcessor;
-
-            if(coapResponse.isUpdateNotification() && !MessageCode.isErrorMessage(coapResponse.getMessageCode())){
-                responseProcessor = responseProcessors.get(me.getRemoteAddress(), coapResponse.getToken());
-            }
-            else{
-                responseProcessor = removeResponseCallback(remoteSocketAddress, coapResponse.getToken());
-                if(!tokenFactory.passBackToken(remoteSocketAddress, coapResponse.getToken()))
-                    log.error("Could not pass back token from message: {}", coapResponse);
-            }
-
-            if(responseProcessor != null){
-                log.debug("Callback found for token {}.", coapResponse.getToken());
-                responseProcessor.processCoapResponse(coapResponse);
-            }
-            else{
-                log.error("No response processor found for token {}. (Response: {})",
-                        coapResponse.getToken(), coapResponse);
-
-                log.debug("...");
-            }
-
-            me.getFuture().setSuccess();
+        //if there was no response process
+        if(responseProcessor != null){
+            log.debug("Callback found for token {}.", coapResponse.getToken());
+            responseProcessor.processCoapResponse(coapResponse);
         }
         else{
-            me.getFuture().setFailure(new RuntimeException("Could not deal with message "
-                    + me.getMessage().getClass().getName()));
+            log.error("This should never happen! No response processor found for token {}. (Response: {})",
+                    coapResponse.getToken(), coapResponse);
         }
     }
+
+
+    private void handleEmptyAcknowledgement(InternalEmptyAcknowledgementReceivedMessage message){
+        //find proper callback
+        CoapResponseProcessor callback =
+                responseProcessors.get(message.getRemoteSocketAddress(), message.getToken());
+
+        if(callback == null){
+            log.warn("No response processor found for empty ACK for token {} from {}.", message.getToken(),
+                    message.getRemoteSocketAddress());
+            return;
+        }
+
+        if(callback instanceof EmptyAcknowledgementProcessor)
+            ((EmptyAcknowledgementProcessor) callback).processEmptyAcknowledgement();
+
+    }
+
+
+    private void handleReset(InternalResetReceivedMessage message) {
+        //find proper callback
+        CoapResponseProcessor callback =
+                responseProcessors.get(message.getRemoteSocketAddress(), message.getToken());
+
+        if(callback == null){
+            log.error("No response processor found for RST for token {} from {}.", message.getToken(),
+                    message.getRemoteSocketAddress());
+            return;
+        }
+
+        if(callback instanceof ResetProcessor)
+            ((ResetProcessor) callback).processReset();
+    }
+
+
+    private void handleMessageRetransmittedMessage(InternalMessageRetransmittedMessage message){
+
+        CoapResponseProcessor callback =
+                responseProcessors.get(message.getRemoteAddress(), message.getToken());
+
+        if(callback != null && callback instanceof TransmissionInformationProcessor)
+            ((TransmissionInformationProcessor) callback).messageTransmitted(true);
+
+    }
+
+
+    private void handleRetransmissionTimeoutMessage(InternalRetransmissionTimeoutMessage message){
+
+        //Find proper callback
+        CoapResponseProcessor callback =
+                removeResponseCallback(message.getRemoteAddress(), message.getToken());
+
+        //Invoke method of callback instance
+        if(callback != null && callback instanceof RetransmissionTimeoutProcessor)
+            ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout();
+
+        //pass the token back
+        if(!tokenFactory.passBackToken(message.getRemoteAddress(), message.getToken())){
+            log.error("Could not pass back token {} for {} from retransmission timeout!",
+                    message.getToken(), message.getRemoteAddress());
+        }
+        else{
+            log.debug("Passed back token from timeout message!");
+        }
+    }
+
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ee){

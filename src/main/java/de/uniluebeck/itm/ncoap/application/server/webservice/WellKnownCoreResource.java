@@ -55,8 +55,6 @@ import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
-import de.uniluebeck.itm.ncoap.message.options.OpaqueOption;
-import de.uniluebeck.itm.ncoap.message.options.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +94,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * (i.e. {@link Webservice} instances}).
      *
      * <b>Note:</b> The payload is always formatted in {@link ContentFormat#APP_LINK_FORMAT}, possibly contained
-     * {@link Option.Name#ACCEPT} options in incoming {@link CoapRequest}s are ignored!
+     * {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#ACCEPT} options in incoming {@link CoapRequest}s are ignored!
      *
      * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
      *                       the list of available services in CoRE link format.

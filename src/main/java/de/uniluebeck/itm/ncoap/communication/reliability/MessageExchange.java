@@ -22,28 +22,52 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.client;
+package de.uniluebeck.itm.ncoap.communication.reliability;
 
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 08.02.14.
- */
-public class InternalSendCoapRequestMessage {
+* Created by olli on 07.03.14.
+*/
+public abstract class MessageExchange {
 
-    private final CoapRequest coapRequest;
-    private final CoapResponseProcessor coapResponseProcessor;
+    private final InetSocketAddress remoteEndpoint;
+    private final int messageID;
 
-    public InternalSendCoapRequestMessage(CoapRequest coapRequest, CoapResponseProcessor coapResponseProcessor){
-        this.coapRequest = coapRequest;
-        this.coapResponseProcessor = coapResponseProcessor;
+
+    public MessageExchange(InetSocketAddress remoteEndpoint, int messageID){
+
+        this.remoteEndpoint = remoteEndpoint;
+        this.messageID = messageID;
     }
 
-    public CoapRequest getCoapRequest() {
-        return coapRequest;
+
+    public final InetSocketAddress getRemoteEndpoint(){
+        return this.remoteEndpoint;
     }
 
-    public CoapResponseProcessor getCoapResponseProcessor() {
-        return coapResponseProcessor;
+
+    public final int getMessageID(){
+        return this.messageID;
     }
+
+
+    @Override
+    public int hashCode(){
+        return remoteEndpoint.hashCode() & messageID;
+    }
+
+
+    @Override
+    public boolean equals(Object object){
+
+        if(!(object instanceof MessageExchange))
+            return false;
+
+        MessageExchange other = (MessageExchange) object;
+
+        return this.getRemoteEndpoint().equals(other.getRemoteEndpoint()) &&
+                this.getMessageID() == other.getMessageID();
+    }
+
 }

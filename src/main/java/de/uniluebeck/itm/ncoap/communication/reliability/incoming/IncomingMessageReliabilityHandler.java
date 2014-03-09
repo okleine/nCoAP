@@ -22,42 +22,21 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/**
-* Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-* following conditions are met:
-*
-* - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
-* disclaimer.
-* - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-* following disclaimer in the documentation and/or other materials provided with the distribution.
-* - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
-* products derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-* GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
 package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.TreeMultimap;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 
@@ -74,22 +53,42 @@ import java.util.concurrent.TimeUnit;
 */
 public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
-    public static final int EMPTY_ACK_DELAY_MILLIS = 1000;
+    public static final int MIN_EMPTY_ACK_DELAY_MILLIS = 1700;
+    public static final int RELIABILITY_TASK_PERIOD_MILLIS = 100;
 
     private static Logger log = LoggerFactory.getLogger(IncomingMessageReliabilityHandler.class.getName());
 
-    //Remote socket address, message ID, acknowledgement status for incoming confirmable requests
-    private final HashBasedTable<InetSocketAddress, Integer, ScheduledFuture> scheduledEmptyACKs
-            = HashBasedTable.create();
+    private final Object monitor = new Object();
+    private TreeMultimap<Long, IncomingReliableMessageExchange> emptyAcknowledgementSchedule;
+    private HashBasedTable<InetSocketAddress, Integer, IncomingMessageExchange> ongoingMessageExchanges;
 
-    private ScheduledExecutorService executorService;
+    private ChannelHandlerContext ctx;
+
 
     /**
      * @param executorService the {@link ScheduledExecutorService} to provide the threads that execute the
      *                        operations for reliability.
      */
     public IncomingMessageReliabilityHandler(ScheduledExecutorService executorService){
-        this.executorService = executorService;
+        this.emptyAcknowledgementSchedule =
+                TreeMultimap.create(Ordering.<Long>natural(), Ordering.<IncomingReliableMessageExchange>arbitrary());
+
+        this.ongoingMessageExchanges = HashBasedTable.create();
+
+        executorService.scheduleAtFixedRate(
+                new ReliabilityTask(),
+                RELIABILITY_TASK_PERIOD_MILLIS, RELIABILITY_TASK_PERIOD_MILLIS, TimeUnit.MILLISECONDS
+        );
+    }
+
+
+    public void setChannelHandlerContext(ChannelHandlerContext ctx){
+        this.ctx = ctx;
+    }
+
+
+    public ChannelHandlerContext getChannelHandlerContext(){
+        return this.ctx;
     }
 
 
@@ -111,49 +110,134 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Upstream from {}: {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(!(me.getMessage() instanceof CoapMessage)){
-            ctx.sendUpstream(me);
-            return;
+        if(me.getMessage() instanceof CoapMessage){
+
+            CoapMessage coapMessage = (CoapMessage) me.getMessage();
+
+            if (coapMessage.getMessageTypeName() == MessageType.Name.CON)
+                handleIncomingConfirmableCoapMessage(ctx, me);
+
+            else if (coapMessage.getMessageTypeName() == MessageType.Name.NON)
+                handleIncomingNonConfirmableMessage(ctx, me);
+
+            else
+                ctx.sendUpstream(me);
         }
 
-        final CoapMessage coapMessage = (CoapMessage) me.getMessage();
+        else
+            ctx.sendUpstream(me);
 
-        final InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-        final int messageID = coapMessage.getMessageID();
+    }
+
+
+    private void handleIncomingNonConfirmableMessage(ChannelHandlerContext ctx, MessageEvent me) {
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        CoapMessage coapMessage = (CoapMessage) me.getMessage();
+
+        boolean isDuplicate = true;
+
+        if(!ongoingMessageExchanges.contains(remoteEndpoint, coapMessage.getMessageID())){
+            IncomingMessageExchange messageExchange =
+                    new IncomingMessageExchange(remoteEndpoint, coapMessage.getMessageID());
+
+            synchronized (monitor){
+                if(!ongoingMessageExchanges.contains(remoteEndpoint, coapMessage.getMessageID())){
+                    ongoingMessageExchanges.put(remoteEndpoint, coapMessage.getMessageID(), messageExchange);
+
+                    isDuplicate = false;
+                }
+            }
+
+            ctx.sendUpstream(me);
+        }
+
+        if(isDuplicate)
+            log.info("Received duplicate (non-confirmable). IGNORE! (Message: {})", coapMessage);
+    }
+
+
+    private void handleIncomingConfirmableCoapMessage(ChannelHandlerContext ctx, MessageEvent me){
+
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
         //Empty CON messages can be used as application layer PING (is CoAP endpoint alive?)
-        if(coapMessage.getMessageTypeName() == MessageType.Name.CON &&
-                coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
+        if(coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY)
+            writeReset(remoteEndpoint, coapMessage.getMessageID());
 
-            me.getFuture().setSuccess();
-            writeReset(ctx, remoteSocketAddress, coapMessage.getMessageID());
+        else if(MessageCode.isResponse(coapMessage.getMessageCode()))
+            handleIncomingConfirmableCoapResponse(ctx, me);
+
+        else if(MessageCode.isRequest(coapMessage.getMessageCode()))
+            handleIncomingConfirmableCoapRequest(ctx, me);
+
+        else
+            log.error("Incoming CoAP message is neither empty nor request nor response: ", coapMessage);
+    }
+
+
+    private void handleIncomingConfirmableCoapResponse(ChannelHandlerContext ctx, MessageEvent me){
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        CoapMessage coapMessage = (CoapMessage) me.getMessage();
+
+        writeEmptyAcknowledgement(remoteEndpoint, coapMessage.getMessageID());
+
+        ctx.sendUpstream(me);
+    }
+
+
+    private void handleIncomingConfirmableCoapRequest(ChannelHandlerContext ctx, MessageEvent me) {
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        CoapMessage coapMessage = (CoapMessage) me.getMessage();
+
+        IncomingReliableMessageExchange newMessageExchange =
+                new IncomingReliableMessageExchange(remoteEndpoint, coapMessage.getMessageID());
+
+        IncomingMessageExchange oldMessageExchange =
+                ongoingMessageExchanges.get(remoteEndpoint, coapMessage.getMessageID());
+
+        //Check if there is an ongoing
+        if(oldMessageExchange != null){
+
+            if (oldMessageExchange instanceof IncomingReliableMessageExchange){
+
+                //if the old message exchange is reliable and the empty ACK was already sent send another empty ACK
+                if(((IncomingReliableMessageExchange) oldMessageExchange).isAcknowledgementSent())
+                    writeEmptyAcknowledgement(remoteEndpoint, coapMessage.getMessageID());
+
+            }
+
+            //if the old message was unreliable and the duplicate message is confirmable send empty ACK
+            else
+                writeEmptyAcknowledgement(remoteEndpoint, coapMessage.getMessageID());
+
+            //As the message is already being processed there is nothing more to do
             return;
         }
 
-        //Incoming requests
-        if(coapMessage instanceof CoapRequest && coapMessage.getMessageTypeName() == MessageType.Name.CON){
+        //try to add new reliable message exchange
+        boolean added = false;
+        synchronized (monitor){
+            Long time = System.currentTimeMillis() + MIN_EMPTY_ACK_DELAY_MILLIS;
 
-            //Do not further process duplicates
-            if(scheduledEmptyACKs.contains(remoteSocketAddress, messageID)){
-                log.warn("Duplicate received: {}", coapMessage);
-
-                writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
-                me.getFuture().setSuccess();
-                return;
+            //Add message exchange to set of ongoing exchanges to detect duplicates
+            if(!ongoingMessageExchanges.contains(remoteEndpoint, coapMessage.getMessageID())){
+                ongoingMessageExchanges.put(remoteEndpoint, coapMessage.getMessageID(), newMessageExchange);
+                added = true;
             }
 
-            else{
-                scheduleEmptyAcknowlegement(ctx, remoteSocketAddress, messageID);
-                log.debug("Scheduled empty ACK for {}.", coapMessage);
+            //If the scheduling of the empty ACK does not work then it was already scheduled
+            if(!emptyAcknowledgementSchedule.put(time, newMessageExchange)){
+                log.error("Could not schedule empty ACK for message: {}", coapMessage);
+                ongoingMessageExchanges.remove(remoteEndpoint, coapMessage.getMessageID());
+                added = false;
             }
+
         }
 
-        //Incoming CON responses require an immediate ACK
-        else if(coapMessage instanceof CoapResponse && coapMessage.getMessageTypeName() == MessageType.Name.CON){
-            writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
-        }
-
-        ctx.sendUpstream(me);
+        //everything is fine, so further process message
+        if(added)
+            ctx.sendUpstream(me);
     }
 
 
@@ -172,28 +256,34 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
-        log.debug("Downstream to {}: {}.", me.getRemoteAddress(), me.getMessage());
 
-        if(me.getMessage() instanceof CoapResponse){
+        if(me.getMessage() instanceof CoapResponse)
+            handleOutgoingCoapResponse(ctx, me);
 
-            CoapResponse coapResponse = (CoapResponse) me.getMessage();
-            InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
-            int messageID = coapResponse.getMessageID();
+        else
+            ctx.sendDownstream(me);
+    }
 
-            ScheduledFuture emptyACKFuture = null;
-            if(scheduledEmptyACKs.contains(remoteSocketAddress, messageID)){
-                synchronized (scheduledEmptyACKs){
-                    emptyACKFuture = scheduledEmptyACKs.remove(remoteSocketAddress, messageID);
-                }
-            }
 
-            if(emptyACKFuture != null && (!(emptyACKFuture.isDone()) && emptyACKFuture.cancel(false))){
-                //Set message type to ACK because the request was a not yet confirmed CON request
+    private void handleOutgoingCoapResponse(ChannelHandlerContext ctx, MessageEvent me){
+
+        CoapResponse coapResponse = (CoapResponse) me.getMessage();
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+
+        IncomingMessageExchange messageExchange;
+        synchronized (monitor){
+            messageExchange = ongoingMessageExchanges.remove(remoteEndpoint, coapResponse.getMessageID());
+        }
+
+        if(messageExchange instanceof IncomingReliableMessageExchange){
+
+            //if the ongoing message exchange is reliable and the empty ACK was not yet sent make response piggy-
+            //backed and suppress scheduled empty ACK
+            if(!((IncomingReliableMessageExchange) messageExchange).isAcknowledgementSent()){
                 coapResponse.setMessageType(MessageType.Name.ACK.getNumber());
+                ((IncomingReliableMessageExchange) messageExchange).setAcknowledgementSent();
             }
-            else{
-                coapResponse.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
-            }
+
         }
 
         ctx.sendDownstream(me);
@@ -201,71 +291,84 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     }
 
 
-    private void scheduleEmptyAcknowlegement(final ChannelHandlerContext ctx,
-                                             final InetSocketAddress remoteSocketAddress, final int messageID){
-
-        synchronized (scheduledEmptyACKs){
-
-            //Schedule empty ACK fo incoming request for in 1900ms
-            ScheduledFuture future = executorService.schedule(new Runnable() {
-
-                @Override
-                public void run() {
-                    ScheduledFuture future;
-                    synchronized (scheduledEmptyACKs) {
-                        future = scheduledEmptyACKs.remove(remoteSocketAddress, messageID);
-                    }
-
-                    if(future != null && !(future.isCancelled())){
-                        writeEmptyAcknowledgement(ctx, remoteSocketAddress, messageID);
-                    }
-                }
-            }, EMPTY_ACK_DELAY_MILLIS, TimeUnit.MILLISECONDS);
-
-            scheduledEmptyACKs.put(remoteSocketAddress, messageID, future);
-        }
-
-    }
-
-
-    private void writeEmptyAcknowledgement(ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,
-                                           final int messageID){
+    private void writeEmptyAcknowledgement(final InetSocketAddress remoteAddress, final int messageID){
         try{
-            CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
+            CoapMessage emptyAcknowledgement = CoapMessage.createEmptyAcknowledgement(messageID);
 
             ChannelFuture future = Channels.future(ctx.getChannel());
-            Channels.write(ctx, future, emptyACK, remoteAddress);
+            Channels.write(ctx, future, emptyAcknowledgement, remoteAddress);
 
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
-                    log.warn("Empty ACK for message ID {} succesfully sent to {}.", messageID, remoteAddress);
+                    log.info("Empty ACK for message ID {} succesfully sent to {}.", messageID, remoteAddress);
                 }
             });
         }
-        catch (InvalidHeaderException e) {
+        catch (IllegalArgumentException e) {
             log.error("This should never happen.", e);
         }
     }
 
 
-
-    private void writeReset(ChannelHandlerContext ctx, final InetSocketAddress remoteSocketAddress,
-                                           final int messageID){
+    private void writeReset(final InetSocketAddress remoteEndpoint, final int messageID){
         try{
             CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
             ChannelFuture future = Channels.future(ctx.getChannel());
-            Channels.write(ctx, future, resetMessage, remoteSocketAddress);
+
+            Channels.write(this.getChannelHandlerContext(), future, resetMessage, remoteEndpoint);
 
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
-                    log.info("RST for message ID {} succesfully sent to {}.", messageID, remoteSocketAddress);
+                    log.info("RST for message ID {} succesfully sent to {}.", messageID, remoteEndpoint);
                 }
             });
         }
-        catch (InvalidHeaderException e) {
+        catch (IllegalArgumentException e) {
             log.error("This should never happen.", e);
+        }
+    }
+
+
+    private class ReliabilityTask implements Runnable{
+
+        @Override
+        public void run() {
+            try{
+                long now = System.currentTimeMillis();
+
+                synchronized (monitor){
+
+                    //Send due empty acknowledgements
+                    Iterator<Map.Entry<Long, Collection<IncomingReliableMessageExchange>>> dueAcknowledgements =
+                            emptyAcknowledgementSchedule.asMap().headMap(now, true).entrySet().iterator();
+
+                    while(dueAcknowledgements.hasNext()){
+                        Map.Entry<Long, Collection<IncomingReliableMessageExchange>> part = dueAcknowledgements.next();
+
+                        for(IncomingReliableMessageExchange messageExchange : part.getValue()){
+                            if(!messageExchange.isAcknowledgementSent()){
+                                InetSocketAddress remoteEndpoint = messageExchange.getRemoteEndpoint();
+                                int messageID = messageExchange.getMessageID();
+
+                                writeEmptyAcknowledgement(remoteEndpoint, messageID);
+
+                                messageExchange.setAcknowledgementSent();
+                            }
+                        }
+
+                        dueAcknowledgements.remove();
+                    }
+
+                    //Retire open NON messages
+
+
+                }
+            }
+            catch(Exception e){
+                log.error("Error in reliability task for incoming message exchanges!", e);
+            }
         }
     }
 }

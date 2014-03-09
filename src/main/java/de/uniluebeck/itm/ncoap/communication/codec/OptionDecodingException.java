@@ -48,7 +48,7 @@
 */
 package de.uniluebeck.itm.ncoap.communication.codec;
 
-import de.uniluebeck.itm.ncoap.application.Token;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.options.OptionException;
 
 import java.net.InetSocketAddress;

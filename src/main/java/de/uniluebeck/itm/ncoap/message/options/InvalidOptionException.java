@@ -26,7 +26,7 @@
 package de.uniluebeck.itm.ncoap.message.options;
 
 /**
- * Exception to be thrown whenever the {@link Option} instance causing this exception, e.g. while being created,
+ * Exception to be thrown whenever the {@link OptionValue} instance causing this exception, e.g. while being created,
  * is invalid, mostly because of an invalid value. Use {@link #getMessage()} for further details on the reason.
  *
  * @author Oliver Kleine
@@ -34,7 +34,7 @@ package de.uniluebeck.itm.ncoap.message.options;
 public class InvalidOptionException extends OptionException {
 
     /**
-     * @param optionNumber the option number of the {@link Option} that caused this exception
+     * @param optionNumber the option number of the {@link OptionValue} that caused this exception
      * @param msg a human-readable message to explain why this exception was thrown
      */
     public InvalidOptionException(int optionNumber, String msg){

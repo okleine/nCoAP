@@ -149,11 +149,11 @@
 //
 //
 //        //write CON request with observe option
-//        coapClient.writeCoapRequest(coapRequest, responseProcessor);
+//        coapClient.sendCoapRequest(coapRequest, responseProcessor);
 //        Thread.sleep(500);
 //
 //        //write first update notification (ACK)
-//        CoapRequest receivedRequest = (CoapRequest) coapEndpoint.getReceivedMessages().values().toArray()[0];
+//        CoapRequest receivedRequest = (CoapRequest) coapEndpoint.getReceivedCoapMessages().values().toArray()[0];
 //        updateNotification1.setMessageID(receivedRequest.getMessageID());
 //        updateNotification1.setToken(receivedRequest.getToken());
 //
@@ -192,7 +192,7 @@
 //
 //    @Test
 //    public void testEndpointReceivedCorrectMessages(){
-//        Iterator<CoapMessage> receivedMessages =  coapEndpoint.getReceivedMessages().values().iterator();
+//        Iterator<CoapMessage> receivedMessages =  coapEndpoint.getReceivedCoapMessages().values().iterator();
 //
 //        //First message is the request
 //        assertTrue(receivedMessages.next() instanceof CoapRequest);

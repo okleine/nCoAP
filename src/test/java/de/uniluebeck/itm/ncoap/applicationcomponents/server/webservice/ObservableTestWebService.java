@@ -46,7 +46,7 @@
 // * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 // * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // */
-//package de.uniluebeck.itm.ncoap.plugtest.server.webservice;
+//package de.uniluebeck.itm.ncoap.applicationcomponents.server.webservice;
 //
 //import com.google.common.util.concurrent.SettableFuture;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;

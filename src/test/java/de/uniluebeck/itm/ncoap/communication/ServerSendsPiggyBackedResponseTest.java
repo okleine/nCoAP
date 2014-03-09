@@ -121,16 +121,16 @@
 //        */
 //
 //        //write request
-//        client.writeCoapRequest(coapRequest, responseProcessor);
+//        client.sendCoapRequest(coapRequest, responseProcessor);
 //
 //        //Wait some time
 //        Thread.sleep(300);
 //
 //        //Get message ID and token from received message
 //        int messageID =
-//                endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().lastKey()).getMessageID();
+//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getMessageID();
 //        byte[] token =
-//                endpoint.getReceivedMessages().get(endpoint.getReceivedMessages().lastKey()).getToken();
+//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getToken();
 //
 //        //write response #1
 //        CoapResponse response = createResponse(messageID, token);
@@ -145,7 +145,7 @@
 //
 //        //Wait some time
 //        Thread.sleep(300);
-//        endpoint.setReceiveEnabled(false);
+//        endpoint.setReceptionEnabled(false);
 //    }
 //
 //
@@ -162,7 +162,7 @@
 //
 //    @Test
 //    public void testReceivedRequestEqualsSentRequest() {
-//        SortedMap<Long, CoapMessage> receivedRequests = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedRequests = endpoint.getReceivedCoapMessages();
 //        String message = "Written and received request do not equal";
 //        assertEquals(message, coapRequest, receivedRequests.get(receivedRequests.firstKey()));
 //    }
@@ -170,7 +170,7 @@
 //    @Test
 //    public void testReceiverReceivedOnlyOneRequest() {
 //        String message = "Receiver received more than one message";
-//        assertEquals(message, 1, endpoint.getReceivedMessages().size());
+//        assertEquals(message, 1, endpoint.getReceivedCoapMessages().size());
 //    }
 //
 //    @Test

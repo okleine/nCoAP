@@ -26,7 +26,6 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
-import de.uniluebeck.itm.ncoap.application.TokenFactory;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
@@ -34,21 +33,26 @@ import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessag
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.handler.execution.ExecutionHandler;
-import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 
 /**
-* Factory to provide the {@link ChannelPipeline} for newly created {@link DatagramChannel}s via
-* {@link ClientChannelPipelineFactory}.
-*
-* @author Oliver Kleine
-*/
+ * Factory to provide the {@link ChannelPipeline} for a newly created {@link DatagramChannel} for a
+ * {@link CoapClientApplication}.
+ *
+ * @author Oliver Kleine
+ */
 public class ClientChannelPipelineFactory extends AbstractCoapChannelPipelineFactory {
 
     /**
+     * Creates a new instance of {@link ClientChannelPipelineFactory}.
+     *
      * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     *
+     * @param tokenFactory The {@link TokenFactory} to be used for generating {@link Token}s for outgoing
+     *                     {@link CoapRequest}s
      */
     public ClientChannelPipelineFactory(ScheduledExecutorService executorService, TokenFactory tokenFactory){
 

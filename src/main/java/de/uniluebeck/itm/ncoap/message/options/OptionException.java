@@ -48,12 +48,12 @@ public abstract class OptionException extends Exception {
 
     /**
      * Returns true if this Exception has been caused by a critical option. Otherwise (in case of elective options)
-     * it returns false. This is a shortcut for {@link Option#isCritical(int optionNumber)} where optionNumber is
+     * it returns false. This is a shortcut for {@link OptionValue#isCritical(int optionNumber)} where optionNumber is
      * {@link this#getOptionNumber()}
      *
      * @return whether the Exception was caused by a critical option
      */
     public boolean isCritical(){
-        return Option.isCritical(this.optionNumber);
+        return OptionValue.isCritical(this.optionNumber);
     }
 }

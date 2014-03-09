@@ -39,5 +39,5 @@ public interface RetransmissionTimeoutProcessor {
     /**
      * Method invoked by the nCoAP framework when there was an outgoing
      */
-    public void processRetransmissionTimeout(InternalRetransmissionTimeoutMessage timeoutMessage);
+    public void processRetransmissionTimeout();
 }

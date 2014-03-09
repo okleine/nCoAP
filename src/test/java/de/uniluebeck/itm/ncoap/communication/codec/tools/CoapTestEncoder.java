@@ -27,7 +27,7 @@ package de.uniluebeck.itm.ncoap.communication.codec.tools;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
-import de.uniluebeck.itm.ncoap.message.options.Option;
+import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 import org.jboss.netty.buffer.ChannelBuffer;
 
 /**
@@ -43,9 +43,9 @@ public class CoapTestEncoder extends CoapMessageEncoder{
         return super.encode(null, null, coapMessage);
     }
 
-    public void encodeOption(ChannelBuffer buffer, int optionNumber, Option option, int prevNumber)
+    public void encodeOption(ChannelBuffer buffer, int optionNumber, OptionValue optionValue, int prevNumber)
             throws InvalidOptionException {
-        super.encodeOption(buffer, optionNumber, option, prevNumber);
+        super.encodeOption(buffer, optionNumber, optionValue, prevNumber);
     }
 
 }

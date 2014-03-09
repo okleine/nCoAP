@@ -136,8 +136,8 @@
 //        Thread.sleep(3400);
 //
 //        //let testEndpoint write empty ACK to acknowledge seperate response
-//        int messageID = endpoint.getReceivedMessages()
-//                                .get(endpoint.getReceivedMessages().lastKey())
+//        int messageID = endpoint.getReceivedCoapMessages()
+//                                .get(endpoint.getReceivedCoapMessages().lastKey())
 //                                .getMessageID();
 //
 //        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
@@ -150,12 +150,12 @@
 //    @Test
 //    public void testReceiverReceivedTwoMessages() {
 //        String message = "Receiver did not receive two messages";
-//        assertEquals(message, 2, endpoint.getReceivedMessages().values().size());
+//        assertEquals(message, 2, endpoint.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testReceiverReceivedEmptyAck() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //
 //        long emptyAckReceptionTime = receivedMessages.firstKey();
 //        long delay = requestSentTime - emptyAckReceptionTime;
@@ -171,7 +171,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageIsResponse() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //
 //        String message = "Endpoint received more than one message";
@@ -180,7 +180,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageHasSameToken() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response token does not match with request token";
 //        assertTrue(message, Arrays.equals(request.getToken(), receivedMessage.getToken()));
@@ -188,7 +188,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageHasCodeContent() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response code is not CONTENT 205";
 //        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
@@ -196,7 +196,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageHasUnmodifiedPayload() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response payload was modified by testServer";
 //        assertEquals(message, PAYLOAD, receivedMessage.getContent().toString(Charset.forName("UTF-8")));
@@ -204,7 +204,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageHasMsgTypeCON() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response Msg Type is not CON";
 //        assertEquals(message, MessageType.CON, receivedMessage.getMessageType());

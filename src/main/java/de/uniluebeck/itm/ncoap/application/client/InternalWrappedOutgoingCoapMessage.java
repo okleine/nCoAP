@@ -22,58 +22,28 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
+package de.uniluebeck.itm.ncoap.application.client;
 
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import org.jboss.netty.channel.ChannelHandlerContext;
 
-import java.net.InetSocketAddress;
+/**
+ * Created by olli on 08.02.14.
+ */
+public class InternalWrappedOutgoingCoapMessage {
 
+    private final CoapMessage coapMessage;
+    private final CoapResponseProcessor coapResponseProcessor;
 
-public class MessageRetransmission{
-
-    private ChannelHandlerContext ctx;
-    private CoapMessage coapMessage;
-    private InetSocketAddress remoteSocketAddress;
-    private int retransmissionCount;
-    private boolean stopped;
-
-
-    public MessageRetransmission(ChannelHandlerContext ctx, CoapMessage coapMessage,
-                                 InetSocketAddress remoteSocketAddress){
-        this.ctx = ctx;
+    public InternalWrappedOutgoingCoapMessage(CoapMessage coapMessage, CoapResponseProcessor coapResponseProcessor){
         this.coapMessage = coapMessage;
-        this.remoteSocketAddress = remoteSocketAddress;
-        this.stopped = false;
+        this.coapResponseProcessor = coapResponseProcessor;
     }
 
-    public ChannelHandlerContext getChannelHandlerContext(){
-        return this.ctx;
+    public CoapMessage getCoapRequest() {
+        return coapMessage;
     }
 
-    public CoapMessage getCoapMessage(){
-        return this.coapMessage;
-    }
-
-    public InetSocketAddress getRemoteSocketAddress() {
-        return remoteSocketAddress;
-    }
-
-    public boolean isStopped() {
-        return stopped;
-    }
-
-    public void stop(){
-        this.stopped = true;
-    }
-
-    public int increaseRetransmissionCount(){
-        return ++retransmissionCount;
-    }
-
-    @Override
-    public String toString() {
-        return "Retransmission no. " + retransmissionCount + " for " + coapMessage;
+    public CoapResponseProcessor getCoapResponseProcessor() {
+        return coapResponseProcessor;
     }
 }
