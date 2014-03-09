@@ -2,14 +2,8 @@ Java implementation of the CoAP protocol (draft 18)
 ===================================================
 see: http://tools.ietf.org/html/draft-ietf-core-coap-18
 
-Draft-18 is the one to become an RFC at sometime, i.e. there are (if any) only few and minor changes expected in the future.
-
-This implementation is usable for both clients and servers including extensions:
-
-* CoAP observe (draft-11)
------------------------
-see: http://tools.ietf.org/html/draft-ietf-core-observe-11
-
+Draft-18 is the one to become an RFC at sometime, i.e. there are (if any) only few and minor changes expected in the
+future. This implementation currently only supports the main protocol (without extensions like observe).
 
 
 Maven
