@@ -140,7 +140,7 @@
 //        int messageID =
 //                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getMessageID();
 //        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
-//        endpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", client.getClientPort()));
+//        endpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", client.getPort()));
 //
 //        //wait another some time to simulate request processing
 //        Thread.sleep(500);
@@ -151,7 +151,7 @@
 //        seperateResponse.setToken(token);
 //
 //        //send seperate response
-//        endpoint.writeMessage(seperateResponse, new InetSocketAddress("localhost", client.getClientPort()));
+//        endpoint.writeMessage(seperateResponse, new InetSocketAddress("localhost", client.getPort()));
 //
 //        //wait some time for ACK from client
 //        Thread.sleep(500);

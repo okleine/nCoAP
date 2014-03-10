@@ -63,12 +63,13 @@ public class InternalMessageRetransmittedMessage {
 
     private InetSocketAddress remoteAddress;
     private Token token;
+    private int messageID;
 
     /**
      * @param remoteAddress the recipient of the retransmitted message
      * @param token the token of the retransmitted message
      */
-    public InternalMessageRetransmittedMessage(InetSocketAddress remoteAddress, Token token) {
+    public InternalMessageRetransmittedMessage(InetSocketAddress remoteAddress, Token token, int messageID) {
         this.remoteAddress = remoteAddress;
         this.token = token;
     }
@@ -94,5 +95,9 @@ public class InternalMessageRetransmittedMessage {
     public String toString(){
         return "[InternalMessageRetransmittedMessage]: " + remoteAddress + " (remote address), "
                 + token + " (token)";
+    }
+
+    public int getMessageID() {
+        return messageID;
     }
 }

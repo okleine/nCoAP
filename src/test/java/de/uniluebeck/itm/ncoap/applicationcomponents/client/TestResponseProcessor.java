@@ -27,6 +27,7 @@ package de.uniluebeck.itm.ncoap.applicationcomponents.client;
 import com.google.common.collect.SortedMultiset;
 import com.google.common.collect.TreeMultiset;
 import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -66,7 +67,7 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
 
 
     @Override
-    public void messageTransmitted(boolean retransmission) {
+    public void messageTransmitted(final Token token, int messageID, boolean retransmission) {
         synchronized (requestTransmissionTimes){
             if(!retransmission && requestTransmissionTimes.size() > 0)
                 log.error("Initial transmission happened after first retransmission.");

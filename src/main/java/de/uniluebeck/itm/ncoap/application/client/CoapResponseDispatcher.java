@@ -42,7 +42,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The {@link CoapResponseDispatcher} is responsible for
+ * The {@link CoapResponseDispatcher} is responsible for processing incoming {@link CoapResponse}s. Each
+ * {@link CoapRequest} needs an associated instance of {@link CoapResponseProcessor}
  */
 public class CoapResponseDispatcher extends SimpleChannelHandler{
 
@@ -275,7 +276,8 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                 responseProcessors.get(message.getRemoteAddress(), message.getToken());
 
         if(callback != null && callback instanceof TransmissionInformationProcessor)
-            ((TransmissionInformationProcessor) callback).messageTransmitted(true);
+            ((TransmissionInformationProcessor) callback).messageTransmitted(message.getToken(),
+                    message.getMessageID(), true);
 
     }
 

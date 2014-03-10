@@ -24,6 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
@@ -50,5 +51,5 @@ public interface TransmissionInformationProcessor {
      *                       {@link MessageType.Name#CON} and {@link MessageType.Name#NON) and <code>true</code> for
      *                       retransmissions (for {@link MessageType.Name#CON} only).
      */
-    public void messageTransmitted(boolean retransmission);
+    public void messageTransmitted(Token token, int messageID, boolean retransmission);
 }

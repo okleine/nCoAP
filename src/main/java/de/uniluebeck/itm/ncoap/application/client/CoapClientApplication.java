@@ -140,7 +140,7 @@ public class CoapClientApplication {
     /**
      * Creates a new instance.
      * 
-     * Invokation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
      * <code>"CoAP Client"</code> as parameter name.
      *
      * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
@@ -161,7 +161,7 @@ public class CoapClientApplication {
     /**
      * Creates a new instance of {@link CoapClientApplication} with default parameters.
      * 
-     * Invokation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int)} with
      * parameters <code>name = "CoAP Client"</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>.
      */
     public CoapClientApplication(){
@@ -171,7 +171,7 @@ public class CoapClientApplication {
     /**
      * Creates a new instance of {@link CoapClientApplication}.
      *
-     * Invokation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int)} with
      * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>.
      */
     public CoapClientApplication(String name){
@@ -181,7 +181,7 @@ public class CoapClientApplication {
     /**
      * Creates a new instance of {@link CoapClientApplication}.
      *
-     * Invokation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
      * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>, and
      * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>
      */
@@ -218,7 +218,8 @@ public class CoapClientApplication {
                                             remoteEndpoint.getPort(), coapRequest});
 
                             if (coapResponseProcessor instanceof TransmissionInformationProcessor)
-                                ((TransmissionInformationProcessor) coapResponseProcessor).messageTransmitted(false);
+                                ((TransmissionInformationProcessor) coapResponseProcessor).messageTransmitted(
+                                        coapRequest.getToken(), coapRequest.getMessageID(), false);
                         }
                     }
                 });
@@ -259,7 +260,8 @@ public class CoapClientApplication {
                                             remoteEndpoint.getPort(), resetMessage});
 
                             if (resetProcessor instanceof TransmissionInformationProcessor)
-                                ((TransmissionInformationProcessor) resetProcessor).messageTransmitted(false);
+                                ((TransmissionInformationProcessor) resetProcessor).messageTransmitted(
+                                        resetMessage.getToken(), resetMessage.getMessageID(), false);
                         }
                     }
                 });
@@ -275,7 +277,7 @@ public class CoapClientApplication {
      *
      * @return the local port the {@link DatagramChannel} of this {@link CoapClientApplication} is bound to.
      */
-    public int getClientPort() {
+    public int getPort() {
         return this.channel.getLocalAddress().getPort();
     }
 
@@ -284,7 +286,7 @@ public class CoapClientApplication {
      * this {@link DatagramChannel} from the listening port and by this means free the port.
      */
     public final ChannelFuture shutdown(){
-        log.warn("Start to shutdown client...");
+        log.warn("Start to shutdown " + this.name + " (Port : " + this.getPort() + ")");
 
         //Close the datagram datagramChannel (includes unbind)
         ChannelFuture channelClosedFuture = this.channel.close();
@@ -294,7 +296,7 @@ public class CoapClientApplication {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 channel.getFactory().releaseExternalResources();
-                log.info("External resources released. Shutdown completed.");
+                log.warn("Shutdown of " + CoapClientApplication.this.name + " completed.");
             }
         });
 

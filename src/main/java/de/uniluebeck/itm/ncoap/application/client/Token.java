@@ -28,6 +28,8 @@ import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLongs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
@@ -39,6 +41,8 @@ import java.util.Arrays;
  * To change this template use File | Settings | File Templates.
  */
 public class Token implements Comparable<Token>{
+
+    private static Logger log = LoggerFactory.getLogger(Token.class.getName());
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -83,10 +87,13 @@ public class Token implements Comparable<Token>{
         return Arrays.equals(this.getBytes(), other.getBytes());
     }
 
+
     @Override
     public int hashCode(){
-        return Ints.fromByteArray(Bytes.concat(token, new byte[4]));
+        return Arrays.hashCode(token);
+//        return Longs.hashCode(Longs.fromByteArray(Bytes.concat(token, new byte[8-token.length])));
     }
+
 
     @Override
     public int compareTo(Token other) {

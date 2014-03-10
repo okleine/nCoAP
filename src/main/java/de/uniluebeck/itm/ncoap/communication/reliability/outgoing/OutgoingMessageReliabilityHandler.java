@@ -128,7 +128,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                 log.debug("Message ID set to " + coapMessage.getMessageID());
 
                 if (coapMessage.getMessageTypeName() == MessageType.Name.CON)
-                    ensureTransmissionReliability(ctx, coapMessage, remoteEndpoint);
+                    ensureTransmissionReliability(coapMessage, remoteEndpoint);
             }
 
             ctx.sendDownstream(me);
@@ -144,8 +144,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     }
 
 
-    private void ensureTransmissionReliability(ChannelHandlerContext ctx, CoapMessage coapMessage,
-                                               InetSocketAddress remoteEndpoint)
+    private void ensureTransmissionReliability(CoapMessage coapMessage, InetSocketAddress remoteEndpoint)
             throws RetransmissionsAlreadyScheduledException {
 
         if(ongoingMessageExchanges.contains(remoteEndpoint, coapMessage.getMessageID())){
@@ -258,8 +257,9 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         CoapMessage coapMessage = (CoapMessage) me.getMessage();
 
         //Try to cancel open retransmissions (method returns false if there was no open CON)
-        if(stopRetransmission(remoteEndpoint, coapMessage.getMessageID()) == null){
-            log.error("No open CON found for incoming message: {}", coapMessage);
+        OutgoingMessageExchange messageExchange = stopRetransmission(remoteEndpoint, coapMessage.getMessageID());
+        if(messageExchange == null){
+            log.warn("No open CON found for incoming message: {}", coapMessage);
             return;
         }
 
@@ -284,7 +284,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
         if(ongoingMessageExchanges.contains(remoteEndpoint, messageID)){
             synchronized(monitor){
-                messageExchange = ongoingMessageExchanges.get(remoteEndpoint, messageID);
+                messageExchange = ongoingMessageExchanges.remove(remoteEndpoint, messageID);
             }
         }
 
@@ -359,7 +359,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                                         if(future.isSuccess()){
                                             InternalMessageRetransmittedMessage internalMessage =
                                                     new InternalMessageRetransmittedMessage(remoteEndpoint,
-                                                            coapMessage.getToken());
+                                                            coapMessage.getToken(), coapMessage.getMessageID());
 
                                             Channels.fireMessageReceived(getChannelHandlerContext(), internalMessage);
                                         }

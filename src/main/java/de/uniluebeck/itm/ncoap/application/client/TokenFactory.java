@@ -63,7 +63,6 @@ public class TokenFactory {
 
     private SortedSetMultimap<InetSocketAddress, Token> usedTokens;
 
-
     /**
      * Creates a new instance of {@link TokenFactory} producing {@link Token}s where the length of
      * {@link Token#getBytes()} is not longer than the given maximum length.
@@ -82,7 +81,6 @@ public class TokenFactory {
         };
 
         usedTokens = Multimaps.newSortedSetMultimap(new HashMap<InetSocketAddress, Collection<Token>>(), factory);
-
     }
 
 
@@ -93,34 +91,34 @@ public class TokenFactory {
      * CoAP server, the returned {@link ListenableFuture<Token>} will be set with a {@link Token} that is different
      * from all other {@link Token}s used for those communications.
      *
-     * @param remoteSocketAddress the {@link InetSocketAddress} of the CoAP server this token is supposed to be used
+     * @param remoteEndpoint the {@link InetSocketAddress} of the CoAP server this token is supposed to be used
      *                            to communicate with.
      *
      * @return a {@link ListenableFuture<Token>} that will be set with a {@link Token} that is not already in use to
      * for ongoing communications with the given {@link InetSocketAddress}.
      */
-    public synchronized Token getNextToken(InetSocketAddress remoteSocketAddress) throws NoTokenAvailableException {
+    public synchronized Token getNextToken(InetSocketAddress remoteEndpoint) throws NoTokenAvailableException {
 
-        Token nextToken = getNextTokenInOrder(remoteSocketAddress);
+        Token nextToken = getNextTokenInOrder(remoteEndpoint);
 
         if(nextToken == null){
-            throw new NoTokenAvailableException(remoteSocketAddress);
+            throw new NoTokenAvailableException(remoteEndpoint);
         }
         else{
-            usedTokens.put(remoteSocketAddress, nextToken);
+            usedTokens.put(remoteEndpoint, nextToken);
             return nextToken;
         }
     }
 
 
-    private Token getNextTokenInOrder(InetSocketAddress remoteSocketAddress){
+    private Token getNextTokenInOrder(InetSocketAddress remoteEndpoint){
         Token result;
 
-        if(!usedTokens.containsKey(remoteSocketAddress))
+        if(!usedTokens.containsKey(remoteEndpoint))
             result = new Token(new byte[0]);
 
         else
-            result = getSuccessor(usedTokens.get(remoteSocketAddress).last());
+            result = getSuccessor(usedTokens.get(remoteEndpoint).last());
 
         return result;
     }
@@ -131,23 +129,24 @@ public class TokenFactory {
      * {@link InetSocketAddress} to make it re-usable for upcoming communication with the same CoAP server.
      *
      * @param token the {@link Token} that is not used anymore
-     * @param remoteSocketAddress the {@link InetSocketAddress} of the CoAP server, the {@link Token} was used to
+     * @param remoteEndpoint the {@link InetSocketAddress} of the CoAP server, the {@link Token} was used to
      *                            communicate with
      */
-    public synchronized boolean passBackToken(InetSocketAddress remoteSocketAddress, Token token){
+    public synchronized boolean passBackToken(InetSocketAddress remoteEndpoint, Token token){
 
-        if(usedTokens.remove(remoteSocketAddress, token)){
+        if(usedTokens.remove(remoteEndpoint, token)){
             log.debug("Passed back token {} (length: {}) from {}. (Now {} tokens in use.)",
-                    new Object[]{token, token.getBytes().length, remoteSocketAddress,
-                            usedTokens.get(remoteSocketAddress).size()});
+                    new Object[]{token, token.getBytes().length, remoteEndpoint,
+                            usedTokens.get(remoteEndpoint).size()});
 
             return true;
         }
 
         else{
             log.error("Could not pass back token {} (length: {}) from {}. (Still {} tokens in use.)",
-                    new Object[]{token, token.getBytes().length, remoteSocketAddress,
-                            usedTokens.get(remoteSocketAddress).size()});
+                    new Object[]{token, token.getBytes().length, remoteEndpoint,
+                            usedTokens.get(remoteEndpoint).size()});
+
             return false;
         }
     }
@@ -173,6 +172,8 @@ public class TokenFactory {
             else
                 return new Token(new byte[0]);
         }
+
+
 
         long tmp = Longs.fromByteArray(Bytes.concat(new byte[8-token.getBytes().length], token.getBytes())) + 1;
         byte[] result = Longs.toByteArray(tmp);

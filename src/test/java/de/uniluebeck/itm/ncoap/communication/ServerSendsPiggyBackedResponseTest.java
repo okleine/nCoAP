@@ -134,14 +134,14 @@
 //
 //        //write response #1
 //        CoapResponse response = createResponse(messageID, token);
-//        endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getClientPort()));
+//        endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
 //
 //        //Wait some time
 //        Thread.sleep(300);
 //
 //        //write response #2
 //        CoapResponse response2 = createResponse(messageID, token);
-//        endpoint.writeMessage(response2, new InetSocketAddress("localhost", client.getClientPort()));
+//        endpoint.writeMessage(response2, new InetSocketAddress("localhost", client.getPort()));
 //
 //        //Wait some time
 //        Thread.sleep(300);

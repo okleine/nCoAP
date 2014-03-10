@@ -157,21 +157,21 @@
 //        updateNotification1.setMessageID(receivedRequest.getMessageID());
 //        updateNotification1.setToken(receivedRequest.getToken());
 //
-//        coapEndpoint.writeMessage(updateNotification1, new InetSocketAddress("localhost", coapClient.getClientPort()));
+//        coapEndpoint.writeMessage(updateNotification1, new InetSocketAddress("localhost", coapClient.getPort()));
 //
 //        //Send update notification within max-age
 //        Thread.sleep(9000);
 //        updateNotification2.setMessageID(receivedRequest.getMessageID());
 //        updateNotification2.setToken(receivedRequest.getToken());
 //
-//        coapEndpoint.writeMessage(updateNotification2, new InetSocketAddress("localhost", coapClient.getClientPort()));
+//        coapEndpoint.writeMessage(updateNotification2, new InetSocketAddress("localhost", coapClient.getPort()));
 //
 //        //Send update notification after observation is supposed to be timed out on client side
 //        Thread.sleep(17000);
 //        updateNotification3.setMessageID(receivedRequest.getMessageID());
 //        updateNotification3.setToken(receivedRequest.getToken());
 //
-//        coapEndpoint.writeMessage(updateNotification3, new InetSocketAddress("localhost", coapClient.getClientPort()));
+//        coapEndpoint.writeMessage(updateNotification3, new InetSocketAddress("localhost", coapClient.getPort()));
 //
 //        Thread.sleep(12000);
 //    }
