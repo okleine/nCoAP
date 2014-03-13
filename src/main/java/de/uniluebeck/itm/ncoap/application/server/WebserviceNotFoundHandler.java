@@ -80,10 +80,10 @@ public abstract class WebserviceNotFoundHandler {
      *
      * @param coapRequest the {@link CoapRequest} to be processed
      *
-     * @param remoteSocketAddress the {@link InetSocketAddress} of the {@link CoapRequest}s origin.
+     * @param remoteEndpoint the {@link InetSocketAddress} of the {@link CoapRequest}s origin.
      */
     public abstract void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                            InetSocketAddress remoteSocketAddress);
+                                            InetSocketAddress remoteEndpoint);
 
 
     /**
@@ -100,7 +100,7 @@ public abstract class WebserviceNotFoundHandler {
 
             @Override
             public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                           InetSocketAddress remoteSocketAddress) {
+                                           InetSocketAddress remoteEndpoint) {
                 try {
 
                     CoapResponse coapResponse =

@@ -22,33 +22,13 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.codec;
-
-import java.net.InetSocketAddress;
+package de.uniluebeck.itm.ncoap.application;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 03.12.13
- * Time: 16:47
- * To change this template use File | Settings | File Templates.
+ * Internal message that is sent downstream to indicate an approaching shutdown of the application.
+ *
+ * @author Oliver Kleine
  */
-public class MessageFormatDecodingException extends Exception {
+public class InternalApplicationShutdownMessage {
 
-    private InetSocketAddress remoteEndpoint;
-    private int messageID;
-
-    public MessageFormatDecodingException(InetSocketAddress remoteEndpoint, int messageID, String message){
-        super(message);
-        this.remoteEndpoint = remoteEndpoint;
-        this.messageID = messageID;
-    }
-
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
-    }
-
-    public int getMessageID() {
-        return messageID;
-    }
 }

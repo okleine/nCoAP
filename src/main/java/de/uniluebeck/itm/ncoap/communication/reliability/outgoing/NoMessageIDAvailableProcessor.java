@@ -45,10 +45,10 @@ public interface NoMessageIDAvailableProcessor extends CoapResponseProcessor{
      * A used message ID retires, i.e. is usable for a new {@link CoapRequest}
      * {@link MessageIDFactory#EXCHANGE_LIFETIME} seconds (247) after it was allocated.
      *
-     * @param remoteSocketAddress the desired recipient of the {@link CoapRequest} that could not be transmitted.
+     * @param remoteEndpoint the desired recipient of the {@link CoapRequest} that could not be transmitted.
      * @param waitingPeriod the number of milliseconds to wait until the next message ID for the remote CoAP endpoint
      *                      retires, e.g. is ready to be used for a new request.
      */
-    public void handleNoMessageIDAvailable(InetSocketAddress remoteSocketAddress, long waitingPeriod);
+    public void handleNoMessageIDAvailable(InetSocketAddress remoteEndpoint, long waitingPeriod);
 
 }

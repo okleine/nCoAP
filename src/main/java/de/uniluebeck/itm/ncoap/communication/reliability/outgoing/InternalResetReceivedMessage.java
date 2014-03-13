@@ -38,16 +38,16 @@ import java.net.InetSocketAddress;
  */
 public class InternalResetReceivedMessage {
 
-    private InetSocketAddress remoteSocketAddress;
+    private InetSocketAddress remoteEndpoint;
     private Token token;
     private CoapMessage resetMessage;
 
     /**
      * @param token the token of the confirmed message
      */
-    public InternalResetReceivedMessage(InetSocketAddress remoteSocketAddress, Token token,
+    public InternalResetReceivedMessage(InetSocketAddress remoteEndpoint, Token token,
                                         CoapMessage resetMessage){
-        this.remoteSocketAddress = remoteSocketAddress;
+        this.remoteEndpoint = remoteEndpoint;
         this.token = token;
         this.resetMessage = resetMessage;
     }
@@ -65,8 +65,8 @@ public class InternalResetReceivedMessage {
         return "InternalResetReceivedMessage: " + token + " (token)";
     }
 
-    public InetSocketAddress getRemoteSocketAddress() {
-        return remoteSocketAddress;
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 
 

@@ -27,6 +27,7 @@ package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
+import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetProcessor;
@@ -288,15 +289,35 @@ public class CoapClientApplication {
     public final ChannelFuture shutdown(){
         log.warn("Start to shutdown " + this.name + " (Port : " + this.getPort() + ")");
 
-        //Close the datagram datagramChannel (includes unbind)
-        ChannelFuture channelClosedFuture = this.channel.close();
+        InternalApplicationShutdownMessage shutdownMessage = new InternalApplicationShutdownMessage();
+        ChannelFuture shutdownFuture = Channels.write(this.channel, shutdownMessage);
 
-        //Await the closure and let the factory release its external resource to finalize the shutdown
-        channelClosedFuture.addListener(new ChannelFutureListener() {
+        final ChannelFuture channelClosedFuture = this.channel.getCloseFuture();
+
+        shutdownFuture.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                channel.getFactory().releaseExternalResources();
-                log.warn("Shutdown of " + CoapClientApplication.this.name + " completed.");
+                log.warn("Internal component shutdown completed... Close channel now.");
+                if(future.isSuccess()){
+                    //Close the datagram datagramChannel (includes unbind)
+                    CoapClientApplication.this.channel.close();
+
+                    //Await the closure and let the factory release its external resource to finalize the shutdown
+                    channelClosedFuture.addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            log.warn("Channel closed.");
+                            channel.getFactory().releaseExternalResources();
+                            //scheduledExecutorService.shutdownNow();
+                            log.warn("Shutdown of " + CoapClientApplication.this.name + " completed.");
+                        }
+                    });
+                }
+
+                else{
+                    log.error("Excpetion while shutting application down!", future.getCause());
+                }
+
             }
         });
 

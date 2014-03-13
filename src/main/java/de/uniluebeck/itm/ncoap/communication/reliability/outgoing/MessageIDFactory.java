@@ -47,7 +47,6 @@ public class MessageIDFactory extends Observable {
      */
     public static final int EXCHANGE_LIFETIME = 247;
 
-    public static final int NON_LIFETIME = 145;
     /**
      * The number of different message IDs per remote CoAP endpoint (65536), i.e. there are at most 65536
      * communications with the same endpoint possible within {@link #EXCHANGE_LIFETIME} milliseconds.
@@ -165,6 +164,10 @@ public class MessageIDFactory extends Observable {
         allocatedMessageIDsForRemoteAddreses.add(new AllocatedMessageID(messageID, retirementDate));
     }
 
+
+    synchronized void shutdown(){
+        this.retiringMessageIDs.clear();
+    }
 
     private class AllocatedMessageID {
 

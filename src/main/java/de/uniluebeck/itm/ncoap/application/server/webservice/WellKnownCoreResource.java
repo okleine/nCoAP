@@ -99,7 +99,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
      *                       the list of available services in CoRE link format.
      * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
-     * @param remoteSocketAddress The address of the sender of the request
+     * @param remoteEndpoint The address of the sender of the request
      *
      * @throws Exception Implementing classes may throw any {@link Exception}. Thrown {@link Exception}s cause the
      * framework to send a {@link CoapResponse} with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} to the
@@ -107,7 +107,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      */
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteSocketAddress) throws Exception{
+                                   InetSocketAddress remoteEndpoint) throws Exception{
 
             //Handle GET request
             if(coapRequest.getMessageCodeName() == MessageCode.Name.GET){

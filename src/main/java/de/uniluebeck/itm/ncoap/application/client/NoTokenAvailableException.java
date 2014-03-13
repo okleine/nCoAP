@@ -27,18 +27,30 @@ package de.uniluebeck.itm.ncoap.application.client;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 06.03.14.
+ * Exception that is thrown (and handled internally) if there is no {@link Token} available to start communicating
+ * with another CoAP endpoint, i.e. a CoAP server.
+ *
+ * @author Oliver Kleine
  */
 public class NoTokenAvailableException extends Exception {
 
-    private InetSocketAddress remoteAddress;
+    private InetSocketAddress remoteEndpoint;
 
-    public NoTokenAvailableException(InetSocketAddress remoteAddress){
-
-        this.remoteAddress = remoteAddress;
+    /**
+     * Creates a new instance of {@link NoTokenAvailableException}.
+     * @param remoteEndpoint the address of the CoAP endpoint for which all possible {@link Token}s are
+     *                       already in use
+     */
+    public NoTokenAvailableException(InetSocketAddress remoteEndpoint){
+        this.remoteEndpoint = remoteEndpoint;
     }
 
-    public InetSocketAddress getRemoteAddress() {
-        return remoteAddress;
+    /**
+     * Returns the address of the CoAP endpoint for which all possible {@link Token}s are already in use
+     *
+     * @return the address of the CoAP endpoint for which all possible {@link Token}s are already in use
+     */
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 }

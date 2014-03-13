@@ -116,8 +116,8 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
 
 
         //Send coapRequest
-        InetSocketAddress remoteSocketAddress = new InetSocketAddress("127.0.0.1", testEndpoint.getPort());
-        client.sendCoapRequest(coapRequest, responseProcessor, remoteSocketAddress);
+        InetSocketAddress remoteEndpoint = new InetSocketAddress("127.0.0.1", testEndpoint.getPort());
+        client.sendCoapRequest(coapRequest, responseProcessor, remoteEndpoint);
 
         timeRequestSent = System.currentTimeMillis();
 

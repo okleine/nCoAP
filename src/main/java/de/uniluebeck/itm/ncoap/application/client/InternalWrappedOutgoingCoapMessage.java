@@ -27,7 +27,9 @@ package de.uniluebeck.itm.ncoap.application.client;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
- * Created by olli on 08.02.14.
+ * The {@link InternalWrappedOutgoingCoapMessage} is an internal wrapper class for outgoing messages sent by a client.
+ *
+ * @author Oliver Kleine
  */
 public class InternalWrappedOutgoingCoapMessage {
 
@@ -39,10 +41,19 @@ public class InternalWrappedOutgoingCoapMessage {
         this.coapResponseProcessor = coapResponseProcessor;
     }
 
-    public CoapMessage getCoapRequest() {
+    /**
+     * Returns the {@link CoapMessage} to be sent
+     * @return the {@link CoapMessage} to be sent
+     */
+    public CoapMessage getCoapMessage() {
         return coapMessage;
     }
 
+    /**
+     * Returns the {@link CoapResponseProcessor} to process the awaited {@link CoapMessage}.
+     *
+     * @return the {@link CoapResponseProcessor} to process the awaited {@link CoapMessage}.
+     */
     public CoapResponseProcessor getCoapResponseProcessor() {
         return coapResponseProcessor;
     }

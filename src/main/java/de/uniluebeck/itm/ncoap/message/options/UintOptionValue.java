@@ -50,11 +50,11 @@ public class UintOptionValue extends OptionValue<Long> {
 
 
 
-    public UintOptionValue(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+    public UintOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
         super(optionNumber, shortenValue(value));
     }
 
-    public UintOptionValue(int optionNumber, long value) throws InvalidOptionException, UnknownOptionException {
+    public UintOptionValue(int optionNumber, long value) throws IllegalArgumentException {
         this(optionNumber, value == 0 ? new byte[0] : new BigInteger(1, Longs.toByteArray(value)).toByteArray());
     }
 

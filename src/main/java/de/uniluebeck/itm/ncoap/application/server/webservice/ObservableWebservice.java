@@ -108,18 +108,18 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 //     * that method at all.
 //     *
 //     * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
-//     * @param remoteSocketAddress The address of the sender of the request
+//     * @param remoteEndpoint The address of the sender of the request
 //     */
 //    public final void preprocessCoapRequest(final SettableFuture<CoapResponse> responseFuture,
-//                                            final CoapRequest coapRequest, final InetSocketAddress remoteSocketAddress)
+//                                            final CoapRequest coapRequest, final InetSocketAddress remoteEndpoint)
 //            throws Exception{
 //
 //
-//        if(observations.contains(remoteSocketAddress, coapRequest.getToken()))
-//            removeObserver(remoteSocketAddress, coapRequest.getToken());
+//        if(observations.contains(remoteEndpoint, coapRequest.getToken()))
+//            removeObserver(remoteEndpoint, coapRequest.getToken());
 //
 //        if(coapRequest.isObserveSet())
-//            addObserver(remoteSocketAddress, coapRequest.getToken());
+//            addObserver(remoteEndpoint, coapRequest.getToken());
 //
 //
 //        final SettableFuture<CoapResponse> responseFuture2 = SettableFuture.create();
@@ -134,14 +134,14 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 //                    if(coapRequest.isObserveSet()){
 //                        //Stop the observation if the request processing caused an error message
 //                        if(MessageCode.isErrorMessage(coapResponse.getMessageCode())){
-//                            removeObserver(remoteSocketAddress, coapRequest.getToken());
+//                            removeObserver(remoteEndpoint, coapRequest.getToken());
 //                        }
 //
 //                        //Set the proper observation sequence number
 //                        else{
 //                            long observationSequenceNumber =
-//                                    getNextObservationSequenceNumber(remoteSocketAddress, coapRequest.getToken());
-//                            coapResponse.setObservationSequenceNumber(observationSequenceNumber);
+//                                    getNextObservationSequenceNumber(remoteEndpoint, coapRequest.getToken());
+//                            coapResponse.setObserveOption(observationSequenceNumber);
 //                        }
 //                    }
 //
@@ -153,38 +153,38 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 //
 //                    //Stop the observation if the request processing caused an error message
 //                    if(coapRequest.isObserveSet())
-//                        removeObserver(remoteSocketAddress, coapRequest.getToken());
+//                        removeObserver(remoteEndpoint, coapRequest.getToken());
 //
 //                    responseFuture.setException(e);
 //                }
 //            }
 //        }, getScheduledExecutorService());
 //
-//        processCoapRequest(responseFuture2, coapRequest, remoteSocketAddress);
+//        processCoapRequest(responseFuture2, coapRequest, remoteEndpoint);
 //    }
 
 
-    private synchronized void removeObserver(InetSocketAddress remoteSocketAddress, Token token){
-        if(observations.remove(remoteSocketAddress, token) != null){
+    private synchronized void removeObserver(InetSocketAddress remoteEndpoint, Token token){
+        if(observations.remove(remoteEndpoint, token) != null){
             log.info("Removed {} with token {} as observer for service {}",
-                    new Object[]{remoteSocketAddress, token, getPath()});
+                    new Object[]{remoteEndpoint, token, getPath()});
         }
     }
 
 
-//    private synchronized void addObserver(InetSocketAddress remoteSocketAddress, Token token){
-//        observations.put(remoteSocketAddress, token, 1L);
+//    private synchronized void addObserver(InetSocketAddress remoteEndpoint, Token token){
+//        observations.put(remoteEndpoint, token, 1L);
 //        log.info("Added {} with tokeb {} as observer for service {}",
-//                new Object[]{remoteSocketAddress, token, getPath()});
+//                new Object[]{remoteEndpoint, token, getPath()});
 //    }
 
-    private synchronized long getNextObservationSequenceNumber(InetSocketAddress remoteSocketAddress, Token token){
+    private synchronized long getNextObservationSequenceNumber(InetSocketAddress remoteEndpoint, Token token){
 
-        Long actualSequenceNumber = observations.get(remoteSocketAddress, token);
+        Long actualSequenceNumber = observations.get(remoteEndpoint, token);
 
         if(actualSequenceNumber != null){
             actualSequenceNumber += (OutgoingMessageReliabilityHandler.MAX_RETRANSMISSIONS + 1);
-            observations.put(remoteSocketAddress, token, actualSequenceNumber);
+            observations.put(remoteEndpoint, token, actualSequenceNumber);
 
             return actualSequenceNumber;
         }

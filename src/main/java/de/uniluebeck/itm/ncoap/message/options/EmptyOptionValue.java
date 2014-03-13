@@ -41,7 +41,7 @@ public final class EmptyOptionValue extends OptionValue<byte[]> {
      * @throws InvalidOptionException this should never happen as empty options don't have a value that can be invalid
      * @throws UnknownOptionException if the given option number is unknown
      */
-    public EmptyOptionValue(int optionNumber) throws InvalidOptionException, UnknownOptionException {
+    public EmptyOptionValue(int optionNumber) throws IllegalArgumentException {
        super(optionNumber, new byte[0]);
     }
 

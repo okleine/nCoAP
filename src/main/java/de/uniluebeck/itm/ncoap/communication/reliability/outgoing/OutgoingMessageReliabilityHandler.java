@@ -25,6 +25,7 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import com.google.common.collect.*;
+import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
@@ -63,6 +64,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     private TreeMultimap<Long, OutgoingReliableMessageExchange> retransmissionSchedule;
 
     private ChannelHandlerContext ctx;
+    private boolean shutdown;
 
     private MessageIDFactory messageIDFactory;
 
@@ -72,6 +74,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
      *                        {@link CoapMessage}s with {@link MessageType.Name#CON}
      */
     public OutgoingMessageReliabilityHandler(ScheduledExecutorService executorService){
+        this.shutdown = false;
         this.messageIDFactory = new MessageIDFactory(executorService);
         this.ongoingMessageExchanges = HashBasedTable.create();
         this.retransmissionSchedule =
@@ -97,6 +100,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     }
 
 
+    private boolean isShutdown(){
+        return this.shutdown;
+    }
+
     /**
      * This method is invoked with a downstream message event. If it is a new message (i.e. to be
      * transmitted the first time) of type CON , it is added to the list of open requests waiting for a response.
@@ -106,13 +113,31 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
      */
     @Override
     public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent me) throws Exception{
+        if(isShutdown())
+            return;
 
         if((me.getMessage() instanceof CoapMessage))
             writeCoapMessage(ctx, me);
+
+        else if(me.getMessage() instanceof InternalApplicationShutdownMessage)
+            handleApplicationShutdown(me.getFuture());
+
         else
             ctx.sendDownstream(me);
     }
 
+
+    private void handleApplicationShutdown(ChannelFuture future) {
+        this.messageIDFactory.shutdown();
+
+        synchronized (monitor){
+            this.shutdown = true;
+            this.ongoingMessageExchanges.clear();
+            this.retransmissionSchedule.clear();
+        }
+
+        future.setSuccess();
+    }
 
     private void writeCoapMessage(ChannelHandlerContext ctx, MessageEvent me){
 
@@ -199,6 +224,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
      */
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+
+        if(isShutdown())
+            return;
+
         log.debug("Upstream (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
         if(me.getMessage() instanceof CoapMessage){

@@ -25,42 +25,51 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.primitives.Bytes;
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLongs;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
 
 import java.util.Arrays;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 19.11.13
- * Time: 18:35
- * To change this template use File | Settings | File Templates.
+ * A {@link Token} is the identifier to relate {@link CoapRequest}s with {@link CoapResponse}s. It consists of a byte
+ * array with a size between 0 and 8 (both inclusive). So, {@link Token} basically is a wrapper class for a byte array.
+ *
+ * @author Oliver Kleine
  */
 public class Token implements Comparable<Token>{
-
-    private static Logger log = LoggerFactory.getLogger(Token.class.getName());
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     private byte[] token;
 
+    /**
+     * Creates a new {@link Token} instance.
+     *
+     * @param token the byte array this {@link Token} is supposed to consist of
+     *
+     * @throws java.lang.IllegalArgumentException if the length of the given byte array is larger than 8
+     */
     public Token(byte[] token){
+        if(token.length > 8)
+            throw new IllegalArgumentException("Maximum token length is 8 (but given length was " + token.length + ")");
+
         this.token = token;
     }
 
+    /**
+     * Returns the byte array this {@link Token} instance wraps
+     * @return the byte array this {@link Token} instance wraps
+     */
     public byte[] getBytes(){
         return this.token;
     }
 
 
     /**
-     * Returns a String representation of the token in form of a hex-String
-     *
-     * @return a String representation of the token in form of a hex-String
+     * Returns a representation of the token in form of a HEX string
+     * @return a representation of the token in form of a HEX string
      */
     @Override
     public String toString(){
@@ -91,7 +100,6 @@ public class Token implements Comparable<Token>{
     @Override
     public int hashCode(){
         return Arrays.hashCode(token);
-//        return Longs.hashCode(Longs.fromByteArray(Bytes.concat(token, new byte[8-token.length])));
     }
 
 

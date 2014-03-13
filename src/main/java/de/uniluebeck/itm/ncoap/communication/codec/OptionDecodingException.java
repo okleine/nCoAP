@@ -62,15 +62,15 @@ import java.net.InetSocketAddress;
 */
 public class OptionDecodingException extends Exception {
 
-    private InetSocketAddress remoteSocketAddress;
+    private InetSocketAddress remoteEndpoint;
     private int messageID;
     private Token token;
 
-    public OptionDecodingException(InetSocketAddress remoteSocketAddress, int messageID, Token token,
+    public OptionDecodingException(InetSocketAddress remoteEndpoint, int messageID, Token token,
                                    OptionException cause){
 
         super(cause);
-        this.remoteSocketAddress = remoteSocketAddress;
+        this.remoteEndpoint = remoteEndpoint;
         this.messageID = messageID;
         this.token = token;
     }
@@ -83,7 +83,7 @@ public class OptionDecodingException extends Exception {
         return token;
     }
 
-    public InetSocketAddress getRemoteSocketAddress() {
-        return remoteSocketAddress;
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 }

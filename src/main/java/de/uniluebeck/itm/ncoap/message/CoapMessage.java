@@ -51,6 +51,17 @@ public abstract class CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
+    private static final String WRONG_OPTION_TYPE = "Option no. %d is no option of type %s";
+    private static final String OPTION_NOT_ALLOWED_WITH_MESSAGE_TYPE = "Option no. %d is not allowed with " +
+            "message type %s";
+    private static final String OPTION_ALREADY_SET = "Option no. %d is already set and is only allowed once per " +
+            "message";
+
+    private static final String DOES_NOT_ALLOW_CONTENT = "CoAP messages with code %s do not allow payload.";
+    private static final String EXCLUDES = "Already contained option no. %d excludes option no. %d";
+    private static final String OUT_OF_ALLOWED_RANGE = "Given value length (%d) is out of allowed range " +
+            "for option no. %d (min: %d, max; %d).";
+
     public static final int PROTOCOL_VERSION = 1;
     public static final Charset CHARSET = Charset.forName("UTF-8");
 
@@ -174,7 +185,16 @@ public abstract class CoapMessage {
     protected SetMultimap<Integer, OptionValue> options;
     private ChannelBuffer content;
 
-
+    /**
+     * Creates a new instance of {@link CoapMessage}.
+     *
+     * @param messageType the number representing the {@link MessageType} for this {@link CoapMessage}
+     * @param messageCode the number representing the {@link MessageCode} for this {@link CoapMessage}
+     * @param messageID  the message ID for this {@link CoapMessage}
+     * @param token the {@link Token} for this {@link CoapMessage}
+     *
+     * @throws IllegalArgumentException if one of the given arguments is invalid
+     */
     protected CoapMessage(int messageType, int messageCode, int messageID, Token token)
             throws IllegalArgumentException {
 
@@ -200,20 +220,36 @@ public abstract class CoapMessage {
         log.debug("Created CoAP message: {}", this);
     }
 
-
-    protected CoapMessage(int messageType, int messageCode) throws InvalidHeaderException {
+    /**
+     * Creates a new instance of {@link CoapMessage}. Invocation of this constructor has the same effect as
+     * invocation of {@link #CoapMessage(int, int, int, de.uniluebeck.itm.ncoap.application.client.Token)} with
+     * <ul>
+     *     <li>
+     *         message ID: {@link CoapMessage#MESSAGE_ID_UNDEFINED} (to be set automatically by the framework)
+     *     </li>
+     *     <li>
+     *         token: {@link Token#Token(byte[])} with empty byte array.
+     *     </li>
+     * </ul>
+     * @param messageType the number representing the {@link MessageType} for this {@link CoapMessage}
+     * @param messageCode the number representing the {@link MessageCode} for this {@link CoapMessage}
+     *
+     * @throws IllegalArgumentException if one of the given arguments is invalid
+     */
+    protected CoapMessage(int messageType, int messageCode) throws IllegalArgumentException {
         this(messageType, messageCode, MESSAGE_ID_UNDEFINED, new Token(new byte[0]));
     }
 
 
-    protected CoapMessage(int messageCode) throws InvalidHeaderException {
-        this(MessageType.Name.UNKNOWN.getNumber(), messageCode, MESSAGE_ID_UNDEFINED, new Token(new byte[0]));
-        this.messageCode = messageCode;
-    }
+//    protected CoapMessage(int messageCode) throws IllegalArgumentException {
+//        this(MessageType.Name.UNKNOWN.getNumber(), messageCode, MESSAGE_ID_UNDEFINED, new Token(new byte[0]));
+//        this.messageCode = messageCode;
+//    }
 
 
     /**
      * Method to create an empty reset message which is strictly speaking neither a request nor a response
+     *
      * @param messageID the message ID of the reset message.
      *
      * @return an instance of {@link CoapMessage} with {@link MessageType.Name#RST}
@@ -227,6 +263,7 @@ public abstract class CoapMessage {
 
     /**
      * Method to create an empty acknowledgement message which is strictly speaking neither a request nor a response
+     *
      * @param messageID the message ID of the acknowledgement message.
      *
      * @return an instance of {@link CoapMessage} with {@link MessageType.Name#ACK}
@@ -240,7 +277,7 @@ public abstract class CoapMessage {
 
     /**
      * Method to create an empty confirmable message which is considered a PIMG message on application layer, i.e.
-     * a message to check if a CoAP endpoint is alive (not the host but the application!).
+     * a message to check if a CoAP endpoint is alive (not only the host but also the CoAP application!).
      *
      * @param messageID the message ID of the acknowledgement message.
      *
@@ -259,7 +296,7 @@ public abstract class CoapMessage {
      *
      * @param messageType the number representing the message type of this method
      *
-     * @throws InvalidMessageException if the given message type is not supported.
+     * @throws java.lang.IllegalArgumentException if the given message type is not supported.
      */
     public void setMessageType(int messageType) throws IllegalArgumentException {
         if(!MessageType.Name.isMessageType(messageType))
@@ -269,30 +306,30 @@ public abstract class CoapMessage {
         this.messageType = messageType;
     }
 
-//    public void setRecipientAddress(InetAddress recipientAddress){
-//        this.recipientAddress = recipientAddress;
-//    }
-
 
     /**
-     * Adds
-     * @param optionNumber
-     * @param optionValue
-     * @throws InvalidOptionException
+     * Adds an option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
+     * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
+     * use.
+     *
+     * @param optionNumber the number representing the option type
+     * @param optionValue the {@link OptionValue} of this option
+     *
+     * @throws java.lang.IllegalArgumentException if the given option number is unknwon, or if the given value is
+     * either the default value or exceeds the defined length limits for options with the given option number
      */
-    public void addOption(int optionNumber, OptionValue optionValue) throws InvalidOptionException {
+    public void addOption(int optionNumber, OptionValue optionValue) throws IllegalArgumentException {
         this.checkOptionPermission(optionNumber);
 
         if(optionNumber == OptionValue.Name.OBSERVE && MessageCode.isRequest(this.getMessageCode())
             && optionValue.getValue().length > 0){
 
-            throw new InvalidOptionException(optionNumber, "Maximum length for option no. 6 in requests is 0");
+            throw new IllegalArgumentException(String.format(OUT_OF_ALLOWED_RANGE, 6, 0, 0));
         }
 
         for(int containedOption : options.keySet()){
             if(OptionValue.mutuallyExcludes(containedOption, optionNumber))
-                throw new InvalidOptionException(optionNumber, "Already contained option no. " + containedOption +
-                        " excludes option no. " + optionNumber);
+                throw new IllegalArgumentException(String.format(EXCLUDES, containedOption, optionNumber));
         }
 
         options.put(optionNumber, optionValue);
@@ -301,22 +338,41 @@ public abstract class CoapMessage {
 
     }
 
-    protected void addStringOption(int optionNumber, String value) throws UnknownOptionException,
-            InvalidOptionException {
+    /**
+     * Adds an string option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
+     * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
+     * use.
+     *
+     * @param optionNumber the number representing the option type
+     * @param value the value of this string option
+     *
+     * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option or if the
+     * given {@link OptionValue} is not valid, e.g. to long
+     */
+    protected void addStringOption(int optionNumber, String value) throws IllegalArgumentException {
 
         if(!(OptionValue.getOptionType(optionNumber) == OptionValue.Type.STRING))
-            throw new InvalidOptionException(optionNumber, "Option number {} is no string-option.");
+            throw new IllegalArgumentException(String.format(WRONG_OPTION_TYPE, optionNumber, OptionValue.Type.STRING));
 
         //Add new option to option list
         StringOptionValue option = new StringOptionValue(optionNumber, value);
         addOption(optionNumber, option);
     }
 
-
-    protected void addUintOption(int optionNumber, long value) throws UnknownOptionException, InvalidOptionException {
+    /**
+     * Adds an uint option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
+     * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
+     * use.
+     *
+     * @param optionNumber the number representing the option type
+     * @param value the value of this uint option
+     *
+     * @throws java.lang.IllegalArgumentException
+     */
+    protected void addUintOption(int optionNumber, long value) throws IllegalArgumentException {
 
         if(!(OptionValue.getOptionType(optionNumber) == OptionValue.Type.UINT))
-            throw new InvalidOptionException(optionNumber, "Option number {} is no uint-option.");
+            throw new IllegalArgumentException(String.format(WRONG_OPTION_TYPE, optionNumber, OptionValue.Type.STRING));
 
         //Add new option to option list
         byte[] byteValue = Longs.toByteArray(value);
@@ -329,10 +385,20 @@ public abstract class CoapMessage {
 
     }
 
-    protected void addOpaqueOption(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+    /**
+     * Adds an opaque option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
+     * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
+     * use.
+     *
+     * @param optionNumber the number representing the option type
+     * @param value the value of this opaque option
+     *
+     * @throws java.lang.IllegalArgumentException
+     */
+    protected void addOpaqueOption(int optionNumber, byte[] value) throws IllegalArgumentException {
 
         if(!(OptionValue.getOptionType(optionNumber) == OptionValue.Type.OPAQUE))
-            throw new InvalidOptionException(optionNumber, "Option number {} is no opaque option.");
+            throw new IllegalArgumentException(String.format(WRONG_OPTION_TYPE, optionNumber, OptionValue.Type.OPAQUE));
 
         //Add new option to option list
         OpaqueOptionValue option = new OpaqueOptionValue(optionNumber, value);
@@ -340,10 +406,20 @@ public abstract class CoapMessage {
 
     }
 
-    protected void addEmptyOption(int optionNumber) throws InvalidOptionException, UnknownOptionException {
+    /**
+     * Adds an empty option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
+     * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
+     * use.
+     *
+     * @param optionNumber the number representing the option type
+     *
+     * @throws UnknownOptionException if the given option number refers to an unknown option
+     * @throws InvalidOptionException if the option to be added is invalid
+     */
+    protected void addEmptyOption(int optionNumber) throws IllegalArgumentException {
 
         if(!(OptionValue.getOptionType(optionNumber) == OptionValue.Type.EMPTY))
-            throw new InvalidOptionException(optionNumber, "Option number {} is no empty option.");
+            throw new IllegalArgumentException(String.format(WRONG_OPTION_TYPE, optionNumber, OptionValue.Type.EMPTY));
 
         //Add new option to option list
         options.put(optionNumber, new EmptyOptionValue(optionNumber));
@@ -353,7 +429,9 @@ public abstract class CoapMessage {
 
     /**
      * Removes all options with the given option number from this {@link CoapMessage} instance.
+     *
      * @param optionNumber the option number to remove from this message
+     *
      * @return the number of options that were removed, i.e. count
      */
     public int removeOptions(int optionNumber){
@@ -362,25 +440,28 @@ public abstract class CoapMessage {
         return result;
     }
 
-    private void checkOptionPermission(int optionNumber) throws InvalidOptionException {
+
+    private void checkOptionPermission(int optionNumber) throws IllegalArgumentException {
         Integer allowedOccurence = optionOccurenceConstraints.get(this.messageCode, optionNumber);
         if(allowedOccurence == null)
-            throw new InvalidOptionException(optionNumber, "Option no. " + optionNumber + " not allowed with " +
-                    "message code " + this.getMessageCodeName() + ".");
+            throw new IllegalArgumentException(String.format(OPTION_NOT_ALLOWED_WITH_MESSAGE_TYPE,
+                    optionNumber, this.getMessageCodeName()));
 
         if(options.containsKey(optionNumber)){
             if(optionOccurenceConstraints.get(this.messageCode, optionNumber) == ONCE)
-                throw new InvalidOptionException(optionNumber, "Option no. " + optionNumber + " already set.");
+                throw new IllegalArgumentException(String.format(OPTION_ALREADY_SET, optionNumber));
         }
     }
 
     /**
-     * Returns the CoAP protocol version used for this message
-     * @return the CoAP protocol version used for this message
+     * Returns the CoAP protocol version used for this {@link CoapMessage}
+     *
+     * @return the CoAP protocol version used for this {@link CoapMessage}
      */
     public int getProtocolVersion() {
         return PROTOCOL_VERSION;
     }
+
 
     /**
      * Sets the message ID for this message. However, there is no need to set the message ID manually. It is set (or
@@ -398,6 +479,7 @@ public abstract class CoapMessage {
 
     /**
      * Returns the message ID (or {@link CoapMessage#MESSAGE_ID_UNDEFINED} if not set)
+     *
      * @return the message ID (or {@link CoapMessage#MESSAGE_ID_UNDEFINED} if not set)
      */
     public int getMessageID() {
@@ -405,65 +487,72 @@ public abstract class CoapMessage {
     }
 
 
+    /**
+     * Returns the number representing the {@link MessageType} of this {@link CoapMessage}
+     *
+     * @return the number representing the {@link MessageType} of this {@link CoapMessage}
+     */
     public int getMessageType() {
         return this.messageType;
     }
 
+    /**
+     * Returns the {@link MessageType.Name} of this {@link CoapMessage}. Invocation of
+     * {@link MessageType.Name#getNumber()} on the returned value returns the same value as {@link #getMessageType()}.
+     *
+     * @return the {@link MessageType.Name} of this {@link CoapMessage}
+     */
     public MessageType.Name getMessageTypeName(){
         return MessageType.Name.getName(this.messageType);
     }
 
-
+    /**
+     * Returns the number representing the {@link MessageCode} of this {@link CoapMessage}
+     *
+     * @return the number representing the {@link MessageCode} of this {@link CoapMessage}
+     */
     public int getMessageCode() {
         return this.messageCode;
     }
 
+    /**
+     * Returns the {@link MessageCode.Name} of this {@link CoapMessage}. Invocation of
+     * {@link MessageCode.Name#getNumber()} on the returned value returns the same value as {@link #getMessageCode()}.
+     *
+     * @return the {@link MessageCode.Name} of this {@link CoapMessage}
+     */
     public MessageCode.Name getMessageCodeName(){
         return MessageCode.Name.getName(this.messageCode);
     }
 
     /**
-     * Adds token option to the option list. This causes eventually already contained
-     * token options to be removed from the list even in case of an exception.
+     * Sets a {@link Token} to this {@link CoapMessage}. However, there is no need to set the {@link Token} manually,
+     * as it is set (or overwritten) automatically by the framework.
      *
-     * @param token the messages token
-     *
-     * options per message.
+     * @param token the {@link Token} for this {@link CoapMessage}
      */
     public void setToken(Token token){
         this.token = token;
     }
 
-//    public byte[] getTokenAsByteArray(){
-//        return TokenFactory.toByteArray(token);
-//    }
-//    /**
-//     * Returns the value of the token option or an empty byte array b with <messageCode>(b.length == 0) == true</messageCode>.
-//     * @return the value of the messages token option
-//     */
-//    public byte[] getToken() {
-//        return this.token;
-//    }
 
     /**
-     * Returns the value
-     * @return
+     * Returns the {@link Token} of this {@link CoapMessage}
+     *
+     * @return the {@link Token} of this {@link CoapMessage}
      */
     public Token getToken(){
         return this.token;
     }
 
 
-//    public String getTokenAsHexString(){
-//        return TokenFactory.toHexString(getToken());
-//    }
-
     /**
      * Returns the number representing the format of the content or {@link ContentFormat#UNDEFINED} if no such
-     * option is present in this {@link CoapMessage}. See {@link ContentFormat} for some constants for predefined numbers.
+     * option is present in this {@link CoapMessage}. See {@link ContentFormat} for some constants for predefined
+     * numbers (according to the CoAP specification).
      *
-     * @return the number representing the format of the content or <code>null</code> if no such option is present
-     * in this {@link CoapMessage}.
+     * @return the number representing the format of the content or {@link ContentFormat#UNDEFINED} if no such option
+     * is present in this {@link CoapMessage}.
      */
     public long getContentFormat(){
         if(options.containsKey(OptionValue.Name.CONTENT_FORMAT))
@@ -472,19 +561,21 @@ public abstract class CoapMessage {
         return ContentFormat.UNDEFINED;
     }
 
+
     /**
      * Sets the Max-Age option of this {@link CoapMessage}. If there was a Max-Age option set prior to the
      * invocation of this method, the previous value is overwritten.
      *
      * @param maxAge the value for the Max-Age option to be set
+     *
      * @throws InvalidOptionException
      */
-    public void setMaxAge(long maxAge) throws InvalidOptionException {
+    public void setMaxAge(long maxAge)  {
         try{
             this.options.removeAll(OptionValue.Name.MAX_AGE);
             this.addUintOption(OptionValue.Name.MAX_AGE, maxAge);
         }
-        catch (UnknownOptionException e) {
+        catch (IllegalArgumentException e) {
             log.error("This should never happen.", e);
         }
     }
@@ -509,47 +600,38 @@ public abstract class CoapMessage {
      *
      * @param content ChannelBuffer containing the message content
      *
-     * @throws InvalidMessageException if the messages code does not allow content
+     * @throws java.lang.IllegalArgumentException if the messages code does not allow content and for the given
+     * {@link ChannelBuffer#readableBytes()} is greater then zero.
      */
-    public void setContent(ChannelBuffer content) throws InvalidMessageException {
+    public void setContent(ChannelBuffer content) throws IllegalArgumentException {
 
         if(!(MessageCode.allowsContent(this.messageCode)) && content.readableBytes() > 0)
-            throw new InvalidMessageException("Message Code " + this.messageCode + " does not allow content.");
+            throw new IllegalArgumentException(String.format(DOES_NOT_ALLOW_CONTENT, this.getMessageCodeName()));
 
         this.content = content;
     }
 
     /**
-     * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
-     * method, the previous content is removed.
+     * Sets the content (payload) of this {@link CoapMessage}.
      *
-     * @param content ChannelBuffer containing the message content
-     * @param contentFormat a long value representing the format of the content
+     * @param content {@link ChannelBuffer} containing the message content
+     * @param contentFormat a long value representing the format of the content (see {@link ContentFormat} for some
+     *                      predefined numbers (according to the CoAP specification)
      *
-     * @throws InvalidMessageException if the messages code does not allow content
-     * @throws InvalidOptionException if the content format option could not be set
+     * @throws java.lang.IllegalArgumentException if the messages code does not allow content and for the given
+     * {@link ChannelBuffer#readableBytes()} is greater then zero.
      */
-    public void setContent(ChannelBuffer content, long contentFormat) throws InvalidMessageException,
-            InvalidOptionException {
+    public void setContent(ChannelBuffer content, long contentFormat) throws IllegalArgumentException {
 
         try {
             this.addUintOption(OptionValue.Name.CONTENT_FORMAT, contentFormat);
             setContent(content);
         }
-        catch (InvalidOptionException e) {
+        catch (IllegalArgumentException e) {
             this.content = ChannelBuffers.EMPTY_BUFFER;
             this.removeOptions(OptionValue.Name.CONTENT_FORMAT);
             throw e;
         }
-        catch(InvalidMessageException e){
-            this.content = ChannelBuffers.EMPTY_BUFFER;
-            this.removeOptions(OptionValue.Name.CONTENT_FORMAT);
-            throw e;
-        }
-        catch (UnknownOptionException e) {
-            log.error("This should never happen.", e);
-        }
-
     }
 
 
@@ -575,11 +657,9 @@ public abstract class CoapMessage {
      * @param content ChannelBuffer containing the message content
      * @param contentFormat a long value representing the format of the content
      *
-     * @throws InvalidMessageException if the messages code does not allow content
-     * @throws InvalidOptionException if the content format option could not be set
+     * @throws java.lang.IllegalArgumentException if the messages code does not allow content
      */
-    public void setContent(byte[] content, long contentFormat) throws InvalidMessageException,
-            InvalidOptionException {
+    public void setContent(byte[] content, long contentFormat) throws IllegalArgumentException {
 
         setContent(ChannelBuffers.wrappedBuffer(content), contentFormat);
 

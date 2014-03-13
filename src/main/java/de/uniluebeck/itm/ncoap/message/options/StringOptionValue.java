@@ -44,27 +44,24 @@ public class StringOptionValue extends OptionValue<String> {
      * @param optionNumber the option number of the {@link StringOptionValue} to be created
      * @param value the value of the {@link StringOptionValue} to be created
      *
-     * @throws InvalidOptionException if the given value is either the default value or exceeds
-     * the defined limits for options with the given option number in terms of length.
-     *
-     * @throws UnknownOptionException if the given option number is unknown, i.e. not supported
+     * @throws java.lang.IllegalArgumentException if the given option number is unknown, or if the given value is
+     * either the default value or exceeds the defined length limits for options with the given option number
      */
-    public StringOptionValue(int optionNumber, byte[] value)
-            throws InvalidOptionException, UnknownOptionException {
-
+    public StringOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
         super(optionNumber, value);
     }
 
     /**
-     * Creates an instance of {@link StringOptionValue} according to the rules defined for CoAP. The pre-processing of the
-     * given value before encoding using {@link CoapMessage#CHARSET} depends on the given option number:
+     * Creates an instance of {@link StringOptionValue} according to the rules defined for CoAP. The pre-processing of
+     * the given value before encoding using {@link CoapMessage#CHARSET} depends on the given option number:
      *
      * <ul>
      *     <li>
      *         {@link OptionValue.Name#URI_HOST}: convert to lower case and remove percent encoding (if present)
      *     </li>
      *     <li>
-     *         {@link OptionValue.Name#URI_PATH} and {@link OptionValue.Name#URI_QUERY}: remove percent encoding (if present)
+     *         {@link OptionValue.Name#URI_PATH} and {@link OptionValue.Name#URI_QUERY}: remove percent encoding
+     *         (if present)
      *     </li>
      *     <li>
      *         others: no pre-processing.
@@ -74,16 +71,10 @@ public class StringOptionValue extends OptionValue<String> {
      * @param optionNumber the option number of the {@link StringOptionValue} to be created
      * @param value the value of the {@link StringOptionValue} to be created
      *
-     * @throws InvalidOptionException if the given value is either the default value or (after encoding) exceeds
-     * the defined limits for options with the given option number in terms of length
-     * (see {@link OptionValue#getMinLength(int)} and {@link OptionValue#getMaxLength(int)}.
-     *
-     * @throws UnknownOptionException if the given option number is unknown, i.e. not supported
-     *
-     * @throws IllegalArgumentException if the given option value contains invalid percent encoding
+     * @throws java.lang.IllegalArgumentException if the given option number is unknown, or if the given value is
+     * either the default value or exceeds the defined length limits for options with the given option number
      */
-    public StringOptionValue(int optionNumber, String value)
-            throws InvalidOptionException, UnknownOptionException, IllegalArgumentException{
+    public StringOptionValue(int optionNumber, String value) throws IllegalArgumentException{
 
         this(optionNumber, optionNumber == OptionValue.Name.URI_HOST ?
                 convertToByteArrayWithoutPercentEncoding(value.toLowerCase(Locale.ENGLISH)) :

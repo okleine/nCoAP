@@ -33,14 +33,14 @@ import java.net.InetSocketAddress;
  */
 public class NoMessageIDAvailableException extends Exception{
 
-    private InetSocketAddress remoteSocketAddress;
+    private InetSocketAddress remoteEndpoint;
     private long waitingPeriod;
     private Token token;
 
-    public NoMessageIDAvailableException(InetSocketAddress remoteSocketAddress, long waitingPeriod){
-        super("All message IDs for " + remoteSocketAddress + " are in use. Wait for " +
+    public NoMessageIDAvailableException(InetSocketAddress remoteEndpoint, long waitingPeriod){
+        super("All message IDs for " + remoteEndpoint + " are in use. Wait for " +
                 waitingPeriod + " milliseconds");
-        this.remoteSocketAddress = remoteSocketAddress;
+        this.remoteEndpoint = remoteEndpoint;
         this.waitingPeriod = waitingPeriod;
     }
 
@@ -50,8 +50,8 @@ public class NoMessageIDAvailableException extends Exception{
     }
 
 
-    public InetSocketAddress getRemoteSocketAddress() {
-        return remoteSocketAddress;
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 
 

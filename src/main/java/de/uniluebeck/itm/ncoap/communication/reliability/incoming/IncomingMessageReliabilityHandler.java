@@ -27,6 +27,7 @@ package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
+import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -64,12 +65,14 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     private ChannelHandlerContext ctx;
 
+    private boolean shutdown;
 
     /**
      * @param executorService the {@link ScheduledExecutorService} to provide the threads that execute the
      *                        operations for reliability.
      */
     public IncomingMessageReliabilityHandler(ScheduledExecutorService executorService){
+        this.shutdown = false;
         this.emptyAcknowledgementSchedule =
                 TreeMultimap.create(Ordering.<Long>natural(), Ordering.<IncomingReliableMessageExchange>arbitrary());
 
@@ -92,6 +95,10 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     }
 
 
+    private boolean isShutdown(){
+        return this.shutdown;
+    }
+
     /**
      * If the incoming message is a confirmable {@link CoapRequest} it schedules the sending of an empty
      * acknowledgement to the sender if there wasn't a piggy-backed response within a period of 2 seconds.
@@ -109,6 +116,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Upstream from {}: {}.", me.getRemoteAddress(), me.getMessage());
+
+        if(isShutdown())
+            return;
 
         if(me.getMessage() instanceof CoapMessage){
 
@@ -256,12 +266,27 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
      */
     @Override
     public void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
+        if(isShutdown())
+            return;
 
         if(me.getMessage() instanceof CoapResponse)
             handleOutgoingCoapResponse(ctx, me);
 
+        else if(me.getMessage() instanceof InternalApplicationShutdownMessage)
+            handleApplicationShutdown(ctx, me);
+
         else
             ctx.sendDownstream(me);
+    }
+
+
+    private void handleApplicationShutdown(ChannelHandlerContext ctx, MessageEvent me) {
+        synchronized (monitor){
+            this.shutdown = true;
+            emptyAcknowledgementSchedule.clear();
+            ongoingMessageExchanges.clear();
+        }
+        ctx.sendDownstream(me);
     }
 
 

@@ -137,7 +137,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
 
     private void messageReceived(final ChannelHandlerContext ctx, final CoapRequest coapRequest,
-                                final InetSocketAddress remoteSocketAddress){
+                                final InetSocketAddress remoteEndpoint){
 
         //Create settable future to wait for response
         final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
@@ -150,13 +150,17 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
                     coapResponse.setMessageID(coapRequest.getMessageID());
                     coapResponse.setToken(coapRequest.getToken());
 
-                    sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
+                    sendCoapResponse(ctx, remoteEndpoint, coapResponse);
                 }
                 catch (Exception e) {
                     log.error("Exception while processing incoming request", e);
-                    CoapResponse coapResponse = CoapResponse.createInternalServerErrorResponse(true,
-                            coapRequest.getMessageID(), coapRequest.getToken(), e);
-                    sendCoapResponse(ctx, remoteSocketAddress, coapResponse);
+                    CoapResponse errorResponse = CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
+                                    MessageCode.Name.INTERNAL_SERVER_ERROR_500, e.getMessage());
+
+                    errorResponse.setMessageID(coapRequest.getMessageID());
+                    errorResponse.setToken(coapRequest.getToken());
+
+                    sendCoapResponse(ctx, remoteEndpoint, errorResponse);
                 }
             }
         }, executorService);
@@ -168,7 +172,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         try{
             //The requested Webservice does not exist
             if(webservice == null)
-                webServiceNotFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
+                webServiceNotFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteEndpoint);
 
             //The IF-NON-MATCH option indicates that the request is only to be processed if the webservice does not
             //(yet) exist. But it does. So send an error response
@@ -177,7 +181,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
             //The incoming request is to be handled by the addressed service
             else
-                webservice.processCoapRequest(responseFuture, coapRequest, remoteSocketAddress);
+                webservice.processCoapRequest(responseFuture, coapRequest, remoteEndpoint);
 
         }
         catch (Exception e) {

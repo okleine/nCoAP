@@ -41,64 +41,110 @@ public class CoapResponse extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
+    private static final String NO_ERRROR_CODE = "Code no. %s is no error code!";
 
     /**
-     * This is the constructor supposed to be used to create {@link CoapResponse} instances. The {@link MessageType} is
-     * automatically set by the nCoAP framework.
+     * Creates a new instance of {@link CoapResponse}.
      *
-     * @param messageCode The {@link MessageCode} of the response
+     * <b>Note:</b> The given {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
+     * {@link MessageType.Name#NON}) may be changed
+     * by the framework before it is sent to the other CoAP endpoint. Such a change might e.g. happen if this
+     * {@link CoapResponse} was created with {@link MessageType.Name#CON} to answer a {@link CoapRequest} with
+     * {@link MessageType.Name#CON} and the framework did not yet send an empty {@link CoapMessage} with
+     * {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType} of this
+     * {@link CoapResponse} to be set to {@link MessageType.Name#ACK} to make it a piggy-backed response.
      *
-     * @throws
+     *
+     * @param messageType the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
+     *                    {@link MessageType.Name#NON}). <b>Note:</b> the {@link MessageType} might be changed by the
+     *                    framework (see above).
+     *
+     * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
+     *
+     * @throws java.lang.IllegalArgumentException
      */
-    public CoapResponse(int messageType, int messageCode) throws InvalidHeaderException {
-        super(messageType, messageCode);
-
-        if(!MessageCode.isResponse(messageCode))
-            throw new InvalidHeaderException("Message code no." + messageCode + " is no response code.");
-    }
-
-
-    public CoapResponse(MessageType.Name messageType, MessageCode.Name messageCode) throws InvalidHeaderException {
+    public CoapResponse(MessageType.Name messageType, MessageCode.Name messageCode) throws IllegalArgumentException {
         this(messageType.getNumber(), messageCode.getNumber());
     }
 
 
-    public static CoapResponse createInternalServerErrorResponse(boolean confirmable, int messageID, Token token,
-                                                                 Throwable cause){
+    /**
+     * Creates a new instance of {@link CoapResponse}.
+     *
+     * <b>Note:</b> The given message type (either 0 or 1) may be changed by the framework before it is sent to the
+     * other CoAP endpoint. Such a change might e.g. happen if this {@link CoapResponse} was created with 0 (for
+     * {@link MessageType.Name#CON} or 1 (for {@link MessageType.Name#NON}) and is supposed to answer a
+     * {@link CoapRequest} with {@link MessageType.Name#CON} and the framework did not yet send an empty
+     * {@link CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType}
+     * of this {@link CoapResponse} to be set to {@link MessageType.Name#ACK} to make it a piggy-backed response.
+     *
+     * @param messageType the number representing the {@link MessageType} (<b>Note:</b> the {@link MessageType} might
+     *                    be changed by the framework (see above)).
+     *
+     * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
+     *
+     * @throws java.lang.IllegalArgumentException
+     */
+    public CoapResponse(int messageType, int messageCode) throws IllegalArgumentException {
+        super(messageType, messageCode);
 
-        try {
-            MessageType.Name messagaType;
-
-            if(confirmable)
-                messagaType = MessageType.Name.CON;
-            else
-                messagaType = MessageType.Name.NON;
-
-            CoapResponse coapResponse = new CoapResponse(messagaType, MessageCode.Name.INTERNAL_SERVER_ERROR_500);
-            coapResponse.setContent(cause.getMessage().getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
-
-            coapResponse.setMessageID(messageID);
-            coapResponse.setToken(token);
-
-            return coapResponse;
-        }
-        catch (Exception e) {
-            log.error("This should never happen.", e);
-            return null;
-        }
+        if(!MessageCode.isResponse(messageCode))
+            throw new IllegalArgumentException("Message code no." + messageCode + " is no response code.");
     }
 
 
-    public void setEtag(byte[] etag) throws InvalidOptionException {
-        try {
-            this.addOpaqueOption(OptionValue.Name.ETAG, etag);
-        }
-        catch (UnknownOptionException e) {
-            log.error("This should never happen.", e);
-        }
+    /**
+     * Creates a new instance of {@link CoapResponse} with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} and
+     * the stacktrace of the given {@link Throwable} as payload (this is particularly useful for debugging). Basically,
+     * this can be considered a shortcut to create error responses.
+     *
+     * <b>Note:</b> The given {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
+     * {@link MessageType.Name#NON}) may be changed by the framework before it is sent to the other CoAP endpoint.
+     * Such a change might e.g. happen if this {@link CoapResponse} was created with {@link MessageType.Name#CON} to
+     * answer a {@link CoapRequest} with {@link MessageType.Name#CON} and the framework did not yet send an empty
+     * {@link CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType} of
+     * this {@link CoapResponse} to be set to {@link MessageType.Name#ACK} to make it a piggy-backed response.
+     *
+     * @param messageType the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
+     *                    {@link MessageType.Name#NON}). <b>Note:</b> the {@link MessageType} might be changed by the
+     *                    framework (see above).
+     * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
+     * @param cause the {@link Throwable} that caused the internal server error
+     *
+     * @return a new instance of {@link CoapResponse} with the {@link Throwable#getMessage} as content (payload).
+     *
+     * @throws java.lang.IllegalArgumentException if the given message code does not refer to an error
+     */
+    public static CoapResponse createErrorResponse(MessageType.Name messageType, MessageCode.Name messageCode,
+                                                   String content) throws IllegalArgumentException{
+
+        if(!MessageCode.isErrorMessage(messageCode.getNumber()))
+            throw new IllegalArgumentException(String.format(NO_ERRROR_CODE, messageCode.toString()));
+
+        CoapResponse errorResponse = new CoapResponse(messageType, messageCode);
+        errorResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+
+        return errorResponse;
     }
 
 
+    /**
+     * Sets the {@link OptionValue.Name#ETAG} of this {@link CoapResponse}.
+     *
+     * @param etag the byte array that is supposed to represent the ETAG of the content returned by
+     *             {@link #getContent()}.
+     *
+     * @throws IllegalArgumentException if the given byte array is invalid to be considered an ETAG
+     */
+    public void setEtag(byte[] etag) throws IllegalArgumentException {
+        this.addOpaqueOption(OptionValue.Name.ETAG, etag);
+    }
+
+    /**
+     * Returns the byte array representing the ETAG of the content returned by {@link #getContent()}
+     *
+     * @return the byte array representing the ETAG of the content returned by {@link #getContent()}
+     */
     public byte[] getEtag(){
         if(options.containsKey(OptionValue.Name.ETAG))
             return ((OpaqueOptionValue) options.get(OptionValue.Name.ETAG).iterator().next()).getDecodedValue();
@@ -107,29 +153,33 @@ public class CoapResponse extends CoapMessage {
     }
 
     /**
-     * Adds an {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option with the given sequence number. The value of the option will
+     * Adds an {@link OptionValue.Name#OBSERVE} option with the given sequence number. The value of the option will
      * correspond to the 3 least significant bytes of a (big endian) byte representation of the given sequence number,
      * i.e. a given sequence number of <code>2^24 + 1</code> leads to a value of <code>1</code>.
      *
-     * <b>Note:</b> This method will override a possibly previously contained {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option.
+     * <b>Note:</b> This method will override a possibly previously contained {@link OptionValue.Name#OBSERVE} option.
      *
-     * @param sequenceNumber the sequence number for the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option to be set.
+     * @param sequenceNumber the sequence number for the {@link OptionValue.Name#OBSERVE} to be set.
      */
-    public void setObservationSequenceNumber(long sequenceNumber){
+    public void setObserveOption(long sequenceNumber){
         try {
             this.removeOptions(OptionValue.Name.OBSERVE);
             sequenceNumber = sequenceNumber & 0xFFFFFF;
             this.addUintOption(OptionValue.Name.OBSERVE, sequenceNumber);
         }
-        catch (UnknownOptionException e){
-            log.error("This should never happen.", e);
-        }
-        catch (InvalidOptionException e) {
+        catch (IllegalArgumentException e){
+            this.removeOptions(OptionValue.Name.OBSERVE);
             log.error("This should never happen.", e);
         }
     }
 
-
+    /**
+     * Returns the decoded value of {@link OptionValue.Name#OBSERVE} if such an option is contained in this
+     * {@link CoapResponse} or {@link UintOptionValue#NOT_SET} if there is no such option.
+     *
+     * @return the decoded value of {@link OptionValue.Name#OBSERVE} if such an option is contained in this
+     * {@link CoapResponse} or {@link UintOptionValue#NOT_SET} if there is no such option.
+     */
     public long getObservationSequenceNumber(){
         if(!options.containsKey(OptionValue.Name.OBSERVE))
             return UintOptionValue.NOT_SET;
@@ -137,9 +187,19 @@ public class CoapResponse extends CoapMessage {
             return (Long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
     }
 
+
+    /**
+     * Returns <code>true</code> if this {@link CoapResponse} is an update notification and <code>false</code>
+     * otherwise. A {@link CoapResponse} is considered an update notification if the  invocation of
+     * {@link #getObservationSequenceNumber()} returns a value other than {@link UintOptionValue#NOT_SET}.
+     *
+     * @return <code>true</code> if this {@link CoapResponse} is an update notification and <code>false</code>
+     * otherwise.
+     */
     public boolean isUpdateNotification(){
         return this.getObservationSequenceNumber() != UintOptionValue.NOT_SET;
     }
+
 
     /**
      * Adds all necessary location URI related options to the list. This causes eventually already contained
@@ -173,15 +233,11 @@ public class CoapResponse extends CoapMessage {
                     this.addStringOption(OptionValue.Name.LOCATION_QUERY, queryComponent);
             }
         }
-        catch(InvalidOptionException e){
+        catch(IllegalArgumentException e){
             options.removeAll(OptionValue.Name.LOCATION_PATH);
             options.removeAll(OptionValue.Name.LOCATION_QUERY);
             throw e;
         }
-        catch(UnknownOptionException e){
-            log.error("This should never happen!", e);
-        }
-
     }
 
 

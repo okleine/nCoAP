@@ -131,9 +131,9 @@ public abstract class MessageCode {
     }
 
     /**
-     * This method indicates wheter the message code refers to a request.
+     * This method indicates whether the given number refers to a {@link MessageCode} for {@link CoapRequest}s.
      *
-     * <b>Note:</b> Messages of MessageCode {@link Name#EMPTY} are considered neither a response nor a request
+     * <b>Note:</b> Messages with {@link MessageCode.Name#EMPTY} are considered neither a response nor a request
      *
      * @return <code>true</code> in case of a request code, <code>false</code> otherwise.
      *
@@ -143,19 +143,47 @@ public abstract class MessageCode {
     }
 
     /**
-     * This method indicates wheter the message code refers to a response.
+     * This method indicates whether the given {@link MessageCode.Name} indicates a {@link CoapRequest}.
      *
-     * <b>Note:</b> Messages of MessageCode {@link Name#EMPTY} are considered neither a response nor a request.
+     * <b>Note:</b> Messages with {@link MessageCode.Name#EMPTY} are considered neither a response nor a request
      *
-     * @return <code>true</code> in case of a request code, <code>false</code> in case of response code
+     * @return <code>true</code> in case of a request code, <code>false</code> otherwise.
+     *
+     */
+    public static boolean isRequest(MessageCode.Name messageCode){
+        return isRequest(messageCode.getNumber());
+    }
+
+    /**
+     * This method indicates whether the given number refers to a {@link MessageCode} for {@link CoapResponse}s.
+     *
+     * <b>Note:</b> Messages with {@link MessageCode.Name#EMPTY} are considered neither a response nor a request
+     *
+     * @return <code>true</code> in case of a response code, <code>false</code> otherwise.
+     *
      */
     public static boolean isResponse(int codeNumber){
         return codeNumber >= 5;
     }
 
     /**
-     * This method indicates wheter the message code refers to an error message
-     * @return <code>true</code> in case of an error <code>false</code> otherwise
+     * This method indicates whether the given {@link MessageCode.Name} indicates a {@link CoapResponse}.
+     *
+     * <b>Note:</b> Messages with {@link MessageCode.Name#EMPTY} are considered neither a response nor a request
+     *
+     * @return <code>true</code> in case of a response code, <code>false</code> otherwise.
+     *
+     */
+    public static boolean isResponse(MessageCode.Name messageCode){
+        return isResponse(messageCode.getNumber());
+    }
+
+    /**
+     * This method indicates whether the given number refers to a {@link MessageCode} for {@link CoapResponse}s
+     * indicating an error.
+     *
+     * @return <code>true</code> in case of an error response code, <code>false</code> otherwise.
+     *
      */
     public static boolean isErrorMessage(int codeNumber){
         return (codeNumber >= 128);

@@ -34,7 +34,7 @@ import java.util.Arrays;
  */
 public class OpaqueOptionValue extends OptionValue<byte[]> {
 
-    public OpaqueOptionValue(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+    public OpaqueOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
         super(optionNumber, value);
     }
 

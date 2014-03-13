@@ -41,6 +41,11 @@ import java.util.HashMap;
  */
 public abstract class OptionValue<T>{
 
+    private static final String UNKNOWN_OPTION = "Unknown option no. %d";
+    private static final String VALUE_IS_DEFAULT_VALUE = "Given value is default value for option no. %d.";
+    private static final String OUT_OF_ALLOWED_RANGE = "Given value length (%d) is out of allowed range " +
+            "for option no. %d (min: %d, max; %d).";
+
     /**
      * Helper class to provide useful constants for available option types (basically for internal use)
      */
@@ -244,11 +249,11 @@ public abstract class OptionValue<T>{
      *
      * @return the minimum length for the given option number in bytes
      *
-     * @throws UnknownOptionException if the given option number refers to an unknown option
+     * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option
      */
-    public static int getMinLength(int optionNumber) throws UnknownOptionException {
+    public static int getMinLength(int optionNumber) throws IllegalArgumentException {
         if(!characteristics.containsKey(optionNumber))
-            throw new UnknownOptionException(optionNumber);
+            throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
 
         return characteristics.get(optionNumber)[1];
     }
@@ -258,12 +263,14 @@ public abstract class OptionValue<T>{
      * Returns the maximum length for the given option number in bytes.
      *
      * @param optionNumber the option number to check the maximum length of
+     *
      * @return the maximum length for the given option number in bytes
-     * @throws UnknownOptionException if the given option number refers to an unknown option
+     *
+     * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option
      */
-    public static int getMaxLength(int optionNumber) throws UnknownOptionException {
+    public static int getMaxLength(int optionNumber) throws IllegalArgumentException {
         if(!characteristics.containsKey(optionNumber))
-            throw new UnknownOptionException(optionNumber);
+            throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
 
         return characteristics.get(optionNumber)[2];
     }
@@ -309,13 +316,15 @@ public abstract class OptionValue<T>{
      * {@link Type} for constants)
      *
      * @param optionNumber the option number to return the type of
+     *
      * @return the integer value representing the type of the option the given option number refers to
-     * @throws UnknownOptionException if the given option number refers to an unknown option
+     *
+     * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option
      */
-    public static int getOptionType(int optionNumber) throws UnknownOptionException{
+    public static int getOptionType(int optionNumber) throws IllegalArgumentException{
         Integer result = characteristics.get(optionNumber)[0];
         if(result == null)
-            throw new UnknownOptionException(optionNumber);
+            throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
         else
             return result;
     }
@@ -356,19 +365,19 @@ public abstract class OptionValue<T>{
      * @param optionNumber the number of the {@link OptionValue} to be created.
      * @param value the encoded value of the option to be created.
      *
-     * @throws InvalidOptionException if the {@link OptionValue} instance could not be created because either the
+     * @throws java.lang.IllegalArgumentException if the {@link OptionValue} instance could not be created because either the
      * given value is the default value or the length of the given value exceeds the defined limits.
      *
-     * @throws UnknownOptionException if the given option number is unknown to the nCoAP framework.
+     * @throws java.lang.IllegalArgumentException if the given option number is unknown to the nCoAP framework.
      */
-    protected OptionValue(int optionNumber, byte[] value) throws InvalidOptionException, UnknownOptionException {
+    protected OptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
 
         if(OptionValue.isDefaultValue(optionNumber, value))
-            throw new InvalidOptionException(optionNumber, "The given value is the default value. No option created.");
+            throw new IllegalArgumentException(String.format(VALUE_IS_DEFAULT_VALUE, optionNumber));
 
         if(getMinLength(optionNumber) > value.length || getMaxLength(optionNumber) < value.length)
-            throw new InvalidOptionException(optionNumber, "Invalid option length (Actual: " + value.length
-                    + ", Minimum: " + getMinLength(optionNumber) + ", Maximum: " + getMaxLength(optionNumber) + ")");
+            throw new IllegalArgumentException(String.format(OUT_OF_ALLOWED_RANGE, value.length, optionNumber,
+                    getMinLength(optionNumber), getMaxLength(optionNumber)));
 
         this.value = value;
     }

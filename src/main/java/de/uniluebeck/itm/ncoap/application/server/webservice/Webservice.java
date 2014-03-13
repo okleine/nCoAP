@@ -210,7 +210,7 @@ public interface Webservice<T> {
 
 
 //    public void startCoapRequestProcessing(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-//                                           InetSocketAddress remoteSocketAddress);
+//                                           InetSocketAddress remoteEndpoint);
 
     /**
      * Method to process an incoming {@link CoapRequest} asynchronously. The implementation of this method is dependant
@@ -229,12 +229,12 @@ public interface Webservice<T> {
      *                       of the incoming {@link CoapRequest}.
      *                       {@link SettableFuture<CoapResponse>#set(CoapResponse)} to send it to the client.
      * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
-     * @param remoteSocketAddress The address of the sender of the request
+     * @param remoteEndpoint The address of the sender of the request
      *
      * @throws Exception
      */
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteSocketAddress) throws Exception;
+                                   InetSocketAddress remoteEndpoint) throws Exception;
 
 
     /**

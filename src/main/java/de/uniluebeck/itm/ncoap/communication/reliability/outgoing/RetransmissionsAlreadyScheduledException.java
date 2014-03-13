@@ -31,18 +31,18 @@ import java.net.InetSocketAddress;
  */
 public class RetransmissionsAlreadyScheduledException extends Exception {
 
-    private final InetSocketAddress remoteSocketAddress;
+    private final InetSocketAddress remoteEndpoint;
     private final int messageID;
 
-    public RetransmissionsAlreadyScheduledException(InetSocketAddress remoteSocketAddress, int messageID){
+    public RetransmissionsAlreadyScheduledException(InetSocketAddress remoteEndpoint, int messageID){
 
-        this.remoteSocketAddress = remoteSocketAddress;
+        this.remoteEndpoint = remoteEndpoint;
         this.messageID = messageID;
     }
 
 
-    public InetSocketAddress getRemoteSocketAddress() {
-        return remoteSocketAddress;
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 
     public int getMessageID() {

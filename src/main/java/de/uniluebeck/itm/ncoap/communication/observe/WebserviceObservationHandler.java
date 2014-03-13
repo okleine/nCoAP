@@ -72,7 +72,7 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //
 //        if(me.getMessage() instanceof CoapMessage){
 //            CoapMessage coapMessage = (CoapMessage) me.getMessage();
-//            InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+//            InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteEndpoint();
 //
 //            //Running observations can be cancelled by observing clients by responding with an RST message upon
 //            //reception of an update notification. The RST must contain the message ID of the latest update
@@ -82,14 +82,14 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //
 //                //Find running observation by the remote host
 //                Map<String, ObservationParameter> observationsForRemoteHost =
-//                        observationsPerPath.row(remoteSocketAddress);
+//                        observationsPerPath.row(remoteEndpoint);
 //
 //                //Check if the message ID contained in the RST matches any of the running observations
 //                for(String servicePath : observationsForRemoteHost.keySet()){
 //                    ObservationParameter observationParameter = observationsForRemoteHost.get(servicePath);
 //
 //                    if(observationParameter.getLatestMessageID() == resetedMessageID){
-//                        stopObservation(remoteSocketAddress, servicePath);
+//                        stopObservation(remoteEndpoint, servicePath);
 //                        break;
 //                    }
 //                }
@@ -101,12 +101,12 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //                Token token = coapRequest.getToken();
 //
 //                //Stop observation if there is an already running observation from the remote host with the same token
-//                if(observationsPerToken.contains(remoteSocketAddress, token))
-//                    stopObservation(ctx, remoteSocketAddress, token);
+//                if(observationsPerToken.contains(remoteEndpoint, token))
+//                    stopObservation(ctx, remoteEndpoint, token);
 //
 //                //Start new observation if the received CoAP request contains the observe option
 //                if(coapRequest.isObserveSet())
-//                    addObservationPerToken((InetSocketAddress) me.getRemoteAddress(), coapRequest.getToken(),
+//                    addObservationPerToken((InetSocketAddress) me.getRemoteEndpoint(), coapRequest.getToken(),
 //                            coapRequest.getUriPath());
 //            }
 //        }
@@ -129,18 +129,18 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //        else if(me.getMessage() instanceof CoapResponse){
 //            CoapResponse coapResponse = (CoapResponse) me.getMessage();
 //
-//            InetSocketAddress remoteSocketAddress = (InetSocketAddress) me.getRemoteAddress();
+//            InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteEndpoint();
 //            Token token = coapResponse.getToken();
 //            int messageID = coapResponse.getMessageID();
 //
-//            String webservicePath = this.observationsPerToken.get(remoteSocketAddress, token);
+//            String webservicePath = this.observationsPerToken.get(remoteEndpoint, token);
 //
 //            //Start new observation (otherwise webservice path will be null)
 //            if(webservicePath != null){
-//                if(!this.observationsPerPath.contains(remoteSocketAddress, webservicePath)){
+//                if(!this.observationsPerPath.contains(remoteEndpoint, webservicePath)){
 //                    //This is a new observation
 //                    log.debug("Start observation of service {} (observer: {}, token: {}, messageID: {})",
-//                            new Object[]{webservicePath, remoteSocketAddress, token,
+//                            new Object[]{webservicePath, remoteEndpoint, token,
 //                                         messageID
 //                            });
 //
@@ -148,22 +148,22 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //                            new ObservationParameter(coapResponse.getMessageID(), token,
 //                                    coapResponse.getContentFormat(), ctx.getChannel());
 //
-//                    addObservation(remoteSocketAddress, webservicePath, observationParameter);
+//                    addObservation(remoteEndpoint, webservicePath, observationParameter);
 //                }
 //
 //                else{
 //                    log.debug("Update observation of service {} (observer: {}, token: {}, messageID: {})",
-//                            new Object[]{webservicePath, remoteSocketAddress, token, messageID});
+//                            new Object[]{webservicePath, remoteEndpoint, token, messageID});
 //
 //                    //Update the the latest message ID to the one set by the Outgoing Reliability Handler
-//                    updateLatestMessageID(remoteSocketAddress, token, messageID);
+//                    updateLatestMessageID(remoteEndpoint, token, messageID);
 //                }
 //
-//                coapResponse.setObservationSequenceNumber(getNextUpdateNotificationCount(remoteSocketAddress, token));
+//                coapResponse.setObserveOption(getNextUpdateNotificationCount(remoteEndpoint, token));
 //            }
 //
 //            else{
-//                stopObservation(ctx, remoteSocketAddress, coapResponse.getToken());
+//                stopObservation(ctx, remoteEndpoint, coapResponse.getToken());
 //            }
 //        }
 //
@@ -176,16 +176,16 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //    }
 //
 //
-//    private synchronized void updateLatestMessageID(InetSocketAddress remoteSocketAddress, Token token, int messageID){
-//        String servicePath = this.observationsPerToken.get(remoteSocketAddress, token);
-//        ObservationParameter observationParameter = this.observationsPerPath.get(remoteSocketAddress, servicePath);
+//    private synchronized void updateLatestMessageID(InetSocketAddress remoteEndpoint, Token token, int messageID){
+//        String servicePath = this.observationsPerToken.get(remoteEndpoint, token);
+//        ObservationParameter observationParameter = this.observationsPerPath.get(remoteEndpoint, servicePath);
 //
 //        observationParameter.setLatestMessageID(messageID);
 //    }
 //
-//    private synchronized long getNextUpdateNotificationCount(InetSocketAddress remoteSocketAddress, Token token){
-//        String servicePath = this.observationsPerToken.get(remoteSocketAddress, token);
-//        ObservationParameter observationParameter = this.observationsPerPath.get(remoteSocketAddress, servicePath);
+//    private synchronized long getNextUpdateNotificationCount(InetSocketAddress remoteEndpoint, Token token){
+//        String servicePath = this.observationsPerToken.get(remoteEndpoint, token);
+//        ObservationParameter observationParameter = this.observationsPerPath.get(remoteEndpoint, servicePath);
 //
 //        return observationParameter.getNextUpdateNotificationTransmissionCount();
 //    }
@@ -213,10 +213,10 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //    private void sendErrorMessage(Map<InetSocketAddress, ObservationParameter> runningObservations,
 //                                  ObservableWebservice webservice){
 //
-//        for(InetSocketAddress remoteSocketAddress : runningObservations.keySet()){
-//            log.debug("Try to notify {}.", remoteSocketAddress);
+//        for(InetSocketAddress remoteEndpoint : runningObservations.keySet()){
+//            log.debug("Try to notify {}.", remoteEndpoint);
 //
-//            ObservationParameter observationParameter = runningObservations.get(remoteSocketAddress);
+//            ObservationParameter observationParameter = runningObservations.get(remoteEndpoint);
 //
 //            try{
 //                CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, MessageCode.Name.NOT_FOUND_404);
@@ -226,11 +226,11 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 //                coapResponse.setToken(observationParameter.getToken());
 //
-//                executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, coapResponse,
+//                executorService.schedule(new UpdateNotificationSender(remoteEndpoint, coapResponse,
 //                        observationParameter.getLatestMessageID(), observationParameter.getChannel()
 //                ), 0, TimeUnit.MILLISECONDS);
 //
-//                stopObservation(remoteSocketAddress, webservice.getPath());
+//                stopObservation(remoteEndpoint, webservice.getPath());
 //            }
 //            catch(Exception e){
 //                log.error("This should never happen!", e);
@@ -244,10 +244,10 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //
 //        Map<Long, ChannelBuffer> formattedContent = new HashMap<Long, ChannelBuffer>();
 //
-//        for(InetSocketAddress remoteSocketAddress : runningObservations.keySet()){
-//            log.debug("Try to notify {}.", remoteSocketAddress);
+//        for(InetSocketAddress remoteEndpoint : runningObservations.keySet()){
+//            log.debug("Try to notify {}.", remoteEndpoint);
 //
-//            ObservationParameter observationParameter = runningObservations.get(remoteSocketAddress);
+//            ObservationParameter observationParameter = runningObservations.get(remoteEndpoint);
 //            observationParameter.nextResourceUpdate();
 //
 //            long contentFormat = observationParameter.getContentFormat();
@@ -268,14 +268,14 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //
 //                updateNotification.setToken(observationParameter.getToken());
 //                updateNotification.setEtag(webservice.getEtag(contentFormat));
-//                updateNotification.setObservationSequenceNumber(observationParameter.getNotificationCount());
+//                updateNotification.setObserveOption(observationParameter.getNotificationCount());
 //                updateNotification.setContent(serializedResourceStatus, contentFormat);
 //
-//                executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, updateNotification,
+//                executorService.schedule(new UpdateNotificationSender(remoteEndpoint, updateNotification,
 //                        observationParameter.getLatestMessageID(), observationParameter.getChannel()
 //                ), 0, TimeUnit.MILLISECONDS);
 //
-//                log.debug("Update notification for {} scheduled.", remoteSocketAddress);
+//                log.debug("Update notification for {} scheduled.", remoteEndpoint);
 //            }
 //
 //            catch (Exception e) {
@@ -284,18 +284,18 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //        }
 //    }
 //
-////    private void handleContentFormatNotSupportedException(InetSocketAddress remoteSocketAddress,
+////    private void handleContentFormatNotSupportedException(InetSocketAddress remoteEndpoint,
 ////                ObservationParameter observationParameter, AcceptedContentFormatNotSupportedException e){
 ////
 ////        try {
-////            String webservice = observationsPerToken.get(remoteSocketAddress, observationParameter.getToken());
-////            stopObservation(remoteSocketAddress, webservice);
+////            String webservice = observationsPerToken.get(remoteEndpoint, observationParameter.getToken());
+////            stopObservation(remoteEndpoint, webservice);
 ////
 ////            CoapResponse updateNotification = new CoapResponse(MessageCode.Name.NOT_IMPLEMENTED_501);
 ////            String message = "Not supported anymore: Content Format No. " + e.getUnsupportedContentFormatsAsString();
 ////            updateNotification.setContent(message.getBytes(CoapMessage.CHARSET));
 ////
-////            executorService.schedule(new UpdateNotificationSender(remoteSocketAddress, updateNotification,
+////            executorService.schedule(new UpdateNotificationSender(remoteEndpoint, updateNotification,
 ////                    observationParameter.getLatestMessageID(), observationParameter.getChannel()
 ////            ), 0, TimeUnit.MILLISECONDS);
 ////        }
@@ -308,81 +308,81 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 ////
 ////    }
 //
-//    private synchronized void addObservation(InetSocketAddress remoteSocketAddress, String path,
+//    private synchronized void addObservation(InetSocketAddress remoteEndpoint, String path,
 //                                             ObservationParameter observationParameter){
 //
-//        this.observationsPerPath.put(remoteSocketAddress, path, observationParameter);
-//        log.info("Added {} as observer for service {}", remoteSocketAddress, path);
+//        this.observationsPerPath.put(remoteEndpoint, path, observationParameter);
+//        log.info("Added {} as observer for service {}", remoteEndpoint, path);
 //    }
 //
 //
-////    private synchronized void stopObservation(InetSocketAddress remoteSocketAddress, Token token){
+////    private synchronized void stopObservation(InetSocketAddress remoteEndpoint, Token token){
 ////
-////        String servicePath = this.observationsPerToken.remove(remoteSocketAddress, token);
+////        String servicePath = this.observationsPerToken.remove(remoteEndpoint, token);
 ////
 ////        if(servicePath != null)
-////            this.observationsPerPath.remove(remoteSocketAddress, servicePath);
+////            this.observationsPerPath.remove(remoteEndpoint, servicePath);
 ////    }
 //
-//    private synchronized void stopObservation(ChannelHandlerContext ctx, InetSocketAddress remoteSocketAddress,
+//    private synchronized void stopObservation(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint,
 //                                              Token token){
 //
-//        String servicePath = this.observationsPerToken.remove(remoteSocketAddress, token);
+//        String servicePath = this.observationsPerToken.remove(remoteEndpoint, token);
 //
 //        if(servicePath != null){
 //            ObservationParameter observationParameter =
-//                    this.observationsPerPath.remove(remoteSocketAddress, servicePath);
+//                    this.observationsPerPath.remove(remoteEndpoint, servicePath);
 //
 //            if(observationParameter != null){
 //                InternalStopUpdateNotificationRetransmissionMessage stopRetransmissionMessage =
-//                        new InternalStopUpdateNotificationRetransmissionMessage(remoteSocketAddress,
+//                        new InternalStopUpdateNotificationRetransmissionMessage(remoteEndpoint,
 //                                observationParameter.getLatestMessageID());
 //
 //                ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), stopRetransmissionMessage, null));
 //
-//                this.observationsPerPath.remove(remoteSocketAddress, servicePath);
+//                this.observationsPerPath.remove(remoteEndpoint, servicePath);
 //            }
 //        }
 //    }
 //
-//    private synchronized void stopObservation(InetSocketAddress remoteSocketAddress, String webservicePath){
+//    private synchronized void stopObservation(InetSocketAddress remoteEndpoint, String webservicePath){
 //
 //        ObservationParameter observationParameter =
-//                this.observationsPerPath.remove(remoteSocketAddress, webservicePath);
+//                this.observationsPerPath.remove(remoteEndpoint, webservicePath);
 //
 //            if(observationParameter == null){
-//                log.error("No observation parameters found (remote socket: {}, service: {})", remoteSocketAddress, webservicePath);
+//                log.error("No observation parameters found (remote socket: {}, service: {})", remoteEndpoint, webservicePath);
 //            }
 //            else{
-//                if(observationsPerToken.remove(remoteSocketAddress, observationParameter.getToken()) != null){
-//                    log.info("Removed {} as observer for service {}", remoteSocketAddress, webservicePath);
+//                if(observationsPerToken.remove(remoteEndpoint, observationParameter.getToken()) != null){
+//                    log.info("Removed {} as observer for service {}", remoteEndpoint, webservicePath);
 //                }
 //                else{
-//                    log.error("Could not remove {} as observer for service {}", remoteSocketAddress, webservicePath);
+//                    log.error("Could not remove {} as observer for service {}", remoteEndpoint, webservicePath);
 //                }
 //            }
 //    }
 //
-//    private synchronized void addObservationPerToken(InetSocketAddress remoteSocketAddress, Token token,
+//    private synchronized void addObservationPerToken(InetSocketAddress remoteEndpoint, Token token,
 //                                                     String webservicePath){
 //
-//        this.observationsPerToken.put(remoteSocketAddress, token, webservicePath);
+//        this.observationsPerToken.put(remoteEndpoint, token, webservicePath);
 //        log.info("Received new observation request from {} for service {} with token {}",
-//                new Object[]{remoteSocketAddress, webservicePath, token});
+//                new Object[]{remoteEndpoint, webservicePath, token});
 //    }
 //
 //
 //    private class UpdateNotificationSender implements Runnable{
 //
-//        private InetSocketAddress remoteSocketAddress;
+//        private InetSocketAddress remoteEndpoint;
 //        private CoapResponse updateNotification;
 //        private int latestMessageID;
 //        private Channel channel;
 //
-//        public UpdateNotificationSender(InetSocketAddress remoteSocketAddress, CoapResponse updateNotification,
+//        public UpdateNotificationSender(InetSocketAddress remoteEndpoint, CoapResponse updateNotification,
 //                                        int latestMessageID, Channel channel){
 //
-//            this.remoteSocketAddress = remoteSocketAddress;
+//            this.remoteEndpoint = remoteEndpoint;
 //            this.updateNotification = updateNotification;
 //            this.latestMessageID = latestMessageID;
 //            this.channel = channel;
@@ -395,7 +395,7 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //
 //            //Stop potentially running retranmissions
 //            InternalStopUpdateNotificationRetransmissionMessage stopRetransmissionMessage =
-//                    new InternalStopUpdateNotificationRetransmissionMessage(remoteSocketAddress, latestMessageID);
+//                    new InternalStopUpdateNotificationRetransmissionMessage(remoteEndpoint, latestMessageID);
 //
 //            ChannelHandlerContext ctx1 = channel.getPipeline().getContext(WebserviceObservationHandler.class);
 //            ctx1.sendUpstream(new UpstreamMessageEvent(channel, stopRetransmissionMessage, null));
@@ -405,7 +405,7 @@ package de.uniluebeck.itm.ncoap.communication.observe;
 //                    channel.getPipeline().getContext(IncomingMessageReliabilityHandler.class);
 //
 //            ChannelFuture future = Channels.future(channel);
-//            Channels.write(ctx2, future, updateNotification, remoteSocketAddress);
+//            Channels.write(ctx2, future, updateNotification, remoteEndpoint);
 //        }
 //    }
 //}

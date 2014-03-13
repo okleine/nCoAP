@@ -37,14 +37,14 @@ import java.net.InetSocketAddress;
 */
 public class InternalEmptyAcknowledgementReceivedMessage {
 
-    private InetSocketAddress remoteSocketAddress;
+    private InetSocketAddress remoteEndpoint;
     private Token token;
 
     /**
      * @param token the token of the confirmed message
      */
-    public InternalEmptyAcknowledgementReceivedMessage(InetSocketAddress remoteSocketAddress, Token token){
-        this.remoteSocketAddress = remoteSocketAddress;
+    public InternalEmptyAcknowledgementReceivedMessage(InetSocketAddress remoteEndpoint, Token token){
+        this.remoteEndpoint = remoteEndpoint;
         this.token = token;
     }
 
@@ -57,14 +57,14 @@ public class InternalEmptyAcknowledgementReceivedMessage {
     }
 
 
-    public InetSocketAddress getRemoteSocketAddress() {
-        return remoteSocketAddress;
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 
     @Override
     public String toString(){
         return "[Internal message for empty ACK reception] "
-                + "Remote address: " + this.remoteSocketAddress.toString()
+                + "Remote address: " + this.remoteEndpoint.toString()
                 + ", Token: " + token.toString();
     }
 }
