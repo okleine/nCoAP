@@ -26,6 +26,7 @@ package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import com.google.common.collect.*;
 import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
+import de.uniluebeck.itm.ncoap.communication.codec.InternalEncodingFailedMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
@@ -234,6 +235,9 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             handleCoapMessageReceived(ctx, me);
         }
 
+        else if(me.getMessage() instanceof InternalEncodingFailedMessage)
+            handleEncodingFailedMessage(ctx, me);
+
 //        else if(me.getMessage() instanceof InternalStopUpdateNotificationRetransmissionMessage){
 //            stopRetransmission(
 //                    ((InternalStopUpdateNotificationRetransmissionMessage) me.getMessage()).getRemoteEndpoint(),
@@ -244,6 +248,17 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         else{
             ctx.sendUpstream(me);
         }
+    }
+
+    private void handleEncodingFailedMessage(ChannelHandlerContext ctx, MessageEvent me) {
+
+        InetSocketAddress remoteEndpoint = ((InternalEncodingFailedMessage) me.getMessage()).getRemoteEndoint();
+        int messageID = ((InternalEncodingFailedMessage) me.getMessage()).getMessageID();
+
+        //Try to cancel open retransmissions (if any)
+        stopRetransmission(remoteEndpoint, messageID);
+
+        ctx.sendUpstream(me);
     }
 
 

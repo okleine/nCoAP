@@ -22,17 +22,65 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.client;
 
-/**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 18.11.13
- * Time: 12:15
- * To change this template use File | Settings | File Templates.
- */
-public interface CodecExceptionReceiver extends CoapResponseProcessor {
+package de.uniluebeck.itm.ncoap.communication.codec;
 
-    public void handleCodecException(Throwable excpetion);
+import de.uniluebeck.itm.ncoap.application.client.Token;
 
+import java.net.InetSocketAddress;
+
+
+public class InvalidOptionException extends Exception{
+
+    private int optionNumber;
+    private int messageID;
+    private Token token;
+    private InetSocketAddress remoteEndpoint;
+    private int messageType;
+
+    /**
+     * @param optionNumber the option number of the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue} that caused this exception
+     */
+    public InvalidOptionException(int optionNumber){
+        super();
+        this.optionNumber = optionNumber;
+    }
+
+
+    public void setMessageID(int messageID){
+        this.messageID = messageID;
+    }
+
+    public int getOptionNumber() {
+        return optionNumber;
+    }
+
+    public int getMessageID() {
+        return messageID;
+    }
+
+    public Token getToken() {
+        return token;
+    }
+
+    public void setToken(Token token) {
+        this.token = token;
+    }
+
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
+    }
+
+    public void setRemoteEndpoint(InetSocketAddress remoteEndpoint) {
+        this.remoteEndpoint = remoteEndpoint;
+    }
+
+
+    public int getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(int messageType) {
+        this.messageType = messageType;
+    }
 }

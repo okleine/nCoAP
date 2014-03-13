@@ -324,7 +324,8 @@ public abstract class CoapMessage {
         if(optionNumber == OptionValue.Name.OBSERVE && MessageCode.isRequest(this.getMessageCode())
             && optionValue.getValue().length > 0){
 
-            throw new IllegalArgumentException(String.format(OUT_OF_ALLOWED_RANGE, 6, 0, 0));
+            throw new IllegalArgumentException(String.format(OUT_OF_ALLOWED_RANGE,
+                    optionValue.getValue().length, 6, 0, 0));
         }
 
         for(int containedOption : options.keySet()){
@@ -413,8 +414,8 @@ public abstract class CoapMessage {
      *
      * @param optionNumber the number representing the option type
      *
-     * @throws UnknownOptionException if the given option number refers to an unknown option
-     * @throws InvalidOptionException if the option to be added is invalid
+     * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option or to
+     * a not-empty option.
      */
     protected void addEmptyOption(int optionNumber) throws IllegalArgumentException {
 
@@ -568,7 +569,7 @@ public abstract class CoapMessage {
      *
      * @param maxAge the value for the Max-Age option to be set
      *
-     * @throws InvalidOptionException
+     * @throws de.uniluebeck.itm.ncoap.communication.codec.InvalidOptionException
      */
     public void setMaxAge(long maxAge)  {
         try{
@@ -641,9 +642,10 @@ public abstract class CoapMessage {
      *
      * @param content ChannelBuffer containing the message content
      *
-     * @throws InvalidMessageException if the messages code does not allow content
+     * @throws java.lang.IllegalArgumentException if the messages code does not allow content and the given byte array
+     * has a length more than zero.
      */
-    public void setContent(byte[] content) throws InvalidMessageException {
+    public void setContent(byte[] content) throws IllegalArgumentException {
 
         setContent(ChannelBuffers.wrappedBuffer(content));
 

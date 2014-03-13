@@ -22,17 +22,15 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.client;
+package de.uniluebeck.itm.ncoap.communication.codec;
+
+import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 18.11.13
- * Time: 12:15
- * To change this template use File | Settings | File Templates.
+ * Created by olli on 13.03.14.
  */
-public interface CodecExceptionReceiver extends CoapResponseProcessor {
+public interface EncodingFailedProcessor extends CoapResponseProcessor {
 
-    public void handleCodecException(Throwable excpetion);
+    public void processEncodingFailed();
 
 }

@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.codec.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,7 +208,7 @@ public class CoapResponse extends CoapMessage {
      * @param locationURI The location URI of the newly created resource. The parts scheme, host, and port are
      * ignored anyway and thus may not be included in the URI object
      *
-     * @throws de.uniluebeck.itm.ncoap.message.options.InvalidOptionException if at least one of the options to be added is not valid
+     * @throws de.uniluebeck.itm.ncoap.communication.codec.InvalidOptionException if at least one of the options to be added is not valid
      */
     public void setLocationURI(URI locationURI) throws InvalidOptionException {
 

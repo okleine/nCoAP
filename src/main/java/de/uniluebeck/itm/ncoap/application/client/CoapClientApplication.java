@@ -264,6 +264,9 @@ public class CoapClientApplication {
                                 ((TransmissionInformationProcessor) resetProcessor).messageTransmitted(
                                         resetMessage.getToken(), resetMessage.getMessageID(), false);
                         }
+                        else{
+                            log.error("Message could not be sent!", future.getCause());
+                        }
                     }
                 });
             }

@@ -24,31 +24,36 @@
  */
 package de.uniluebeck.itm.ncoap.communication.codec;
 
+import de.uniluebeck.itm.ncoap.application.client.Token;
+
 import java.net.InetSocketAddress;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 03.12.13
- * Time: 16:47
- * To change this template use File | Settings | File Templates.
+ * Created by olli on 13.03.14.
  */
-public class MessageFormatDecodingException extends Exception {
+public class InternalEncodingFailedMessage {
 
-    private InetSocketAddress remoteEndpoint;
-    private int messageID;
+    private final InetSocketAddress remoteEndoint;
+    private final int messageID;
+    private final Token token;
 
-    public MessageFormatDecodingException(InetSocketAddress remoteEndpoint, int messageID, String message){
-        super(message);
-        this.remoteEndpoint = remoteEndpoint;
+
+    InternalEncodingFailedMessage(InetSocketAddress remoteEndoint, int messageID, Token token){
+        this.remoteEndoint = remoteEndoint;
         this.messageID = messageID;
+        this.token = token;
     }
 
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
+    public InetSocketAddress getRemoteEndoint() {
+        return remoteEndoint;
     }
 
     public int getMessageID() {
         return messageID;
     }
+
+    public Token getToken() {
+        return token;
+    }
+
 }

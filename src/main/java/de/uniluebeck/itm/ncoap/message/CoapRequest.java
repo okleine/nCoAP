@@ -38,6 +38,7 @@ public class CoapRequest extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapRequest.class.getName());
 
+    private static String NO_REQUEST_TYPE = "Message type %d is not a suitable type for requests (only CON and NON)!";
     private static String NO_REQUEST_CODE = "Message code %d is not a request code!";
     private static String URI_SCHEME = "URI scheme must be set to \"coap\" (but given URI is: %s)!";
     private static String URI_FRAGMENT = "URI must not have a fragment (but given URI is: %s)!";
@@ -50,19 +51,16 @@ public class CoapRequest extends CoapMessage {
      * @param messageCode A {@link MessageCode}
      * @param targetUri the recipients URI
      *
-     * @throws InvalidOptionException if one of the target URI options to be created is not valid
-     * @throws URISyntaxException if the URI is not appropriate for a CoAP message.
-     * @throws InvalidHeaderException if the given messageCode is not suitable for a request
-     * @throws UnknownHostException if the host given in the targetUri could not be resolved to an IP address
      */
-    public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri) throws
-            InvalidOptionException, URISyntaxException, UnknownHostException, InvalidHeaderException {
+    public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri)
+            throws IllegalArgumentException {
 
         this(messageType.getNumber(), messageCode.getNumber(), targetUri, false);
     }
 
+
     public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri, boolean useProxy)
-            throws InvalidOptionException, InvalidHeaderException, URISyntaxException {
+            throws IllegalArgumentException {
 
         this(messageType.getNumber(), messageCode.getNumber(), targetUri, useProxy);
     }
@@ -76,14 +74,9 @@ public class CoapRequest extends CoapMessage {
      * @param messageCode A {@link MessageCode}
      * @param targetUri the recipients URI
      *
-     * @throws InvalidOptionException if one of the target URI options to be created is not valid
-     * @throws URISyntaxException if the URI is not appropriate for a CoAP message.
-     * @throws InvalidHeaderException if the given messageCode is not suitable for a request
-     * @throws UnknownHostException if the host given in the targetUri could not be resolved to an IP address
+     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
-    public CoapRequest(int messageType, int messageCode, URI targetUri) throws
-            InvalidOptionException, URISyntaxException, InvalidHeaderException {
-
+    public CoapRequest(int messageType, int messageCode, URI targetUri) throws IllegalArgumentException {
         this(messageType, messageCode, targetUri, false);
     }
 
@@ -103,22 +96,12 @@ public class CoapRequest extends CoapMessage {
      *                 {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#URI_PORT}, {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#URI_PATH}, and {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#URI_QUERY} if
      *                 <code>useProxy</code> is set to <code>false</code.
      *
-     * @throws InvalidOptionException if an error occurred while setting the target URI related options
-     * @throws InvalidHeaderException if the given message type or message code are not suitable for requests
-     * @throws URISyntaxException if the given target URI is not suitable for any reason
+     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
     public CoapRequest(int messageType, int messageCode, URI targetUri, boolean useProxy)
-            throws InvalidOptionException, InvalidHeaderException, URISyntaxException {
+            throws IllegalArgumentException {
 
-        super(messageType, messageCode);
-
-        if(messageType > MessageType.Name.NON.getNumber() || messageType < MessageType.Name.CON.getNumber())
-            throw new InvalidHeaderException("Message type for requests must either be CON (0) or NON (-1)");
-
-
-        if(!(MessageCode.isRequest(messageCode)))
-            throw new InvalidHeaderException("Message code no." + messageCode + " is no request code.");
-
+        this(messageType, messageCode);
 
         if(useProxy)
             setProxyURIOption(targetUri);
@@ -134,10 +117,14 @@ public class CoapRequest extends CoapMessage {
      *
      * @param messageType the number representing the {@link MessageType} for this {@link CoapRequest}
      * @param messageCode the number representing the {@link MessageCode} for this {@link CoapRequest}
-     * @throws InvalidHeaderException
+     *
+     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
     public CoapRequest(int messageType, int messageCode) throws IllegalArgumentException {
         super(messageType, messageCode);
+
+        if(messageType < MessageType.Name.CON.getNumber() || messageType > MessageType.Name.CON.getNumber())
+            throw new IllegalArgumentException(String.format(NO_REQUEST_TYPE, messageType));
 
         if(!MessageCode.isRequest(messageCode))
             throw new IllegalArgumentException(String.format(NO_REQUEST_CODE, messageCode));
@@ -288,8 +275,8 @@ public class CoapRequest extends CoapMessage {
      *
      * @param etags the values for the ETAG options to be set
      *
-     * @throws InvalidOptionException if at least one of the given ETAGs is not suitable to be the value of an ETAG
-     * option.
+     * @throws java.lang.IllegalArgumentException if at least one of the given ETAGs is not suitable to be the value of
+     * an ETAG option.
      */
     public void setEtags(byte[]... etags) throws IllegalArgumentException {
 

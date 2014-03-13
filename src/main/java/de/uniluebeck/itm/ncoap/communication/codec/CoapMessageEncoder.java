@@ -72,18 +72,18 @@
 package de.uniluebeck.itm.ncoap.communication.codec;
 
 import com.google.common.primitives.Ints;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
 
 
 /**
@@ -91,7 +91,7 @@ import org.slf4j.LoggerFactory;
 *
 * @author Oliver Kleine
 */
-public class CoapMessageEncoder extends OneToOneEncoder {
+public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
     public static final int MAX_OPTION_DELTA = 65804;
     public static final int MAX_OPTION_LENGTH = 65804;
@@ -99,16 +99,28 @@ public class CoapMessageEncoder extends OneToOneEncoder {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
-    protected Object encode(ChannelHandlerContext ctx, Channel ch, Object object) throws EncodingException {
-        if(!(object instanceof CoapMessage)){
-            return object instanceof ChannelBuffer ? object : null;
+    public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
+
+        if (!(evt instanceof MessageEvent) || !(((MessageEvent) evt).getMessage() instanceof CoapMessage)) {
+            ctx.sendDownstream(evt);
+            return;
         }
 
-        CoapMessage coapMessage = (CoapMessage) object;
-        log.info("CoapMessage to be encoded: {}", coapMessage);
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) ((MessageEvent) evt).getRemoteAddress();
+        CoapMessage coapMessage = (CoapMessage) ((MessageEvent) evt).getMessage();
 
-        if(coapMessage.getMessageID() == CoapMessage.MESSAGE_ID_UNDEFINED)
-            throw new EncodingException(new InvalidHeaderException("Message ID is not defined."));
+        try{
+            Channels.write(ctx, evt.getFuture(), encode(coapMessage), remoteEndpoint);
+        }
+        catch(InvalidOptionException ex){
+            evt.getFuture().setFailure(ex);
+            sendInternalEncodingFailedMessage(ctx, remoteEndpoint, coapMessage.getMessageID(), coapMessage.getToken());
+        }
+    }
+
+
+    protected ChannelBuffer encode(CoapMessage coapMessage) throws InvalidOptionException {
+        log.info("CoapMessage to be encoded: {}", coapMessage);
 
 
         //Start encoding
@@ -123,17 +135,12 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             return encodedMessage;
         }
 
+
         if(coapMessage.getAllOptions().size() == 0 && coapMessage.getContent().readableBytes() == 0)
             return encodedMessage;
 
 
-        //Encode OPTIONS
-        try{
-            encodeOptions(encodedMessage, coapMessage);
-        }
-        catch(InvalidOptionException e){
-            return new EncodingException(e);
-        }
+        encodeOptions(encodedMessage, coapMessage);
 
         log.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
 
@@ -148,6 +155,7 @@ public class CoapMessageEncoder extends OneToOneEncoder {
 
         return encodedMessage;
     }
+
 
     protected void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage){
 
@@ -193,22 +201,30 @@ public class CoapMessageEncoder extends OneToOneEncoder {
             throws InvalidOptionException {
 
         //The previous option number must be smaller or equal to the actual one
-        if(prevNumber > optionNumber)
-            throw new InvalidOptionException(optionNumber, "Previous option no. (" + prevNumber +
-                    ") for encoding must not be larger then current option no (" + optionNumber + ")");
+        if(prevNumber > optionNumber){
+            log.error("Previous option no. ({}) must not be larger then current option no ({})",
+                    prevNumber, optionNumber);
+
+            throw new InvalidOptionException(optionNumber);
+        }
+
 
 
         int optionDelta = optionNumber - prevNumber;
         int optionLength = optionValue.getValue().length;
 
-        if(optionLength > MAX_OPTION_LENGTH)
-            throw new InvalidOptionException(optionNumber, "Option no. " + optionNumber +
-                    " exceeds maximum option length (actual: " + optionLength + ", maximum: " +
-                    MAX_OPTION_LENGTH + ")");
+        if(optionLength > MAX_OPTION_LENGTH){
+            log.error("Option no. {} exceeds maximum option length (actual: {}, max: {}).",
+                    new Object[]{optionNumber, optionLength, MAX_OPTION_LENGTH});
 
-        if(optionDelta > MAX_OPTION_DELTA)
-            throw new InvalidOptionException(optionNumber, "Option no. " + optionNumber +
-                    " exceeds maximum option delta (actual: " + optionDelta + ", maximum: " + MAX_OPTION_DELTA + ")");
+            throw new InvalidOptionException(optionNumber);
+        }
+
+
+        if(optionDelta > MAX_OPTION_DELTA){
+            log.error("Option delta exceeds maximum option delta (actual: {}, max: {})", optionDelta, MAX_OPTION_DELTA);
+            throw new InvalidOptionException(optionNumber);
+        }
 
 
         //option delta < 13
@@ -281,5 +297,15 @@ public class CoapMessageEncoder extends OneToOneEncoder {
         buffer.writeBytes(optionValue.getValue());
         log.debug("Encoded option no {} with value {}", optionNumber, optionValue.getDecodedValue());
         log.debug("Encoded message length is now: {}", buffer.readableBytes());
+    }
+
+
+    private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint,
+                                                   int messageID, Token token){
+
+        InternalEncodingFailedMessage internalMessage =
+                new InternalEncodingFailedMessage(remoteEndpoint, messageID, token);
+
+        Channels.fireMessageReceived(ctx, internalMessage);
     }
 }

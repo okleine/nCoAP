@@ -26,6 +26,8 @@ package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
+import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedProcessor;
+import de.uniluebeck.itm.ncoap.communication.codec.InternalEncodingFailedMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalMessageRetransmittedMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;
@@ -160,9 +162,6 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                         }
 
                     }
-                    else{
-                        log.error("Unexpected Exception:", cause);
-                    }
                 }
             }
         });
@@ -224,10 +223,26 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         else if(me.getMessage() instanceof InternalMessageRetransmittedMessage)
             handleMessageRetransmittedMessage((InternalMessageRetransmittedMessage) me.getMessage());
 
+        else if(me.getMessage() instanceof InternalEncodingFailedMessage)
+            handleEncodingFailedMessage((InternalEncodingFailedMessage) me.getMessage());
         else
             log.warn("Could not deal with message: {}", me.getMessage());
     }
 
+
+    private void handleEncodingFailedMessage(InternalEncodingFailedMessage message) {
+        CoapResponseProcessor responseProcessor =
+                removeResponseCallback(message.getRemoteEndoint(), message.getToken());
+
+        if(responseProcessor == null){
+            log.error("No response processor found for internal encoding failed message...");
+            return;
+        }
+
+        if(responseProcessor instanceof EncodingFailedProcessor)
+            ((EncodingFailedProcessor) responseProcessor).processEncodingFailed();
+
+    }
 
     private void handleCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteEndpoint){
         log.debug("CoAP response received: {}.", coapResponse);

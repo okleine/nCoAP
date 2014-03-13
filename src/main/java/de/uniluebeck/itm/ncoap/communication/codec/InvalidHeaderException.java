@@ -22,17 +22,33 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.client;
+package de.uniluebeck.itm.ncoap.communication.codec;
+
+import java.net.InetSocketAddress;
 
 /**
  * Created with IntelliJ IDEA.
  * User: olli
- * Date: 18.11.13
- * Time: 12:15
+ * Date: 10.11.13
+ * Time: 17:44
  * To change this template use File | Settings | File Templates.
  */
-public interface CodecExceptionReceiver extends CoapResponseProcessor {
+public class InvalidHeaderException extends Exception{
 
-    public void handleCodecException(Throwable excpetion);
+    private int messageID;
+    private InetSocketAddress remoteEndpoint;
 
+    public InvalidHeaderException(int messageID, InetSocketAddress remoteEndpoint){
+        super();
+        this.messageID = messageID;
+        this.remoteEndpoint = remoteEndpoint;
+    }
+
+    public int getMessageID() {
+        return messageID;
+    }
+
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
+    }
 }

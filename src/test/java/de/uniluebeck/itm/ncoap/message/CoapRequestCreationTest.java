@@ -26,7 +26,6 @@ package de.uniluebeck.itm.ncoap.message;
 
 import com.google.common.collect.Lists;
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.message.options.InvalidOptionException;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -36,8 +35,6 @@ import org.junit.runners.Parameterized;
 
 import java.net.InetAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;

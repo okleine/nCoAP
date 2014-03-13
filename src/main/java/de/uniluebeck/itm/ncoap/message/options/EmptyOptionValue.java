@@ -38,8 +38,7 @@ public final class EmptyOptionValue extends OptionValue<byte[]> {
     /**
      * @param optionNumber the option number of the {@link EmptyOptionValue} to be created
      *
-     * @throws InvalidOptionException this should never happen as empty options don't have a value that can be invalid
-     * @throws UnknownOptionException if the given option number is unknown
+     * @throws java.lang.IllegalArgumentException if the given option number does not refer to an empty option
      */
     public EmptyOptionValue(int optionNumber) throws IllegalArgumentException {
        super(optionNumber, new byte[0]);
