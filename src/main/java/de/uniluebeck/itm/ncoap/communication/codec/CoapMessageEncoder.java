@@ -76,10 +76,11 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
+import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.*;
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,16 +88,31 @@ import java.net.InetSocketAddress;
 
 
 /**
-* A {@link CoapMessageEncoder} serializes outgoing {@link CoapMessage}s.
-*
-* @author Oliver Kleine
-*/
+ * A {@link CoapMessageEncoder} serializes outgoing {@link CoapMessage}s. In the (rather unlikely) case that there is
+ * an exception thrown during the encoding process, an internal message is sent upstream, i.e. in the direction of
+ * the application.
+ *
+ * <b>Note for instances of {@link CoapClientApplication}:</b>Implement {@link EncodingFailedProcessor} within your
+ * {@link CoapResponseProcessor} instance (which was supposed to handle an awaited response) to get your application
+ * informed about such an error.
+ *
+ * @author Oliver Kleine
+ */
 public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
+    /**
+     * The maximum option delta (65804)
+     */
     public static final int MAX_OPTION_DELTA = 65804;
+
+    /**
+     * The maximum option length (65804)
+     */
     public static final int MAX_OPTION_LENGTH = 65804;
 
+
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
 
     @Override
     public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
@@ -207,7 +223,6 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
             throw new InvalidOptionException(optionNumber);
         }
-
 
 
         int optionDelta = optionNumber - prevNumber;
