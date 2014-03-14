@@ -28,7 +28,7 @@ package de.uniluebeck.itm.ncoap.communication.codec;
 import de.uniluebeck.itm.ncoap.application.client.Token;
 
 import java.net.InetSocketAddress;
-
+import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 
 public class InvalidOptionException extends Exception{
 
@@ -39,7 +39,7 @@ public class InvalidOptionException extends Exception{
     private int messageType;
 
     /**
-     * @param optionNumber the option number of the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue} that caused this exception
+     * @param optionNumber the option number of the {@link OptionValue} that caused this exception
      */
     public InvalidOptionException(int optionNumber){
         super();

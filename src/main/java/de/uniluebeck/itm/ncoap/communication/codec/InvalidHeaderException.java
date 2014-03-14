@@ -24,30 +24,47 @@
  */
 package de.uniluebeck.itm.ncoap.communication.codec;
 
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import java.net.InetSocketAddress;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 10.11.13
- * Time: 17:44
- * To change this template use File | Settings | File Templates.
+ * An {@link InvalidHeaderException} indicates that the Header, i.e. the first 4 bytes of an incoming serialized
+ * {@link CoapMessage} are malformed. This exception is thrown during the decoding process and causes an RST message
+ * to be sent to the incoming message origin.
+ *
+ * @author Oliver Kleine
  */
 public class InvalidHeaderException extends Exception{
 
     private int messageID;
     private InetSocketAddress remoteEndpoint;
 
+    /**
+     * Creates a new instance of {@link InvalidHeaderException}.
+     *
+     * @param messageID the message ID of the message that caused
+     * @param remoteEndpoint the malformed message origin
+     */
     public InvalidHeaderException(int messageID, InetSocketAddress remoteEndpoint){
         super();
         this.messageID = messageID;
         this.remoteEndpoint = remoteEndpoint;
     }
 
+    /**
+     * Returns the message ID of the incoming malformed message
+     *
+     * @return the message ID of the incoming malformed message
+     */
     public int getMessageID() {
         return messageID;
     }
 
+    /**
+     * Returns the malformed incoming messages origin CoAP endpoint
+     *
+     * @return the malformed incoming messages origin CoAP endpoint
+     */
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;
     }
