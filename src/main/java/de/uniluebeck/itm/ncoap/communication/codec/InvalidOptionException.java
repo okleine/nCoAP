@@ -29,7 +29,17 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 
 import java.net.InetSocketAddress;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
+import de.uniluebeck.itm.ncoap.message.MessageType;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
+
+/**
+ * Instances of {@link InvalidOptionException} are thrown if either encoding of decoding of a {@link CoapMessage}
+ * failed because of an invalid option (for decoding only if the option was critical as non-critical options are
+ * silently ignored).
+ *
+ * @author Oliver Kleine
+ */
 public class InvalidOptionException extends Exception{
 
     private int optionNumber;
@@ -47,39 +57,97 @@ public class InvalidOptionException extends Exception{
     }
 
 
-    public void setMessageID(int messageID){
-        this.messageID = messageID;
-    }
-
+    /**
+     * Returns the number of the option that caused this exception
+     *
+     * @return the number of the option that caused this exception
+     */
     public int getOptionNumber() {
         return optionNumber;
     }
 
+
+    /**
+     * Method to set the message ID of the message that caused this exception
+     *
+     * @param messageID the message ID of the message that caused this exception
+     */
+    public void setMessageID(int messageID){
+        this.messageID = messageID;
+    }
+
+
+    /**
+     * Returns the message ID of the message that caused this exception
+     *
+     * @return the message ID of the message that caused this exception
+     */
     public int getMessageID() {
         return messageID;
     }
 
-    public Token getToken() {
-        return token;
-    }
 
+    /**
+     * Method to set the {@link Token} of the message that caused this exception
+     *
+     * @param token the {@link Token} of the message that caused this exception
+     */
     public void setToken(Token token) {
         this.token = token;
     }
 
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
+
+    /**
+     * Returns the {@link Token} of the message that caused this exception
+     *
+     * @return the {@link Token} of the message that caused this exception
+     */
+    public Token getToken() {
+        return token;
     }
 
+
+    /**
+     * Method to set the remote CoAP endpoint of the message that caused this exception (the
+     * remote CoAP endpoint is either the message origin if this exception was thrown by the
+     * {@link CoapMessageDecoder} or he desired recipient if this exception was thrown by the
+     * {@link CoapMessageEncoder}.
+     *
+     * @param remoteEndpoint the remote CoAP endpoint of the message that caused this exception
+     */
     public void setRemoteEndpoint(InetSocketAddress remoteEndpoint) {
         this.remoteEndpoint = remoteEndpoint;
     }
 
 
+    /**
+     * Returns the remote CoAP endpoint of the message that caused this exception (the
+     * remote CoAP endpoint is either the message origin if this exception was thrown by the
+     * {@link CoapMessageDecoder} or he desired recipient if this exception was thrown by the
+     * {@link CoapMessageEncoder}.
+     *
+     * @return the remote CoAP endpoint of the message that caused this exception
+     */
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
+    }
+
+
+    /**
+     * Returns the number refering to the {@link MessageType} of the message that caused this exception
+     *
+     * @return the number refering to the {@link MessageType} of the message that caused this exception
+     */
     public int getMessageType() {
         return messageType;
     }
 
+
+    /**
+     * Method to set the number refering to the {@link MessageType} of the message that caused this exception
+     *
+     * @param messageType the number refering to the {@link MessageType} of the message that caused this exception
+     */
     public void setMessageType(int messageType) {
         this.messageType = messageType;
     }

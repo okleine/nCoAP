@@ -65,19 +65,19 @@ import java.net.InetSocketAddress;
 public class InternalRetransmissionTimeoutMessage {
 
     private Token token;
-    private InetSocketAddress remoteAddress;
+    private InetSocketAddress remoteEndpoint;
 
 
     /**
      * @param token a long value representing the token of the outgoing confirmable {@link CoapMessage} that was not
      *              acknowledged by the recipient
      *
-     * @param remoteAddress the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that
+     * @param remoteEndpoint the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that
      *                      did not acknowledge the reception
      */
-    public InternalRetransmissionTimeoutMessage(InetSocketAddress remoteAddress, Token token){
+    public InternalRetransmissionTimeoutMessage(InetSocketAddress remoteEndpoint, Token token){
         this.token = token;
-        this.remoteAddress = remoteAddress;
+        this.remoteEndpoint = remoteEndpoint;
     }
 
 
@@ -97,14 +97,14 @@ public class InternalRetransmissionTimeoutMessage {
      * @return the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that did not
      * acknowledge the reception.
      */
-    public InetSocketAddress getRemoteAddress() {
-        return remoteAddress;
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 
 
     @Override
     public String toString(){
-        return "InternalRetransmissionTimeoutMessage: " + remoteAddress + " (remote address), "
+        return "InternalRetransmissionTimeoutMessage: " + remoteEndpoint + " (remote address), "
                 + token + " (token)";
     }
 }

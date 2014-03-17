@@ -49,6 +49,26 @@ import java.util.*;
  */
 public abstract class CoapMessage {
 
+    /**
+     * The CoAP protocol version (1)
+     */
+    public static final int PROTOCOL_VERSION = 1;
+
+    /**
+     * The default character set for {@link CoapMessage}s (UTF-8)
+     */
+    public static final Charset CHARSET = Charset.forName("UTF-8");
+
+    /**
+     * Internal constant to indicate that the message ID was not yet set (-1)
+     */
+    public static final int MESSAGE_ID_UNDEFINED = -1;
+
+    /**
+     * The maximum length of the byte array that backs the {@link Token} of {@link CoapMessage} (8)
+     */
+    public static final int MAX_TOKEN_LENGTH = 8;
+
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
     private static final String WRONG_OPTION_TYPE = "Option no. %d is no option of type %s";
@@ -61,13 +81,6 @@ public abstract class CoapMessage {
     private static final String EXCLUDES = "Already contained option no. %d excludes option no. %d";
     private static final String OUT_OF_ALLOWED_RANGE = "Given value length (%d) is out of allowed range " +
             "for option no. %d (min: %d, max; %d).";
-
-    public static final int PROTOCOL_VERSION = 1;
-    public static final Charset CHARSET = Charset.forName("UTF-8");
-
-    public static final int MESSAGE_ID_UNDEFINED = -1;
-
-    public static final int MAX_TOKEN_LENGTH = 8;
 
     private static final int ONCE       = 1;
     private static final int MULTIPLE   = 2;
@@ -241,12 +254,6 @@ public abstract class CoapMessage {
     }
 
 
-//    protected CoapMessage(int messageCode) throws IllegalArgumentException {
-//        this(MessageType.Name.UNKNOWN.getNumber(), messageCode, MESSAGE_ID_UNDEFINED, new Token(new byte[0]));
-//        this.messageCode = messageCode;
-//    }
-
-
     /**
      * Method to create an empty reset message which is strictly speaking neither a request nor a response
      *
@@ -260,6 +267,7 @@ public abstract class CoapMessage {
         return new CoapMessage(MessageType.Name.RST.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
                 new Token(new byte[0])){};
     }
+
 
     /**
      * Method to create an empty acknowledgement message which is strictly speaking neither a request nor a response
@@ -275,6 +283,7 @@ public abstract class CoapMessage {
                 new Token(new byte[0])){};
     }
 
+
     /**
      * Method to create an empty confirmable message which is considered a PIMG message on application layer, i.e.
      * a message to check if a CoAP endpoint is alive (not only the host but also the CoAP application!).
@@ -289,6 +298,7 @@ public abstract class CoapMessage {
         return new CoapMessage(MessageType.Name.CON.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
                 new Token(new byte[0])){};
     }
+
 
     /**
      * Sets the message type of this {@link CoapMessage}. Usually there is no need to use this method as the value

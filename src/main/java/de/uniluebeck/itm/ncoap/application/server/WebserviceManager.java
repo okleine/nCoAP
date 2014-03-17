@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
+import de.uniluebeck.itm.ncoap.communication.observe.InternalObservableWebserviceRegistrationMessage;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.channel.*;
@@ -69,11 +70,9 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-//    //This map holds all open, i.e. not yet answered requests to avoid duplicate request processing
-//    private Multimap<InetSocketAddress, CoapRequest> openRequests;
-
     //This map holds all registered webservices (key: URI path, value: Webservice instance)
     private HashMap<String, Webservice> registeredServices;
+
 
     private ScheduledExecutorService executorService;
     private WebserviceNotFoundHandler webServiceNotFoundHandler;
@@ -89,7 +88,6 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      */
     public WebserviceManager(WebserviceNotFoundHandler webServiceNotFoundHandler, ScheduledExecutorService executorService){
 
-//        this.openRequests = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, CoapRequest>create());
         this.registeredServices = new HashMap<>();
         this.executorService = executorService;
         this.webServiceNotFoundHandler = webServiceNotFoundHandler;
@@ -210,25 +208,6 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
     }
 
 
-//    private void handleRequestForNotExistingService(CoapRequest coapRequest,
-//                                                    SettableFuture<CoapResponse> responseFuture) throws Exception{
-//
-//        if(coapRequest.getMessageCodeName() == MessageCode.Name.PUT){
-//            //Call the WebserviceNotFoundHandler
-//            log.info("Incoming PUT request to create resource {}.", coapRequest.getUriPath());
-//            this.webServiceNotFoundHandler.processCoapRequest(responseFuture, coapRequest,);
-//        }
-//        else{
-//            //Write error response if there is no such webservice instance registered at this server instance
-//            log.info("Requested service {} not found. Send 404 NOT FOUND response.", coapRequest.getUriPath());
-//            CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, MessageCode.Name.NOT_FOUND_404);
-//            coapResponse.setContent(("Requested service \"" + coapRequest.getUriPath() +
-//                    "\" not found.").getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
-//            responseFuture.set(coapResponse);
-//        }
-//    }
-
-
     /**
      * This method is invoked by the framework if an exception occured during the reception or sending of a
      * {@link CoapMessage}.
@@ -316,18 +295,18 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         registeredServices.put(webservice.getPath(), webservice);
         log.info("Registered new service at " + webservice.getPath());
 
-//        if(webservice instanceof ObservableWebservice){
-//            InternalObservableWebserviceRegistrationMessage message =
-//                    new InternalObservableWebserviceRegistrationMessage((ObservableWebservice) webservice);
-//
-//            ChannelFuture future = Channels.write(channel, message);
-//            future.addListener(new ChannelFutureListener() {
-//                @Override
-//                public void operationComplete(ChannelFuture future) throws Exception {
-//                    log.info("Registered {} at observable resource handler.", webservice.getPath());
-//                }
-//            });
-//        }
+        if(webservice instanceof ObservableWebservice){
+            InternalObservableWebserviceRegistrationMessage message =
+                    new InternalObservableWebserviceRegistrationMessage((ObservableWebservice) webservice);
+
+            ChannelFuture future = Channels.write(channel, message);
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    log.info("Registered {} at observable resource handler.", webservice.getPath());
+                }
+            });
+        }
 
         webservice.setScheduledExecutorService(executorService);
     }

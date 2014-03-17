@@ -197,20 +197,6 @@ public interface Webservice<T> {
      */
     public void shutdown();
 
-//    /**
-//     * Returns <code>true</code> if this {@link Webservice} can be removed from the server with a {@link CoapRequest}
-//     * with {@link MessageCode.Name#DELETE} and <code>false</code> otherwise. This method is invoked by the framework
-//     * if such a request is addressed to the path this {@link Webservice} is registered at.
-//     *
-//     * @return <code>true</code> if this {@link Webservice} can be removed from the server with a {@link CoapRequest}
-//     * with {@link MessageCode.Name#DELETE} and <code>false</code> otherwise.
-//     */
-//    public boolean allowsDelete();
-
-
-
-//    public void startCoapRequestProcessing(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-//                                           InetSocketAddress remoteEndpoint);
 
     /**
      * Method to process an incoming {@link CoapRequest} asynchronously. The implementation of this method is dependant
@@ -270,10 +256,6 @@ public interface Webservice<T> {
     public boolean equals(Object object);
 
 
-    /**
-     * This method must return a hash value for the Webservice instance based on the URI path of the webservice. Same
-     * path must return the same hash value whereas different paths should have hash values as distinct as possible.
-     */
     @Override
     public int hashCode();
 

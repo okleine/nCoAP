@@ -50,11 +50,17 @@ public class OutgoingReliableMessageExchange extends OutgoingMessageExchange {
         return coapMessage;
     }
 
-
-    public int increaseRetransmissionCounter(){
-        return ++this.retransmissionCount;
+    public void setCoapMessage(CoapMessage coapMessage){
+        this.coapMessage = coapMessage;
     }
 
+    public void increaseRetransmissionCount(){
+        ++this.retransmissionCount;
+    }
+
+    public int getRetransmissionCount(){
+        return this.retransmissionCount;
+    }
 
     public boolean isRetransmissionStopped() {
         return this.retransmissionStopped;

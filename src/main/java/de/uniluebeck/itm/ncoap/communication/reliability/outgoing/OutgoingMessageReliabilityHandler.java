@@ -26,8 +26,10 @@ package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import com.google.common.collect.*;
 import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.communication.codec.InternalEncodingFailedMessage;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import org.jboss.netty.channel.*;
@@ -96,11 +98,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     }
 
 
-    public ChannelHandlerContext getChannelHandlerContext(){
-        return this.ctx;
-    }
-
-
     private boolean isShutdown(){
         return this.shutdown;
     }
@@ -117,8 +114,13 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         if(isShutdown())
             return;
 
-        if((me.getMessage() instanceof CoapMessage))
+        if(me.getMessage() instanceof CoapResponse && ((CoapResponse) me.getMessage()).isUpdateNotification()
+                && ((CoapResponse) me.getMessage()).getMessageTypeName() == MessageType.Name.CON)
+            updateConfirmableUpdateNotifiction(ctx, me);
+
+        else if((me.getMessage() instanceof CoapMessage))
             writeCoapMessage(ctx, me);
+
 
         else if(me.getMessage() instanceof InternalApplicationShutdownMessage)
             handleApplicationShutdown(me.getFuture());
@@ -185,6 +187,23 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         }
     }
 
+    private void updateConfirmableUpdateNotifiction(ChannelHandlerContext ctx, MessageEvent me){
+
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        CoapResponse updateNotification = (CoapResponse) me.getMessage();
+
+        OutgoingMessageExchange messageExchange =
+                ongoingMessageExchanges.get(remoteEndpoint, updateNotification.getMessageID());
+
+        if(messageExchange != null && messageExchange instanceof OutgoingReliableMessageExchange)
+            ((OutgoingReliableMessageExchange) messageExchange).setCoapMessage(updateNotification);
+
+        else {
+            updateNotification.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
+            writeCoapMessage(ctx, me);
+        }
+    }
+
 
     private OutgoingReliableMessageExchange scheduleFirstRetransmission(CoapMessage coapMessage,
                                                                         InetSocketAddress remoteEndpoint)
@@ -238,13 +257,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         else if(me.getMessage() instanceof InternalEncodingFailedMessage)
             handleEncodingFailedMessage(ctx, me);
 
-//        else if(me.getMessage() instanceof InternalStopUpdateNotificationRetransmissionMessage){
-//            stopRetransmission(
-//                    ((InternalStopUpdateNotificationRetransmissionMessage) me.getMessage()).getRemoteEndpoint(),
-//                    ((InternalStopUpdateNotificationRetransmissionMessage) me.getMessage()).getMessageID()
-//            );
-//        }
-
         else{
             ctx.sendUpstream(me);
         }
@@ -292,7 +304,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         InternalResetReceivedMessage internalMessage =
                 new InternalResetReceivedMessage(remoteEndpoint, messageExchange.getToken(), coapMessage);
 
-        Channels.fireMessageReceived(ctx, internalMessage);
+        Channels.fireMessageReceived(ctx.getChannel(), internalMessage);
     }
 
 
@@ -312,7 +324,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             InternalEmptyAcknowledgementReceivedMessage internalMessage =
                     new InternalEmptyAcknowledgementReceivedMessage(remoteEndpoint, coapMessage.getToken());
 
-            Channels.fireMessageReceived(ctx, internalMessage, remoteEndpoint);
+            Channels.fireMessageReceived(ctx.getChannel(), internalMessage, remoteEndpoint);
         }
 
         //Forward received ACK upstream if it is not empty but a piggy-backed response
@@ -354,8 +366,43 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                     messageExchange.getCoapMessage().getToken()
             );
 
-            Channels.fireMessageReceived(this.ctx, internalMessage);
+            Channels.fireMessageReceived(this.ctx.getChannel(), internalMessage);
         }
+    }
+
+
+    private void retransmitMessage(OutgoingReliableMessageExchange messageExchange){
+
+        final CoapMessage coapMessage = messageExchange.getCoapMessage();
+        final InetSocketAddress remoteEndpoint = messageExchange.getRemoteEndpoint();
+
+        ChannelFuture future = Channels.future(this.ctx.getChannel());
+
+        Channels.write(this.ctx, future, coapMessage, remoteEndpoint);
+
+        //Send an internal message after successful transmission
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if(future.isSuccess()){
+                    sendInternalRetransmissionMessage(remoteEndpoint, coapMessage.getToken(),
+                            coapMessage.getMessageID());
+                }
+                else{
+                    log.error("This should never happen!", future.getCause());
+                }
+            }
+        });
+
+        messageExchange.increaseRetransmissionCount();
+    }
+
+
+    private void sendInternalRetransmissionMessage(InetSocketAddress remoteEndpoint, Token token, int messageID){
+        InternalMessageRetransmittedMessage retransmissionMessage =
+                new InternalMessageRetransmittedMessage(remoteEndpoint, token, messageID);
+
+        Channels.fireMessageReceived(this.ctx.getChannel(), retransmissionMessage);
     }
 
 
@@ -378,40 +425,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
                         for(OutgoingReliableMessageExchange messageExchange : part.getValue()){
                             if(!messageExchange.isRetransmissionStopped()){
-
-                                final CoapMessage coapMessage = messageExchange.getCoapMessage();
-                                final InetSocketAddress remoteEndpoint = messageExchange.getRemoteEndpoint();
-
-                                ChannelFuture future =
-                                        Channels.future(getChannelHandlerContext().getChannel());
-
-                                Channels.write(getChannelHandlerContext(), future, coapMessage, remoteEndpoint);
-
-                                //Create time for next retransmission
-                                int counter = messageExchange.increaseRetransmissionCounter();
+                                retransmitMessage(messageExchange);
 
                                 //Schedule next retransmission only if the maximum number was not reached
+                                int counter = messageExchange.getRetransmissionCount();
                                 if(counter < MAX_RETRANSMISSIONS){
                                     long delay = createNextRetransmissionDelay(counter);
                                     subsequentRetransmissions.put(part.getKey() + delay, messageExchange);
                                 }
-
-                                //Send an internal message after successful transmission
-                                future.addListener(new ChannelFutureListener() {
-                                    @Override
-                                    public void operationComplete(ChannelFuture future) throws Exception {
-                                        if(future.isSuccess()){
-                                            InternalMessageRetransmittedMessage internalMessage =
-                                                    new InternalMessageRetransmittedMessage(remoteEndpoint,
-                                                            coapMessage.getToken(), coapMessage.getMessageID());
-
-                                            Channels.fireMessageReceived(getChannelHandlerContext(), internalMessage);
-                                        }
-                                        else{
-                                            log.error("This should never happen!", future.getCause());
-                                        }
-                                    }
-                                });
                             }
 
                             //if the retransmission was stopped then remove it from owing retransmissions

@@ -36,12 +36,14 @@ public class InternalEncodingFailedMessage {
     private final InetSocketAddress remoteEndoint;
     private final int messageID;
     private final Token token;
+    private final Throwable cause;
 
 
-    InternalEncodingFailedMessage(InetSocketAddress remoteEndoint, int messageID, Token token){
+    InternalEncodingFailedMessage(InetSocketAddress remoteEndoint, int messageID, Token token, Throwable cause){
         this.remoteEndoint = remoteEndoint;
         this.messageID = messageID;
         this.token = token;
+        this.cause = cause;
     }
 
     public InetSocketAddress getRemoteEndoint() {
@@ -56,4 +58,7 @@ public class InternalEncodingFailedMessage {
         return token;
     }
 
+    public Throwable getCause() {
+        return this.cause;
+    }
 }

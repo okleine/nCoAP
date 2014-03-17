@@ -128,9 +128,10 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
         try{
             Channels.write(ctx, evt.getFuture(), encode(coapMessage), remoteEndpoint);
         }
-        catch(InvalidOptionException ex){
+        catch(Exception ex){
             evt.getFuture().setFailure(ex);
-            sendInternalEncodingFailedMessage(ctx, remoteEndpoint, coapMessage.getMessageID(), coapMessage.getToken());
+            sendInternalEncodingFailedMessage(ctx, remoteEndpoint, coapMessage.getMessageID(), coapMessage.getToken(),
+                    ex);
         }
     }
 
@@ -316,10 +317,10 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
 
     private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint,
-                                                   int messageID, Token token){
+                                                   int messageID, Token token, Throwable cause){
 
         InternalEncodingFailedMessage internalMessage =
-                new InternalEncodingFailedMessage(remoteEndpoint, messageID, token);
+                new InternalEncodingFailedMessage(remoteEndpoint, messageID, token, cause);
 
         Channels.fireMessageReceived(ctx, internalMessage);
     }

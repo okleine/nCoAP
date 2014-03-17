@@ -27,6 +27,7 @@ package de.uniluebeck.itm.ncoap.application.server;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
+import de.uniluebeck.itm.ncoap.communication.observe.WebserviceObservationHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
@@ -116,6 +117,15 @@ public class CoapServerApplication{
         incomingMessageReliabilityHandler.setChannelHandlerContext(
                 this.channel.getPipeline()
                         .getContext(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER)
+        );
+
+        //Set the ChannelHandlerContext for the webservice observation handler
+        WebserviceObservationHandler webserviceObservationHandler =
+                (WebserviceObservationHandler) this.channel.getPipeline()
+                        .get(AbstractCoapChannelPipelineFactory.OBSERVATION_HANDLER);
+
+        webserviceObservationHandler.setChannelHandlerContext(
+                this.channel.getPipeline().getContext(AbstractCoapChannelPipelineFactory.OBSERVATION_HANDLER)
         );
 
     }

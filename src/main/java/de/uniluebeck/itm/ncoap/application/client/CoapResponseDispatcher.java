@@ -240,7 +240,7 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         }
 
         if(responseProcessor instanceof EncodingFailedProcessor)
-            ((EncodingFailedProcessor) responseProcessor).processEncodingFailed();
+            ((EncodingFailedProcessor) responseProcessor).processEncodingFailed(message.getCause());
 
     }
 
@@ -322,16 +322,16 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
         //Find proper callback
         CoapResponseProcessor callback =
-                removeResponseCallback(message.getRemoteAddress(), message.getToken());
+                removeResponseCallback(message.getRemoteEndpoint(), message.getToken());
 
         //Invoke method of callback instance
         if(callback != null && callback instanceof RetransmissionTimeoutProcessor)
             ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout();
 
         //pass the token back
-        if(!tokenFactory.passBackToken(message.getRemoteAddress(), message.getToken())){
+        if(!tokenFactory.passBackToken(message.getRemoteEndpoint(), message.getToken())){
             log.error("Could not pass back token {} for {} from retransmission timeout!",
-                    message.getToken(), message.getRemoteAddress());
+                    message.getToken(), message.getRemoteEndpoint());
         }
         else{
             log.debug("Passed back token from timeout message!");

@@ -27,6 +27,7 @@ package de.uniluebeck.itm.ncoap.application.server;
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
+import de.uniluebeck.itm.ncoap.communication.observe.WebserviceObservationHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -54,7 +55,7 @@ public class ServerChannelPipelineFactory extends AbstractCoapChannelPipelineFac
         addChannelHandler(ENCODER, new CoapMessageEncoder());
         addChannelHandler(DECODER, new CoapMessageDecoder());
 
-        //addChannelHandler(OBSERVATION_HANDLER, new WebserviceObservationHandler(executorService));
+        addChannelHandler(OBSERVATION_HANDLER, new WebserviceObservationHandler());
 
         addChannelHandler(OUTGOING_MESSAGE_RELIABILITY_HANDLER, new OutgoingMessageReliabilityHandler(executorService));
         addChannelHandler(INCOMING_MESSAGE_RELIABILITY_HANDLER, new IncomingMessageReliabilityHandler(executorService));

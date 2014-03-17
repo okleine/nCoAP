@@ -25,12 +25,22 @@
 package de.uniluebeck.itm.ncoap.communication.codec;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
 
 /**
- * Created by olli on 13.03.14.
+ * Instances of {@link EncodingFailedProcessor} are called by the nCoAP framework if the encoding of an
+ * outgoing {@link CoapRequest} failed and thus, the {@link CoapRequest} could neither be serialized nor sent.
+ *
+ * @author Oliver Kleine
  */
 public interface EncodingFailedProcessor extends CoapResponseProcessor {
 
-    public void processEncodingFailed();
+    /**
+     * This method is invoked by the nCoAP framework if the encoding of an outgoing {@link CoapRequest} failed. This
+     * is basically for debugging purposes.
+     *
+     * @param cause the {@link Throwable} that caused the encoding to fail.
+     */
+    public void processEncodingFailed(Throwable cause);
 
 }

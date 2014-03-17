@@ -38,14 +38,16 @@ public class CoapRequest extends CoapMessage {
 
     private static Logger log = LoggerFactory.getLogger(CoapRequest.class.getName());
 
-    private static String NO_REQUEST_TYPE = "Message type %d is not a suitable type for requests (only CON and NON)!";
-    private static String NO_REQUEST_CODE = "Message code %d is not a request code!";
-    private static String URI_SCHEME = "URI scheme must be set to \"coap\" (but given URI is: %s)!";
-    private static String URI_FRAGMENT = "URI must not have a fragment (but given URI is: %s)!";
+    private static final String NO_REQUEST_TYPE = "Message type %d is not a suitable type for requests (only CON and NON)!";
+    private static final String NO_REQUEST_CODE = "Message code %d is not a request code!";
+    private static final String URI_SCHEME = "URI scheme must be set to \"coap\" (but given URI is: %s)!";
+    private static final String URI_FRAGMENT = "URI must not have a fragment (but given URI is: %s)!";
 
     /**
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
-     * and initial option list with target URI-related options set.
+     * and initial option list with target URI-related options set. Using this constructor has the same effect as
+     * using {@link #CoapRequest(MessageType.Name, MessageCode.Name, java.net.URI, boolean)} with <code>useProxy</code>
+     * set to <code>false</code>.
      *
      * @param messageType  A {@link MessageType.Name}
      * @param messageCode A {@link MessageCode}
@@ -59,6 +61,19 @@ public class CoapRequest extends CoapMessage {
     }
 
 
+    /**
+     * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
+     * and initial option list with target URI-related options set.
+     *
+     * @param messageType  A {@link MessageType.Name}
+     * @param messageCode A {@link MessageCode}
+     * @param targetUri the recipients URI
+     * @param useProxy indicates if this {@link CoapRequest} is supposed to be sent to its final destination via
+     *                 a forward-proxy (if set to <code>true</code> the given target URI is set as
+     *                 {@link OptionValue.Name#PROXY_URI}, if set to <code>false</code> the given target URI is
+     *                 set as combination of {@link OptionValue.Name#URI_HOST}, {@link OptionValue.Name#URI_PORT},
+     *                 {@link OptionValue.Name#URI_PATH}, and {@link OptionValue.Name#URI_QUERY}.
+     */
     public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri, boolean useProxy)
             throws IllegalArgumentException {
 
@@ -86,15 +101,11 @@ public class CoapRequest extends CoapMessage {
      * @param messageType the number representing the message type for the {@link CoapRequest}.
      * @param messageCode the number representing the message code for the {@link CoapRequest}.
      * @param targetUri the {@link URI} representing the webservice this {@link CoapRequest} is to be sent to.
-     * @param useProxy <code>true</code> if the {@link CoapRequest} is to be sent via forward-proxy or
-     *                 <code>false</code> if the {@link CoapRequest} is to be sent directly to the addressed webservice
-     *                 host.
-     *                 <br>
-     *                 <b>Note:</b>the value of this parameter only affects the way, the given target URI is
-     *                 represented in the created {@link CoapRequest}, i.e. as {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#PROXY_URI} if
-     *                 <code>useProxy</code> is set to <code>true</code> or as {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#URI_HOST},
-     *                 {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#URI_PORT}, {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#URI_PATH}, and {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#URI_QUERY} if
-     *                 <code>useProxy</code> is set to <code>false</code.
+     * @param useProxy indicates if this {@link CoapRequest} is supposed to be sent to its final destination via
+     *                 a forward-proxy (if set to <code>true</code> the given target URI is set as
+     *                 {@link OptionValue.Name#PROXY_URI}, if set to <code>false</code> the given target URI is
+     *                 set as combination of {@link OptionValue.Name#URI_HOST}, {@link OptionValue.Name#URI_PORT},
+     *                 {@link OptionValue.Name#URI_PATH}, and {@link OptionValue.Name#URI_QUERY}.
      *
      * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
@@ -208,7 +219,7 @@ public class CoapRequest extends CoapMessage {
 
 
     /**
-     * Sets the If-Match options according to the given {@link Collection<byte[]>} containing ETAGs. If there were any
+     * Sets the If-Match options according to the given {@link Collection} containing ETAGs. If there were any
      * If-Match options present in this {@link CoapRequest} prior to the invocation of this method, these options are
      * removed.
      *
@@ -241,13 +252,10 @@ public class CoapRequest extends CoapMessage {
     public Set<byte[]> getIfMatch(){
 
         Set<OptionValue> ifMatchOptionValues = options.get(OptionValue.Name.IF_MATCH);
-        Set<byte[]> result = new HashSet<byte[]>(ifMatchOptionValues.size());
+        Set<byte[]> result = new HashSet<>(ifMatchOptionValues.size());
 
-        if(ifMatchOptionValues.size() > 0){
-            Iterator<OptionValue> iterator = ifMatchOptionValues.iterator();
-            while(iterator.hasNext())
-                result.add(((OpaqueOptionValue) iterator.next()).getDecodedValue());
-        }
+       for (OptionValue ifMatchOptionValue : ifMatchOptionValues)
+                result.add(((OpaqueOptionValue) ifMatchOptionValue).getDecodedValue());
 
         return result;
     }
@@ -300,13 +308,10 @@ public class CoapRequest extends CoapMessage {
      * {@link CoapRequest}. If there is no such option, then the returned set is empty.
      */
     public Set<byte[]> getEtags(){
-        Set<byte[]> result = new HashSet<byte[]>();
+        Set<byte[]> result = new HashSet<>();
 
-        if(options.containsKey(OptionValue.Name.ETAG)){
-            Iterator<OptionValue> iterator = options.get(OptionValue.Name.ETAG).iterator();
-            while(iterator.hasNext())
-                result.add(((OpaqueOptionValue) iterator.next()).getDecodedValue());
-        }
+        for (OptionValue optionValue : options.get(OptionValue.Name.ETAG))
+            result.add(((OpaqueOptionValue) optionValue).getDecodedValue());
 
         return result;
     }
@@ -397,16 +402,16 @@ public class CoapRequest extends CoapMessage {
      * {@link CoapRequest}.
      */
     public String getUriPath(){
-        if(options.containsKey(OptionValue.Name.URI_PATH)){
-            StringBuilder result = new StringBuilder();
+        String result = "/";
 
-            for (OptionValue optionValue : options.get(OptionValue.Name.URI_PATH))
-                result.append("/").append(((StringOptionValue) optionValue).getDecodedValue());
+        Iterator<OptionValue> iterator = options.get(OptionValue.Name.URI_PATH).iterator();
+        if(iterator.hasNext())
+            result += ((StringOptionValue) iterator.next()).getDecodedValue();
 
-            return result.toString();
-        }
+        while(iterator.hasNext())
+            result += ("/" + ((StringOptionValue) iterator.next()).getDecodedValue());
 
-        return "/";
+        return result;
     }
 
     /**
@@ -417,19 +422,19 @@ public class CoapRequest extends CoapMessage {
      * {@link CoapRequest} or the empty string ("") if no such option is present.
      */
     public String getUriQuery(){
+        String result = "";
+
         if(options.containsKey(OptionValue.Name.URI_QUERY)){
-            StringBuilder result = new StringBuilder();
 
             Iterator<OptionValue> iterator = options.get(OptionValue.Name.URI_QUERY).iterator();
-            result.append(((StringOptionValue) iterator.next()).getDecodedValue());
+            result += (((StringOptionValue) iterator.next()).getDecodedValue());
 
             while(iterator.hasNext())
-                result.append("&").append(((StringOptionValue) iterator.next()).getDecodedValue());
+                result += ("&" + ((StringOptionValue) iterator.next()).getDecodedValue());
 
-            return result.toString();
         }
 
-        return "";
+        return result;
     }
 
     /**
