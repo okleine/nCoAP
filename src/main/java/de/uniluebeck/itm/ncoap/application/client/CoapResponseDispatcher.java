@@ -29,7 +29,7 @@ import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedProcessor;
 import de.uniluebeck.itm.ncoap.communication.codec.InternalEncodingFailedMessage;
 import de.uniluebeck.itm.ncoap.communication.observe.client.UpdateNotificationProcessor;
-import de.uniluebeck.itm.ncoap.communication.observe.server.InternalStopObservationMessage;
+import de.uniluebeck.itm.ncoap.communication.observe.client.InternalStopObservationMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalMessageRetransmittedMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;

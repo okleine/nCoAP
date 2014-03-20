@@ -109,7 +109,6 @@ public class CoapResponse extends CoapMessage {
      *                    {@link MessageType.Name#NON}). <b>Note:</b> the {@link MessageType} might be changed by the
      *                    framework (see above).
      * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
-     * @param cause the {@link Throwable} that caused the internal server error
      *
      * @return a new instance of {@link CoapResponse} with the {@link Throwable#getMessage} as content (payload).
      *
@@ -175,14 +174,14 @@ public class CoapResponse extends CoapMessage {
 
     /**
      * Returns the decoded value of {@link OptionValue.Name#OBSERVE} if such an option is contained in this
-     * {@link CoapResponse} or {@link UintOptionValue#NOT_SET} if there is no such option.
+     * {@link CoapResponse} or <code>null</code> if there is no such option.
      *
      * @return the decoded value of {@link OptionValue.Name#OBSERVE} if such an option is contained in this
-     * {@link CoapResponse} or {@link UintOptionValue#NOT_SET} if there is no such option.
+     * {@link CoapResponse} or <code>null</code> if there is no such option.
      */
-    public long getObservationSequenceNumber(){
+    public Long getObservationSequenceNumber(){
         if(!options.containsKey(OptionValue.Name.OBSERVE))
-            return UintOptionValue.NOT_SET;
+            return null;
         else
             return (Long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
     }
@@ -191,13 +190,13 @@ public class CoapResponse extends CoapMessage {
     /**
      * Returns <code>true</code> if this {@link CoapResponse} is an update notification and <code>false</code>
      * otherwise. A {@link CoapResponse} is considered an update notification if the  invocation of
-     * {@link #getObservationSequenceNumber()} returns a value other than {@link UintOptionValue#NOT_SET}.
+     * {@link #getObservationSequenceNumber()} returns a value other than <code>null</code>.
      *
      * @return <code>true</code> if this {@link CoapResponse} is an update notification and <code>false</code>
      * otherwise.
      */
     public boolean isUpdateNotification(){
-        return this.getObservationSequenceNumber() != UintOptionValue.NOT_SET;
+        return this.getObservationSequenceNumber() != null;
     }
 
 
@@ -259,20 +258,21 @@ public class CoapResponse extends CoapMessage {
         }
 
        //Reconstruct query
-        StringBuffer locationQuery = new StringBuffer();
+        StringBuilder locationQuery = new StringBuilder();
 
         if(options.containsKey(OptionValue.Name.LOCATION_QUERY)){
             Iterator<OptionValue> queryComponentIterator = options.get(OptionValue.Name.LOCATION_QUERY).iterator();
             locationQuery.append(((StringOptionValue) queryComponentIterator.next()).getDecodedValue());
             while(queryComponentIterator.hasNext())
-                locationQuery.append("&" + ((StringOptionValue) queryComponentIterator.next()).getDecodedValue());
+                locationQuery.append("&")
+                             .append(((StringOptionValue) queryComponentIterator.next()).getDecodedValue());
         }
 
         if(locationPath.length() == 0 && locationQuery.length() == 0)
             return null;
 
-        return new URI(null, null, null, (int) UintOptionValue.NOT_SET, locationPath.toString(), locationQuery.toString(),
-                null);
+        return new URI(null, null, null, (int) UintOptionValue.UNDEFINED, locationPath.toString(),
+                locationQuery.toString(), null);
     }
 
 //    /**

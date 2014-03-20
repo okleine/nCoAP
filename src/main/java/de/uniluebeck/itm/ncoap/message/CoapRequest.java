@@ -134,7 +134,7 @@ public class CoapRequest extends CoapMessage {
     public CoapRequest(int messageType, int messageCode) throws IllegalArgumentException {
         super(messageType, messageCode);
 
-        if(messageType < MessageType.Name.CON.getNumber() || messageType > MessageType.Name.CON.getNumber())
+        if(messageType < MessageType.Name.CON.getNumber() || messageType > MessageType.Name.NON.getNumber())
             throw new IllegalArgumentException(String.format(NO_REQUEST_TYPE, messageType));
 
         if(!MessageCode.isRequest(messageCode))

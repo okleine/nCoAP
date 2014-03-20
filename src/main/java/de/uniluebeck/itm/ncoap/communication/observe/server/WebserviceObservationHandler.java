@@ -15,6 +15,7 @@ import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 
+import de.uniluebeck.itm.ncoap.message.options.UintOptionValue;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 
@@ -255,7 +256,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
             //Determine the message code for the update notification (depends on the ETAG options sent with the
             //request that started the observation
-            CoapResponse updateNotification;
+            final CoapResponse updateNotification;
             if(params.getEtags().contains(wrappedResourceStatus.getEtag())){
                 updateNotification = new CoapResponse(messageType, MessageCode.Name.VALID_203);
             }
@@ -267,7 +268,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
             //Set content related options for the update notification
             updateNotification.setMaxAge(wrappedResourceStatus.getMaxAge());
-            updateNotification.setObserveOption(0);
+            updateNotification.setObserveOption(UintOptionValue.UNDEFINED);
 
             updateNotification.setMessageID(params.getLatestUpdateNotificationMessageID());
             updateNotification.setToken(params.getToken());
@@ -277,17 +278,17 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
             ChannelFuture future =
                     Channels.write(this.ctx.getChannel(), updateNotification, params.getRemoteEndpoint());
 
-            if(log.isWarnEnabled()){
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if(!future.isSuccess())
-                            log.warn("No message ID available for update notification for {} with token {} " +
-                                    "(observing \"{}\".", new Object[]{params.getRemoteEndpoint(), params.getToken(),
-                                    params.getWebservicePath()});
-                    }
-                });
-            }
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if(!future.isSuccess())
+                        log.warn("No message ID available for update notification for {} with token {} " +
+                                "(observing \"{}\".", new Object[]{params.getRemoteEndpoint(), params.getToken(),
+                                params.getWebservicePath()});
+                    else
+                        log.info("Update notification sent: {}", updateNotification);
+                }
+            });
         }
     }
 }

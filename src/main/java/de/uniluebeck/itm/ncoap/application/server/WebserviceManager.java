@@ -127,7 +127,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
             messageReceived(ctx, (CoapRequest) me.getMessage(), (InetSocketAddress) me.getRemoteAddress());
 
         else
-            log.warn("Server ignores incoming message: {}", me.getMessage());
+            log.debug("Server ignores incoming message: {}", me.getMessage());
 
 
         me.getFuture().setSuccess();

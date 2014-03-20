@@ -218,14 +218,18 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
         CoapResponse updateNotification = (CoapResponse) me.getMessage();
 
+        log.debug("Write update notification: {}", updateNotification);
+
         //for CON update notifications update potentially running retransmissions
         if(updateNotification.getMessageTypeName() == MessageType.Name.CON){
 
             if (ongoingMessageExchanges.contains(remoteEndpoint, updateNotification.getMessageID()))
                     handleConfirmableUpdateNotification(ctx, me);
 
-            else
+            else{
+                updateNotification.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
                 writeCoapMessage(ctx, me);
+            }
         }
 
         //for NON update notifications stop potentially running retransmissions

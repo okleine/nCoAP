@@ -44,10 +44,9 @@ public class UintOptionValue extends OptionValue<Long> {
     /**
      * Corresponds to a value of <code>-1</code> to indicate that there is no value for that option set.
      */
-    public static final long NOT_SET = -1;
+    public static final long UNDEFINED = -1;
 
     private static Logger log = LoggerFactory.getLogger(UintOptionValue.class.getName());
-
 
 
     public UintOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {

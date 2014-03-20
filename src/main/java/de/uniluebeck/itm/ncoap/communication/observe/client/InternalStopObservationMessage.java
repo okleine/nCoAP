@@ -1,4 +1,4 @@
-package de.uniluebeck.itm.ncoap.communication.observe.server;
+package de.uniluebeck.itm.ncoap.communication.observe.client;
 
 import de.uniluebeck.itm.ncoap.application.client.Token;
 

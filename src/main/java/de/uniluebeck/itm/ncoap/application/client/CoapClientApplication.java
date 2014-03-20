@@ -29,7 +29,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
-import de.uniluebeck.itm.ncoap.communication.observe.server.InternalStopObservationMessage;
+import de.uniluebeck.itm.ncoap.communication.observe.client.InternalStopObservationMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetProcessor;
