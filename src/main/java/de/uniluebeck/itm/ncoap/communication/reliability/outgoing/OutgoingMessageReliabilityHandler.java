@@ -32,6 +32,7 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
+import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +43,24 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
-* This handler deals with outgoing {@link CoapMessage}s with {@link MessageType.Name#CON}. It retransmits the outgoing
-* message in exponentially increasing intervals (up to {@link #MAX_RETRANSMISSIONS} times) until was no corresponding
-* message with {@link MessageType.Name#ACK} or {@link MessageType.Name#RST} received.
-*
-* To relate incoming with outgoing messages this is the handler to set the message ID of outgoing {@link CoapMessage}s
-* if the message ID was not already set previously.
-*
+ * This handler deals with outgoing {@link CoapMessage}s with {@link MessageType.Name#CON}. It retransmits the outgoing
+ * message in exponentially increasing intervals (up to {@link #MAX_RETRANSMISSIONS} times) until was no corresponding
+ * message with {@link MessageType.Name#ACK} or {@link MessageType.Name#RST} received.
+ *
+ * To relate incoming with outgoing messages this is the handler to set the message ID of outgoing {@link CoapMessage}s
+ * if the message ID was not already set previously.
+ *
+ * Furthermore, the {@link OutgoingMessageReliabilityHandler} changes the {@link OptionValue.Name#MAX_AGE} for
+ * retransmitted message (according to the delay compared to the initial transmission attempt).
+ *
+ * If the outgoing message is an update notification, i.e. a {@link CoapResponse}s with
+ * {@link CoapResponse#isUpdateNotification()} returning <code>true</code>, it checks whether there is an ongoing
+ * {@link OutgoingReliableUpdateNotificationExchange}, i.e. a previous confirmable update notification was sent
+ * but not yet acknowledged. If that is the case, it updates the {@link OutgoingReliableUpdateNotificationExchange}
+ * in such a way that the retransmission schedule, i.e. the time of the next retransmission, remains unchanged but
+ * the new {@link CoapResponse} (the update notification with the new content) is sent at that time. Furthermore,
+ * the message ID of the previous transmissions becomes invalid, i.e. incoming acknowledgements are ignored.
+ *
 * @author Oliver Kleine
 */
 public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler implements Observer{
@@ -385,6 +397,17 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         else{
             ctx.sendUpstream(me);
         }
+
+        //This can only happen if the previous retransmission of an update notification was acknowledged but the update
+        //notification was changed due to a status update
+        if(messageExchange instanceof OutgoingReliableUpdateNotificationExchange &&
+                ((OutgoingReliableUpdateNotificationExchange) messageExchange).isChanged()){
+
+                coapMessage.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
+                Channels.write(this.ctx.getChannel(), coapMessage, messageExchange.getRemoteEndpoint());
+
+        }
+
     }
 
 
@@ -445,7 +468,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                     log.info("Retransmitted message: {}", coapMessage);
                 }
                 else{
-                    log.error("This should never happen!", future.getCause());
+                    log.error("Error during message retransmission!", future.getCause());
                 }
             }
         });
@@ -504,6 +527,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
                                             ongoingMessageExchanges.put(remoteEndpoint, newMessageID,
                                                     updateNotificationExchange);
+
+                                            updateNotificationExchange.setChanged(false);
                                         }
 
                                         catch(NoMessageIDAvailableException ex){

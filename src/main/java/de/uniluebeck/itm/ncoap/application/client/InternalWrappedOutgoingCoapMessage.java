@@ -43,6 +43,7 @@ public class InternalWrappedOutgoingCoapMessage {
 
     /**
      * Returns the {@link CoapMessage} to be sent
+     *
      * @return the {@link CoapMessage} to be sent
      */
     public CoapMessage getCoapMessage() {
