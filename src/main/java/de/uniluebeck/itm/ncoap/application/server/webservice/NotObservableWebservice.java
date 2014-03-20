@@ -53,6 +53,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
+import de.uniluebeck.itm.ncoap.message.options.OptionValue;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
+
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -100,12 +104,6 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
 
     @Override
-    public final ReadWriteLock getReadWriteLock(){
-        return this.readWriteLock;
-    }
-
-
-    @Override
     public final String getPath() {
         return this.path;
     }
@@ -124,8 +122,14 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
 
     /**
-     * This method is the one and only recommended way to change the status. This method locks the service specific
-     * {@link ReadWriteLock#writeLock()} from {@link #getReadWriteLock()} for the update process.
+     * This method is the one and only recommended way to change the status.
+     *
+     * Invocation of this method write-locks the resource status, i.e. concurrent invocations of
+     * {@link #getWrappedResourceStatus(long)} or this method wait for this method to
+     * finish, i.e. to unlock the write-lock. This is e.g. to avoid inconsistencies between the content and
+     * {@link OptionValue.Name#ETAG}, resp. {@link OptionValue.Name#MAX_AGE} in a {@link CoapResponse}. Such
+     * inconsistencies could happen in case of a resource update between calls of e.g.
+     * {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)}, resp. {@link #getMaxAge()}.
      *
      * @param resourceStatus the new status of the resource
      * @param lifetimeSeconds the number of seconds this status is valid, i.e. cachable by clients or proxies.
@@ -142,6 +146,43 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
         }
         finally {
             readWriteLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * This method is the one and only recommended way to retrieve the actual resource status that is used
+     * for a {@link CoapResponse} to answer an incoming {@link CoapRequest}.
+     *
+     * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
+     * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
+     * This is to avoid inconsistencies between the content and {@link OptionValue.Name#ETAG}, resp.
+     * {@link OptionValue.Name#MAX_AGE} in a {@link CoapResponse}. Such inconsistencies could happen in case of a
+     * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
+     * resp. {@link #getMaxAge()}.
+     *
+     * However, concurrent invocations of this method are possible, as the resources read-lock can be locked multiple
+     * times in parallel.
+     *
+     * @param contentFormat the number representing the desired content format of the serialized resource status
+     *
+     * @return a {@link WrappedResourceStatus} if the content format was supported or <code>null</code> if the
+     * resource status could not be serialized to the desired content format.
+     */
+    protected WrappedResourceStatus getWrappedResourceStatus(long contentFormat){
+        try{
+            this.readWriteLock.readLock().lock();
+
+            byte[] serializedResourceStatus = getSerializedResourceStatus(contentFormat);
+
+            if(serializedResourceStatus == null)
+                return null;
+
+            else
+                return new WrappedResourceStatus(serializedResourceStatus, contentFormat,
+                        this.getEtag(contentFormat), this.getMaxAge());
+        }
+        finally {
+            this.readWriteLock.readLock().unlock();
         }
     }
 
@@ -173,6 +214,7 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     public int hashCode(){
         return this.getPath().hashCode();
     }
+
 
     @Override
     public boolean equals(Object object){

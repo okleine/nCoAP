@@ -52,6 +52,7 @@ public abstract class AbstractCoapChannelPipelineFactory implements ChannelPipel
     public static final String WEBSERVICE_MANAGER = "WebserviceManager";
 
     //This is only availabe on client pipelines
+    public static final String INCOMING_UPDATE_NOTIFICATION_HANDLER = "IncomingUpdateNotificationHandler";
     public static final String RESPONSE_DISPATCHER = "ResponseHandler";
 
     private Map<String, ChannelHandler> handler;

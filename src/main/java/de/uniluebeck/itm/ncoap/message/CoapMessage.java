@@ -443,7 +443,7 @@ public abstract class CoapMessage {
      *
      * @param optionNumber the option number to remove from this message
      *
-     * @return the number of options that were removed, i.e. count
+     * @return the number of options that were removed, i.e. the count.
      */
     public int removeOptions(int optionNumber){
         int result = options.removeAll(optionNumber).size();

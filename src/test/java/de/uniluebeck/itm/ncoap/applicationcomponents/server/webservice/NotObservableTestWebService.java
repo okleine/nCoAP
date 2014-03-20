@@ -146,8 +146,8 @@ public class NotObservableTestWebService extends NotObservableWebservice<String>
 
 
     @Override
-    public byte[] getSerializedResourceStatus(long contentFormatNumber) {
-        if(contentFormatNumber == ContentFormat.TEXT_PLAIN_UTF8)
+    public byte[] getSerializedResourceStatus(long contentFormat) {
+        if(contentFormat == ContentFormat.TEXT_PLAIN_UTF8)
             return getResourceStatus().getBytes(Charset.forName("UTF-8"));
         else
             return null;

@@ -50,7 +50,7 @@
 //
 //import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebservice;
 //import de.uniluebeck.itm.ncoap.message.CoapMessage;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -87,7 +87,7 @@
 //
 //    private static CoapTestEndpoint endpoint;
 //    private static CoapServerApplication server;
-//    private static ObservableTestWebService service;
+//    private static ObservableTestWebservice service;
 //
 //    private ScheduledExecutorService executorService;
 //
@@ -102,7 +102,7 @@
 //    @Override
 //    public void setupComponents() throws Exception {
 //        server = new CoapServerApplication(0);
-//        service = new ObservableTestWebService(PATH_TO_SERVICE, 1, 30);
+//        service = new ObservableTestWebservice(PATH_TO_SERVICE, 1, 30);
 //        service.setMaxAge(5);
 //
 //        server.registerService(service);

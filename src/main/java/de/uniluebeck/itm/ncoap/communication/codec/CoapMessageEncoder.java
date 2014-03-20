@@ -200,6 +200,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
     }
 
+
     protected void encodeOptions(ChannelBuffer buffer, CoapMessage coapMessage) throws InvalidOptionException {
 
         //Encode options one after the other and append buf option to the buf

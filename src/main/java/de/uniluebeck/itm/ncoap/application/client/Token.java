@@ -36,6 +36,10 @@ import java.util.Arrays;
  * A {@link Token} is the identifier to relate {@link CoapRequest}s with {@link CoapResponse}s. It consists of a byte
  * array with a size between 0 and 8 (both inclusive). So, {@link Token} basically is a wrapper class for a byte array.
  *
+ * The byte array content has no semantic meaning and thus, e.g. a {@link Token} instance backed by a byte
+ * array containing a single zero byte (all bits set to 0) is different from a byte array backed by a byte array
+ * containing two zero bytes.
+ *
  * @author Oliver Kleine
  */
 public class Token implements Comparable<Token>{
@@ -68,12 +72,17 @@ public class Token implements Comparable<Token>{
 
 
     /**
-     * Returns a representation of the token in form of a HEX string
-     * @return a representation of the token in form of a HEX string
+     * Returns a representation of the token in form of a HEX string or "<EMPTY>" for tokens of length 0
+     * @return a representation of the token in form of a HEX string or "<EMPTY>" for tokens of length 0
      */
     @Override
     public String toString(){
-        return "0x" + bytesToHex(getBytes());
+        String tmp = bytesToHex(getBytes());
+
+        if(tmp.length() == 0)
+            return "<EMPTY>";
+        else
+            return "0x" + tmp;
     }
 
 

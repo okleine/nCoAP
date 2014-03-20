@@ -27,20 +27,16 @@ package de.uniluebeck.itm.ncoap.application.server;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
-import de.uniluebeck.itm.ncoap.communication.observe.WebserviceObservationHandler;
+import de.uniluebeck.itm.ncoap.communication.observe.server.WebserviceObservationHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 
@@ -168,6 +164,8 @@ public class CoapServerApplication{
 
 
     public void shutdown(){
+        log.warn("Shutdown server...");
+
         this.webserviceManager.shutdownAllServices();
 
         ChannelFuture channelClosedFuture = this.channel.close();
@@ -176,8 +174,7 @@ public class CoapServerApplication{
         channelClosedFuture.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                DatagramChannel closedChannel = (DatagramChannel) future.getChannel();
-                log.info("Server channel closed (port {}).", closedChannel.getLocalAddress().getPort());
+                log.warn("Server channel closed. Release external resources...");
 
                 channel.getFactory().releaseExternalResources();
             }
@@ -186,7 +183,7 @@ public class CoapServerApplication{
         channelClosedFuture.awaitUninterruptibly().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.warn("Shutdown completed!");
+                log.warn("Server shutdown completed!");
             }
         });
     }

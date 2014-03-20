@@ -26,17 +26,21 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
+import de.uniluebeck.itm.ncoap.communication.observe.server.InternalStopObservationMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetProcessor;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor;
+import de.uniluebeck.itm.ncoap.communication.observe.client.UpdateNotificationProcessor;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
+
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -195,8 +199,15 @@ public class CoapClientApplication {
      * Sends a {@link CoapRequest} to the given remote endpoint, i.e. CoAP server or proxy, and registers the
      * given {@link CoapResponseProcessor} to be called upon reception of a {@link CoapResponse}.
      *
+     * <b>Note:</b> if the given {@link CoapRequest} has the observe option set, {@link CoapRequest#isObserveSet()}
+     * returns <code>true</code>, then the given {@link CoapResponseProcessor} must implement
+     * {@link UpdateNotificationProcessor}. Otherwise the nCoAP framework silently removes the observe option!
+     *
      * @param coapRequest the {@link CoapRequest} to be sent
-     * @param coapResponseProcessor the {@link CoapResponseProcessor} to process the corresponding response
+     *
+     * @param coapResponseProcessor the {@link CoapResponseProcessor} to process the corresponding response, resp.
+     *                              update notification (which are also instances of {@link CoapResponse}.
+     *
      * @param remoteEndpoint the desired recipient of the given {@link CoapRequest}
      */
     public void sendCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor,
@@ -224,6 +235,33 @@ public class CoapClientApplication {
                         }
                     }
                 });
+            }
+
+        }, 0, TimeUnit.MILLISECONDS);
+    }
+
+
+    public void quitObservation(final InetSocketAddress remoteEndpoint, final Token token){
+
+        scheduledExecutorService.schedule(new Runnable(){
+
+            @Override
+            public void run() {
+                InternalStopObservationMessage message = new InternalStopObservationMessage(remoteEndpoint, token);
+                ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
+
+                if(log.isErrorEnabled())
+                    future.addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            if(future.isSuccess()){
+                                log.info("Observation of {} with token {} stopped.", remoteEndpoint, token);
+                            }
+                            else{
+                                log.error("Could not stop observation!", future.getCause());
+                            }
+                        }
+                    });
             }
 
         }, 0, TimeUnit.MILLISECONDS);

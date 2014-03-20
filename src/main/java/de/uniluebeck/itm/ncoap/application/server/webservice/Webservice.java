@@ -78,12 +78,12 @@ public interface Webservice<T> {
     public String getPath();
 
 
-    /**
-     * Returns the {@link ReadWriteLock} for this {@link Webservice} instance.
-     *
-     * @return the {@link ReadWriteLock} for this {@link Webservice} instance.
-     */
-    public ReadWriteLock getReadWriteLock();
+//    /**
+//     * Returns the {@link ReadWriteLock} for this {@link Webservice} instance.
+//     *
+//     * @return the {@link ReadWriteLock} for this {@link Webservice} instance.
+//     */
+//    public ReadWriteLock getReadWriteLock();
 
 
     /**
@@ -203,12 +203,16 @@ public interface Webservice<T> {
      * on the concrete webservice. Processing a message might cause a new status of the resource or even the deletion
      * of the complete resource, i.e. this {@link Webservice} instance.
      *
-     * Implementing classes MUST make sure that {@link SettableFuture<CoapResponse>#set(CoapResponse)} is invoked
-     * after some time. Furthermore implementing classes are supposed to lock the {@link ReadWriteLock#readLock()} from
-     * {@link #getReadWriteLock()} while processing incoming reading requests. Both, {@link ObservableWebservice} and
+     * <b>Note:</b>Implementing classes MUST make sure that the given {@link SettableFuture} is eventually set with
+     * either a {@link CoapResponse} or an {@link Exception} or throw an {@link Exception}. Both, setting the
+     * {@link SettableFuture} with an {@link Exception} or throw one make the framework to send {@link CoapResponse}
+     * with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} and {@link Exception#getMessage()} as content.
+     *
+     * Furthermore implementing classes should lock the {@link ReadWriteLock#readLock()} from
+     * {@link #getReadWriteLock()} while processing incoming read-only requests. Both, {@link ObservableWebservice} and
      * {@link NotObservableWebservice} implement the method {@link #setResourceStatus(Object, long)} in a way, that
-     * they lock the {@link ReadWriteLock#writeLock()} for the whole update process. That means, resource status updates are
-     * only possible, when the {@link ReadWriteLock#readLock()} is not locked. However, multiple read locks are
+     * they lock the {@link ReadWriteLock#writeLock()} for the whole update process. That means, resource status updates
+     * are waiting until the {@link ReadWriteLock#readLock()} is not locked. However, multiple read locks are
      * possible to process multiple reading requests in parallel.
      *
      * @param responseFuture the {@link SettableFuture} instance to set the {@link CoapResponse} which is the result
@@ -217,7 +221,7 @@ public interface Webservice<T> {
      * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
      * @param remoteEndpoint The address of the sender of the request
      *
-     * @throws Exception
+     * @throws Exception if an error occurred while processing the {@link CoapRequest}.
      */
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                    InetSocketAddress remoteEndpoint) throws Exception;
@@ -225,15 +229,15 @@ public interface Webservice<T> {
 
     /**
      * Returns a byte array that contains the serialized payload for a {@link CoapResponse} in the desired content
-     * format.
+     * format or <code>null</code> if the given content format is not supported.
      *
-     * @param contentFormatNumber the number indicating the desired format of the returned content, see
-     *                            {@link ContentFormat} for some pre-defined constants.
+     * @param contentFormat the number indicating the desired format of the returned content, see
+     *                      {@link ContentFormat} for some pre-defined constants.
      *
      * @return a byte array that contains the serialized payload for a {@link CoapResponse} in the desired content
-     * format.
+     * format or <code>null</code> if the given content format is not supported.
      */
-    public byte[] getSerializedResourceStatus(long contentFormatNumber);
+    public byte[] getSerializedResourceStatus(long contentFormat);
 
 
     /**

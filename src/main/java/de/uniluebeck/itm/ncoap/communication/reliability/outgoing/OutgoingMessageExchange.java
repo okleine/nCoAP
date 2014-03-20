@@ -32,7 +32,7 @@ import java.net.InetSocketAddress;
 /**
  * Created by olli on 08.03.14.
  */
-public class OutgoingMessageExchange extends MessageExchange {
+public abstract class OutgoingMessageExchange extends MessageExchange {
 
     private Token token;
 

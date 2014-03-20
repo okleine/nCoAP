@@ -28,12 +28,15 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -50,6 +53,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public abstract class ObservableWebservice<T> extends Observable implements Webservice<T> {
 
     private static Logger log = LoggerFactory.getLogger(ObservableWebservice.class.getName());
+
+    public static final int CONFIRMABLE_UPDATE_NOTIFICATION_INTERVALL_SECONDS = 86400;
 
     private WebserviceManager webserviceManager;
     private String path;
@@ -88,7 +93,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
 
-    @Override
+        @Override
     public void setWebserviceManager(WebserviceManager webserviceManager){
         this.webserviceManager = webserviceManager;
     }
@@ -109,6 +114,24 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     @Override
     public void setScheduledExecutorService(ScheduledExecutorService executorService){
         this.scheduledExecutorService = executorService;
+        executorService.scheduleAtFixedRate(new Runnable(){
+
+            @Override
+            public void run() {
+                try{
+                    ObservableWebservice.this.setChanged();
+                    ObservableWebservice.this.notifyObservers(MessageType.Name.CON);
+                }
+                catch(Exception ex){
+                    log.error("Exception in webservice {} while sending periodical confirmable update notifications!",
+                            ObservableWebservice.this.getPath());
+
+                    log.error("Exception while sending periodical confirmable update notifications!", ex);
+                }
+            }
+
+        }, CONFIRMABLE_UPDATE_NOTIFICATION_INTERVALL_SECONDS, CONFIRMABLE_UPDATE_NOTIFICATION_INTERVALL_SECONDS,
+                TimeUnit.SECONDS);
     }
 
 
@@ -118,10 +141,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
 
-    @Override
-    public final ReadWriteLock getReadWriteLock(){
-        return this.readWriteLock;
-    }
 
 
     @Override
@@ -151,26 +170,65 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
         }
     }
 
+
     public void prepareShutdown(){
         setChanged();
         notifyObservers(true);
     }
 
 
-    public WrappedWebserviceStatus getWrappedWebserviceStatus(long contentFormat){
+    /**
+     * This method is the one and only recommended way to retrieve the actual resource status that is used
+     * for a {@link CoapResponse} to answer an incoming {@link CoapRequest}.
+     *
+     * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
+     * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
+     * This is to avoid inconsistencies between the content and {@link OptionValue.Name#ETAG}, resp.
+     * {@link OptionValue.Name#MAX_AGE} in a {@link CoapResponse}. Such inconsistencies could happen in case of a
+     * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
+     * resp. {@link #getMaxAge()}.
+     *
+     * However, concurrent invocations of this method are possible, as the resources read-lock can be locked multiple
+     * times in parallel and {@link #setResourceStatus(Object, long)} waits for all read-locks to be released.
+     *
+     * @param contentFormat the number representing the desired content format of the serialized resource status
+     *
+     * @return a {@link WrappedResourceStatus} if the content format was supported or <code>null</code> if the
+     * resource status could not be serialized to the desired content format.
+     */
+    public WrappedResourceStatus getWrappedResourceStatus(long contentFormat){
         try{
-            readWriteLock.readLock().lock();
+            this.readWriteLock.readLock().lock();
 
-            return new WrappedWebserviceStatus(this.getSerializedResourceStatus(contentFormat), contentFormat,
-                    this.getEtag(contentFormat), this.getMaxAge());
+            byte[] serializedResourceStatus = getSerializedResourceStatus(contentFormat);
+
+            if(serializedResourceStatus == null)
+                return null;
+
+            else
+                return new WrappedResourceStatus(serializedResourceStatus, contentFormat,
+                        this.getEtag(contentFormat), this.getMaxAge());
         }
         finally {
-            getReadWriteLock().readLock().unlock();
+            this.readWriteLock.readLock().unlock();
         }
     }
 
 
-    public abstract MessageType.Name getMessageTypeForUpdateNotification(InetSocketAddress remoteEndpoint);
+    /**
+     * This method is invoked by the framework for every observer after every resource update. Classes that extend
+     * {@link ObservableWebservice} may implement this method just by returning one of {@link MessageType.Name#CON}
+     * or {@link MessageType.Name#NON}. However, this method also gives {@link ObservableWebservice}s the opportunity
+     * to e.g. distinguish between observers or have some other arbitrary logic...
+     *
+     * @param remoteEndpoint the remote CoAP endpoint that observes this {@link ObservableWebservice}
+     * @param token the {@link Token} that (in combination with the remote endpoint address) uniquely identifies a
+     *              running observation
+     *
+     * @return the message type for the next update notification for the observer identified by the given parameters
+     */
+    public abstract MessageType.Name getMessageTypeForUpdateNotification(InetSocketAddress remoteEndpoint, Token token);
+
 
     /**
      * Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies
@@ -187,7 +245,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     protected final long getMaxAge(){
         return Math.max(this.resourceStatusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
-
 
 
     /**

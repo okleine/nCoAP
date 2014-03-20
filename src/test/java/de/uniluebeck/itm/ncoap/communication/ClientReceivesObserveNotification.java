@@ -51,7 +51,7 @@
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 //import de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebservice;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
 //import de.uniluebeck.itm.ncoap.message.CoapResponse;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -77,7 +77,7 @@
 //    private static TestResponseProcessor responseProcessor;
 //
 //    private static CoapServerApplication server;
-//    private static ObservableTestWebService service;
+//    private static ObservableTestWebservice service;
 //
 //    //observable request
 //    private static CoapRequest request;
@@ -94,7 +94,7 @@
 //    @Override
 //    public void setupComponents() throws Exception {
 //        server = new CoapServerApplication(0);
-//        service = new ObservableTestWebService(PATH_TO_SERVICE, 1, 0);
+//        service = new ObservableTestWebservice(PATH_TO_SERVICE, 1, 0);
 //        server.registerService(service);
 //
 //        client = new CoapClientApplication();

@@ -45,7 +45,7 @@ public class MessageIDFactory extends Observable {
      * The number of seconds (247) a message ID is allocated by the nCoAP framework to avoid duplicate
      * usage of the same message ID in communications with the same remote CoAP endpoint.
      */
-    public static final int EXCHANGE_LIFETIME = 247;
+    public static final int EXCHANGE_LIFETIME = 60;
 
     /**
      * The number of different message IDs per remote CoAP endpoint (65536), i.e. there are at most 65536

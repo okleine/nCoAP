@@ -56,7 +56,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     public static final int ACK_TIMEOUT_MILLIS = 2000;
     public static final int MAX_RETRANSMISSIONS = 4;
 
-    public static final int RETRANSMISSION_TASK_PERIOD_MILLIS = 100;
+    private static final int RETRANSMISSION_TASK_PERIOD_MILLIS = 100;
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -114,9 +114,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         if(isShutdown())
             return;
 
-        if(me.getMessage() instanceof CoapResponse && ((CoapResponse) me.getMessage()).isUpdateNotification()
-                && ((CoapResponse) me.getMessage()).getMessageTypeName() == MessageType.Name.CON)
-            updateConfirmableUpdateNotifiction(ctx, me);
+        if(me.getMessage() instanceof CoapResponse && ((CoapResponse) me.getMessage()).isUpdateNotification())
+            writeUpdateNotifiction(ctx, me);
 
         else if((me.getMessage() instanceof CoapMessage))
             writeCoapMessage(ctx, me);
@@ -141,6 +140,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
         future.setSuccess();
     }
+
 
     private void writeCoapMessage(ChannelHandlerContext ctx, MessageEvent me){
 
@@ -180,28 +180,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             throw new RetransmissionsAlreadyScheduledException(remoteEndpoint, coapMessage.getMessageID());
         }
 
-        OutgoingReliableMessageExchange messageExchange = scheduleFirstRetransmission(coapMessage, remoteEndpoint);
-
-        synchronized (monitor){
-            ongoingMessageExchanges.put(remoteEndpoint, coapMessage.getMessageID(), messageExchange);
-        }
-    }
-
-    private void updateConfirmableUpdateNotifiction(ChannelHandlerContext ctx, MessageEvent me){
-
-        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
-        CoapResponse updateNotification = (CoapResponse) me.getMessage();
-
-        OutgoingMessageExchange messageExchange =
-                ongoingMessageExchanges.get(remoteEndpoint, updateNotification.getMessageID());
-
-        if(messageExchange != null && messageExchange instanceof OutgoingReliableMessageExchange)
-            ((OutgoingReliableMessageExchange) messageExchange).setCoapMessage(updateNotification);
-
-        else {
-            updateNotification.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
-            writeCoapMessage(ctx, me);
-        }
+        scheduleFirstRetransmission(coapMessage, remoteEndpoint);
     }
 
 
@@ -210,8 +189,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             throws RetransmissionsAlreadyScheduledException {
 
         long firstRetransmissionTime = System.currentTimeMillis() + createNextRetransmissionDelay(0);
-        OutgoingReliableMessageExchange messageExchange =
-                new OutgoingReliableMessageExchange(remoteEndpoint, coapMessage);
+        OutgoingReliableMessageExchange messageExchange;
+
+        if(coapMessage instanceof CoapResponse && ((CoapResponse) coapMessage).isUpdateNotification())
+            messageExchange =
+                    new OutgoingReliableUpdateNotificationExchange(remoteEndpoint, (CoapResponse) coapMessage);
+
+        else
+            messageExchange = new OutgoingReliableMessageExchange(remoteEndpoint, coapMessage);
 
         synchronized (monitor){
             if(ongoingMessageExchanges.contains(remoteEndpoint, coapMessage.getMessageID())){
@@ -220,9 +205,74 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             }
 
             retransmissionSchedule.put(firstRetransmissionTime, messageExchange);
+            log.debug("Number of scheduled retransmissions: {}", retransmissionSchedule.size());
+            ongoingMessageExchanges.put(remoteEndpoint, coapMessage.getMessageID(), messageExchange);
         }
 
         return messageExchange;
+    }
+
+
+    private void writeUpdateNotifiction(ChannelHandlerContext ctx, MessageEvent me){
+
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        CoapResponse updateNotification = (CoapResponse) me.getMessage();
+
+        //for CON update notifications update potentially running retransmissions
+        if(updateNotification.getMessageTypeName() == MessageType.Name.CON){
+
+            if (ongoingMessageExchanges.contains(remoteEndpoint, updateNotification.getMessageID()))
+                    handleConfirmableUpdateNotification(ctx, me);
+
+            else
+                writeCoapMessage(ctx, me);
+        }
+
+        //for NON update notifications stop potentially running retransmissions
+        else{
+            stopRetransmission(remoteEndpoint, updateNotification.getMessageID());
+
+            updateNotification.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
+            writeCoapMessage(ctx, me);
+        }
+    }
+
+
+    private void handleConfirmableUpdateNotification(ChannelHandlerContext ctx, MessageEvent me){
+
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        CoapResponse updateNotification = (CoapResponse) me.getMessage();
+
+        int oldMessageID = updateNotification.getMessageID();
+
+        log.debug("Try to update update notification with message ID {}", oldMessageID);
+
+        if(ongoingMessageExchanges.contains(remoteEndpoint, oldMessageID)){
+            synchronized (monitor){
+                OutgoingMessageExchange messageExchange = ongoingMessageExchanges.get(remoteEndpoint, oldMessageID);
+
+                if(messageExchange != null && messageExchange instanceof OutgoingReliableUpdateNotificationExchange){
+
+                    OutgoingReliableUpdateNotificationExchange updateNotificationExchange =
+                            (OutgoingReliableUpdateNotificationExchange) messageExchange;
+
+                    updateNotificationExchange.setCoapMessage(updateNotification);
+                    updateNotificationExchange.setChanged(true);
+
+                    log.info("Updated update notification to retransmit: {}", updateNotification);
+                }
+
+                else{
+                    updateNotification.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
+                    writeCoapMessage(ctx, me);
+                }
+            }
+        }
+
+        else {
+            updateNotification.setMessageID(CoapMessage.MESSAGE_ID_UNDEFINED);
+            writeCoapMessage(ctx, me);
+        }
     }
 
 
@@ -387,6 +437,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                 if(future.isSuccess()){
                     sendInternalRetransmissionMessage(remoteEndpoint, coapMessage.getToken(),
                             coapMessage.getMessageID());
+
+                    log.info("Retransmitted message: {}", coapMessage);
                 }
                 else{
                     log.error("This should never happen!", future.getCause());
@@ -425,12 +477,51 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
                         for(OutgoingReliableMessageExchange messageExchange : part.getValue()){
                             if(!messageExchange.isRetransmissionStopped()){
+
+                                if(messageExchange instanceof OutgoingReliableUpdateNotificationExchange){
+
+                                    OutgoingReliableUpdateNotificationExchange updateNotificationExchange =
+                                            (OutgoingReliableUpdateNotificationExchange) messageExchange;
+
+                                    if(updateNotificationExchange.isChanged()){
+                                        InetSocketAddress remoteEndpoint =
+                                                updateNotificationExchange.getRemoteEndpoint();
+
+                                        CoapResponse updateNotification = updateNotificationExchange.getCoapMessage();
+
+                                        int oldMessageID = updateNotification.getMessageID();
+
+                                        try{
+                                            int newMessageID = messageIDFactory.getNextMessageID(remoteEndpoint);
+
+                                            ongoingMessageExchanges.remove(remoteEndpoint, oldMessageID);
+
+                                            updateNotification.setMessageID(newMessageID);
+
+                                            ongoingMessageExchanges.put(remoteEndpoint, newMessageID,
+                                                    updateNotificationExchange);
+                                        }
+
+                                        catch(NoMessageIDAvailableException ex){
+                                            log.warn("Could not update the update notification for {} (Reason: {})",
+                                                    messageExchange.getRemoteEndpoint(), ex.getMessage());
+                                        }
+                                    }
+                                }
+
                                 retransmitMessage(messageExchange);
 
                                 //Schedule next retransmission only if the maximum number was not reached
                                 int counter = messageExchange.getRetransmissionCount();
                                 if(counter < MAX_RETRANSMISSIONS){
                                     long delay = createNextRetransmissionDelay(counter);
+
+                                    //Update the max age option of CoAP responses for next retransmission
+                                    if(messageExchange.getCoapMessage() instanceof CoapResponse){
+                                        CoapResponse coapResponse = (CoapResponse) messageExchange.getCoapMessage();
+                                        coapResponse.setMaxAge(Math.max(coapResponse.getMaxAge() - delay / 1000, 0));
+                                    }
+
                                     subsequentRetransmissions.put(part.getKey() + delay, messageExchange);
                                 }
                             }

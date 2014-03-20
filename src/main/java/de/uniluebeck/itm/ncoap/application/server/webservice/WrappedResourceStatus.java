@@ -3,14 +3,14 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 /**
  * Created by olli on 17.03.14.
  */
-public class WrappedWebserviceStatus {
+public class WrappedResourceStatus {
 
     private byte[] content;
     private long contentFormat;
     private byte[] etag;
     private long maxAge;
 
-    public WrappedWebserviceStatus(byte[] content, long contentFormat, byte[] etag, long maxAge) {
+    public WrappedResourceStatus(byte[] content, long contentFormat, byte[] etag, long maxAge) {
         this.content = content;
         this.contentFormat = contentFormat;
         this.etag = etag;

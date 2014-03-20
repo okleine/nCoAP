@@ -188,9 +188,9 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
 
     private void handleIncomingConfirmableCoapResponse(ChannelHandlerContext ctx, MessageEvent me){
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
-        CoapMessage coapMessage = (CoapMessage) me.getMessage();
+        CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
-        writeEmptyAcknowledgement(remoteEndpoint, coapMessage.getMessageID());
+        writeEmptyAcknowledgement(remoteEndpoint, coapResponse.getMessageID());
 
         ctx.sendUpstream(me);
     }

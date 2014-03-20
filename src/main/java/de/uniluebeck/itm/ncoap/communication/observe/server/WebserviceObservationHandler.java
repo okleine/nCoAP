@@ -1,17 +1,23 @@
-package de.uniluebeck.itm.ncoap.communication.observe;
+package de.uniluebeck.itm.ncoap.communication.observe.server;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
+
 import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.application.server.InternalServiceRemovedFromServerMessage;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
-import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedWebserviceStatus;
+import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalResetReceivedMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;
+import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
+
 import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.socket.DatagramChannel;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,8 +25,12 @@ import java.net.InetSocketAddress;
 import java.util.*;
 
 /**
-* Created by olli on 17.03.14.
-*/
+ * The {@link WebserviceObservationHandler} is responsible to inform observers whenever the status of an
+ * {@link ObservableWebservice} changes. It itself registers as {@link Observer} on all instances of
+ * {@link ObservableWebservice} instances running on this {@link CoapServerApplication} instance.
+ *
+ * @author Oliver Kleine
+ */
 public class WebserviceObservationHandler extends SimpleChannelHandler implements Observer {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
@@ -32,12 +42,22 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
     private ChannelHandlerContext ctx;
 
 
+    /**
+     * Creates a new instance of {@link WebserviceObservationHandler}.
+     */
     public WebserviceObservationHandler(){
         this.observationsPerObserver = HashBasedTable.create();
         this.observationsPerService = HashMultimap.create();
     }
 
 
+    /**
+     * Sets the {@link ChannelHandlerContext} of this {@link WebserviceObservationHandler} on the
+     * {@link DatagramChannel}
+     *
+     * @param ctx the {@link ChannelHandlerContext} of this {@link WebserviceObservationHandler} on the
+     * {@link DatagramChannel}
+     */
     public void setChannelHandlerContext(ChannelHandlerContext ctx){
         this.ctx = ctx;
     }
@@ -134,13 +154,40 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
             handleOutgoingCoapResponse(ctx, me);
 
         else if(me.getMessage() instanceof InternalObservableWebserviceRegistrationMessage)
-            handleInternalObservableWebserviceRegistrationMessage(ctx, me);
+            handleInternalObservableWebserviceRegistrationMessage(me);
+
+        else if(me.getMessage() instanceof InternalServiceRemovedFromServerMessage)
+            handleInternalServiceRemovedFromServerMessage(ctx, me);
 
         else
             ctx.sendDownstream(me);
     }
 
-    private void handleInternalObservableWebserviceRegistrationMessage(ChannelHandlerContext ctx, MessageEvent me) {
+
+
+    private void handleInternalServiceRemovedFromServerMessage(ChannelHandlerContext ctx, MessageEvent me) {
+
+        InternalServiceRemovedFromServerMessage internalMessage =
+                (InternalServiceRemovedFromServerMessage) me.getMessage();
+
+        synchronized (monitor){
+
+            Collection<ObservationParams> tmp = observationsPerService.get(internalMessage.getServicePath());
+            ObservationParams[] observations = tmp.toArray(new ObservationParams[tmp.size()]);
+
+            for(ObservationParams params : observations){
+                CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, MessageCode.Name.NOT_FOUND_404);
+                String message = "Service \"" + params.getWebservicePath() + "\" was removed from server!";
+                coapResponse.setToken(params.getToken());
+                coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+
+                Channels.write(ctx.getChannel(), coapResponse, params.getRemoteEndpoint());
+            }
+        }
+    }
+
+
+    private void handleInternalObservableWebserviceRegistrationMessage(MessageEvent me) {
 
         InternalObservableWebserviceRegistrationMessage registrationMessage =
                 (InternalObservableWebserviceRegistrationMessage) me.getMessage();
@@ -155,23 +202,25 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
         CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
         if(observationsPerObserver.contains(remoteEndpoint, coapResponse.getToken())){
-            if(!coapResponse.isUpdateNotification()){
-                synchronized (monitor){
+            synchronized (monitor){
+                if(!coapResponse.isUpdateNotification()){
                     ObservationParams params = observationsPerObserver.remove(remoteEndpoint, coapResponse.getToken());
                     observationsPerService.remove(params.getWebservicePath(), params);
                 }
-            }
 
-            else{
-                ObservationParams params = observationsPerObserver.get(remoteEndpoint, coapResponse.getToken());
+                else{
+                    ObservationParams params = observationsPerObserver.get(remoteEndpoint, coapResponse.getToken());
 
-                if(params.getLatestUpdateNotificationMessageID() != coapResponse.getMessageID())
-                    params.setLatestUpdateNotificationMessageID(coapResponse.getMessageID());
+                    if(params.getLatestUpdateNotificationMessageID() != coapResponse.getMessageID()){
+                        log.debug("Set latest message ID for observation to {}", coapResponse.getMessageID());
+                        params.setLatestUpdateNotificationMessageID(coapResponse.getMessageID());
+                    }
 
-                if(params.getContentFormat() == ContentFormat.UNDEFINED)
-                    params.setContentFormat(coapResponse.getContentFormat());
+                    if(params.getContentFormat() == ContentFormat.UNDEFINED)
+                        params.setContentFormat(coapResponse.getContentFormat());
 
-                coapResponse.setObserveOption(params.nextNotification());
+                    coapResponse.setObserveOption(params.nextNotification());
+                }
             }
         }
 
@@ -183,38 +232,62 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
     public void update(Observable observable, Object arg) {
         ObservableWebservice webservice = (ObservableWebservice) observable;
 
-        Map<Long, WrappedWebserviceStatus> statusCache = new HashMap<>();
+        Map<Long, WrappedResourceStatus> statusCache = new HashMap<>();
 
         Collection<ObservationParams> tmp = observationsPerService.get(webservice.getPath());
         ObservationParams[] observations = tmp.toArray(new ObservationParams[tmp.size()]);
 
-        for(ObservationParams params : observations){
+        for(final ObservationParams params : observations){
             long contentFormat = params.getContentFormat();
 
             if(!statusCache.containsKey(contentFormat))
-                statusCache.put(contentFormat, webservice.getWrappedWebserviceStatus(contentFormat));
+                statusCache.put(contentFormat, webservice.getWrappedResourceStatus(contentFormat));
 
-            WrappedWebserviceStatus wrappedWebserviceStatus = statusCache.get(contentFormat);
-            MessageType.Name messageType =
-                    webservice.getMessageTypeForUpdateNotification(params.getRemoteEndpoint());
+            WrappedResourceStatus wrappedResourceStatus = statusCache.get(contentFormat);
 
+            //Determine the message type for the update notification
+            MessageType.Name messageType;
+            if(arg != null && arg instanceof MessageType.Name)
+                messageType = (MessageType.Name) arg;
+            else
+                messageType =
+                        webservice.getMessageTypeForUpdateNotification(params.getRemoteEndpoint(), params.getToken());
+
+            //Determine the message code for the update notification (depends on the ETAG options sent with the
+            //request that started the observation
             CoapResponse updateNotification;
-            if(params.getEtags().contains(wrappedWebserviceStatus.getEtag())){
+            if(params.getEtags().contains(wrappedResourceStatus.getEtag())){
                 updateNotification = new CoapResponse(messageType, MessageCode.Name.VALID_203);
             }
 
             else{
                 updateNotification = new CoapResponse(messageType, MessageCode.Name.CONTENT_205);
-                updateNotification.setContent(wrappedWebserviceStatus.getContent(), contentFormat);
+                updateNotification.setContent(wrappedResourceStatus.getContent(), contentFormat);
             }
 
-            updateNotification.setMaxAge(wrappedWebserviceStatus.getMaxAge());
+            //Set content related options for the update notification
+            updateNotification.setMaxAge(wrappedResourceStatus.getMaxAge());
             updateNotification.setObserveOption(0);
 
             updateNotification.setMessageID(params.getLatestUpdateNotificationMessageID());
             updateNotification.setToken(params.getToken());
 
-            Channels.write(this.ctx.getChannel(), updateNotification, params.getRemoteEndpoint());
+
+            //Send the update notification
+            ChannelFuture future =
+                    Channels.write(this.ctx.getChannel(), updateNotification, params.getRemoteEndpoint());
+
+            if(log.isWarnEnabled()){
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if(!future.isSuccess())
+                            log.warn("No message ID available for update notification for {} with token {} " +
+                                    "(observing \"{}\".", new Object[]{params.getRemoteEndpoint(), params.getToken(),
+                                    params.getWebservicePath()});
+                    }
+                });
+            }
         }
     }
 }

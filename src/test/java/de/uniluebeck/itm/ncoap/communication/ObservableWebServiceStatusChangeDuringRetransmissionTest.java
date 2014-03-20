@@ -50,7 +50,7 @@
 //
 //import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebservice;
 //import de.uniluebeck.itm.ncoap.message.*;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
 //import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
@@ -77,7 +77,7 @@
 //    private static CoapTestEndpoint endpoint;
 //
 //    private static CoapServerApplication server;
-//    private static ObservableTestWebService service;
+//    private static ObservableTestWebservice service;
 //
 //    //registration requests
 //    private static CoapRequest observationRequest;
@@ -101,7 +101,7 @@
 //        server = new CoapServerApplication(0);
 //
 //        //create observable service
-//        service = new ObservableTestWebService(PATH_TO_SERVICE, 0, 0);
+//        service = new ObservableTestWebservice(PATH_TO_SERVICE, 0, 0);
 //        service.setMaxAge(90);
 //        server.registerService(service);
 //
