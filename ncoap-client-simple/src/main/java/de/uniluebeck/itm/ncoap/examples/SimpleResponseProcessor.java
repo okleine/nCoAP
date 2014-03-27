@@ -24,41 +24,74 @@
  */
 package de.uniluebeck.itm.ncoap.examples;
 
-import de.uniluebeck.itm.ncoap.communication.observe.client.UpdateNotificationProcessor;
+import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by olli on 20.03.14.
  */
-public class SimpleResponseProcessor implements UpdateNotificationProcessor {
+public class SimpleResponseProcessor implements CoapResponseProcessor, TransmissionInformationProcessor,
+        RetransmissionTimeoutProcessor{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private AtomicInteger notificationCounter;
-    private int expectedNumberOfUpdateNotifications;
+    private AtomicInteger responseCounter;
+    private AtomicInteger transmissionCounter;
+    private AtomicBoolean timedOut;
 
-    public SimpleResponseProcessor(int expectedNumberOfUpdateNotifications){
-        this.expectedNumberOfUpdateNotifications = expectedNumberOfUpdateNotifications;
-        this.notificationCounter = new AtomicInteger(0);
+
+    public SimpleResponseProcessor(){
+        this.responseCounter = new AtomicInteger(0);
+        this.transmissionCounter = new AtomicInteger(0);
+        this.timedOut = new AtomicBoolean(false);
     }
 
-    @Override
-    public boolean continueObservation() {
-        return notificationCounter.intValue() < expectedNumberOfUpdateNotifications;
-    }
 
     @Override
     public void processCoapResponse(CoapResponse coapResponse) {
-        notificationCounter.incrementAndGet();
-        log.info("Received #{}: {}", notificationCounter.intValue(), coapResponse);
+        int value = responseCounter.incrementAndGet();
+        log.info("Received #{}: {}", value, coapResponse);
 
     }
 
-    public int getUpdateNotificationCount(){
-        return this.notificationCounter.intValue();
+
+    public int getResponseCount(){
+        return this.responseCounter.intValue();
+    }
+
+
+    @Override
+    public void messageTransmitted(InetSocketAddress remoteEndpint, int messageID, Token token,
+                                   boolean retransmission) {
+        int value = transmissionCounter.incrementAndGet();
+
+        if(retransmission){
+            log.info("Transmission #{} for message with ID {} to {} (Token: {})",
+                    new Object[]{value, messageID, remoteEndpint, token});
+        }
+    }
+
+
+    @Override
+    public void processRetransmissionTimeout(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+        log.info("Internal timeout for message with ID {} to {} (Token: {})",
+                new Object[]{messageID, remoteEndpoint, token});
+
+        timedOut.set(true);
+    }
+
+
+    public boolean isTimedOut(){
+        return timedOut.get();
     }
 }

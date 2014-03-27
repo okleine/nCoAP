@@ -44,7 +44,7 @@ public class SimpleCoapClient extends CoapClientApplication{
 
     private ClientCmdLineArgumentsWrapper arguments;
 
-    private SimpleResponseProcessor updateNotificationProcessor;
+    private SimpleResponseProcessor responseProcessor;
 
     public SimpleCoapClient(ClientCmdLineArgumentsWrapper arguments){
         super();
@@ -72,11 +72,11 @@ public class SimpleCoapClient extends CoapClientApplication{
             recipient = new InetSocketAddress(InetAddress.getByName(arguments.getUriHost()),
                     arguments.getProxyPort());
 
-        //Create the response processor to process the update notifications
-        updateNotificationProcessor = new SimpleResponseProcessor(arguments.getMaxUpdates());
+        //Create the response processor
+        responseProcessor = new SimpleResponseProcessor();
 
         //Send the CoAP request
-        this.sendCoapRequest(coapRequest, updateNotificationProcessor, recipient);
+        this.sendCoapRequest(coapRequest, responseProcessor, recipient);
     }
 
 
@@ -87,10 +87,12 @@ public class SimpleCoapClient extends CoapClientApplication{
         int responseCount = 0;
         long actualTime = startTime;
 
-        while(responseCount < 1 && (actualTime - startTime) / 1000 < arguments.getDuration()){
+        while(responseCount < 1 && !responseProcessor.isTimedOut() &&
+                (actualTime - startTime) / 1000 < arguments.getDuration()){
+
             Thread.sleep(100);
 
-            responseCount = updateNotificationProcessor.getUpdateNotificationCount();
+            responseCount = responseProcessor.getResponseCount();
             actualTime = System.currentTimeMillis();
         }
 
