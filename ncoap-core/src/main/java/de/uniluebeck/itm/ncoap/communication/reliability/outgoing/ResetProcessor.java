@@ -25,12 +25,15 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.client.Token;
+
+import java.net.InetSocketAddress;
 
 /**
  * Created by olli on 08.03.14.
  */
 public interface ResetProcessor extends CoapResponseProcessor{
 
-    public void processReset();
+    public void processReset(InetSocketAddress remoteEndpoint, int messageID, Token token);
 
 }

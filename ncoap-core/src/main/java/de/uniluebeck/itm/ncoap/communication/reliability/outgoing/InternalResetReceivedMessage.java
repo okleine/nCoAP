@@ -40,16 +40,16 @@ public class InternalResetReceivedMessage {
 
     private InetSocketAddress remoteEndpoint;
     private Token token;
-    private CoapMessage resetMessage;
+    private int messageID;
 
     /**
      * @param token the token of the confirmed message
      */
-    public InternalResetReceivedMessage(InetSocketAddress remoteEndpoint, Token token,
-                                        CoapMessage resetMessage){
+    public InternalResetReceivedMessage(InetSocketAddress remoteEndpoint, int messageID, Token token){
+
         this.remoteEndpoint = remoteEndpoint;
+        this.messageID = messageID;
         this.token = token;
-        this.resetMessage = resetMessage;
     }
 
     /**
@@ -70,7 +70,7 @@ public class InternalResetReceivedMessage {
     }
 
 
-    public CoapMessage getResetMessage() {
-        return resetMessage;
+    public int getMessageID() {
+        return messageID;
     }
 }

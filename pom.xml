@@ -15,7 +15,10 @@
 
     <modules>
         <module>ncoap-core</module>
-        <module>ncoap-simple-client</module>
+        <module>ncoap-utils</module>
+        <module>ncoap-client-simple</module>
+        <module>ncoap-client-observe</module>
+        <module>ncoap-client-test</module>
     </modules>
 
     <distributionManagement>

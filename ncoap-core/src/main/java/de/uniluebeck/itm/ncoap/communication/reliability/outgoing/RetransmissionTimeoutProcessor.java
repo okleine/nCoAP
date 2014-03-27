@@ -26,7 +26,10 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
+
+import java.net.InetSocketAddress;
 
 /**
 * Interface to be implemented by instances of {@link CoapResponseProcessor} to get informed if an outgoing
@@ -39,5 +42,5 @@ public interface RetransmissionTimeoutProcessor {
     /**
      * Method invoked by the nCoAP framework when there was an outgoing
      */
-    public void processRetransmissionTimeout();
+    public void processRetransmissionTimeout(InetSocketAddress remoteEndpoint, int messageID, Token token);
 }

@@ -26,6 +26,9 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.client.Token;
+
+import java.net.InetSocketAddress;
 
 /**
 * Interface to be implemented by instances of {@link CoapResponseProcessor} to get the information that a
@@ -41,5 +44,5 @@ public interface EmptyAcknowledgementProcessor extends CoapResponseProcessor{
      * browser windows telling the user that the server has received the request but needs some time to
      * process it.
      */
-    public void processEmptyAcknowledgement();
+    public void processEmptyAcknowledgement(InetSocketAddress remoteEndpoint, int messageID, Token token);
 }

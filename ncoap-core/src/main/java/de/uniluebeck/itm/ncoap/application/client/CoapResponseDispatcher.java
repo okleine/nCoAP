@@ -345,7 +345,9 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         }
 
         if(callback instanceof EmptyAcknowledgementProcessor)
-            ((EmptyAcknowledgementProcessor) callback).processEmptyAcknowledgement();
+            ((EmptyAcknowledgementProcessor) callback).processEmptyAcknowledgement(
+                    message.getRemoteEndpoint(), message.getMessageID(), message.getToken()
+            );
 
     }
 
@@ -362,7 +364,11 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         }
 
         if(callback instanceof ResetProcessor)
-            ((ResetProcessor) callback).processReset();
+            ((ResetProcessor) callback).processReset(
+                    message.getRemoteEndpoint(),
+                    message.getMessageID(),
+                    message.getToken()
+            );
     }
 
 
@@ -372,8 +378,12 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                 responseProcessors.get(message.getRemoteAddress(), message.getToken());
 
         if(callback != null && callback instanceof TransmissionInformationProcessor)
-            ((TransmissionInformationProcessor) callback).messageTransmitted(message.getToken(),
-                    message.getMessageID(), true);
+            ((TransmissionInformationProcessor) callback).messageTransmitted(
+                    message.getRemoteAddress(),
+                    message.getMessageID(),
+                    message.getToken(),
+                    true
+            );
 
     }
 
@@ -386,7 +396,11 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
         //Invoke method of callback instance
         if(callback != null && callback instanceof RetransmissionTimeoutProcessor)
-            ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout();
+            ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout(
+                    message.getRemoteEndpoint(),
+                    message.getMessageID(),
+                    message.getToken()
+            );
 
         //pass the token back
         if(!tokenFactory.passBackToken(message.getRemoteEndpoint(), message.getToken())){

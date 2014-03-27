@@ -28,34 +28,32 @@ import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
+import de.uniluebeck.itm.ncoap.utils.ClientCmdLineArgumentsWrapper;
+import de.uniluebeck.itm.ncoap.utils.LoggingConfiguration;
 
-import org.apache.log4j.xml.DOMConfigurator;
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
-
-import java.io.File;
 import java.net.*;
 
 
 /**
-* This is a very simple example application, that sends a confirmable GET request to the URI given as parameter
-* args[0] for the main method. It prints out the response on the console and terminates.
-*
-* @author Oliver Kleine
-*/
+ * This is a very simple example application, that sends a GET request to a remote CoAP Webservice.
+ *
+ * This example application is configurable using command line parameters. Use <code>--help</code> to
+ * print the available parameters.
+ *
+ * @author Oliver Kleine
+ */
 public class SimpleObservingCoapClient extends CoapClientApplication{
 
-    private CmdLineArgumentsWrapper arguments;
+    private ClientCmdLineArgumentsWrapper arguments;
 
     private SimpleUpdateNotificationProcessor updateNotificationProcessor;
 
-    public SimpleObservingCoapClient(CmdLineArgumentsWrapper arguments){
+    public SimpleObservingCoapClient(ClientCmdLineArgumentsWrapper arguments){
         super();
         this.arguments = arguments;
     }
 
-    public void sendObservationRequest() throws URISyntaxException, UnknownHostException {
+    private void sendObservationRequest() throws URISyntaxException, UnknownHostException {
 
         //Create CoAP request
         URI webserviceURI = new URI ("coap", null, arguments.getUriHost(), arguments.getUriPort(),
@@ -78,21 +76,21 @@ public class SimpleObservingCoapClient extends CoapClientApplication{
                     arguments.getProxyPort());
 
         //Create the response processor to process the update notifications
-        updateNotificationProcessor = new SimpleUpdateNotificationProcessor(arguments.getUpdates());
+        updateNotificationProcessor = new SimpleUpdateNotificationProcessor(arguments.getMaxUpdates());
 
         //Send the CoAP request
         this.sendCoapRequest(coapRequest, updateNotificationProcessor, recipient);
     }
 
 
-    public void waitAndShutdown() throws InterruptedException {
+    private void waitAndShutdown() throws InterruptedException {
         long startTime = System.currentTimeMillis();
 
         //await the defined number of update notifications
         int updateCount = 0;
         long actualTime = startTime;
 
-        while(updateCount < arguments.getUpdates() &&
+        while(updateCount < arguments.getMaxUpdates() &&
                 (actualTime - startTime) / 1000 < arguments.getDuration()){
             Thread.sleep(100);
 
@@ -105,26 +103,20 @@ public class SimpleObservingCoapClient extends CoapClientApplication{
 
 
     public static void main(String[] args) throws Exception {
-        CmdLineArgumentsWrapper arguments = new CmdLineArgumentsWrapper();
-        CmdLineParser parser = new CmdLineParser(arguments);
+        //Read command line arguments
+        ClientCmdLineArgumentsWrapper arguments = new ClientCmdLineArgumentsWrapper(args);
 
-        try{
-            parser.parseArgument(args);
-        }
-        catch(CmdLineException ex){
-            System.err.println(ex.getMessage());
-            parser.printUsage(System.err);
-            return;
-        }
+        //Configure logging
+        String log4jConfigPath = arguments.getLog4jConfigPath();
+        if(log4jConfigPath == null)
+            LoggingConfiguration.configureDefaultLogging();
+        else
+            LoggingConfiguration.configureLogging(log4jConfigPath);
 
-        if(arguments.isHelp()){
-            parser.printUsage(System.out);
-            return;
-        }
-
-        configureLogging();
-
+        //Start the client application
         SimpleObservingCoapClient client = new SimpleObservingCoapClient(arguments);
+
+        //Send the request, await update notifications or timeout and shut the client down
         try{
             client.sendObservationRequest();
             client.waitAndShutdown();
@@ -134,32 +126,4 @@ public class SimpleObservingCoapClient extends CoapClientApplication{
             throw ex;
         }
     }
-
-    private static void configureLogging() throws Exception{
-
-        if(configureLogging(new File("log4j.xml")))
-            return;
-
-        if(configureLogging(new File("ncoap-simple-client/log4j.xml")))
-            return;
-
-        System.out.println("Use default logging configuration, i.e. only ERROR messages...\n");
-        URL url = SimpleObservingCoapClient.class.getClassLoader().getResource("log4j.default.xml");
-        DOMConfigurator.configure(url);
-    }
-
-
-    private static boolean configureLogging(File configFile) throws Exception{
-        System.out.println("Looking for file \"log4j.xml\" at path: " + configFile.getAbsolutePath());
-
-        if(!configFile.exists()){
-            System.out.println("File \"log4j.xml\" not found...\n");
-            return false;
-        }
-
-        System.out.println("File \"log4j.xml\" found...\n");
-        DOMConfigurator.configure(configFile.toURI().toURL());
-        return true;
-    }
-
 }

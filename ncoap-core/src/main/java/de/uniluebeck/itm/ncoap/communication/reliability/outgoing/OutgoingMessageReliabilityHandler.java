@@ -383,7 +383,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
         //Send internal message for empty RST reception
         InternalResetReceivedMessage internalMessage =
-                new InternalResetReceivedMessage(remoteEndpoint, messageExchange.getToken(), coapMessage);
+                new InternalResetReceivedMessage(remoteEndpoint, messageExchange .getMessageID(),
+                        messageExchange.getToken());
 
         Channels.fireMessageReceived(ctx.getChannel(), internalMessage);
     }
@@ -403,7 +404,10 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         //Send internal message if the received ACK was empty
         if(coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
             InternalEmptyAcknowledgementReceivedMessage internalMessage =
-                    new InternalEmptyAcknowledgementReceivedMessage(remoteEndpoint, coapMessage.getToken());
+                    new InternalEmptyAcknowledgementReceivedMessage(
+                            remoteEndpoint,
+                            coapMessage.getMessageID(),
+                            coapMessage.getToken());
 
             Channels.fireMessageReceived(ctx.getChannel(), internalMessage, remoteEndpoint);
         }
@@ -455,6 +459,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         if(messageExchange != null){
             InternalRetransmissionTimeoutMessage internalMessage = new InternalRetransmissionTimeoutMessage(
                     messageExchange.getRemoteEndpoint(),
+                    messageExchange.getMessageID(),
                     messageExchange.getCoapMessage().getToken()
             );
 

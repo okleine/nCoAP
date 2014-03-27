@@ -38,13 +38,16 @@ import java.net.InetSocketAddress;
 public class InternalEmptyAcknowledgementReceivedMessage {
 
     private InetSocketAddress remoteEndpoint;
+    private int messageID;
     private Token token;
 
     /**
      * @param token the token of the confirmed message
      */
-    public InternalEmptyAcknowledgementReceivedMessage(InetSocketAddress remoteEndpoint, Token token){
+    public InternalEmptyAcknowledgementReceivedMessage(InetSocketAddress remoteEndpoint, int messageID,
+                                                       Token token){
         this.remoteEndpoint = remoteEndpoint;
+        this.messageID = messageID;
         this.token = token;
     }
 
@@ -56,6 +59,9 @@ public class InternalEmptyAcknowledgementReceivedMessage {
         return token;
     }
 
+    public int getMessageID() {
+        return messageID;
+    }
 
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;
@@ -67,4 +73,6 @@ public class InternalEmptyAcknowledgementReceivedMessage {
                 + "Remote address: " + this.remoteEndpoint.toString()
                 + ", Token: " + token.toString();
     }
+
+
 }

@@ -231,7 +231,11 @@ public class CoapClientApplication {
 
                             if (coapResponseProcessor instanceof TransmissionInformationProcessor)
                                 ((TransmissionInformationProcessor) coapResponseProcessor).messageTransmitted(
-                                        coapRequest.getToken(), coapRequest.getMessageID(), false);
+                                        remoteEndpoint,
+                                        coapRequest.getMessageID(),
+                                        coapRequest.getToken(),
+                                        false
+                                );
                         }
                     }
                 });
@@ -300,7 +304,11 @@ public class CoapClientApplication {
 
                             if (resetProcessor instanceof TransmissionInformationProcessor)
                                 ((TransmissionInformationProcessor) resetProcessor).messageTransmitted(
-                                        resetMessage.getToken(), resetMessage.getMessageID(), false);
+                                        remoteEndpoint,
+                                        resetMessage.getMessageID(),
+                                        resetMessage.getToken(),
+                                        false
+                                );
                         }
                         else{
                             log.error("Message could not be sent!", future.getCause());

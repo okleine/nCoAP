@@ -34,6 +34,7 @@ import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -67,7 +68,9 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
 
 
     @Override
-    public void messageTransmitted(final Token token, int messageID, boolean retransmission) {
+    public void messageTransmitted(InetSocketAddress remoteEndpoint, int messageID,  final Token token,
+                                   boolean retransmission) {
+
         synchronized (requestTransmissionTimes){
             if(!retransmission && requestTransmissionTimes.size() > 0)
                 log.error("Initial transmission happened after first retransmission.");
@@ -88,7 +91,7 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
 
 
     @Override
-    public void processRetransmissionTimeout() {
+    public void processRetransmissionTimeout(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         synchronized (requestTransmissionTimeoutTimes){
             requestTransmissionTimeoutTimes.add(System.currentTimeMillis());
             log.info("Retransmission timed out!");
@@ -97,7 +100,7 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
 
 
     @Override
-    public void processEmptyAcknowledgement() {
+    public void processEmptyAcknowledgement(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         synchronized (emptyAcknowledgementReceptionTimes){
             emptyAcknowledgementReceptionTimes.add(System.currentTimeMillis());
             log.info("Received empty ACK.");
@@ -105,7 +108,7 @@ public class TestResponseProcessor implements CoapResponseProcessor, Retransmiss
     }
 
     @Override
-    public void processReset() {
+    public void processReset(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         synchronized (resetReceptionTimes){
             log.info("Received RST");
             resetReceptionTimes.add(System.currentTimeMillis());

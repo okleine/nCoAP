@@ -29,6 +29,8 @@ import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
 
+import java.net.InetSocketAddress;
+
 /**
  * Interface to be implemented by instances of {@link CoapResponseProcessor}
  * that want to somehow know about each transmission attempt of the related {@link CoapRequest}, e.g. in order to print
@@ -51,5 +53,5 @@ public interface TransmissionInformationProcessor {
      *                       {@link MessageType.Name#CON} and {@link MessageType.Name#NON) and <code>true</code> for
      *                       retransmissions (for {@link MessageType.Name#CON} only).
      */
-    public void messageTransmitted(Token token, int messageID, boolean retransmission);
+    public void messageTransmitted(InetSocketAddress remoteEndpint, int messageID, Token token, boolean retransmission);
 }

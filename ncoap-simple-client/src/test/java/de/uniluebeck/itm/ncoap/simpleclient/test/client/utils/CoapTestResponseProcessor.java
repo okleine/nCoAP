@@ -22,65 +22,51 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-//package de.uniluebeck.itm.ncoap.examples.simple.client;
+//package de.uniluebeck.itm.ncoap.simpleclient.test.client.utils;
 //
-//import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 //import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
-//import de.uniluebeck.itm.ncoap.application.client.CodecExceptionReceiver;
-//import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-//import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
+//import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAcknowledgementProcessor;
+//import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalEmptyAcknowledgementReceivedMessage;
 //import de.uniluebeck.itm.ncoap.message.CoapResponse;
-//import org.apache.log4j.Logger;
 //
+//import java.util.ArrayList;
+//import java.util.LinkedHashMap;
+//import java.util.List;
+//import java.util.Map;
 //
 ///**
-//* A {@link SimpleResponseProcessor} does nothing but log the incoming messages, be it {@link CoapResponse}s,
-//* {@link InternalEmptyAcknowledgementReceivedMessage}s, or {@link InternalRetransmissionTimeoutMessage}s.
-//*
-//* @author Oliver Kleine
-//*/
-//public class SimpleResponseProcessor implements CoapResponseProcessor, EmptyAcknowledgementProcessor,
-//        RetransmissionTimeoutProcessor, TransmissionInformationProcessor, CodecExceptionReceiver {
+// * Created with IntelliJ IDEA.
+// * User: olli
+// * Date: 19.11.13
+// * Time: 16:23
+// * To change this template use File | Settings | File Templates.
+// */
+//public class CoapTestResponseProcessor implements CoapResponseProcessor, EmptyAcknowledgementProcessor{
 //
-//    private int retransmissionCount = 0;
+//    private Map<Long, CoapResponse> coapResponses = new LinkedHashMap<>();
+//    private List<Long> emptyAcknowledgements = new ArrayList<>();
 //
-//    private Logger log = Logger.getLogger(this.getClass().getName());
-//    private CoapClientApplication clientApplication;
-//
-//    public SimpleResponseProcessor(CoapClientApplication clientApplication){
-//        this.clientApplication = clientApplication;
-//    }
 //
 //    @Override
 //    public void processCoapResponse(CoapResponse coapResponse) {
-//        log.info("Received Response: " + coapResponse);
-//
-//        try {
-//            Thread.sleep(3000);
-//        } catch (InterruptedException e) {
-//            log.error("This should never happen.", e);
-//        }
-//
-//        clientApplication.shutdown();
+//        coapResponses.put(System.currentTimeMillis(), coapResponse);
 //    }
 //
 //    @Override
 //    public void processEmptyAcknowledgement(InternalEmptyAcknowledgementReceivedMessage message) {
-//        log.info("Received empty ACK: " + message);
+//        emptyAcknowledgements.add(System.currentTimeMillis());
 //    }
 //
-//    @Override
-//    public void processRetransmissionTimeout(InternalRetransmissionTimeoutMessage timeoutMessage) {
-//        log.info("Transmission timed out: " + timeoutMessage);
+//    public Map<Long, CoapResponse> getCoapResponses(){
+//        return this.coapResponses;
 //    }
 //
-//    @Override
-//    public void messageTransmitted() {
-//        log.info("Transmission no. " + (++retransmissionCount));
+//    public List<Long> getEmptyAcknowledgementTimes(){
+//        return this.emptyAcknowledgements;
 //    }
 //
-//    @Override
-//    public void handleCodecException(Throwable exception) {
-//        log.info("Error message: " + exception.getMessage());
+//    public void clear(){
+//        this.emptyAcknowledgements.clear();
+//        this.getCoapResponses().clear();
 //    }
 //}
