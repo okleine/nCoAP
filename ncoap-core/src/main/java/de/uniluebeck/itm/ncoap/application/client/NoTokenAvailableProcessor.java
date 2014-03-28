@@ -30,7 +30,7 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
  * Interface to be implemented by instances of {@link CoapResponseProcessor} to be informed if there is no
- * {@link Token} available to start communication with the desired CoAP endpoint.
+ * {@link Token} available to start communication with the desired CoAP endpoints.
  *
  * @author Oliver Kleine
  */
@@ -40,7 +40,7 @@ public interface NoTokenAvailableProcessor extends CoapResponseProcessor{
      * This method is invoked by the framework if there was no {@link Token} available and thus no communication
      * could be started, i.e. the {@link CoapRequest} could not be sent.
      *
-     * @param remoteEndpoint the desired CoAP endpoint the {@link CoapMessage} was supposed to be sent to
+     * @param remoteEndpoint the desired CoAP endpoints the {@link CoapMessage} was supposed to be sent to
      */
     public void processNoTokenAvailable(InetSocketAddress remoteEndpoint);
 

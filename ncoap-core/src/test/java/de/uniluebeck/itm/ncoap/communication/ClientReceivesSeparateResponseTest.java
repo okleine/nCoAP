@@ -48,7 +48,7 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication;
 //
-//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 //import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebService;
 //import de.uniluebeck.itm.ncoap.message.CoapMessage;
@@ -84,7 +84,7 @@
 //    private static CoapServerApplication server;
 //    private static NotObservableTestWebService service;
 //
-//    private static CoapTestEndpoint endpoint;
+//    private static CoapTestEndpoint endpoints;
 //    private static CoapRequest request;
 //
 //    private static long requestSentTime;
@@ -101,7 +101,7 @@
 //        service = new NotObservableTestWebService(PATH_TO_SERVICE, PAYLOAD, 3000);
 //        server.registerService(service);
 //
-//        endpoint = new CoapTestEndpoint();
+//        endpoints = new CoapTestEndpoint();
 //        URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
 //        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
 //        request.getHeader().setMsgID(12345);
@@ -110,7 +110,7 @@
 //    @Override
 //    public void shutdownComponents() throws Exception {
 //        server.shutdown();
-//        endpoint.shutdown();
+//        endpoints.shutdown();
 //    }
 //
 //    @Override
@@ -129,19 +129,19 @@
 //
 //
 //        //send request to testServer
-//        endpoint.writeMessage(request, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(request, new InetSocketAddress("localhost", server.getServerPort()));
 //        requestSentTime = System.currentTimeMillis();
 //
 //        //wait for responses from server (one empty ACK and one CON response afterwards)
 //        Thread.sleep(3400);
 //
 //        //let testEndpoint write empty ACK to acknowledge seperate response
-//        int messageID = endpoint.getReceivedCoapMessages()
-//                                .get(endpoint.getReceivedCoapMessages().lastKey())
+//        int messageID = endpoints.getReceivedCoapMessages()
+//                                .get(endpoints.getReceivedCoapMessages().lastKey())
 //                                .getMessageID();
 //
 //        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
-//        endpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(emptyACK, new InetSocketAddress("localhost", server.getServerPort()));
 //
 //        //Wait some time to let the server receive the ACK and ensure there is no retransmission
 //        Thread.sleep(3000);
@@ -150,12 +150,12 @@
 //    @Test
 //    public void testReceiverReceivedTwoMessages() {
 //        String message = "Receiver did not receive two messages";
-//        assertEquals(message, 2, endpoint.getReceivedCoapMessages().values().size());
+//        assertEquals(message, 2, endpoints.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testReceiverReceivedEmptyAck() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //
 //        long emptyAckReceptionTime = receivedMessages.firstKey();
 //        long delay = requestSentTime - emptyAckReceptionTime;
@@ -171,7 +171,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageIsResponse() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //
 //        String message = "Endpoint received more than one message";
@@ -180,7 +180,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageHasSameToken() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response token does not match with request token";
 //        assertTrue(message, Arrays.equals(request.getToken(), receivedMessage.getToken()));
@@ -188,7 +188,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageHasCodeContent() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response code is not CONTENT 205";
 //        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
@@ -196,7 +196,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageHasUnmodifiedPayload() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response payload was modified by testServer";
 //        assertEquals(message, PAYLOAD, receivedMessage.getContent().toString(Charset.forName("UTF-8")));
@@ -204,7 +204,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageHasMsgTypeCON() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Response Msg Type is not CON";
 //        assertEquals(message, MessageType.CON, receivedMessage.getMessageType());

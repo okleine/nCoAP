@@ -48,7 +48,7 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication;
 //
-//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 //import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebservice;
 //import de.uniluebeck.itm.ncoap.message.*;
@@ -74,7 +74,7 @@
 //public class ObservableWebServiceStatusChangeDuringRetransmissionTest extends AbstractCoapCommunicationTest {
 //
 //    private static String PATH_TO_SERVICE = "/observable";
-//    private static CoapTestEndpoint endpoint;
+//    private static CoapTestEndpoint endpoints;
 //
 //    private static CoapServerApplication server;
 //    private static ObservableTestWebservice service;
@@ -90,7 +90,7 @@
 //              .setLevel(Level.DEBUG);
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe")
 //              .setLevel(Level.DEBUG);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint")
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint")
 //              .setLevel(Level.DEBUG);
 //    }
 //
@@ -106,8 +106,8 @@
 //        server.registerService(service);
 //
 //
-//        //create endpoint (i.e. client)
-//        endpoint = new CoapTestEndpoint();
+//        //create endpoints (i.e. client)
+//        endpoints = new CoapTestEndpoint();
 //
 //        //create observation request
 //        URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
@@ -144,7 +144,7 @@
 //
 //        //send observation request to server
 //        observationRequestSent = System.currentTimeMillis();
-//        endpoint.writeMessage(observationRequest, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(observationRequest, new InetSocketAddress("localhost", server.getServerPort()));
 //
 //        //wait 2.5 seconds (until first retransmission was sent and update observed resource
 //        Thread.sleep(2000);
@@ -156,14 +156,14 @@
 //
 //        //wait another 65 seconds to finish the other 2 retransmissions
 //        Thread.sleep(65000);
-//        endpoint.setReceptionEnabled(false);
+//        endpoints.setReceptionEnabled(false);
 //    }
 //
 //
 //
 //    @Override
 //    public void shutdownComponents() throws Exception {
-//        endpoint.shutdown();
+//        endpoints.shutdown();
 //        server.shutdown();
 //    }
 //
@@ -171,13 +171,13 @@
 //    @Test
 //    public void testEndpointReceived7Messages() {
 //        String message = "Receiver did not receive 7 messages";
-//        assertEquals(message, 7, endpoint.getReceivedCoapMessages().values().size());
+//        assertEquals(message, 7, endpoints.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testFirstMessageIsAck(){
 //        CoapMessage firstMessage =
-//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().firstKey());
+//                endpoints.getReceivedCoapMessages().get(endpoints.getReceivedCoapMessages().firstKey());
 //
 //        assertEquals("First received message was no ACK.", firstMessage.getMessageType(), MessageType.ACK);
 //        assertTrue("First message is no update notification.", ((CoapResponse) firstMessage).isUpdateNotification());
@@ -186,7 +186,7 @@
 //
 //    @Test
 //    public void testLastMessageWasNotSentBeforeMaxAgeEnded(){
-//        long delay = endpoint.getReceivedCoapMessages().lastKey() - observationRequestSent;
+//        long delay = endpoints.getReceivedCoapMessages().lastKey() - observationRequestSent;
 //
 //        assertTrue("Last retransmission was to early (after (" + delay +") millis. But max-age is 90 seconds!",
 //                delay >= 90000);
@@ -195,7 +195,7 @@
 //    @Test
 //    public void testUpdateOfStatusDuringRetransmission(){
 //        CoapMessage[] receivedMessages = new CoapMessage[6];
-//        receivedMessages = endpoint.getReceivedCoapMessages().values().toArray(receivedMessages);
+//        receivedMessages = endpoints.getReceivedCoapMessages().values().toArray(receivedMessages);
 //
 //        Token[] payloads = new Token[5];
 //
@@ -212,7 +212,7 @@
 //    @Test
 //    public void testNotificationCount(){
 //        CoapResponse[] receivedMessages = new CoapResponse[6];
-//        receivedMessages = endpoint.getReceivedCoapMessages().values().toArray(receivedMessages);
+//        receivedMessages = endpoints.getReceivedCoapMessages().values().toArray(receivedMessages);
 //
 //        int exectedNotifications = 7;
 //

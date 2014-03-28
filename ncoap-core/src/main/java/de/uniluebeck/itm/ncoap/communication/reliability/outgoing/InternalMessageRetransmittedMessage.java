@@ -72,6 +72,7 @@ public class InternalMessageRetransmittedMessage {
     public InternalMessageRetransmittedMessage(InetSocketAddress remoteAddress, Token token, int messageID) {
         this.remoteAddress = remoteAddress;
         this.token = token;
+        this.messageID = messageID;
     }
 
     /**

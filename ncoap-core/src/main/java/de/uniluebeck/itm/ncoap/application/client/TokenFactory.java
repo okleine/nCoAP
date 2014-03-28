@@ -92,7 +92,7 @@ public class TokenFactory {
      * {@link CoapResponse}(s) with that request. This {@link Token} is ensured to be unique in combination with the
      * given {@link InetSocketAddress}, i.e. as long as there are any other ongoing communications with the same
      * CoAP server, the returned {@link ListenableFuture<Token>} will be set with a {@link Token} that is different
-     * from all other {@link Token}s in use with the given remote CoAP endpoint.
+     * from all other {@link Token}s in use with the given remote CoAP endpoints.
      *
      * @param remoteEndpoint the {@link InetSocketAddress} of the CoAP server this token is supposed to be used
      *                            to communicate with.
@@ -129,7 +129,7 @@ public class TokenFactory {
 
     /**
      * This method is invoked by the framework to pass back a {@link Token} for the given
-     * {@link InetSocketAddress} to make it re-usable for upcoming communication with the same CoAP endpoint.
+     * {@link InetSocketAddress} to make it re-usable for upcoming communication with the same CoAP endpoints.
      *
      * @param token the {@link Token} that is not used anymore
      * @param remoteEndpoint the {@link InetSocketAddress} of the CoAP server, the {@link Token} was used to

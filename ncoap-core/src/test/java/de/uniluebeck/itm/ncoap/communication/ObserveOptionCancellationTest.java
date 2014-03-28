@@ -48,8 +48,8 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication;
 //
-//import de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor;
-//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 //import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebservice;
 //import de.uniluebeck.itm.ncoap.message.CoapMessage;
@@ -84,8 +84,8 @@
 //    private static CoapServerApplication server;
 //    private static ObservableTestWebservice service;
 //
-//    private static CoapTestEndpoint endpoint;
-//    private static TestResponseProcessor responseProcessor;
+//    private static CoapTestEndpoint endpoints;
+//    private static CoapResponseTestProcessor responseProcessor;
 //
 //    //requests
 //    private static CoapRequest observationRequest1;
@@ -96,7 +96,7 @@
 //    public void setupLogging() throws Exception {
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe")
 //                .setLevel(Level.DEBUG);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint")
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint")
 //                .setLevel(Level.DEBUG);
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.encoding.CoapMessageDecoder")
 //                .setLevel(Level.DEBUG);
@@ -111,8 +111,8 @@
 //        service.setUpdateNotificationConfirmable(false);
 //        server.registerService(service);
 //
-//        endpoint = new CoapTestEndpoint();
-//        responseProcessor = new TestResponseProcessor();
+//        endpoints = new CoapTestEndpoint();
+//        responseProcessor = new CoapResponseTestProcessor();
 //
 //        URI targetURI = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
 //
@@ -133,7 +133,7 @@
 //    @Override
 //    public void shutdownComponents() throws Exception {
 //        server.shutdown();
-//        endpoint.shutdown();
+//        endpoints.shutdown();
 //    }
 //
 //
@@ -173,27 +173,27 @@
 ////                  |                             |
 //
 //        //schedule first observation request
-//        endpoint.writeMessage(observationRequest1, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(observationRequest1, new InetSocketAddress("localhost", server.getServerPort()));
 //        //Wait for ACK and one NON update notification
 //        Thread.sleep(1100);
 //
 //        //write normal GET request to cancel observation
-//        endpoint.writeMessage(normalRequest, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(normalRequest, new InetSocketAddress("localhost", server.getServerPort()));
 //        //Wait for ACK, there should be no update notification for new status 3
 //        Thread.sleep(2000);
 //
 //        //write second observation request
-//        endpoint.writeMessage(observationRequest2, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(observationRequest2, new InetSocketAddress("localhost", server.getServerPort()));
 //        //wait for ACK and one NON update notification
 //        Thread.sleep(1000);
 //
 //        //Write reset message to cancel observation
 //        int messageID =
-//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getMessageID();
-//        endpoint.writeMessage(CoapMessage.createEmptyReset(messageID),
+//                endpoints.getReceivedCoapMessages().get(endpoints.getReceivedCoapMessages().lastKey()).getMessageID();
+//        endpoints.writeMessage(CoapMessage.createEmptyReset(messageID),
 //                        new InetSocketAddress("localhost", server.getServerPort()));
 //
-//        //There is another status update but the endpoint should be already removed as observer
+//        //There is another status update but the endpoints should be already removed as observer
 //        Thread.sleep(2000);
 //    }
 //
@@ -202,12 +202,12 @@
 //    @Test
 //    public void testReceiverReceived5Messages() {
 //        String message = "Receiver did not receive 5 messages";
-//        assertEquals(message, 5, endpoint.getReceivedCoapMessages().values().size());
+//        assertEquals(message, 5, endpoints.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testFirstReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //
 //        String message = "1st notification: MessageType is not ACK";
@@ -222,7 +222,7 @@
 //
 //    @Test
 //    public void testSecondReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //
@@ -241,7 +241,7 @@
 //
 //    @Test
 //    public void testThirdReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        timeKeys.next();
@@ -260,7 +260,7 @@
 //
 //    @Test
 //    public void test4thReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        timeKeys.next();
@@ -280,7 +280,7 @@
 //
 //    @Test
 //    public void test5thReceivedMessage() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //        timeKeys.next();
 //        timeKeys.next();
@@ -301,7 +301,7 @@
 //
 //    @Test
 //    public void testObserveResponseOptions(){
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
 //
 //        CoapResponse coapResponse1 = (CoapResponse) receivedMessages.get(timeKeys.next());

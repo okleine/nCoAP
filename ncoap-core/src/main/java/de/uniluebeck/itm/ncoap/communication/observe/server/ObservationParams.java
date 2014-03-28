@@ -56,8 +56,8 @@ public class ObservationParams {
     /**
      * Creates a new instance of {@link ObservationParams}.
      *
-     * @param remoteEndpoint the observing CoAP endpoint
-     * @param token the {@link Token} to enable the observing CoAP endpoint to relate update notifications with
+     * @param remoteEndpoint the observing CoAP endpoints
+     * @param token the {@link Token} to enable the observing CoAP endpoints to relate update notifications with
      *              the observation request
      * @param webservicePath the path of the {@link Webservice} that is to be observed
      * @param etags the ETAGs contained as {@link OptionValue.Name#ETAG} in the {@link CoapRequest} initiating the
@@ -75,9 +75,9 @@ public class ObservationParams {
 
 
     /**
-     * Returns the socket address of the oberving CoAP endpoint
+     * Returns the socket address of the oberving CoAP endpoints
      *
-     * @return the socket address of the oberving CoAP endpoint
+     * @return the socket address of the oberving CoAP endpoints
      */
     public InetSocketAddress getRemoteEndpoint() {
         return this.remoteEndpoint;
@@ -152,9 +152,9 @@ public class ObservationParams {
 
 
     /**
-     * Returns the message ID of the latest update notification that was sent to the observing CoAP endpoint
+     * Returns the message ID of the latest update notification that was sent to the observing CoAP endpoints
      *
-     * @return the message ID of the latest update notification that was sent to the observing CoAP endpoint
+     * @return the message ID of the latest update notification that was sent to the observing CoAP endpoints
      */
     public int getLatestUpdateNotificationMessageID() {
         return latestUpdateNotificationMessageID;
@@ -162,10 +162,10 @@ public class ObservationParams {
 
 
     /**
-     * Sets the message ID of the latest update notification that was sent to the observing CoAP endpoint
+     * Sets the message ID of the latest update notification that was sent to the observing CoAP endpoints
      *
      * @param latestUpdateNotificationMessageID the message ID of the latest update notification that was sent to the
-     *                                          observing CoAP endpoint
+     *                                          observing CoAP endpoints
      */
     public void setLatestUpdateNotificationMessageID(int latestUpdateNotificationMessageID) {
         this.latestUpdateNotificationMessageID = latestUpdateNotificationMessageID;

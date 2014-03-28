@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * An instances of {@link MessageIDFactory} creates and manages message IDs for outgoing messages. On creation of
  * new message IDs the factory ensures that the same message ID is not used twice for different messages to the
- * same remote CoAP endpoint within {@link #EXCHANGE_LIFETIME} seconds.
+ * same remote CoAP endpoints within {@link #EXCHANGE_LIFETIME} seconds.
  *
  * @author Oliver Kleine
 */
@@ -43,13 +43,13 @@ public class MessageIDFactory extends Observable {
 
     /**
      * The number of seconds (247) a message ID is allocated by the nCoAP framework to avoid duplicate
-     * usage of the same message ID in communications with the same remote CoAP endpoint.
+     * usage of the same message ID in communications with the same remote CoAP endpoints.
      */
-    public static final int EXCHANGE_LIFETIME = 60;
+    public static final int EXCHANGE_LIFETIME = 247;
 
     /**
-     * The number of different message IDs per remote CoAP endpoint (65536), i.e. there are at most 65536
-     * communications with the same endpoint possible within {@link #EXCHANGE_LIFETIME} milliseconds.
+     * The number of different message IDs per remote CoAP endpoints (65536), i.e. there are at most 65536
+     * communications with the same endpoints possible within {@link #EXCHANGE_LIFETIME} milliseconds.
      */
     public static final int MODULUS = 65536;
 
@@ -130,7 +130,7 @@ public class MessageIDFactory extends Observable {
         synchronized (monitor){
             Deque<AllocatedMessageID> allocatedMessageIDsForRemoteAddreses = retiringMessageIDs.get(remoteEndpoint);
 
-            //check if all message IDs are in use for the given endpoint
+            //check if all message IDs are in use for the given endpoints
             if(allocatedMessageIDsForRemoteAddreses != null && allocatedMessageIDsForRemoteAddreses.size() == MODULUS){
                 long waitingPeriod = allocatedMessageIDsForRemoteAddreses.getFirst().getRetirementDate()
                         - System.currentTimeMillis();
@@ -138,7 +138,7 @@ public class MessageIDFactory extends Observable {
                 throw new NoMessageIDAvailableException(remoteEndpoint, waitingPeriod);
             }
 
-            //there are message IDs available for the given endpoint
+            //there are message IDs available for the given endpoints
             else{
                 int messageID = random.nextInt(MODULUS);
 

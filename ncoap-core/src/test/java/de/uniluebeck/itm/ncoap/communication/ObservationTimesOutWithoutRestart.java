@@ -49,8 +49,8 @@
 //package de.uniluebeck.itm.ncoap.communication;
 //
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor;
-//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.message.*;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
 //import de.uniluebeck.itm.ncoap.message.options.OptionRegistry;
@@ -79,7 +79,7 @@
 //
 //    private static CoapClientApplication coapClient;
 //    private static CoapRequest coapRequest;
-//    private static TestResponseProcessor responseProcessor;
+//    private static CoapResponseTestProcessor responseProcessor;
 //
 //    private static CoapTestEndpoint coapEndpoint;
 //    private static CoapResponse updateNotification1;
@@ -98,7 +98,7 @@
 //        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, serviceUri);
 //        coapRequest.setObserveOptionRequest();
 //
-//        responseProcessor = new TestResponseProcessor();
+//        responseProcessor = new CoapResponseTestProcessor();
 //
 //        updateNotification1 = new CoapResponse(MessageCode.CONTENT_205);
 //        updateNotification1.getHeader().setMessageType(MessageType.ACK);
@@ -184,7 +184,7 @@
 //
 //    @Override
 //    public void setupLogging() throws Exception {
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint")
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint")
 //                .setLevel(Level.DEBUG);
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.client").setLevel(Level.DEBUG);
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.ObservationTimesOutWithoutRestart").setLevel(Level.DEBUG);

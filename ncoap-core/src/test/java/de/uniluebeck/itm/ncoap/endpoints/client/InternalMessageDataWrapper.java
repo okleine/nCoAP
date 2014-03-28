@@ -22,35 +22,38 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.client;
+package de.uniluebeck.itm.ncoap.endpoints.client;
+
+import de.uniluebeck.itm.ncoap.application.client.Token;
 
 import java.net.InetSocketAddress;
 
 /**
- * Exception that is thrown (and handled internally) if there is no {@link Token} available to start communicating
- * with another CoAP endpoints, i.e. a CoAP server.
- *
- * @author Oliver Kleine
+ * Created by olli on 28.03.14.
  */
-public class NoTokenAvailableException extends Exception {
+public class InternalMessageDataWrapper {
 
-    private InetSocketAddress remoteEndpoint;
+    private final InetSocketAddress remoteEndpoint;
+    private final int messageID;
+    private final Token token;
 
-    /**
-     * Creates a new instance of {@link NoTokenAvailableException}.
-     * @param remoteEndpoint the address of the CoAP endpoints for which all possible {@link Token}s are
-     *                       already in use
-     */
-    public NoTokenAvailableException(InetSocketAddress remoteEndpoint){
+    public InternalMessageDataWrapper(InetSocketAddress remoteEndpoint, int messageID, Token token){
+
         this.remoteEndpoint = remoteEndpoint;
+        this.messageID = messageID;
+        this.token = token;
     }
 
-    /**
-     * Returns the address of the CoAP endpoints for which all possible {@link Token}s are already in use
-     *
-     * @return the address of the CoAP endpoints for which all possible {@link Token}s are already in use
-     */
+
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;
+    }
+
+    public int getMessageID() {
+        return messageID;
+    }
+
+    public Token getToken() {
+        return token;
     }
 }

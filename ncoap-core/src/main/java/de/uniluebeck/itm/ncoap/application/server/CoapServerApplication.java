@@ -32,7 +32,10 @@ import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessag
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
+import org.jboss.netty.util.ThreadNameDeterminer;
+import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +61,7 @@ public class CoapServerApplication{
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private WebserviceManager webserviceManager;
-    private Channel channel;
+    private DatagramChannel channel;
 
     /**
      * This constructor creates an instance of {@link CoapServerApplication}
@@ -68,6 +71,13 @@ public class CoapServerApplication{
                                  InetSocketAddress localSocketAddress){
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Server I/O Thread#%d").build();
+
+        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
+            @Override
+            public String determineThreadName(String currentThreadName, String proposedThreadName) throws Exception {
+                return null;
+            }
+        });
 
         int numberOfThreads = Math.max(Runtime.getRuntime().availableProcessors() * 2, 4);
         log.info("No. of I/O Threads: {}", numberOfThreads);
@@ -85,7 +95,7 @@ public class CoapServerApplication{
 
         bootstrap.setPipelineFactory(pipelineFactory);
 
-        this.channel = bootstrap.bind(localSocketAddress);
+        this.channel = (DatagramChannel) bootstrap.bind(localSocketAddress);
         log.debug("Bound to local address: {}", this.channel.getLocalAddress());
 
         this.webserviceManager =
@@ -162,6 +172,9 @@ public class CoapServerApplication{
         manager.registerService(webservice);
     }
 
+    public int getPort(){
+        return this.channel.getLocalAddress().getPort();
+    }
 
     public void shutdown(){
         log.warn("Shutdown server...");

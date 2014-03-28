@@ -51,18 +51,20 @@ public abstract class AbstractCoapTest {
 
     private static void initializeLogging(){
         if(!isLoggingConfigured){
-            //Output pattern
+
+            //asynchronous appender
+            AsyncAppender asyncAppender = new AsyncAppender();
+            asyncAppender.setBufferSize(100000);
+
+            //console-appender
             String pattern = "%-23d{yyyy-MM-dd HH:mm:ss,SSS} | %-32.32t | %-35.35c{1} | %-5p | %m%n";
             PatternLayout patternLayout = new PatternLayout(pattern);
+            asyncAppender.addAppender(new ConsoleAppender(patternLayout));
 
-            //Appenders
-            AsyncAppender appender = new AsyncAppender();
-            appender.addAppender(new ConsoleAppender(patternLayout));
-            Logger.getRootLogger().addAppender(appender);
+            //add asynchronous appender to root-logger
+            Logger.getRootLogger().addAppender(asyncAppender);
 
-            appender.setBufferSize(100000);
-
-            //Define log level
+            //Define default log-level
             Logger.getRootLogger().setLevel(Level.ERROR);
         }
     }

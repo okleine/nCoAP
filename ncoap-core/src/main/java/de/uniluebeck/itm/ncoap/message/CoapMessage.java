@@ -286,7 +286,7 @@ public abstract class CoapMessage {
 
     /**
      * Method to create an empty confirmable message which is considered a PIMG message on application layer, i.e.
-     * a message to check if a CoAP endpoint is alive (not only the host but also the CoAP application!).
+     * a message to check if a CoAP endpoints is alive (not only the host but also the CoAP application!).
      *
      * @param messageID the message ID of the acknowledgement message.
      *

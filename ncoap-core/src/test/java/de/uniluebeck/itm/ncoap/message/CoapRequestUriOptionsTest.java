@@ -40,12 +40,12 @@
 //
 //
 ///**
-// * Created with IntelliJ IDEA.
-// * User: olli
-// * Date: 05.11.13
-// * Time: 14:10
-// * To change this template use File | Settings | File Templates.
-// */
+//* Created with IntelliJ IDEA.
+//* User: olli
+//* Date: 05.11.13
+//* Time: 14:10
+//* To change this template use File | Settings | File Templates.
+//*/
 //@RunWith(Parameterized.class)
 //public class CoapRequestUriOptionsTest extends AbstractCoapTest{
 //

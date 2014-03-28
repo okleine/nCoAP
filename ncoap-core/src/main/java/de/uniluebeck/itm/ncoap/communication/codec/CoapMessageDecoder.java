@@ -44,12 +44,12 @@ import java.net.InetSocketAddress;
  *     <li>
  *          If the incoming messge is a {@link CoapRequest}, then malformed or unsupported, i.e. unknown
  *          non-critical options are silently ignored but critical options lead to an immediate
- *          {@link CoapResponse} with {@link MessageCode.Name#BAD_OPTION_402} being sent to the remote CoAP endpoint.
+ *          {@link CoapResponse} with {@link MessageCode.Name#BAD_OPTION_402} being sent to the remote CoAP endpoints.
  *     </li>
  *     <li>
  *          Malformed incoming {@link CoapMessage}s with malformed header, e.g. a TKL field that does not correspond to
  *          the actual tokens length, lead to an immediate {@link CoapMessage} with {@link MessageType.Name#RST} being
- *          sent to the remote CoAP endpoint.
+ *          sent to the remote CoAP endpoints.
  *     </li>
  *     <li>
  *         For incoming {@link CoapMessage}s with {@link MessageCode.Name#EMPTY} only the header, i.e. the first 4

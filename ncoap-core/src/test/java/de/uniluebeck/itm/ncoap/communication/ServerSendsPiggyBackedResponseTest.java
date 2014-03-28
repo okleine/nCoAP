@@ -49,8 +49,8 @@
 //package de.uniluebeck.itm.ncoap.communication;
 //
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor;
-//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.message.*;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
 //
@@ -75,29 +75,29 @@
 //    private static final String PAYLOAD = "Some arbitrary content!";
 //
 //    private static CoapClientApplication client;
-//    private static TestResponseProcessor responseProcessor;
+//    private static CoapResponseTestProcessor responseProcessor;
 //    private static CoapRequest coapRequest;
 //
-//    private static CoapTestEndpoint endpoint;
+//    private static CoapTestEndpoint endpoints;
 //
 //    @Override
 //    public void setupComponents() throws Exception {
 //
-//        //Create endpoint
-//        endpoint = new CoapTestEndpoint();
+//        //Create endpoints
+//        endpoints = new CoapTestEndpoint();
 //
 //        //Create client and response processor
 //        client = new CoapClientApplication();
-//        responseProcessor = new TestResponseProcessor();
+//        responseProcessor = new CoapResponseTestProcessor();
 //
-//        URI targetUri =  new URI("coap://localhost:" + endpoint.getPort());
+//        URI targetUri =  new URI("coap://localhost:" + endpoints.getPort());
 //        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
 //    }
 //
 //    @Override
 //    public void shutdownComponents() throws Exception {
 //        client.shutdown();
-//        endpoint.shutdown();
+//        endpoints.shutdown();
 //    }
 //
 //    @Override
@@ -128,24 +128,24 @@
 //
 //        //Get message ID and token from received message
 //        int messageID =
-//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getMessageID();
+//                endpoints.getReceivedCoapMessages().get(endpoints.getReceivedCoapMessages().lastKey()).getMessageID();
 //        byte[] token =
-//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getToken();
+//                endpoints.getReceivedCoapMessages().get(endpoints.getReceivedCoapMessages().lastKey()).getToken();
 //
 //        //write response #1
 //        CoapResponse response = createResponse(messageID, token);
-//        endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
+//        endpoints.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
 //
 //        //Wait some time
 //        Thread.sleep(300);
 //
 //        //write response #2
 //        CoapResponse response2 = createResponse(messageID, token);
-//        endpoint.writeMessage(response2, new InetSocketAddress("localhost", client.getPort()));
+//        endpoints.writeMessage(response2, new InetSocketAddress("localhost", client.getPort()));
 //
 //        //Wait some time
 //        Thread.sleep(300);
-//        endpoint.setReceptionEnabled(false);
+//        endpoints.setReceptionEnabled(false);
 //    }
 //
 //
@@ -162,7 +162,7 @@
 //
 //    @Test
 //    public void testReceivedRequestEqualsSentRequest() {
-//        SortedMap<Long, CoapMessage> receivedRequests = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedRequests = endpoints.getReceivedCoapMessages();
 //        String message = "Written and received request do not equal";
 //        assertEquals(message, coapRequest, receivedRequests.get(receivedRequests.firstKey()));
 //    }
@@ -170,7 +170,7 @@
 //    @Test
 //    public void testReceiverReceivedOnlyOneRequest() {
 //        String message = "Receiver received more than one message";
-//        assertEquals(message, 1, endpoint.getReceivedCoapMessages().size());
+//        assertEquals(message, 1, endpoints.getReceivedCoapMessages().size());
 //    }
 //
 //    @Test

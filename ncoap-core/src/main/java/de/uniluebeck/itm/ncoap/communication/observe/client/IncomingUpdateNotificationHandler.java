@@ -44,7 +44,7 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private static final String ERROR = "There is no running observation to cancel for remote endpoint %s and token %s";
+    private static final String ERROR = "There is no running observation to cancel for remote endpoints %s and token %s";
 
     private Multimap<InetSocketAddress, Token> observations;
 

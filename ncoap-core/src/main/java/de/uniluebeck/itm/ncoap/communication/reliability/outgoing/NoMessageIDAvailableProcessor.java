@@ -30,7 +30,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Interface to be implemented by {@link CoapResponseProcessor} instances to be informed when a {@link CoapRequest}
- * could not be sent to a remote CoAP endpoint because all message IDs for that remote endpoint are currently
+ * could not be sent to a remote CoAP endpoints because all message IDs for that remote endpoints are currently
  * allocated.
  *
  * @author Oliver Kleine
@@ -39,14 +39,14 @@ public interface NoMessageIDAvailableProcessor extends CoapResponseProcessor{
 
     /**
      * This method is invoked by the framework if a {@link CoapRequest} could not be sent to a remote
-     * CoAP endpoint because all 65536 message IDs (the number of available message IDs per communication partner)
+     * CoAP endpoints because all 65536 message IDs (the number of available message IDs per communication partner)
      * have been used for previous {@link CoapRequest}s and none of them has retired, yet.
      *
      * A used message ID retires, i.e. is usable for a new {@link CoapRequest}
      * {@link MessageIDFactory#EXCHANGE_LIFETIME} seconds (247) after it was allocated.
      *
      * @param remoteEndpoint the desired recipient of the {@link CoapRequest} that could not be transmitted.
-     * @param waitingPeriod the number of milliseconds to wait until the next message ID for the remote CoAP endpoint
+     * @param waitingPeriod the number of milliseconds to wait until the next message ID for the remote CoAP endpoints
      *                      retires, e.g. is ready to be used for a new request.
      */
     public void handleNoMessageIDAvailable(InetSocketAddress remoteEndpoint, long waitingPeriod);

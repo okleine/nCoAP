@@ -49,8 +49,8 @@
 //package de.uniluebeck.itm.ncoap.communication;
 //
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor;
-//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.message.*;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
 //
@@ -75,21 +75,21 @@
 //public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTest {
 //
 //    private static CoapClientApplication client;
-//    private static TestResponseProcessor responseProcessor;
+//    private static CoapResponseTestProcessor responseProcessor;
 //    private static CoapRequest request;
 //
-//    private static CoapTestEndpoint endpoint;
+//    private static CoapTestEndpoint endpoints;
 //    private static CoapResponse seperateResponse;
 //
 //    @Override
 //    public void setupLogging() throws Exception {
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability").setLevel(Level.DEBUG);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint").setLevel(Level.DEBUG);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint").setLevel(Level.DEBUG);
 //    }
 //
 //    @Override
 //    public void setupComponents() throws Exception {
-//        endpoint = new CoapTestEndpoint();
+//        endpoints = new CoapTestEndpoint();
 //
 //        seperateResponse = new CoapResponse(MessageCode.CONTENT_205);
 //        seperateResponse.setContent("some arbitrary stuff...".getBytes(Charset.forName("UTF-8")));
@@ -98,16 +98,16 @@
 //
 //        client = new CoapClientApplication();
 //
-//        URI targetUri = new URI("coap://localhost:" + endpoint.getPort());
+//        URI targetUri = new URI("coap://localhost:" + endpoints.getPort());
 //        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
 //
-//        responseProcessor = new TestResponseProcessor();
+//        responseProcessor = new CoapResponseTestProcessor();
 //    }
 //
 //    @Override
 //    public void shutdownComponents() throws Exception {
 //        client.shutdown();
-//        endpoint.shutdown();
+//        endpoints.shutdown();
 //    }
 //
 //
@@ -138,20 +138,20 @@
 //
 //        //create and write empty ACK
 //        int messageID =
-//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getMessageID();
+//                endpoints.getReceivedCoapMessages().get(endpoints.getReceivedCoapMessages().lastKey()).getMessageID();
 //        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
-//        endpoint.writeMessage(emptyACK, new InetSocketAddress("localhost", client.getPort()));
+//        endpoints.writeMessage(emptyACK, new InetSocketAddress("localhost", client.getPort()));
 //
 //        //wait another some time to simulate request processing
 //        Thread.sleep(500);
 //
 //        //create seperate response to be sent by the message receiver
 //        byte[] token =
-//                endpoint.getReceivedCoapMessages().get(endpoint.getReceivedCoapMessages().lastKey()).getToken();
+//                endpoints.getReceivedCoapMessages().get(endpoints.getReceivedCoapMessages().lastKey()).getToken();
 //        seperateResponse.setToken(token);
 //
 //        //send seperate response
-//        endpoint.writeMessage(seperateResponse, new InetSocketAddress("localhost", client.getPort()));
+//        endpoints.writeMessage(seperateResponse, new InetSocketAddress("localhost", client.getPort()));
 //
 //        //wait some time for ACK from client
 //        Thread.sleep(500);
@@ -161,7 +161,7 @@
 //
 //    @Test
 //    public void testReceivedRequestEqualsSentRequest() {
-//        SortedMap<Long, CoapMessage> receivedRequests = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedRequests = endpoints.getReceivedCoapMessages();
 //        String message = "Written and received request do not equal";
 //        assertEquals(message, request, receivedRequests.get(receivedRequests.firstKey()));
 //    }
@@ -169,7 +169,7 @@
 //    @Test
 //    public void testEndpointReceivedTwoMessages() {
 //        String message = "Receiver received wrong number of messages";
-//        assertEquals(message, 2, endpoint.getReceivedCoapMessages().values().size());
+//        assertEquals(message, 2, endpoints.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
@@ -180,7 +180,7 @@
 //
 //    @Test
 //    public void test2ndReceivedMessageIsEmptyACK() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
 //        String message = "Second received message is not an EMPTY ACK";
 //        assertEquals(message, MessageCode.EMPTY, receivedMessage.getMessageCode());

@@ -138,7 +138,7 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
             InternalStopObservationMessage message = (InternalStopObservationMessage) me.getMessage();
 
             if(removeResponseCallback(message.getRemoteEndpoint(), message.getToken()) == null){
-                log.error("Could not stop observation (remote endpoint: {}, token: {})! No response processor found!",
+                log.error("Could not stop observation (remote endpoints: {}, token: {})! No response processor found!",
                         message.getRemoteEndpoint(), message.getToken());
 
                 me.getFuture().setFailure(new Exception("Observation could not be stopped!"));

@@ -48,7 +48,7 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication;
 //
-//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.plugtest.server.CoapTestServer;
 //import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebService;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -74,7 +74,7 @@
 //public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTest{
 //
 //    private static CoapTestServer server;
-//    private static CoapTestEndpoint endpoint;
+//    private static CoapTestEndpoint endpoints;
 //    private static CoapRequest coapRequest1;
 //    private static CoapRequest coapRequest2;
 //
@@ -83,7 +83,7 @@
 //        server = new CoapTestServer(0);
 //        server.registerService(new NotObservableTestWebService("/path", "Status 1", 1000));
 //
-//        endpoint = new CoapTestEndpoint();
+//        endpoints = new CoapTestEndpoint();
 //
 //        URI serviceURI = new URI("coap", null, "localhost", server.getServerPort(), "/path", null, null);
 //        coapRequest1 = new CoapRequest(MessageType.NON, MessageCode.GET, serviceURI);
@@ -98,21 +98,21 @@
 //    @Override
 //    public void shutdownComponents() throws Exception {
 //        //server.shutdown();
-//        //endpoint.shutdown();
+//        //endpoints.shutdown();
 //    }
 //
 //    @Override
 //    public void createTestScenario() throws Exception {
-//        endpoint.writeMessage(coapRequest1, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(coapRequest1, new InetSocketAddress("localhost", server.getServerPort()));
 //        Thread.sleep(200);
-//        endpoint.writeMessage(coapRequest2, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(coapRequest2, new InetSocketAddress("localhost", server.getServerPort()));
 //        Thread.sleep(2000);
 //    }
 //
 //    @Override
 //    public void setupLogging() throws Exception {
 //        //Logger.getRootLogger().setLevel(Level.DEBUG);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint").setLevel(Level.DEBUG);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoints").setLevel(Level.DEBUG);
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.server").setLevel(Level.DEBUG);
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability").setLevel(Level.DEBUG);
 //    }
@@ -125,6 +125,6 @@
 //
 //    @Test
 //    public void testEndpointReceivedOnlyOneResponse(){
-//        assertEquals(1, endpoint.getReceivedCoapMessages().size());
+//        assertEquals(1, endpoints.getReceivedCoapMessages().size());
 //    }
 //}

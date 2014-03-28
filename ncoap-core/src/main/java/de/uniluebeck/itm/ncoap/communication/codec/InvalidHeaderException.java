@@ -61,9 +61,9 @@ public class InvalidHeaderException extends Exception{
     }
 
     /**
-     * Returns the malformed incoming messages origin CoAP endpoint
+     * Returns the malformed incoming messages origin CoAP endpoints
      *
-     * @return the malformed incoming messages origin CoAP endpoint
+     * @return the malformed incoming messages origin CoAP endpoints
      */
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;

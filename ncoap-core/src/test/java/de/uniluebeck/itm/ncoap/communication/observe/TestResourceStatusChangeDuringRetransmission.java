@@ -25,8 +25,8 @@
 package de.uniluebeck.itm.ncoap.communication.observe;
 
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.applicationcomponents.endpoint.CoapTestEndpoint;
-import de.uniluebeck.itm.ncoap.applicationcomponents.server.webservice.ObservableTestWebservice;
+import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.server.ObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.communication.AbstractCoapCommunicationTest;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.MessageCode;

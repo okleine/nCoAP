@@ -49,7 +49,7 @@
 //package de.uniluebeck.itm.ncoap.communication;
 //
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 //import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebservice;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -74,7 +74,7 @@
 //    private static final String PATH_TO_SERVICE = "/observable";
 //
 //    private static CoapClientApplication client;
-//    private static TestResponseProcessor responseProcessor;
+//    private static CoapResponseTestProcessor responseProcessor;
 //
 //    private static CoapServerApplication server;
 //    private static ObservableTestWebservice service;
@@ -87,7 +87,7 @@
 //    public void setupLogging() throws Exception {
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe")
 //                .setLevel(Level.INFO);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.client.TestResponseProcessor")
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor")
 //                .setLevel(Level.INFO);
 //    }
 //
@@ -98,7 +98,7 @@
 //        server.registerService(service);
 //
 //        client = new CoapClientApplication();
-//        responseProcessor = new TestResponseProcessor();
+//        responseProcessor = new CoapResponseTestProcessor();
 //
 //        URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
 //        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);

@@ -45,6 +45,8 @@ import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
+import org.jboss.netty.util.ThreadNameDeterminer;
+import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +61,7 @@ import java.util.concurrent.*;
  * easy-to-use method to write CoAP requests to a server.
  * 
  * Furthermore, with {@link #sendCoapPing(ResetProcessor, InetSocketAddress)} it provides a method to test if a remote
- * CoAP endpoint (i.e. the CoAP application and not only the host(!)) is alive.
+ * CoAP endpoints (i.e. the CoAP application and not only the host(!)) is alive.
  * 
  * @author Oliver Kleine
 */
@@ -99,6 +101,13 @@ public class CoapClientApplication {
 
         ThreadFactory threadFactory =
                 new ThreadFactoryBuilder().setNameFormat(name + " I/O worker #%d").build();
+
+        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
+            @Override
+            public String determineThreadName(String currentThreadName, String proposedThreadName) throws Exception {
+                return null;
+            }
+        });
 
         this.scheduledExecutorService = new ScheduledThreadPoolExecutor(threads, threadFactory);
         this.scheduledExecutorService.setRemoveOnCancelPolicy(true);
@@ -196,7 +205,7 @@ public class CoapClientApplication {
 
 
     /**
-     * Sends a {@link CoapRequest} to the given remote endpoint, i.e. CoAP server or proxy, and registers the
+     * Sends a {@link CoapRequest} to the given remote endpoints, i.e. CoAP server or proxy, and registers the
      * given {@link CoapResponseProcessor} to be called upon reception of a {@link CoapResponse}.
      *
      * <b>Note:</b> if the given {@link CoapRequest} has the observe option set, {@link CoapRequest#isObserveSet()}
@@ -273,7 +282,7 @@ public class CoapClientApplication {
 
     /**
      * Sends a CoAP PING, i.e. a {@link CoapMessage} with {@link MessageType.Name#CON} and
-     * {@link MessageCode.Name#EMPTY} to the given CoAP endpoint and registers the given {@link ResetProcessor}
+     * {@link MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the given {@link ResetProcessor}
      * to be called upon reception of the corresponding {@link MessageType.Name#RST} message (CoAP PONG).
      *
      * @param resetProcessor the {@link ResetProcessor} to be called upon reception of the corresponding

@@ -22,8 +22,9 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.applicationcomponents.endpoint;
+package de.uniluebeck.itm.ncoap.endpoints;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
@@ -31,6 +32,8 @@ import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
+import org.jboss.netty.util.ThreadNameDeterminer;
+import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,13 +42,15 @@ import java.util.Collections;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 
 
 /**
 * Receives and sends CoAP Messages for testing purposes. A {@link CoapTestEndpoint} has no automatic functionality
 * besides encoding of incoming and decoding of outgoing messages.
 *
-* @author Oliver Kleine, Stefan Hueske
+* @author Oliver Kleine, Stefan Hüske
 */
 public class CoapTestEndpoint extends SimpleChannelHandler {
 
@@ -62,9 +67,24 @@ public class CoapTestEndpoint extends SimpleChannelHandler {
 
 
     public CoapTestEndpoint() {
+        //Create thread pool factory (for thread-naming)
+        ThreadFactory threadFactory =
+                new ThreadFactoryBuilder().setNameFormat("CoAP Endpoint I/O worker #%d").build();
+
+        //This is to suppress renaming of the threads by the netty framework
+        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
+            @Override
+            public String determineThreadName(String currentThreadName, String proposedThreadName) throws Exception {
+                return null;
+            }
+        });
+
+        //Create the thread-pool using the previously defined factory
+        ScheduledThreadPoolExecutor executorService = new ScheduledThreadPoolExecutor(8, threadFactory);
+
         //Create datagram datagramChannel to receive and send messages
         ChannelFactory channelFactory =
-                new NioDatagramChannelFactory(Executors.newCachedThreadPool());
+                new NioDatagramChannelFactory(executorService);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
@@ -79,7 +99,8 @@ public class CoapTestEndpoint extends SimpleChannelHandler {
             }
         });
 
-        channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+
+        this.channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
         log.info("New message receiver channel created for port " + channel.getLocalAddress().getPort());
     }
 

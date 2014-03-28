@@ -221,8 +221,8 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      * or {@link MessageType.Name#NON}. However, this method also gives {@link ObservableWebservice}s the opportunity
      * to e.g. distinguish between observers or have some other arbitrary logic...
      *
-     * @param remoteEndpoint the remote CoAP endpoint that observes this {@link ObservableWebservice}
-     * @param token the {@link Token} that (in combination with the remote endpoint address) uniquely identifies a
+     * @param remoteEndpoint the remote CoAP endpoints that observes this {@link ObservableWebservice}
+     * @param token the {@link Token} that (in combination with the remote endpoints address) uniquely identifies a
      *              running observation
      *
      * @return the message type for the next update notification for the observer identified by the given parameters

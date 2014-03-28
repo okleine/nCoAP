@@ -25,7 +25,8 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.applicationcomponents.client.TestResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
+import de.uniluebeck.itm.ncoap.endpoints.client.CoapResponseTestProcessor;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -40,20 +41,22 @@ import static org.junit.Assert.assertFalse;
 public class ClientSendsCoapPing extends AbstractCoapCommunicationTest{
 
     private static CoapClientApplication coapClientApplication;
-    private static TestResponseProcessor resetProcessor;
-    private static InetSocketAddress remoteEndpoint;
+    private static CoapServerApplication coapServerApplication;
+    private static CoapResponseTestProcessor resetProcessor;
+
 
     @Override
     public void setupComponents() throws Exception {
         coapClientApplication = new CoapClientApplication();
-        resetProcessor = new TestResponseProcessor();
-        remoteEndpoint = new InetSocketAddress("134.102.218.16", 5683);
+        resetProcessor = new CoapResponseTestProcessor();
+        coapServerApplication = new CoapServerApplication();
     }
 
 
     @Override
     public void createTestScenario() throws Exception {
-        coapClientApplication.sendCoapPing(resetProcessor, remoteEndpoint);
+        InetSocketAddress serverAddress = new InetSocketAddress("127.0.0.1", coapServerApplication.getPort());
+        coapClientApplication.sendCoapPing(resetProcessor, serverAddress);
 
         Thread.sleep(1000);
     }
@@ -62,18 +65,23 @@ public class ClientSendsCoapPing extends AbstractCoapCommunicationTest{
     @Override
     public void shutdownComponents() throws Exception {
         coapClientApplication.shutdown();
+        coapServerApplication.shutdown();
     }
 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.applicationcomponents").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.incoming")
+              .setLevel(Level.INFO);
+
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints")
+              .setLevel(Level.INFO);
     }
 
 
     @Test
     public void testResetReceived(){
-        assertFalse("No RST (Pong) received.", resetProcessor.getResetReceptionTimes().isEmpty());
+        assertFalse("No RST (Pong) received.", resetProcessor.getEmptyRSTs().isEmpty());
     }
 
 }

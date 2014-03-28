@@ -108,12 +108,12 @@ public class InvalidOptionException extends Exception{
 
 
     /**
-     * Method to set the remote CoAP endpoint of the message that caused this exception (the
-     * remote CoAP endpoint is either the message origin if this exception was thrown by the
+     * Method to set the remote CoAP endpoints of the message that caused this exception (the
+     * remote CoAP endpoints is either the message origin if this exception was thrown by the
      * {@link CoapMessageDecoder} or he desired recipient if this exception was thrown by the
      * {@link CoapMessageEncoder}.
      *
-     * @param remoteEndpoint the remote CoAP endpoint of the message that caused this exception
+     * @param remoteEndpoint the remote CoAP endpoints of the message that caused this exception
      */
     public void setRemoteEndpoint(InetSocketAddress remoteEndpoint) {
         this.remoteEndpoint = remoteEndpoint;
@@ -121,12 +121,12 @@ public class InvalidOptionException extends Exception{
 
 
     /**
-     * Returns the remote CoAP endpoint of the message that caused this exception (the
-     * remote CoAP endpoint is either the message origin if this exception was thrown by the
+     * Returns the remote CoAP endpoints of the message that caused this exception (the
+     * remote CoAP endpoints is either the message origin if this exception was thrown by the
      * {@link CoapMessageDecoder} or he desired recipient if this exception was thrown by the
      * {@link CoapMessageEncoder}.
      *
-     * @return the remote CoAP endpoint of the message that caused this exception
+     * @return the remote CoAP endpoints of the message that caused this exception
      */
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;

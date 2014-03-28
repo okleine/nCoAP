@@ -48,7 +48,7 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication;
 //
-//import de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint;
+//import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 //import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebService;
 //import de.uniluebeck.itm.ncoap.message.*;
@@ -79,13 +79,13 @@
 //    private static String PATH_TO_SERVICE = "/could/be/any/path";
 //    private static String PAYLOAD = "some arbitrary payload";
 //
-//    private static CoapTestEndpoint endpoint;
+//    private static CoapTestEndpoint endpoints;
 //    private static CoapRequest request;
 //
 //
 //    @Override
 //    public void setupLogging() throws Exception {
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint").setLevel(Level.INFO);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoints").setLevel(Level.INFO);
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability").setLevel(Level.DEBUG);
 //    }
 //
@@ -95,7 +95,7 @@
 //        service = new NotObservableTestWebService(PATH_TO_SERVICE, PAYLOAD, 0);
 //        server.registerService(service);
 //
-//        endpoint = new CoapTestEndpoint();
+//        endpoints = new CoapTestEndpoint();
 //        URI targetUri = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
 //        request = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri);
 //        request.getHeader().setMsgID(54321);
@@ -104,7 +104,7 @@
 //    @Override
 //    public void shutdownComponents() throws Exception {
 //        server.shutdown();
-//        endpoint.shutdown();
+//        endpoints.shutdown();
 //    }
 //
 //    @Override
@@ -119,7 +119,7 @@
 ////                  |                             |
 //
 //        //send request to testServer
-//        endpoint.writeMessage(request, new InetSocketAddress("localhost", server.getServerPort()));
+//        endpoints.writeMessage(request, new InetSocketAddress("localhost", server.getServerPort()));
 //
 //        //wait some time for response from server
 //        Thread.sleep(150);
@@ -128,12 +128,12 @@
 //    @Test
 //    public void testReceiverReceivedOnlyOneMessage() {
 //        String message = "Receiver received unexpected number of messages.";
-//        assertEquals(message, 1, endpoint.getReceivedCoapMessages().values().size());
+//        assertEquals(message, 1, endpoints.getReceivedCoapMessages().values().size());
 //    }
 //
 //    @Test
 //    public void testReceiverReceivedResponse() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //        String message = "Received message is not a CoapResponse";
 //        assertTrue(message, receivedMessage instanceof CoapResponse);
@@ -141,7 +141,7 @@
 //
 ////    @Test
 ////    public void testReceivedMessageHasSameMsgID() {
-////        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+////        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 ////        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 ////        String message = "Response Msg ID does not match with request Msg ID";
 ////        assertEquals(message, coapRequest.getMessageID(), receivedMessage.getMessageID());
@@ -149,7 +149,7 @@
 //
 //    @Test
 //    public void testReceivedMessageHasSameToken() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //        String message = "Response token does not match with request token";
 //        assertTrue(message, Arrays.equals(request.getToken(), receivedMessage.getToken()));
@@ -157,7 +157,7 @@
 //
 //    @Test
 //    public void testReceivedMessageHasCodeContent() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //        String message = "Response code is not CONTENT 205";
 //        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
@@ -165,7 +165,7 @@
 //
 //    @Test
 //    public void testReceivedMessageHasUnmodifiedPayload() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //        String message = "Response payload was modified by testServer";
 //        assertEquals(message, PAYLOAD, receivedMessage.getContent().toString(Charset.forName("UTF-8")));
@@ -173,7 +173,7 @@
 //
 //    @Test
 //    public void testReceivedMessageHasMsgTypeNON() {
-//        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
+//        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
 //        String message = "Response Msg Type is not NON";
 //        assertEquals(message, MessageType.NON, receivedMessage.getMessageType());

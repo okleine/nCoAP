@@ -24,9 +24,11 @@
  */
 package de.uniluebeck.itm.ncoap.communication;
 
+import com.google.common.collect.SortedSetMultimap;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.applicationcomponents.client.TestResponseProcessor;
-import de.uniluebeck.itm.ncoap.applicationcomponents.endpoint.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.client.CoapResponseTestProcessor;
+import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.client.InternalMessageDataWrapper;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -35,11 +37,13 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.SortedSet;
 
 import static org.junit.Assert.*;
 
@@ -58,15 +62,18 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     private static CoapRequest coapRequest;
 
     private static CoapClientApplication client;
-    private static TestResponseProcessor responseProcessor;
+    private static CoapResponseTestProcessor responseProcessor;
 
     private static CoapTestEndpoint testEndpoint;
 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.outgoing").setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.applicationcomponents").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.ClientGetsNoAckForConRequestTest")
+              .setLevel(Level.INFO);
+
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints")
+              .setLevel(Level.INFO);
     }
 
 
@@ -74,8 +81,8 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     public void setupComponents() throws Exception {
         testEndpoint = new CoapTestEndpoint();
 
-        client = new CoapClientApplication();
-        responseProcessor = new TestResponseProcessor();
+        client = new CoapClientApplication("CoAP Testclient");
+        responseProcessor = new CoapResponseTestProcessor();
         URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
     }
@@ -121,14 +128,15 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
 
         timeRequestSent = System.currentTimeMillis();
 
-        //Maximum time to pass before last retransmission is 48 sec.
-        //Wait another 6 sec. to let the last retransmission time out before test methods start
-        Thread.sleep(250000);
+        //Wait for the message ID to retire (takes 247 seconds).
+        Thread.sleep(50000);
+        log.warn("Now we have to wait for the message ID to time out (~200 seconds)... Time to get a coffee!");
+        Thread.sleep(200000);
     }
 
 
     @Test
-    public void testNumberOfRequests(){
+    public void testNumberOfReceivedRequests(){
         int expected = 5;
         int actual = testEndpoint.getReceivedCoapMessages().size();
         assertEquals("Endpoint received wrong number of requests!", expected, actual);
@@ -154,31 +162,34 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
      * 4th retransmission should be received after 30 - 45 sec
      */
     @Test
-    public void testRetransmissionsWereReceivedInTime(){
+    public void testRetransmissionsWereSentInTime(){
 
-        assertEquals("Wrong number of received messages!", 5, testEndpoint.getReceivedCoapMessages().size());
+        int expectedMessages = 5;
 
-        Iterator<Map.Entry<Long, CoapMessage>> receivedMessages =
-                testEndpoint.getReceivedCoapMessages().entrySet().iterator();
+        SortedSetMultimap<Long, InternalMessageDataWrapper> tranmissions = responseProcessor.getTransmissions();
+        assertEquals("Wrong number of sent messages!", expectedMessages, tranmissions.size());
+
+
+        Iterator<Map.Entry<Long, InternalMessageDataWrapper>> transmissionIterator =
+                tranmissions.entries().iterator();
 
         //ignore first message...
-        receivedMessages.next();
+        transmissionIterator.next();
 
         long[][] delay = new long[][]{
                 new long[]{2000, 3000}, new long[]{6000, 9000}, new long[]{14000, 21000}, new long[]{30000, 45000}
         };
 
+        int i = -1;
+        while(transmissionIterator.hasNext()){
+            i += 1;
+            long actualDelay = transmissionIterator.next().getKey() - timeRequestSent;
 
-        for(int i = 0; i < 2; i++){
-            long actualDelay = receivedMessages.next().getKey() - timeRequestSent;
+            String format = "Retransmission #%d (expected delay: %d - %d millis, actual delay: %d millis)";
+            log.info(String.format(format, i + 1, delay[i][0], delay[i][1], actualDelay));
 
-            String message = "Retransmission " + (i+1)
-                           + " (expected delay between " + delay[i][0] + " and " + delay[i][1] + "ms,"
-                           + " actual delay " + actualDelay + "ms).";
-
-            log.info(message);
-            assertTrue(message, delay[i][0] <= actualDelay);
-            assertTrue(message, delay[i][1] >= actualDelay);
+            assertTrue("Message was sent too early!", delay[i][0] <= actualDelay);
+            assertTrue("Message was sent too late!", delay[i][1] >= actualDelay);
         }
     }
 
@@ -190,30 +201,29 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
      */
     @Test
     public void testClientReceivesTimeoutNotification(){
-        //Test if the client received a timeout notifiaction
         assertFalse("Client did not receive a timeout notification at all.",
-                responseProcessor.getRequestTransmissionTimeoutTimes().isEmpty());
+                responseProcessor.getTransmissionTimeouts().isEmpty());
 
         long minDelay = 247000;
 
-        long firstTransmissionTime = responseProcessor.getRequestTransmissionTimes().firstEntry().getElement();
-        long transmissionTimeoutTime = responseProcessor.getRequestTransmissionTimeoutTimes().firstEntry().getElement();
+        SortedSet<Long> transmissionTimes =
+                (SortedSet<Long>) responseProcessor.getTransmissions().keySet();
+
+        long firstTransmissionTime = transmissionTimes.first();
+
+        SortedSet<Long> transmissionTimeoutTimes =
+                (SortedSet<Long>) responseProcessor.getTransmissionTimeouts().keySet();
+
+        long transmissionTimeoutTime = transmissionTimeoutTimes.first();
 
         long actualDelay = transmissionTimeoutTime - firstTransmissionTime;
 
-        String message = "Retransmission timeout notification"
-                + " (expected delay is at least " + minDelay + "ms,"
-                + " actual delay " + actualDelay + "ms).";
+        String format = "Internal transmission timeout notification (expected minimum delay: %d millis, actual: %d" +
+                "millis)";
 
-        log.info(message);
-        assertTrue(message, minDelay <= actualDelay);
-    }
+        log.info(String.format(format, minDelay, actualDelay));
 
-
-    @Test
-    public void testClientWasNotifiedOf5AttemptsToDeliverRequest(){
-        assertEquals("Client was not notfied the proper number of times about transmission attempts.",
-                5, responseProcessor.getRequestTransmissionTimes().size());
+        assertTrue("Internal transmission timeout notification was too early!", minDelay <= actualDelay);
     }
 }
 

@@ -48,7 +48,7 @@ public class CoapResponse extends CoapMessage {
      *
      * <b>Note:</b> The given {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
      * {@link MessageType.Name#NON}) may be changed
-     * by the framework before it is sent to the other CoAP endpoint. Such a change might e.g. happen if this
+     * by the framework before it is sent to the other CoAP endpoints. Such a change might e.g. happen if this
      * {@link CoapResponse} was created with {@link MessageType.Name#CON} to answer a {@link CoapRequest} with
      * {@link MessageType.Name#CON} and the framework did not yet send an empty {@link CoapMessage} with
      * {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType} of this
@@ -72,7 +72,7 @@ public class CoapResponse extends CoapMessage {
      * Creates a new instance of {@link CoapResponse}.
      *
      * <b>Note:</b> The given message type (either 0 or 1) may be changed by the framework before it is sent to the
-     * other CoAP endpoint. Such a change might e.g. happen if this {@link CoapResponse} was created with 0 (for
+     * other CoAP endpoints. Such a change might e.g. happen if this {@link CoapResponse} was created with 0 (for
      * {@link MessageType.Name#CON} or 1 (for {@link MessageType.Name#NON}) and is supposed to answer a
      * {@link CoapRequest} with {@link MessageType.Name#CON} and the framework did not yet send an empty
      * {@link CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType}
@@ -99,7 +99,7 @@ public class CoapResponse extends CoapMessage {
      * this can be considered a shortcut to create error responses.
      *
      * <b>Note:</b> The given {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     * {@link MessageType.Name#NON}) may be changed by the framework before it is sent to the other CoAP endpoint.
+     * {@link MessageType.Name#NON}) may be changed by the framework before it is sent to the other CoAP endpoints.
      * Such a change might e.g. happen if this {@link CoapResponse} was created with {@link MessageType.Name#CON} to
      * answer a {@link CoapRequest} with {@link MessageType.Name#CON} and the framework did not yet send an empty
      * {@link CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType} of

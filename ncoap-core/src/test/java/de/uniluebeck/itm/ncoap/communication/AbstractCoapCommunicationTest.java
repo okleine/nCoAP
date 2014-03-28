@@ -26,7 +26,7 @@ package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.applicationcomponents.endpoint.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 
 import org.apache.log4j.*;
@@ -52,9 +52,8 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
      * This method is to instanciate all necessary instances of {@link CoapClientApplication},
      * {@link CoapServerApplication} and {@link CoapTestEndpoint}.
      *
-     * Additionally all necessary instances {@link NotObservableTestWebService} and
-     * {@link ObservableTestWebService} are supposed to be created and registered at the {@link CoapServerApplication}
-     * instance(s)
+     * Additionally all necessary instances of webservices are supposed to be created and registered at the
+     * {@link CoapServerApplication} instance(s)
      *
      * @throws Exception
      */
