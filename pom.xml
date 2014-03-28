@@ -7,18 +7,19 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.uniluebeck.itm</groupId>
-    <artifactId>ncoap</artifactId>
-    <packaging>jar</packaging>
-    <version>1.0.4-SNAPSHOT</version>
-    <name>nCoAP</name>
+
+    <artifactId>ncoap-complete</artifactId>
+    <packaging>pom</packaging>
+    <version>1.8.0-SNAPSHOT</version>
+
+    <name>ncoap-complete</name>
+
     <url>http://media.itm.uni-luebeck.de/people/kleine/maven/${project.artifactId}/${project.version}</url>
 
-    <repositories>
-        <repository>
-            <id>repository.jboss.org</id>
-            <url>https://repository.jboss.org/nexus/content/repositories/releases</url>
-        </repository>
-    </repositories>
+    <modules>
+        <module>ncoap-core</module>
+        <module>ncoap-simple-client</module>
+    </modules>
 
     <distributionManagement>
         <repository>
@@ -70,14 +71,16 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>com.mycila.maven-license-plugin</groupId>
                 <artifactId>maven-license-plugin</artifactId>
                 <version>1.9.0</version>
                 <configuration>
+                    <aggregate>true</aggregate>
                     <header>${basedir}/license.txt</header>
                     <includes>
-                        <include>src/**</include>
+                        <include>**/*.java</include>
                     </includes>
                     <strictCheck>true</strictCheck>
                 </configuration>
@@ -107,41 +110,5 @@
             <url>http://onejar-maven-plugin.googlecode.com/svn/mavenrepo</url>
         </pluginRepository>
     </pluginRepositories>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.6.6</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.netty</groupId>
-            <artifactId>netty</artifactId>
-            <version>3.2.8.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>14.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.6.6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-            <version>2.1</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
 </project>
