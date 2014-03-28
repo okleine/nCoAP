@@ -2,6 +2,7 @@
 doc
 target
 .idea
+.xml~
 .project
 .classpath
 .settings
