@@ -55,6 +55,9 @@ public class MessageIDFactory extends Observable {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
+    private Random random;
+
+    private final Object monitor = new Object();
     private Map<InetSocketAddress, Deque<AllocatedMessageID>> retiringMessageIDs;
 
     /**
@@ -64,15 +67,15 @@ public class MessageIDFactory extends Observable {
     public MessageIDFactory(ScheduledExecutorService executorService){
         this.retiringMessageIDs = new HashMap<>();
 
+        this.random = new Random(System.currentTimeMillis());
         executorService.scheduleAtFixedRate(new Runnable(){
 
             @Override
             public void run() {
 
                 long now = System.currentTimeMillis();
-                synchronized (MessageIDFactory.this){
+                synchronized (monitor){
                     try{
-
                         Iterator<Map.Entry<InetSocketAddress, Deque<AllocatedMessageID>>> retirementsIterator =
                                 retiringMessageIDs.entrySet().iterator();
 
@@ -101,7 +104,6 @@ public class MessageIDFactory extends Observable {
                             if(allocatedMessageIDs.isEmpty())
                                 retirementsIterator.remove();
 
-
                         }
                     }
                     catch(Exception e){
@@ -122,51 +124,57 @@ public class MessageIDFactory extends Observable {
      *
      * @return the message ID to be used for outgoing messages
      */
-    public synchronized int getNextMessageID(InetSocketAddress remoteEndpoint)
+    public int getNextMessageID(InetSocketAddress remoteEndpoint)
             throws NoMessageIDAvailableException {
 
-        Deque<AllocatedMessageID> allocatedMessageIDsForRemoteAddreses = retiringMessageIDs.get(remoteEndpoint);
+        synchronized (monitor){
+            Deque<AllocatedMessageID> allocatedMessageIDsForRemoteAddreses = retiringMessageIDs.get(remoteEndpoint);
 
-        //check if all message IDs are in use for the given endpoint
-        if(allocatedMessageIDsForRemoteAddreses != null && allocatedMessageIDsForRemoteAddreses.size() == MODULUS){
-            long waitingPeriod =
-                    allocatedMessageIDsForRemoteAddreses.getFirst().getRetirementDate() - System.currentTimeMillis();
+            //check if all message IDs are in use for the given endpoint
+            if(allocatedMessageIDsForRemoteAddreses != null && allocatedMessageIDsForRemoteAddreses.size() == MODULUS){
+                long waitingPeriod = allocatedMessageIDsForRemoteAddreses.getFirst().getRetirementDate()
+                        - System.currentTimeMillis();
 
-            throw new NoMessageIDAvailableException(remoteEndpoint, waitingPeriod);
-        }
+                throw new NoMessageIDAvailableException(remoteEndpoint, waitingPeriod);
+            }
 
-        //there are message IDs available for the given endpoint
-        else{
-            int messageID = 0;
+            //there are message IDs available for the given endpoint
+            else{
+                int messageID = random.nextInt(MODULUS);
 
-            if(allocatedMessageIDsForRemoteAddreses != null && allocatedMessageIDsForRemoteAddreses.size() > 0)
-                    messageID = (allocatedMessageIDsForRemoteAddreses.getLast().getMessageID() + 1) % MODULUS;
+                if(allocatedMessageIDsForRemoteAddreses != null && allocatedMessageIDsForRemoteAddreses.size() > 0)
+                        messageID = (allocatedMessageIDsForRemoteAddreses.getLast().getMessageID() + 1) % MODULUS;
 
-            allocateMessageID(remoteEndpoint, messageID);
+                allocateMessageID(remoteEndpoint, messageID);
 
-            return messageID;
+                return messageID;
+            }
         }
     }
 
 
-    private synchronized void allocateMessageID(InetSocketAddress remoteEndpoint, int messageID){
+    private void allocateMessageID(InetSocketAddress remoteEndpoint, int messageID){
 
-        log.debug("Allocate message ID {} for {}", messageID, remoteEndpoint);
+        synchronized (monitor){
+            log.debug("Allocate message ID {} for {}", messageID, remoteEndpoint);
 
-        Deque<AllocatedMessageID> allocatedMessageIDsForRemoteAddreses = retiringMessageIDs.get(remoteEndpoint);
-        if(allocatedMessageIDsForRemoteAddreses == null){
-            allocatedMessageIDsForRemoteAddreses = new ArrayDeque<>();
-            retiringMessageIDs.put(remoteEndpoint, allocatedMessageIDsForRemoteAddreses);
+            Deque<AllocatedMessageID> allocatedMessageIDsForRemoteAddreses = retiringMessageIDs.get(remoteEndpoint);
+            if(allocatedMessageIDsForRemoteAddreses == null){
+                allocatedMessageIDsForRemoteAddreses = new ArrayDeque<>();
+                retiringMessageIDs.put(remoteEndpoint, allocatedMessageIDsForRemoteAddreses);
+            }
+
+            long retirementDate = System.currentTimeMillis() + EXCHANGE_LIFETIME * 1000;
+
+            allocatedMessageIDsForRemoteAddreses.add(new AllocatedMessageID(messageID, retirementDate));
         }
-
-        long retirementDate = System.currentTimeMillis() + EXCHANGE_LIFETIME * 1000;
-
-        allocatedMessageIDsForRemoteAddreses.add(new AllocatedMessageID(messageID, retirementDate));
     }
 
 
-    synchronized void shutdown(){
-        this.retiringMessageIDs.clear();
+    void shutdown(){
+        synchronized (monitor){
+            this.retiringMessageIDs.clear();
+        }
     }
 
     private class AllocatedMessageID {

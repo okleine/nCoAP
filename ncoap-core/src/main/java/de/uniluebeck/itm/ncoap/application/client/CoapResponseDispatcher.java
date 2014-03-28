@@ -88,8 +88,11 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
                     //Requests with an observe option need an instance of UpdateNotificationProcessor!
                     if(coapMessage instanceof CoapRequest && ((CoapRequest) coapMessage).isObserveSet()){
-                        if(!(coapResponseProcessor instanceof UpdateNotificationProcessor))
+                        if(!(coapResponseProcessor instanceof UpdateNotificationProcessor)){
+                            log.warn("Given instance of CoapResponseProcessor is no instance of " +
+                                    "UpdateNotificationProcessor! Remove OBSERVE option from request!");
                             coapMessage.removeOptions(OptionValue.Name.OBSERVE);
+                        }
                     }
 
                     final InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
