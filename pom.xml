@@ -19,6 +19,7 @@
     <modules>
         <module>ncoap-core</module>
         <module>ncoap-simple-client</module>
+        <module>ncoap-simple-server</module>
     </modules>
 
     <distributionManagement>

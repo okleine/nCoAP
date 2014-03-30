@@ -24,8 +24,11 @@
  */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -34,7 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.Observable;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -58,6 +63,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
     private WebserviceManager webserviceManager;
     private String path;
+    private LinkedHashMultimap<String, LinkAttribute> linkAttributes;
 
     private ReadWriteLock readWriteLock;
 
@@ -86,14 +92,35 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      *                        proxies or clients.
      */
     protected ObservableWebservice(String path, T initialStatus, long lifetimeSeconds){
-        this.readWriteLock = new ReentrantReadWriteLock(false);
         this.path = path;
+        this.linkAttributes = LinkedHashMultimap.create();
 
+        this.readWriteLock = new ReentrantReadWriteLock(false);
         setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
 
-        @Override
+    @Override
+    public void putLinkAttribute(LinkAttribute linkAttribute){
+        this.linkAttributes.put(linkAttribute.getKey(), linkAttribute);
+    }
+
+    @Override
+    public boolean removeLinkAttribute(String attributeKey){
+        return !this.linkAttributes.removeAll(attributeKey).isEmpty();
+    }
+
+    @Override
+    public boolean hasLinkAttribute(LinkAttribute linkAttribute){
+        return this.linkAttributes.get(linkAttribute.getKey()).contains(linkAttribute);
+    }
+
+    @Override
+    public Collection<LinkAttribute> getLinkAttributes(){
+        return this.linkAttributes.values();
+    }
+
+    @Override
     public void setWebserviceManager(WebserviceManager webserviceManager){
         this.webserviceManager = webserviceManager;
     }
@@ -208,6 +235,27 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
             else
                 return new WrappedResourceStatus(serializedResourceStatus, contentFormat,
                         this.getEtag(contentFormat), this.getMaxAge());
+        }
+        finally {
+            this.readWriteLock.readLock().unlock();
+        }
+    }
+
+
+    public WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
+        try{
+            this.readWriteLock.readLock().lock();
+
+            WrappedResourceStatus result = null;
+
+            for(long contentFormat : contentFormats){
+                result = getWrappedResourceStatus(contentFormat);
+
+                if(result != null)
+                    break;
+            }
+
+            return result;
         }
         finally {
             this.readWriteLock.readLock().unlock();

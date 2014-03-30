@@ -51,12 +51,15 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -76,14 +79,6 @@ public interface Webservice<T> {
      * @return the (relative) path this service is registered at.
      */
     public String getPath();
-
-
-//    /**
-//     * Returns the {@link ReadWriteLock} for this {@link Webservice} instance.
-//     *
-//     * @return the {@link ReadWriteLock} for this {@link Webservice} instance.
-//     */
-//    public ReadWriteLock getReadWriteLock();
 
 
     /**
@@ -208,13 +203,6 @@ public interface Webservice<T> {
      * {@link SettableFuture} with an {@link Exception} or throw one make the framework to send {@link CoapResponse}
      * with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} and {@link Exception#getMessage()} as content.
      *
-     * Furthermore implementing classes should lock the {@link ReadWriteLock#readLock()} from
-     * {@link #getReadWriteLock()} while processing incoming read-only requests. Both, {@link ObservableWebservice} and
-     * {@link NotObservableWebservice} implement the method {@link #setResourceStatus(Object, long)} in a way, that
-     * they lock the {@link ReadWriteLock#writeLock()} for the whole update process. That means, resource status updates
-     * are waiting until the {@link ReadWriteLock#readLock()} is not locked. However, multiple read locks are
-     * possible to process multiple reading requests in parallel.
-     *
      * @param responseFuture the {@link SettableFuture} instance to set the {@link CoapResponse} which is the result
      *                       of the incoming {@link CoapRequest}.
      *                       {@link SettableFuture<CoapResponse>#set(CoapResponse)} to send it to the client.
@@ -239,6 +227,13 @@ public interface Webservice<T> {
      */
     public byte[] getSerializedResourceStatus(long contentFormat);
 
+    public void putLinkAttribute(LinkAttribute attribute);
+
+    public boolean removeLinkAttribute(String attributeKey);
+
+    public boolean hasLinkAttribute(LinkAttribute linkAttribute);
+
+    public Collection<LinkAttribute> getLinkAttributes();
 
     /**
      * Implementing classes must provide this method such that it returns <code>true</code> if

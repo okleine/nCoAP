@@ -50,6 +50,9 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.StringLinkAttribute;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -59,6 +62,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -109,36 +114,91 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                    InetSocketAddress remoteEndpoint) throws Exception{
 
-            //Handle GET request
-            if(coapRequest.getMessageCodeName() == MessageCode.Name.GET){
-                CoapResponse response =
-                        new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.CONTENT_205);
+        CoapResponse coapResponse;
 
-                response.setContent(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT),
-                        ContentFormat.APP_LINK_FORMAT);
+        if(!(coapRequest.getMessageCodeName() == MessageCode.Name.GET)){
+            coapResponse = CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
+                    MessageCode.Name.METHOD_NOT_ALLOWED_405, "GET is the only allowed method!");
+        }
 
-                response.setEtag(this.etag);
+        else{
+            coapResponse = processCoapGetRequest(coapRequest);
+        }
 
-                responseFuture.set(response);
-            }
-
-            //Send error response if the incoming request has a code other than GET
-            else{
-                CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageTypeName(),
-                        MessageCode.Name.METHOD_NOT_ALLOWED_405);
-
-                coapResponse.setContent(METHOD_NOT_ALLOWED_MESSAGE, ContentFormat.TEXT_PLAIN_UTF8);
-                responseFuture.set(coapResponse);
-            }
+        responseFuture.set(coapResponse);
     }
 
-    @Override
-    public byte[] getSerializedResourceStatus(long contentFormat){
+
+    private CoapResponse processCoapGetRequest(CoapRequest coapRequest){
+        try{
+            LinkAttribute filterAttribute = createLinkAttribut(coapRequest.getUriQuery());
+
+            CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageTypeName(),
+                    MessageCode.Name.CONTENT_205);
+
+            byte[] content = getSerializedResourceStatus(filterAttribute);
+
+            coapResponse.setContent(content, ContentFormat.APP_LINK_FORMAT);
+            coapResponse.setEtag(this.etag);
+
+            return coapResponse;
+        }
+
+        catch(IllegalArgumentException ex){
+
+            return CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
+                    MessageCode.Name.BAD_REQUEST_400, ex.getMessage());
+        }
+    }
+
+
+    private LinkAttribute createLinkAttribut(String queryParameter) throws IllegalArgumentException{
+
+        if(!queryParameter.equals("")){
+            String[] param = queryParameter.split("=");
+
+            if(param.length != 2)
+                throw new IllegalArgumentException("Could not parse query " + queryParameter);
+
+            LinkAttribute linkAttribute;
+            int attributeType = LinkAttribute.getAttributeType(param[0]);
+
+            if(attributeType == LinkAttribute.STRING_ATTRIBUTE)
+                linkAttribute = new StringLinkAttribute(param[0], param[1]);
+
+            else if(attributeType == LinkAttribute.LONG_ATTRIBUTE)
+                linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
+
+            else
+                throw new IllegalArgumentException("This should never happen!");
+
+            return linkAttribute;
+        }
+
+        return null;
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public byte[] getSerializedResourceStatus(LinkAttribute attribute){
         StringBuilder buffer = new StringBuilder();
 
-        //TODO make this real CoRE link format
-        for(String path : getResourceStatus().keySet()){
-            buffer.append("<").append(path).append(">,\n");
+        for(Webservice webservice : getResourceStatus().values()){
+
+            if(attribute != null && !webservice.hasLinkAttribute(attribute))
+                continue;
+
+            buffer.append("<").append(webservice.getPath()).append(">");
+
+            String previousKey = null;
+            for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webservice.getLinkAttributes()) {
+                buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : ";" + linkAttribute.getKey() + "=")
+                        .append(linkAttribute.getValue());
+
+                previousKey = linkAttribute.getKey();
+            }
+
+            buffer.append(",\n");
         }
 
         if(buffer.length() > 3)
@@ -147,7 +207,42 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
         log.debug("Content: \n{}", buffer.toString());
 
         return buffer.toString().getBytes(CoapMessage.CHARSET);
+
     }
+
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public byte[] getSerializedResourceStatus(long contentFormat){
+        StringBuilder buffer = new StringBuilder();
+
+        for(Webservice webservice : getResourceStatus().values()){
+            buffer.append("<").append(webservice.getPath()).append(">");
+
+            String previousKey = null;
+            for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webservice.getLinkAttributes()) {
+                buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : ";")
+                        .append(linkAttribute.getValue());
+
+                previousKey = linkAttribute.getKey();
+            }
+        }
+
+//        //TODO make this real CoRE link format
+//        for(String path : getResourceStatus().keySet()){
+//
+//            buffer.append("<").append(path).append(">,\n");
+//        }
+
+        if(buffer.length() > 3)
+            buffer.deleteCharAt(buffer.length() - 2);
+
+        log.debug("Content: \n{}", buffer.toString());
+
+        return buffer.toString().getBytes(CoapMessage.CHARSET);
+    }
+
+
 
     @Override
     public void shutdown() {

@@ -48,10 +48,13 @@
 */
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
+import com.google.common.collect.*;
 import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -77,6 +80,8 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
     private String path;
 
+    private LinkedHashMultimap<String, LinkAttribute> linkAttributes;
+
     private ReadWriteLock readWriteLock;
 
     private T resourceStatus;
@@ -85,9 +90,31 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     private ScheduledExecutorService scheduledExecutorService;
 
     protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds){
-        this.readWriteLock = new ReentrantReadWriteLock(false);
         this.path = servicePath;
+        this.linkAttributes = LinkedHashMultimap.create();
+
+        this.readWriteLock = new ReentrantReadWriteLock(false);
         setResourceStatus(initialStatus, lifetimeSeconds);
+    }
+
+    @Override
+    public void putLinkAttribute(LinkAttribute linkAttribute){
+        this.linkAttributes.put(linkAttribute.getKey(), linkAttribute);
+    }
+
+    @Override
+    public boolean removeLinkAttribute(String attributeKey){
+        return !this.linkAttributes.removeAll(attributeKey).isEmpty();
+    }
+
+    @Override
+    public boolean hasLinkAttribute(LinkAttribute linkAttribute){
+        return this.linkAttributes.get(linkAttribute.getKey()).contains(linkAttribute);
+    }
+
+    @Override
+    public Collection<LinkAttribute> getLinkAttributes(){
+        return this.linkAttributes.values();
     }
 
 
@@ -180,6 +207,27 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
             else
                 return new WrappedResourceStatus(serializedResourceStatus, contentFormat,
                         this.getEtag(contentFormat), this.getMaxAge());
+        }
+        finally {
+            this.readWriteLock.readLock().unlock();
+        }
+    }
+
+
+    public WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
+        try{
+            this.readWriteLock.readLock().lock();
+
+            WrappedResourceStatus result = null;
+
+            for(long contentFormat : contentFormats){
+                result = getWrappedResourceStatus(contentFormat);
+
+                if(result != null)
+                    break;
+            }
+
+            return result;
         }
         finally {
             this.readWriteLock.readLock().unlock();
