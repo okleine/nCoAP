@@ -50,20 +50,23 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
+
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.EmptyLinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.StringLinkAttribute;
+import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -73,10 +76,6 @@ import java.util.Map;
 * @author Oliver Kleine
 */
 public final class WellKnownCoreResource extends NotObservableWebservice<Map<String, Webservice>> {
-
-    private static final byte[] METHOD_NOT_ALLOWED_MESSAGE =
-            "Service \"/.well-known/core\" only allows GET requests.".getBytes(CoapMessage.CHARSET);
-
 
     private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
 
@@ -99,7 +98,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * (i.e. {@link Webservice} instances}).
      *
      * <b>Note:</b> The payload is always formatted in {@link ContentFormat#APP_LINK_FORMAT}, possibly contained
-     * {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#ACCEPT} options in incoming {@link CoapRequest}s are ignored!
+     * {@link OptionValue.Name#ACCEPT} options in incoming {@link CoapRequest}s are ignored!
      *
      * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
      *                       the list of available services in CoRE link format.
@@ -131,7 +130,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
 
     private CoapResponse processCoapGetRequest(CoapRequest coapRequest){
         try{
-            LinkAttribute filterAttribute = createLinkAttribut(coapRequest.getUriQuery());
+            LinkAttribute filterAttribute = createLinkAttributeFromQuery(coapRequest.getUriQuery());
 
             CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageTypeName(),
                     MessageCode.Name.CONTENT_205);
@@ -152,7 +151,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
     }
 
 
-    private LinkAttribute createLinkAttribut(String queryParameter) throws IllegalArgumentException{
+    private LinkAttribute createLinkAttributeFromQuery(String queryParameter) throws IllegalArgumentException{
 
         if(!queryParameter.equals("")){
             String[] param = queryParameter.split("=");
@@ -168,6 +167,9 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
 
             else if(attributeType == LinkAttribute.LONG_ATTRIBUTE)
                 linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
+
+            else if(attributeType == LinkAttribute.EMPTY_ATTRIBUTE)
+                linkAttribute = new EmptyLinkAttribute(param[0], null);
 
             else
                 throw new IllegalArgumentException("This should never happen!");
@@ -192,8 +194,10 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
 
             String previousKey = null;
             for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webservice.getLinkAttributes()) {
-                buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : ";" + linkAttribute.getKey() + "=")
-                        .append(linkAttribute.getValue());
+                buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : ";" + linkAttribute.getKey());
+
+                if(!(linkAttribute instanceof EmptyLinkAttribute))
+                    buffer.append("=").append(linkAttribute.getValue());
 
                 previousKey = linkAttribute.getKey();
             }
@@ -228,12 +232,6 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
             }
         }
 
-//        //TODO make this real CoRE link format
-//        for(String path : getResourceStatus().keySet()){
-//
-//            buffer.append("<").append(path).append(">,\n");
-//        }
-
         if(buffer.length() > 3)
             buffer.deleteCharAt(buffer.length() - 2);
 
@@ -256,6 +254,6 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
 
     @Override
     public void updateEtag(Map<String, Webservice> resourceStatus) {
-        this.etag = Ints.toByteArray(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT).hashCode());
+        this.etag = Ints.toByteArray(Arrays.hashCode(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT)));
     }
 }

@@ -141,7 +141,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         if(isShutdown())
             return;
 
-        if(me.getMessage() instanceof CoapResponse && ((CoapResponse) me.getMessage()).isUpdateNotification())
+        if(me.getMessage() instanceof CoapResponse && ((CoapResponse) me.getMessage()).isUpdateNotification()
+                && ((CoapResponse) me.getMessage()).getMessageTypeName() != MessageType.Name.ACK)
             writeUpdateNotifiction(ctx, me);
 
         else if((me.getMessage() instanceof CoapMessage))
@@ -219,8 +220,8 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         OutgoingReliableMessageExchange messageExchange;
 
         if(coapMessage instanceof CoapResponse && ((CoapResponse) coapMessage).isUpdateNotification())
-            messageExchange =
-                    new OutgoingReliableUpdateNotificationExchange(remoteEndpoint, (CoapResponse) coapMessage);
+            messageExchange = new OutgoingReliableUpdateNotificationExchange(remoteEndpoint,
+                    (CoapResponse) coapMessage, firstRetransmissionTime);
 
         else
             messageExchange = new OutgoingReliableMessageExchange(remoteEndpoint, coapMessage);
@@ -246,6 +247,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         CoapResponse updateNotification = (CoapResponse) me.getMessage();
 
         log.debug("Write update notification: {}", updateNotification);
+
 
         //for CON update notifications update potentially running retransmissions
         if(updateNotification.getMessageTypeName() == MessageType.Name.CON){
@@ -287,8 +289,14 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                     OutgoingReliableUpdateNotificationExchange updateNotificationExchange =
                             (OutgoingReliableUpdateNotificationExchange) messageExchange;
 
+                    long now = System.currentTimeMillis();
+                    long transmissionTime = updateNotificationExchange.getNextRetransmissionTime();
+                    long maxAge = updateNotification.getMaxAge();
+
+                    updateNotification.setMaxAge(maxAge - (transmissionTime - now) / 1000);
                     updateNotificationExchange.setCoapMessage(updateNotification);
                     updateNotificationExchange.setChanged(true);
+
 
                     log.info("Updated update notification to retransmit: {}", updateNotification);
                 }
@@ -572,6 +580,13 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                                     }
 
                                     subsequentRetransmissions.put(part.getKey() + delay, messageExchange);
+
+                                    if(messageExchange instanceof OutgoingReliableUpdateNotificationExchange){
+                                        OutgoingReliableUpdateNotificationExchange updateNotificationExchange =
+                                                (OutgoingReliableUpdateNotificationExchange) messageExchange;
+
+                                        updateNotificationExchange.setNextRetransmissionTime(part.getKey() + delay);
+                                    }
                                 }
                             }
 

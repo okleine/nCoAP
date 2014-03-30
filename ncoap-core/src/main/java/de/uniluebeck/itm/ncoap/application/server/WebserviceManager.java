@@ -25,11 +25,14 @@
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.SettableFuture;
+import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
+import de.uniluebeck.itm.ncoap.communication.codec.*;
 import de.uniluebeck.itm.ncoap.communication.observe.server.InternalObservableWebserviceRegistrationMessage;
 import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -219,11 +222,12 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      * @param ctx the {@link ChannelHandlerContext} relating the {@link CoapServerApplication} and the
      * {@link org.jboss.netty.channel.socket.DatagramChannel} on which the exception occured
      *
-     * @param e the {@link ExceptionEvent} containing, e.g. the exception
+     * @param exceptionEvent the {@link ExceptionEvent} containing, e.g. the exception
      */
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e){
-        log.error("Unsupported exception caught! Don't know what to do...", e.getCause());
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent){
+        Throwable cause = exceptionEvent.getCause();
+        log.error("Unsupported exception caught! Don't know what to do...", cause);
     }
 
 

@@ -28,6 +28,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.EmptyLinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
@@ -82,6 +83,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      */
     protected ObservableWebservice(String path, T initialStatus){
         this(path, initialStatus, OptionValue.MAX_AGE_DEFAULT);
+        this.putLinkAttribute(new EmptyLinkAttribute("obs", null));
     }
 
 

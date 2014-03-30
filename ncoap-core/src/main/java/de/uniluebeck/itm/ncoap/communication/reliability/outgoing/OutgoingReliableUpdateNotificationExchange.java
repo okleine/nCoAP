@@ -34,10 +34,12 @@ import java.net.InetSocketAddress;
 public class OutgoingReliableUpdateNotificationExchange extends OutgoingReliableMessageExchange {
 
     private boolean changed;
+    private long nextRetransmissionTime;
 
     public OutgoingReliableUpdateNotificationExchange(InetSocketAddress remoteEndpoint,
-                                                      CoapResponse updateNotification) {
+                  CoapResponse updateNotification, long nextRetransmissionTime) {
         super(remoteEndpoint, updateNotification);
+        this.nextRetransmissionTime = nextRetransmissionTime;
         this.changed = false;
     }
 
@@ -55,5 +57,14 @@ public class OutgoingReliableUpdateNotificationExchange extends OutgoingReliable
     @Override
     public CoapResponse getCoapMessage(){
         return (CoapResponse) super.getCoapMessage();
+    }
+
+
+    public void setNextRetransmissionTime(long nextRetransmissionTime){
+        this.nextRetransmissionTime = nextRetransmissionTime;
+    }
+
+    public long getNextRetransmissionTime(){
+        return this.nextRetransmissionTime;
     }
 }

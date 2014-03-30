@@ -68,6 +68,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
     @Override
     public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
 
+        if(evt instanceof ExceptionEvent){
+            exceptionCaught(ctx, (ExceptionEvent) evt);
+            return;
+        }
+
         if (!(evt instanceof MessageEvent) || !(((MessageEvent) evt).getMessage() instanceof ChannelBuffer)) {
             ctx.sendUpstream(evt);
             return;
@@ -285,12 +290,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent){
-
         Throwable cause = exceptionEvent.getCause();
 
         //Invalid Header Exceptions cause a RST
         if(cause instanceof InvalidHeaderException){
-            InvalidHeaderException ex = (InvalidHeaderException) cause;
+            de.uniluebeck.itm.ncoap.communication.codec.InvalidHeaderException ex = (de.uniluebeck.itm.ncoap.communication.codec.InvalidHeaderException) cause;
 
             if (ex.getMessageID() != CoapMessage.MESSAGE_ID_UNDEFINED)
                 writeReset(ctx, ex.getMessageID(), ex.getRemoteEndpoint());
@@ -307,11 +311,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                     ex.getMessage());
         }
 
-        else
-            log.error("This should never happen (DecodingException with unsupported cause!", cause);
+        else{
+            ctx.sendUpstream(exceptionEvent);
+        }
 
     }
-
 
     private void writeReset(ChannelHandlerContext ctx, int messageID, InetSocketAddress remoteEndpoint){
         CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
@@ -329,6 +333,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
         Channels.write(ctx, Channels.future(ctx.getChannel()), errorResponse, remoteEndpoint);
     }
+
 
 
     private static String toBinaryString(int byteValue){

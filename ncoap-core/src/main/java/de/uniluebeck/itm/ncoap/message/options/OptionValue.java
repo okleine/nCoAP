@@ -322,11 +322,13 @@ public abstract class OptionValue<T>{
      * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option
      */
     public static int getOptionType(int optionNumber) throws IllegalArgumentException{
-        Integer result = characteristics.get(optionNumber)[0];
+
+        Integer[] result = characteristics.get(optionNumber);
         if(result == null)
             throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
         else
-            return result;
+            return result[0];
+
     }
 
     /**

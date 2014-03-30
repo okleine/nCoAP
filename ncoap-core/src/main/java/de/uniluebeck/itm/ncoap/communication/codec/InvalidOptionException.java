@@ -42,6 +42,8 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
  */
 public class InvalidOptionException extends Exception{
 
+    private static final String message = "Unsupported critical option (No. %d)";
+
     private int optionNumber;
     private int messageID;
     private Token token;
@@ -150,5 +152,10 @@ public class InvalidOptionException extends Exception{
      */
     public void setMessageType(int messageType) {
         this.messageType = messageType;
+    }
+
+    @Override
+    public String getMessage(){
+        return String.format(message, getOptionNumber());
     }
 }

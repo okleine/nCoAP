@@ -15,15 +15,11 @@ public class SimpleCoapServer extends CoapServerApplication {
 
         SimpleCoapServer server = new SimpleCoapServer();
 
-        SimpleNotObservableWebservice webservice = new SimpleNotObservableWebservice("/path", "Oliver", 5000);
-        webservice.putLinkAttribute(new LongLinkAttribute(LinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
-        webservice.putLinkAttribute(new LongLinkAttribute(LinkAttribute.CONTENT_TYPE, ContentFormat.APP_XML));
+        SimpleNotObservableWebservice simpleWebservice = new SimpleNotObservableWebservice("/simple", "Oliver", 5000);
+        server.registerService(simpleWebservice);
 
-        SimpleNotObservableWebservice webservice2 = new SimpleNotObservableWebservice("/path2", "Oliver", 5000);
-        webservice2.putLinkAttribute(new LongLinkAttribute(LinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
-
-        server.registerService(webservice);
-        server.registerService(webservice2);
+        SimpleObservableTimeService timeService = new SimpleObservableTimeService("/utc-time");
+        server.registerService(timeService);
     }
 
 }

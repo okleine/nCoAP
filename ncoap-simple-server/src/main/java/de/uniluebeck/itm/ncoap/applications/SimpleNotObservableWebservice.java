@@ -5,6 +5,8 @@ import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -24,6 +26,9 @@ public class SimpleNotObservableWebservice extends NotObservableWebservice<Strin
 
     protected SimpleNotObservableWebservice(String servicePath, String initialStatus, long lifetimeSeconds) {
         super(servicePath, initialStatus, lifetimeSeconds);
+
+        this.putLinkAttribute(new LongLinkAttribute(LinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
+        this.putLinkAttribute(new LongLinkAttribute(LinkAttribute.CONTENT_TYPE, ContentFormat.APP_XML));
     }
 
 

@@ -35,7 +35,9 @@ public abstract class LinkAttribute<T> {
     public static final String RESOURCE_TYPE = "rt";
     public static final String INTERFACE = "if";
     public static final String MAX_SIZE_ESTIMATE = "sz";
+    public static final String OBSERVABLE = "obs";
 
+    public static final int EMPTY_ATTRIBUTE = 0;
     public static final int LONG_ATTRIBUTE = 1;
     public static final int STRING_ATTRIBUTE = 2;
 
@@ -48,6 +50,7 @@ public abstract class LinkAttribute<T> {
         characteristics.put(    RESOURCE_TYPE,      new AttributeCharacteristics(true,  STRING_ATTRIBUTE));
         characteristics.put(    INTERFACE,          new AttributeCharacteristics(false, STRING_ATTRIBUTE));
         characteristics.put(    MAX_SIZE_ESTIMATE,  new AttributeCharacteristics(false, LONG_ATTRIBUTE));
+        characteristics.put(    OBSERVABLE,         new AttributeCharacteristics(false, EMPTY_ATTRIBUTE));
     }
 
 
@@ -82,10 +85,7 @@ public abstract class LinkAttribute<T> {
         if(!characteristics.containsKey(attributeKey))
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
 
-        if(characteristics.get(attributeKey).isMultipleValues())
-            return true;
-
-        return false;
+        return characteristics.get(attributeKey).isMultipleValues();
     }
 
 
