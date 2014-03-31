@@ -227,12 +227,41 @@ public interface Webservice<T> {
      */
     public byte[] getSerializedResourceStatus(long contentFormat);
 
-    public void putLinkAttribute(LinkAttribute attribute);
+    /**
+     * Sets the given {@link LinkAttribute} for this {@link Webservice} instance.
+     *
+     * <b>Note:</b> Implementing classes MUST ensure that attributes keys that do only allow a single
+     * value are not set multiple times
+     *
+     * @param attribute the {@link LinkAttribute} to be set for this {@link Webservice} instance
+     */
+    public void setLinkAttribute(LinkAttribute attribute);
 
+    /**
+     * Removes all {@link LinkAttribute}s for the given key.
+     *
+     * @param attributeKey the attribute key to remove all attributes of
+     *
+     * @return <code>true</code> if there were any (previously set) attributes removed, <code>false</code>
+     * otherwise
+     */
     public boolean removeLinkAttribute(String attributeKey);
 
+    /**
+     * Returns <code>true</code> if this {@link Webservice} instance has the given {@link LinkAttribute} and
+     * <code>false</code> otherwise
+     *
+     * @param linkAttribute the {@link LinkAttribute} to check
+     *
+     * @return code>true</code> if this {@link Webservice} instance has the given {@link LinkAttribute} and
+     * <code>false</code> otherwise
+     */
     public boolean hasLinkAttribute(LinkAttribute linkAttribute);
 
+    /**
+     * Returns a {@link Collection} containing all {@link LinkAttribute}s of this {@link Webservice} instance
+     * @return a {@link Collection} containing all {@link LinkAttribute}s of this {@link Webservice} instance
+     */
     public Collection<LinkAttribute> getLinkAttributes();
 
     /**

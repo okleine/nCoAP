@@ -293,7 +293,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                     long transmissionTime = updateNotificationExchange.getNextRetransmissionTime();
                     long maxAge = updateNotification.getMaxAge();
 
-                    updateNotification.setMaxAge(maxAge - (transmissionTime - now) / 1000);
+                    updateNotification.setMaxAge(Math.max(maxAge - (transmissionTime - now) / 1000, 0));
                     updateNotificationExchange.setCoapMessage(updateNotification);
                     updateNotificationExchange.setChanged(true);
 

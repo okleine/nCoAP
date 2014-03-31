@@ -25,7 +25,6 @@
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Multimap;
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.EmptyLinkAttribute;
@@ -83,7 +82,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      */
     protected ObservableWebservice(String path, T initialStatus){
         this(path, initialStatus, OptionValue.MAX_AGE_DEFAULT);
-        this.putLinkAttribute(new EmptyLinkAttribute("obs", null));
+        this.setLinkAttribute(new EmptyLinkAttribute("obs", null));
     }
 
 
@@ -103,7 +102,13 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
 
     @Override
-    public void putLinkAttribute(LinkAttribute linkAttribute){
+    public void setLinkAttribute(LinkAttribute linkAttribute){
+        if(this.linkAttributes.containsKey(linkAttribute.getKey())){
+
+            if(!LinkAttribute.allowsMultipleValues(linkAttribute.getKey()))
+                removeLinkAttribute(linkAttribute.getKey());
+        }
+
         this.linkAttributes.put(linkAttribute.getKey(), linkAttribute);
     }
 

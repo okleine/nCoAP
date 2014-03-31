@@ -25,7 +25,10 @@
 package de.uniluebeck.itm.ncoap.application.server.webservice.linkformat;
 
 /**
- * Created by olli on 29.03.14.
+ * A {@link LongLinkAttribute} is a {@link LinkAttribute} with values of type string
+ * ({@link LinkAttribute#LONG_ATTRIBUTE}).
+ *
+ * @author Oliver Kleine
  */
 public class LongLinkAttribute extends LinkAttribute<Long> {
 

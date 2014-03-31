@@ -97,8 +97,15 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
         setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
+
     @Override
-    public void putLinkAttribute(LinkAttribute linkAttribute){
+    public void setLinkAttribute(LinkAttribute linkAttribute){
+        if(this.linkAttributes.containsKey(linkAttribute.getKey())){
+
+            if(!LinkAttribute.allowsMultipleValues(linkAttribute.getKey()))
+                removeLinkAttribute(linkAttribute.getKey());
+        }
+
         this.linkAttributes.put(linkAttribute.getKey(), linkAttribute);
     }
 

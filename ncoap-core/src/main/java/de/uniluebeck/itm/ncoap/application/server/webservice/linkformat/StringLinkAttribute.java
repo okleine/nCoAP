@@ -25,7 +25,10 @@
 package de.uniluebeck.itm.ncoap.application.server.webservice.linkformat;
 
 /**
- * Created by olli on 29.03.14.
+ * A {@link StringLinkAttribute} is a {@link LinkAttribute} with values of type string
+ * ({@link LinkAttribute#STRING_ATTRIBUTE}).
+ *
+ * @author Oliver Kleine
  */
 public class StringLinkAttribute extends LinkAttribute<String> {
 

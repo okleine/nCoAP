@@ -24,25 +24,63 @@
  */
 package de.uniluebeck.itm.ncoap.application.server.webservice.linkformat;
 
+import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import java.util.*;
 
 /**
- * Created by olli on 29.03.14.
+ * Each {@link Webservice} can be enriched with {@link LinkAttribute}s to provide additional information about its
+ * capabilities in terms of offered content formats, observability, etc...
+ *
+ * However, the attached {@link LinkAttribute}s are accessible to interested clients via the
+ * <code>.well-known/core</code> resource which is provided by every CoAP server.
+ *
+ * @author Oliver Kleine
  */
 public abstract class LinkAttribute<T> {
 
+    /**
+     * The key of the content type attribute ("ct")
+     */
     public static final String CONTENT_TYPE = "ct";
+
+    /**
+     * The key of the resource type attribute ("rt")
+     */
     public static final String RESOURCE_TYPE = "rt";
+
+    /**
+     * The key of the interface attribute ("if")
+     */
     public static final String INTERFACE = "if";
+
+    /**
+     * The key of the maximum size estimation attribute ("sz")
+     */
     public static final String MAX_SIZE_ESTIMATE = "sz";
+
+    /**
+     * The key of the observation attribute ("obs")
+     */
     public static final String OBSERVABLE = "obs";
 
+    /**
+     * The integer value representing the internal type for empty attributes, i.e. attributes without value
+     */
     public static final int EMPTY_ATTRIBUTE = 0;
+
+    /**
+     * The integer value representing the internal type for long attributes, i.e. attributes with numeric values
+     */
     public static final int LONG_ATTRIBUTE = 1;
+
+    /**
+     * The integer value representing the internal type for string attributes, i.e. attributes with string values
+     */
     public static final int STRING_ATTRIBUTE = 2;
 
     private String key;
     private T value;
+
 
     private static Map<String, AttributeCharacteristics> characteristics = new HashMap<>();
     static{
@@ -63,12 +101,18 @@ public abstract class LinkAttribute<T> {
         this.value = value;
     }
 
-
+    /**
+     * Returns the key of the link attribute
+     * @return the key of the link attribute
+     */
     public String getKey() {
         return key;
     }
 
-
+    /**
+     * Returns the value of the link attribute
+     * @return the value of the link attribute
+     */
     public T getValue() {
         return value;
     }
@@ -76,6 +120,7 @@ public abstract class LinkAttribute<T> {
 
     @Override
     public abstract int hashCode();
+
 
     @Override
     public abstract boolean equals(Object object);
@@ -95,22 +140,6 @@ public abstract class LinkAttribute<T> {
 
         throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
     }
-
-
-    public static LinkAttribute createLinkAttribute(String key, String value) throws IllegalArgumentException{
-        return new StringLinkAttribute(key, value);
-    }
-
-    public static LinkAttribute createLinkAttribute(String key, Long value) throws IllegalArgumentException{
-        return new LongLinkAttribute(key, value);
-    }
-
-//    private static boolean allowsMultipleValues(String attributeKey) throws IllegalArgumentException{
-//        if(characteristics.containsKey(attributeKey))
-//            return characteristics.get(attributeKey).isMultipleValues();
-//
-//        throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
-//    }
 
 
     private static class AttributeCharacteristics{
