@@ -175,8 +175,6 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
 
-
-
     @Override
     public final T getResourceStatus(){
         return this.resourceStatus;
@@ -212,8 +210,8 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
 
     /**
-     * This method is the one and only recommended way to retrieve the actual resource status that is used
-     * for a {@link CoapResponse} to answer an incoming {@link CoapRequest}.
+     * This method and {@link #getWrappedResourceStatus(java.util.Set)} are the only recommended way to retrieve
+     * the actual resource status that is used for a {@link CoapResponse} to answer an incoming {@link CoapRequest}.
      *
      * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
@@ -230,7 +228,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      * @return a {@link WrappedResourceStatus} if the content format was supported or <code>null</code> if the
      * resource status could not be serialized to the desired content format.
      */
-    public WrappedResourceStatus getWrappedResourceStatus(long contentFormat){
+    public final WrappedResourceStatus getWrappedResourceStatus(long contentFormat){
         try{
             this.readWriteLock.readLock().lock();
 
@@ -249,7 +247,31 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
 
-    public WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
+    /**
+     * This method and {@link #getWrappedResourceStatus(long)} are the only recommended ways to retrieve
+     * the actual resource status that is used for a {@link CoapResponse} to answer an incoming {@link CoapRequest}.
+     *
+     * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
+     * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
+     * This is to avoid inconsistencies between the content and {@link OptionValue.Name#ETAG}, resp.
+     * {@link OptionValue.Name#MAX_AGE} in a {@link CoapResponse}. Such inconsistencies could happen in case of a
+     * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
+     * resp. {@link #getMaxAge()}.
+     *
+     * However, concurrent invocations of this method are possible, as the resources read-lock can be locked multiple
+     * times in parallel and {@link #setResourceStatus(Object, long)} waits for all read-locks to be released.
+     *
+     * <b>Note:</b> This method iterates over the given {@link Set} and tries to serialize the status in the order
+     * given by the {@link java.util.Set#iterator()}. The first supported content format, i.e. where
+     * {@link #getSerializedResourceStatus(long)} does return a value other than <code>null</code> is the content
+     * format of the {@link WrappedResourceStatus} returned by this method.
+     *
+     * @param contentFormats A {@link Set} containing the numbers representing the accepted content formats
+     *
+     * @return a {@link WrappedResourceStatus} if any of the given content formats was supported or
+     * <code>null</code> if the resource status could not be serialized to any accepted content format.
+     */
+    public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
         try{
             this.readWriteLock.readLock().lock();
 
