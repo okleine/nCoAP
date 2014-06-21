@@ -18,13 +18,14 @@ The nCoAP project is organized in several maven modules, i.e.
 <artifactId>ncoap-core</artifactId>
 
 for the raw protocol implementation. For CoAP application development this probably what you want.
-To use the latest protocol implementation add the following to your pom.xml
+To use the latest protocol implementation release add the following to your pom.xml
 
 <repositories>
 ...
     <repository>
-        <id>itm-maven-repository-snapshot-site</id>
-        <url>https://maven.itm.uni-luebeck.de/content/repositories/snapshots/</url>
+        <id>itm-maven-repository-releases</id>
+        <name>ITM Maven Releases Repository</name>
+        <url>https://maven.itm.uni-luebeck.de/content/repositories/releases</url>
     </repository>
 ...
 </repositories>
@@ -36,7 +37,7 @@ To use the latest protocol implementation add the following to your pom.xml
     <dependency>
         <groupId>de.uniluebeck.itm</groupId>
         <artifactId>ncoap-core</artifactId>
-        <version>1.8.0-SNAPSHOT</version>
+        <version>1.8.1</version>
     </dependency>
 ...
 </dependencies>
@@ -59,4 +60,4 @@ write such applications using ncoap.
 Documentation
 =============
 
-The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap/1.8.0-SNAPSHOT
+The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.1

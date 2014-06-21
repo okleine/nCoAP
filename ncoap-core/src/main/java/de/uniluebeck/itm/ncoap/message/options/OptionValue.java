@@ -367,10 +367,9 @@ public abstract class OptionValue<T>{
      * @param optionNumber the number of the {@link OptionValue} to be created.
      * @param value the encoded value of the option to be created.
      *
-     * @throws java.lang.IllegalArgumentException if the {@link OptionValue} instance could not be created because either the
+     * @throws java.lang.IllegalArgumentException if the {@link OptionValue} instance could not be created because
+     * either the
      * given value is the default value or the length of the given value exceeds the defined limits.
-     *
-     * @throws java.lang.IllegalArgumentException if the given option number is unknown to the nCoAP framework.
      */
     protected OptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
 

@@ -7,7 +7,7 @@
     <parent>
         <groupId>de.uniluebeck.itm</groupId>
         <artifactId>ncoap-complete</artifactId>
-        <version>1.8.0-SNAPSHOT</version>
+        <version>1.8.1</version>
     </parent>
 
     <artifactId>ncoap-core</artifactId>
