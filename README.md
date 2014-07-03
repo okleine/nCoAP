@@ -20,7 +20,7 @@ The nCoAP project is organized in several maven modules, i.e.
 for the raw protocol implementation. For CoAP application development this probably what you want.
 To use the latest protocol implementation release add the following to your pom.xml
 
-```
+```xml
 <repositories>
 ...
     <repository>
@@ -34,7 +34,7 @@ To use the latest protocol implementation release add the following to your pom.
 
 ...
 
-```
+```xml
 <dependencies>
 ...
     <dependency>
@@ -48,14 +48,14 @@ To use the latest protocol implementation release add the following to your pom.
 
 The other models, i.e.,
 
-```
+```xml
 <groupId>de.uniluebeck.itm.ncoap</groupId>
 <artifactId>ncoap-simple-client</artifactId>
 ```
 
 and
 
-```
+```xml
 <groupId>de.uniluebeck.itm.ncoap</groupId>
 <artifactId>ncoap-simple-server</artifactId>
 ```
