@@ -2,9 +2,9 @@
 
 ## Java implementation of the CoAP protocol (draft 18)
 
-see: http://tools.ietf.org/html/draft-ietf-core-coap-18
+See: http://tools.ietf.org/html/draft-ietf-core-coap-18
 
-Draft-18 is the one to become an RFC at some time, i.e. there are (if any) only few and minor changes expected in the
+Draft-18 is the one to become an RFC at some time, i.e., there are (if any) only few and minor changes expected in the
 future. This implementation currently supports the main protocol plus
 
 * the core link format (see https://datatracker.ietf.org/doc/rfc6690/) and
@@ -12,7 +12,7 @@ future. This implementation currently supports the main protocol plus
 
 ## Maven
 
-The nCoAP project is organized in several maven modules, i.e.
+The nCoAP project is organized in several maven modules, i.e.,
 
 <groupId>de.uniluebeck.itm</groupId>
 <artifactId>ncoap-core</artifactId>
