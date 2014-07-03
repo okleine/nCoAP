@@ -1,6 +1,6 @@
-# nCoAP
+## nCoAP
 
-## Java implementation of the CoAP protocol (draft 18)
+### Java implementation of the CoAP protocol (draft 18)
 
 See: http://tools.ietf.org/html/draft-ietf-core-coap-18
 
@@ -10,7 +10,7 @@ future. This implementation currently supports the main protocol plus
 * the core link format (see https://datatracker.ietf.org/doc/rfc6690/) and
 * the observe extension (draft 12) (see http://tools.ietf.org/html/draft-ietf-core-observe-12).
 
-## Maven
+### Maven
 
 The nCoAP project is organized in several maven modules, i.e.,
 
@@ -64,6 +64,6 @@ provide simple CoAP applications for both, client and server. There intention is
 write such applications using ncoap.
 
 
-## Documentation
+### Documentation
 
 The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.1
