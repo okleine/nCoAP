@@ -22,17 +22,64 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.application.client;
+package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
+
+import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+
+import java.net.InetSocketAddress;
 
 /**
- * Created with IntelliJ IDEA.
- * User: olli
- * Date: 18.11.13
- * Time: 12:15
- * To change this template use File | Settings | File Templates.
+ * Instances are sent upstream (i.e. to the plugtest) by the {@link OutgoingMessageReliabilityHandler}
+ * when there was an empty acknowledgement received indicating that a recipient received a a confirmable
+ * message.
+ *
+ * @author Oliver Kleine
  */
-public interface CodecExceptionReceiver extends CoapResponseProcessor {
+public class ResetReceptionEvent {
 
-    public void handleCodecException(Throwable excpetion);
+    private InetSocketAddress remoteEndpoint;
+    private Token token;
+    private int messageID;
 
+    /**
+     * @param token the token of the confirmed message
+     */
+    public ResetReceptionEvent(InetSocketAddress remoteEndpoint, int messageID, Token token){
+
+        this.remoteEndpoint = remoteEndpoint;
+        this.messageID = messageID;
+        this.token = token;
+    }
+
+    /**
+     * Returns the token of the reseted message
+     * @return the token of the reseted message
+     */
+    public Token getToken(){
+        return token;
+    }
+
+    @Override
+    public String toString(){
+        return "ResetReceptionEvent: " + token + " (token)";
+    }
+
+
+    /**
+     * Returns the address of the remote endpoint that reseted the message
+     * @return the address of the remote endpoint that reseted the message
+     */
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
+    }
+
+
+    /**
+     * Returns the message ID of the reseted message
+     * @return the message ID of the reseted message
+     */
+    public int getMessageID() {
+        return messageID;
+    }
 }

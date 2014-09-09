@@ -61,33 +61,137 @@ public abstract class MessageCode {
     private static final HashMap<Integer, Name> validNumbers = new HashMap<Integer, Name>();
 
     public static enum Name{
-         UNKNOWN(-1),
-         EMPTY(0),
-         GET(1),
-         POST(2),
-         PUT(3),
-         DELETE(4),
-         CREATED_201(65),
-         DELETED_202(66),
-         VALID_203(67),
-         CHANGED_204(68),
-         CONTENT_205(69),
-         BAD_REQUEST_400(128),
-         UNAUTHORIZED_401(129),
-         BAD_OPTION_402(130),
-         FORBIDDEN_403(131),
-         NOT_FOUND_404(132),
-         METHOD_NOT_ALLOWED_405(133),
-         NOT_ACCEPTABLE_406(134),
-         PRECONDITION_FAILED_412(140),
-         REQUEST_ENTITY_TOO_LARGE_413(141),
-         UNSUPPORTED_CONTENT_FORMAT_415(143),
-         INTERNAL_SERVER_ERROR_500(160),
-         NOT_IMPLEMENTED_501(161),
-         BAD_GATEWAY_502(162),
-         SERVICE_UNAVAILABLE_503(163),
-         GATEWAY_TIMEOUT_504(164),
-         PROXYING_NOT_SUPPORTED_505(165);
+        UNKNOWN(-1),
+
+        /**
+         * Corresponds to Code 0
+         */
+        EMPTY(0),
+
+        /**
+         * Corresponds to Request Code 1
+         */
+        GET(1),
+
+        /**
+         * Corresponds to Request Code 2
+         */
+        POST(2),
+
+        /**
+         * Corresponds to Request Code 3
+         */
+        PUT(3),
+
+        /**
+         * Corresponds to Request Code 4
+         */
+        DELETE(4),
+
+        /**
+         * Corresponds to Response Code 65
+         */
+        CREATED_201(65),
+
+        /**
+         * Corresponds to Response Code 66
+         */
+        DELETED_202(66),
+
+        /**
+         * Corresponds to Response Code 67
+         */
+        VALID_203(67),
+
+        /**
+         * Corresponds to Response Code 68
+         */
+        CHANGED_204(68),
+
+        /**
+         * Corresponds to Response Code 69
+         */
+        CONTENT_205(69),
+
+        /**
+         * Corresponds to Response Code 128
+         */
+        BAD_REQUEST_400(128),
+
+        /**
+         * Corresponds to Response Code 129
+         */
+        UNAUTHORIZED_401(129),
+
+        /**
+         * Corresponds to Response Code 130
+         */
+        BAD_OPTION_402(130),
+
+        /**
+         * Corresponds to Response Code 131
+         */
+        FORBIDDEN_403(131),
+
+        /**
+         * Corresponds to Response Code 132
+         */
+        NOT_FOUND_404(132),
+
+        /**
+         * Corresponds to Response Code 133
+         */
+        METHOD_NOT_ALLOWED_405(133),
+
+        /**
+         * Corresponds to Response Code 134
+         */
+        NOT_ACCEPTABLE_406(134),
+
+        /**
+         * Corresponds to Response Code 140
+         */
+        PRECONDITION_FAILED_412(140),
+
+        /**
+         * Corresponds to Response Code 141
+         */
+        REQUEST_ENTITY_TOO_LARGE_413(141),
+
+        /**
+         * Corresponds to Response Code 143
+         */
+        UNSUPPORTED_CONTENT_FORMAT_415(143),
+
+        /**
+         * Corresponds to Response Code 160
+         */
+        INTERNAL_SERVER_ERROR_500(160),
+
+        /**
+         * Corresponds to Response Code 161
+         */
+        NOT_IMPLEMENTED_501(161),
+
+        /**
+         * Corresponds to Response Code 162
+         */
+        BAD_GATEWAY_502(162),
+
+        /**
+         * Corresponds to Response Code 163
+         */
+        SERVICE_UNAVAILABLE_503(163),
+
+        /**
+         * Corresponds to Response Code 164
+         */
+        GATEWAY_TIMEOUT_504(164),
+
+        /**
+         * Corresponds to Response Code 165
+         */
+        PROXYING_NOT_SUPPORTED_505(165);
 
         private int number;
 
@@ -96,7 +200,10 @@ public abstract class MessageCode {
             validNumbers.put(number, this);
         }
 
-
+        /**
+         * Returns the number corresponding to this {@link de.uniluebeck.itm.ncoap.message.MessageCode} instance
+         * @return the number corresponding to this {@link de.uniluebeck.itm.ncoap.message.MessageCode} instance
+         */
         public int getNumber() {
             return this.number;
         }
@@ -115,18 +222,18 @@ public abstract class MessageCode {
                 return Name.UNKNOWN;
         }
 
+        /**
+         * Returns <code>true</code> if the given number corresponds to a valid
+         * {@link de.uniluebeck.itm.ncoap.message.MessageCode} and <code>false</code> otherwise
+         *
+         * @param number the number to check for being a valid {@link de.uniluebeck.itm.ncoap.message.MessageCode}
+         *
+         * @return <code>true</code> if the given number corresponds to a valid
+         * {@link de.uniluebeck.itm.ncoap.message.MessageCode} and <code>false</code> otherwise
+         */
         public static boolean isMessageCode(int number){
             return validNumbers.containsKey(number);
         }
-
-        public static boolean isRequest(Name messageCode){
-            return MessageCode.isResponse(messageCode.getNumber());
-        }
-
-        public static boolean isResponse(Name messageCode) {
-            return MessageCode.isResponse(messageCode.getNumber());
-        }
-
     }
 
     /**

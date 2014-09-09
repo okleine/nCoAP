@@ -22,20 +22,43 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.message.options;
+package de.uniluebeck.itm.ncoap.communication.codec;
+
+import de.uniluebeck.itm.ncoap.application.client.Token;
+
+import java.net.InetSocketAddress;
 
 /**
- * Exception to be thrown when there is an unknown option number involved, e.g. during creation of an {@link OptionValue}
- * instance or while checking option restrictions using the static methods provided by {@link OptionValue}.
- *
- * @author Oliver Kleine
+ * Created by olli on 13.03.14.
  */
-public class UnknownOptionException extends OptionException{
+public class EncodingFailedEvent {
 
-    /**
-     * @param optionNumber the option number that caused this exception
-     */
-    public UnknownOptionException(int optionNumber){
-        super(optionNumber, "Unknown option number: " + optionNumber);
+    private final InetSocketAddress remoteEndoint;
+    private final int messageID;
+    private final Token token;
+    private final Throwable cause;
+
+
+    EncodingFailedEvent(InetSocketAddress remoteEndoint, int messageID, Token token, Throwable cause){
+        this.remoteEndoint = remoteEndoint;
+        this.messageID = messageID;
+        this.token = token;
+        this.cause = cause;
+    }
+
+    public InetSocketAddress getRemoteEndoint() {
+        return remoteEndoint;
+    }
+
+    public int getMessageID() {
+        return messageID;
+    }
+
+    public Token getToken() {
+        return token;
+    }
+
+    public Throwable getCause() {
+        return this.cause;
     }
 }

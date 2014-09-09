@@ -34,8 +34,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 /**
- * {@link OptionValue} is the abstract base class for CoAP options. It provides a number of useful static constants and methods
- * as well as other methods to be inherited by extending classes.
+ * {@link OptionValue} is the abstract base class for CoAP options. It provides a number of useful static constants and
+ * methods as well as other methods to be inherited by extending classes.
  *
  * @author Oliver Kleine
  */
@@ -77,7 +77,7 @@ public abstract class OptionValue<T>{
      */
     public static class Name{
 
-        private Name(){};
+        private Name(){}
 
         /**
          * Corresponds to option number 1

@@ -226,8 +226,8 @@ public class CoapClientApplication {
 
             @Override
             public void run() {
-                InternalWrappedOutgoingCoapMessage message =
-                        new InternalWrappedOutgoingCoapMessage(coapRequest, coapResponseProcessor);
+                OutgoingCoapMessageWrapper message =
+                        new OutgoingCoapMessageWrapper(coapRequest, coapResponseProcessor);
 
                 ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
                 future.addListener(new ChannelFutureListener() {
@@ -299,8 +299,8 @@ public class CoapClientApplication {
                 final CoapMessage resetMessage =
                         CoapMessage.createEmptyConfirmableMessage(CoapMessage.MESSAGE_ID_UNDEFINED);
 
-                InternalWrappedOutgoingCoapMessage message =
-                        new InternalWrappedOutgoingCoapMessage(resetMessage, resetProcessor);
+                OutgoingCoapMessageWrapper message =
+                        new OutgoingCoapMessageWrapper(resetMessage, resetProcessor);
 
                 ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
                 future.addListener(new ChannelFutureListener() {

@@ -22,30 +22,50 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
+package de.uniluebeck.itm.ncoap.communication.codec;
 
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 06.03.14.
+ * An {@link HeaderDecodingException} indicates that the Header, i.e. the first 4 bytes of an incoming serialized
+ * {@link CoapMessage} are malformed. This exception is thrown during the decoding process and causes an RST message
+ * to be sent to the incoming message origin.
+ *
+ * @author Oliver Kleine
  */
-public class RetransmissionsAlreadyScheduledException extends Exception {
+public class HeaderDecodingException extends Exception{
 
-    private final InetSocketAddress remoteEndpoint;
-    private final int messageID;
+    private int messageID;
+    private InetSocketAddress remoteEndpoint;
 
-    public RetransmissionsAlreadyScheduledException(InetSocketAddress remoteEndpoint, int messageID){
-
-        this.remoteEndpoint = remoteEndpoint;
+    /**
+     * Creates a new instance of {@link HeaderDecodingException}.
+     *
+     * @param messageID the message ID of the message that caused
+     * @param remoteEndpoint the malformed message origin
+     */
+    public HeaderDecodingException(int messageID, InetSocketAddress remoteEndpoint){
+        super();
         this.messageID = messageID;
+        this.remoteEndpoint = remoteEndpoint;
     }
 
-
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
-    }
-
+    /**
+     * Returns the message ID of the incoming malformed message
+     *
+     * @return the message ID of the incoming malformed message
+     */
     public int getMessageID() {
         return messageID;
+    }
+
+    /**
+     * Returns the malformed incoming messages origin CoAP endpoints
+     *
+     * @return the malformed incoming messages origin CoAP endpoints
+     */
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 }

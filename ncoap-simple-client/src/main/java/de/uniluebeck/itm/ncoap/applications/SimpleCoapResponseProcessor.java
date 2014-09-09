@@ -80,17 +80,17 @@ public class SimpleCoapResponseProcessor implements CoapResponseProcessor, Trans
 
 
     @Override
-    public void messageTransmitted(InetSocketAddress remoteEndpint, int messageID, Token token,
+    public void messageTransmitted(InetSocketAddress remoteEndpoint, int messageID, Token token,
                                    boolean retransmission) {
         int value = transmissionCounter.incrementAndGet();
 
         if(retransmission){
             log.info("Transmission #{} for message with ID {} to {} (Token: {})",
-                    new Object[]{value, messageID, remoteEndpint, token});
+                    new Object[]{value, messageID, remoteEndpoint, token});
         }
         else{
             log.info("Message with ID {} written to {} (Token: {})",
-                    new Object[]{messageID, remoteEndpint, token});
+                    new Object[]{messageID, remoteEndpoint, token});
         }
     }
 

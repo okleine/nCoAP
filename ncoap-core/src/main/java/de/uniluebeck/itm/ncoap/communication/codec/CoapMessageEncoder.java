@@ -136,7 +136,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected ChannelBuffer encode(CoapMessage coapMessage) throws InvalidOptionException {
+    protected ChannelBuffer encode(CoapMessage coapMessage) throws OptionCodecException {
         log.info("CoapMessage to be encoded: {}", coapMessage);
 
 
@@ -201,7 +201,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected void encodeOptions(ChannelBuffer buffer, CoapMessage coapMessage) throws InvalidOptionException {
+    protected void encodeOptions(ChannelBuffer buffer, CoapMessage coapMessage) throws OptionCodecException {
 
         //Encode options one after the other and append buf option to the buf
         int previousOptionNumber = 0;
@@ -216,14 +216,14 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
 
     protected void encodeOption(ChannelBuffer buffer, int optionNumber, OptionValue optionValue, int prevNumber)
-            throws InvalidOptionException {
+            throws OptionCodecException {
 
         //The previous option number must be smaller or equal to the actual one
         if(prevNumber > optionNumber){
             log.error("Previous option no. ({}) must not be larger then current option no ({})",
                     prevNumber, optionNumber);
 
-            throw new InvalidOptionException(optionNumber);
+            throw new OptionCodecException(optionNumber);
         }
 
 
@@ -234,13 +234,13 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
             log.error("Option no. {} exceeds maximum option length (actual: {}, max: {}).",
                     new Object[]{optionNumber, optionLength, MAX_OPTION_LENGTH});
 
-            throw new InvalidOptionException(optionNumber);
+            throw new OptionCodecException(optionNumber);
         }
 
 
         if(optionDelta > MAX_OPTION_DELTA){
             log.error("Option delta exceeds maximum option delta (actual: {}, max: {})", optionDelta, MAX_OPTION_DELTA);
-            throw new InvalidOptionException(optionNumber);
+            throw new OptionCodecException(optionNumber);
         }
 
 
@@ -320,8 +320,8 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint,
                                                    int messageID, Token token, Throwable cause){
 
-        InternalEncodingFailedMessage internalMessage =
-                new InternalEncodingFailedMessage(remoteEndpoint, messageID, token, cause);
+        EncodingFailedEvent internalMessage =
+                new EncodingFailedEvent(remoteEndpoint, messageID, token, cause);
 
         Channels.fireMessageReceived(ctx, internalMessage);
     }

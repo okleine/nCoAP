@@ -27,23 +27,29 @@ package de.uniluebeck.itm.ncoap.application.client;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
- * The {@link InternalWrappedOutgoingCoapMessage} is an internal wrapper class for outgoing messages sent by a client.
+ * The {@link OutgoingCoapMessageWrapper} is an internal wrapper class for outgoing CoAP messages sent by a client,
+ * i.e. either outgoing requests or ping messages.
  *
  * @author Oliver Kleine
  */
-public class InternalWrappedOutgoingCoapMessage {
+class OutgoingCoapMessageWrapper {
 
     private final CoapMessage coapMessage;
     private final CoapResponseProcessor coapResponseProcessor;
 
-    public InternalWrappedOutgoingCoapMessage(CoapMessage coapMessage, CoapResponseProcessor coapResponseProcessor){
+    /**
+     * Creates a new {@link OutgoingCoapMessageWrapper}
+     * @param coapMessage the {@link de.uniluebeck.itm.ncoap.message.CoapMessage} to be sent
+     * @param coapResponseProcessor the {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor} to be
+     *                              called by the framework for incoming responses and other events
+     */
+    OutgoingCoapMessageWrapper(CoapMessage coapMessage, CoapResponseProcessor coapResponseProcessor){
         this.coapMessage = coapMessage;
         this.coapResponseProcessor = coapResponseProcessor;
     }
 
     /**
      * Returns the {@link CoapMessage} to be sent
-     *
      * @return the {@link CoapMessage} to be sent
      */
     public CoapMessage getCoapMessage() {
@@ -51,9 +57,8 @@ public class InternalWrappedOutgoingCoapMessage {
     }
 
     /**
-     * Returns the {@link CoapResponseProcessor} to process the awaited {@link CoapMessage}.
-     *
-     * @return the {@link CoapResponseProcessor} to process the awaited {@link CoapMessage}.
+     * Returns the {@link CoapResponseProcessor} to process the awaited {@link CoapMessage} and other events
+     * @return the {@link CoapResponseProcessor} to process the awaited {@link CoapMessage} and other events
      */
     public CoapResponseProcessor getCoapResponseProcessor() {
         return coapResponseProcessor;

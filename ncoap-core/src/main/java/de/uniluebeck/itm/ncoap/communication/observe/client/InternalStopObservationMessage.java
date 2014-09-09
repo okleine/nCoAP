@@ -29,25 +29,43 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 20.03.14.
+ * Instances of this class are sent downstream if a client decides to stop a running observation.
+ *
+ * @author Oliver Kleine
  */
 public class InternalStopObservationMessage {
 
     private InetSocketAddress remoteEndpoint;
     private Token token;
 
-
+    /**
+     * Creates a new instance of
+     * {@link de.uniluebeck.itm.ncoap.communication.observe.client.InternalStopObservationMessage}
+     *
+     * @param remoteEndpoint the {@link java.net.InetSocketAddress} of the remote endpoint providing the observed
+     *                       service
+     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} to identify the observation to be
+     *              stopped
+     */
     public InternalStopObservationMessage(InetSocketAddress remoteEndpoint, Token token) {
         this.remoteEndpoint = remoteEndpoint;
         this.token = token;
     }
 
 
+    /**
+     * Returns the {@link java.net.InetSocketAddress} of the remote endpoint providing the observed service
+     * @return the {@link java.net.InetSocketAddress} of the remote endpoint providing the observed service
+     */
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;
     }
 
 
+    /**
+     * Returns the {@link de.uniluebeck.itm.ncoap.application.client.Token} to identify the observation to be stopped
+     * @return the {@link de.uniluebeck.itm.ncoap.application.client.Token} to identify the observation to be stopped
+     */
     public Token getToken() {
         return token;
     }

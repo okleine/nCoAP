@@ -24,6 +24,9 @@
  */
 package de.uniluebeck.itm.ncoap.message.options;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 
 /**
@@ -33,7 +36,9 @@ import java.util.Arrays;
  *
  * @author Oliver Kleine
  */
-public final class EmptyOptionValue extends OptionValue<byte[]> {
+public final class EmptyOptionValue extends OptionValue<Void> {
+
+    private static Logger log = LoggerFactory.getLogger(EmptyOptionValue.class.getName());
 
     /**
      * @param optionNumber the option number of the {@link EmptyOptionValue} to be created
@@ -42,16 +47,18 @@ public final class EmptyOptionValue extends OptionValue<byte[]> {
      */
     public EmptyOptionValue(int optionNumber) throws IllegalArgumentException {
        super(optionNumber, new byte[0]);
+
+        log.debug("Empty Option (#{}) created.", optionNumber);
     }
 
 
     /**
-     * Returns an empty, i.e. zero-length byte array
-     * @return an empty, i.e. zero-length byte array
+     * Returns <code>null</code>
+     * @return <code>null</code>
      */
     @Override
-    public byte[] getDecodedValue() {
-        return this.value;
+    public Void getDecodedValue() {
+        return null;
     }
 
 

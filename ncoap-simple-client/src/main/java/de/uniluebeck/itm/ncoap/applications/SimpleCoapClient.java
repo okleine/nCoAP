@@ -35,21 +35,22 @@ import java.net.*;
 /**
  * This is a simple example application, to showcase how to use the protocol implementation for clients.
  *
- * <b>Examples</b>:
- *
+ * <b>Examples</b>:<br>
+ * <br>
  * 1. To send a single request to <code>coap://example.org:5683/test</code> one can start the {@link SimpleCoapClient}
- * using e.g. the following command line parameters:
- *
+ * using e.g. the following command line parameters:<br>
+ * <br>
  * <code>--host example.org --port 5683 --path /test -non --duration 20</code>
- *
+ * <br>
+ * <br>
  * This will cause a non-confirmable {@link CoapRequest} to be sent to the Webservice and either await a single
  * response or 20 seconds to pass (whatever happens first). Then the application is shut down.
- *
+ * <br><br>
  * 2. To start the observation of <code>coap://example.org:5683/obs</code> one can start the {@link SimpleCoapClient}
  * using e.g. the following command line parameters:
- *
+ * <br><br>
  * <code>--host example.org --port 5683 --path /obs --observe --maxUpdates 5 --duration 60</code>
- *
+ * <br><br>
  * This will cause a confirmable {@link CoapRequest} with the observe option set to be sent to the Webservice and
  * either await 5 update notifications or 60 seconds to pass (whatever happens first). If one of this shutdown criteria
  * is satisfied, the application is shut down after another delay of 10 seconds.

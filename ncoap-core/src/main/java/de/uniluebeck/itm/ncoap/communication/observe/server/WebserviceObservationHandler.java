@@ -33,8 +33,8 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.InternalServiceRemovedFromServerMessage;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalResetReceivedMessage;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.InternalRetransmissionTimeoutMessage;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
@@ -93,10 +93,10 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
         if((me.getMessage() instanceof CoapRequest) && ((CoapRequest) me.getMessage()).isObserveSet())
             handleIncomingCoapObserveRequest(ctx, me);
 
-        else if(me.getMessage() instanceof InternalResetReceivedMessage)
+        else if(me.getMessage() instanceof ResetReceptionEvent)
             handleInternalResetReceivedMessage(ctx, me);
 
-        else if(me.getMessage() instanceof InternalRetransmissionTimeoutMessage)
+        else if(me.getMessage() instanceof RetransmissionTimeoutEvent)
             handleInternalRetransmissionTimeoutMessage(ctx, me);
 
         else
@@ -129,7 +129,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
     private void handleInternalRetransmissionTimeoutMessage(ChannelHandlerContext ctx, MessageEvent me) {
 
-        InternalRetransmissionTimeoutMessage timeoutMessage = (InternalRetransmissionTimeoutMessage) me.getMessage();
+        RetransmissionTimeoutEvent timeoutMessage = (RetransmissionTimeoutEvent) me.getMessage();
 
         if(observationsPerObserver.contains(timeoutMessage.getRemoteEndpoint(), timeoutMessage.getToken())){
             ObservationParams params = removeObserver(timeoutMessage.getRemoteEndpoint(), timeoutMessage.getToken());
@@ -145,7 +145,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
     private void handleInternalResetReceivedMessage(ChannelHandlerContext ctx, MessageEvent me) {
 
-        InternalResetReceivedMessage resetMessage = (InternalResetReceivedMessage) me.getMessage();
+        ResetReceptionEvent resetMessage = (ResetReceptionEvent) me.getMessage();
 
         if(observationsPerObserver.contains(resetMessage.getRemoteEndpoint(), resetMessage.getToken())){
             ObservationParams params = removeObserver(resetMessage.getRemoteEndpoint(), resetMessage.getToken());

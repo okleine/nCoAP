@@ -24,6 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
+import de.uniluebeck.itm.ncoap.communication.reliability.MessageExchange;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 import java.net.InetSocketAddress;
@@ -31,15 +32,14 @@ import java.net.InetSocketAddress;
 /**
  * Created by olli on 08.03.14.
  */
-public class OutgoingReliableMessageExchange extends OutgoingMessageExchange {
+public class OutgoingReliableMessageExchange extends MessageExchange {
 
     private CoapMessage coapMessage;
     private int retransmissionCount;
     private boolean retransmissionStopped;
 
-
     public OutgoingReliableMessageExchange(InetSocketAddress remoteEndpoint, CoapMessage coapMessage) {
-        super(remoteEndpoint, coapMessage.getMessageID(), coapMessage.getToken());
+        super(remoteEndpoint, coapMessage.getMessageID());
         this.coapMessage = coapMessage;
         this.retransmissionCount = 0;
         this.retransmissionStopped = false;
@@ -50,7 +50,7 @@ public class OutgoingReliableMessageExchange extends OutgoingMessageExchange {
         return coapMessage;
     }
 
-    public void setCoapMessage(CoapMessage coapMessage){
+    void setCoapMessage(CoapMessage coapMessage){
         this.coapMessage = coapMessage;
     }
 
@@ -69,5 +69,10 @@ public class OutgoingReliableMessageExchange extends OutgoingMessageExchange {
 
     public void stopRetransmission() {
         this.retransmissionStopped = true;
+    }
+
+    @Override
+    public boolean equals(Object object){
+        return object instanceof OutgoingReliableMessageExchange && super.equals(object);
     }
 }

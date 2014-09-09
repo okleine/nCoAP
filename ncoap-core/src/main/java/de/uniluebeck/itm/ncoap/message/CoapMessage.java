@@ -579,7 +579,7 @@ public abstract class CoapMessage {
      *
      * @param maxAge the value for the Max-Age option to be set
      *
-     * @throws de.uniluebeck.itm.ncoap.communication.codec.InvalidOptionException
+     * @throws de.uniluebeck.itm.ncoap.communication.codec.OptionCodecException
      */
     public void setMaxAge(long maxAge)  {
         try{

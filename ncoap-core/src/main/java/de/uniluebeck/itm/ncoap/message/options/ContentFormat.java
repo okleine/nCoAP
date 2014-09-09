@@ -67,22 +67,22 @@ public abstract class ContentFormat {
     public static final long    APP_JSON            = 50;
 
     /**
-     * Corresponds to number 201
+     * Corresponds to number 201 (no standard but defined for very selfish reasons)
      */
     public static final long    APP_RDF_XML         = 201;
 
     /**
-     * Corresponds to number 202
+     * Corresponds to number 202 (no standard but defined for very selfish reasons)
      */
     public static final long    APP_TURTLE          = 202;
 
     /**
-     * Corresponds to number 203
+     * Corresponds to number 203 (no standard but defined for very selfish reasons)
      */
     public static final long    APP_N3              = 203;
 
     /**
-     * Corresponds to number 205
+     * Corresponds to number 205 (no standard but defined for very selfish reasons)
      */
     public static final long    APP_SHDT            = 205;
 }

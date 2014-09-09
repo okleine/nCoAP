@@ -29,10 +29,27 @@ import de.uniluebeck.itm.ncoap.communication.reliability.MessageExchange;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 07.03.14.
+ * Instances of {@link de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageExchange} represent
+ * a message exchange that was started by a remote endpoint with a non-confirmable
+ * {@link de.uniluebeck.itm.ncoap.message.CoapMessage}.
+ *
+ * The actions required upon creation of an
+ * {@link de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageExchange} depend on the type of
+ * the receiving endpoint (client or server), e.g. for a server it is used for duplicate detection to not let the
+ * addressed service process the same request twice.
+ *
+ * @author Oliver Kleine
  */
 public class IncomingMessageExchange extends MessageExchange {
 
+    /**
+     * Creates a new instance of
+     * {@link de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageExchange}
+     *
+     * @param remoteEndpoint the sender of the received non-confirmable
+     *                       {@link de.uniluebeck.itm.ncoap.message.CoapMessage}
+     * @param messageID the message ID of the received {@link de.uniluebeck.itm.ncoap.message.CoapMessage}.
+     */
     public IncomingMessageExchange(InetSocketAddress remoteEndpoint, int messageID){
         super(remoteEndpoint, messageID);
     }

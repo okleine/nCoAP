@@ -27,7 +27,9 @@ package de.uniluebeck.itm.ncoap.communication.reliability;
 import java.net.InetSocketAddress;
 
 /**
-* Created by olli on 07.03.14.
+ * Abstract base class for message exchanges, i.e. associated request/response pairs.
+ *
+ * @author Oliver Kleine
 */
 public abstract class MessageExchange {
 
@@ -35,18 +37,31 @@ public abstract class MessageExchange {
     private final int messageID;
 
 
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageExchange}
+     *
+     * @param remoteEndpoint the sender of the received {@link de.uniluebeck.itm.ncoap.message.CoapMessage}
+     * @param messageID the message ID of the received {@link de.uniluebeck.itm.ncoap.message.CoapMessage}
+     */
     public MessageExchange(InetSocketAddress remoteEndpoint, int messageID){
-
         this.remoteEndpoint = remoteEndpoint;
         this.messageID = messageID;
     }
 
 
+    /**
+     * Returns the sender address of the received {@link de.uniluebeck.itm.ncoap.message.CoapMessage}
+     * @return the sender address of the received {@link de.uniluebeck.itm.ncoap.message.CoapMessage}
+     */
     public final InetSocketAddress getRemoteEndpoint(){
         return this.remoteEndpoint;
     }
 
 
+    /**
+     * Returns the message ID of the received {@link de.uniluebeck.itm.ncoap.message.CoapMessage}
+     * @return the message ID of the received {@link de.uniluebeck.itm.ncoap.message.CoapMessage}
+     */
     public final int getMessageID(){
         return this.messageID;
     }

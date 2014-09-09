@@ -34,13 +34,13 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 
 /**
- * Instances of {@link InvalidOptionException} are thrown if either encoding of decoding of a {@link CoapMessage}
+ * Instances of {@link OptionCodecException} are thrown if either encoding of decoding of a {@link CoapMessage}
  * failed because of an invalid option (for decoding only if the option was critical as non-critical options are
  * silently ignored).
  *
  * @author Oliver Kleine
  */
-public class InvalidOptionException extends Exception{
+public class OptionCodecException extends Exception{
 
     private static final String message = "Unsupported critical option (No. %d)";
 
@@ -53,7 +53,7 @@ public class InvalidOptionException extends Exception{
     /**
      * @param optionNumber the option number of the {@link OptionValue} that caused this exception
      */
-    public InvalidOptionException(int optionNumber){
+    public OptionCodecException(int optionNumber){
         super();
         this.optionNumber = optionNumber;
     }

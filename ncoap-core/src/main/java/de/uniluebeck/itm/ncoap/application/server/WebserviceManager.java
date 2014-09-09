@@ -25,14 +25,11 @@
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
-import de.uniluebeck.itm.ncoap.communication.codec.*;
 import de.uniluebeck.itm.ncoap.communication.observe.server.InternalObservableWebserviceRegistrationMessage;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.InvalidHeaderException;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;

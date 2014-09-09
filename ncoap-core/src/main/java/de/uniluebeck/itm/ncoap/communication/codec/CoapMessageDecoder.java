@@ -42,7 +42,7 @@ import java.net.InetSocketAddress;
  *          ignored and the {@link CoapResponse} is further processed without these options.
  *     </li>
  *     <li>
- *          If the incoming messge is a {@link CoapRequest}, then malformed or unsupported, i.e. unknown
+ *          If the incoming message is a {@link CoapRequest}, then malformed or unsupported, i.e. unknown
  *          non-critical options are silently ignored but critical options lead to an immediate
  *          {@link CoapResponse} with {@link MessageCode.Name#BAD_OPTION_402} being sent to the remote CoAP endpoints.
  *     </li>
@@ -90,13 +90,13 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
 
     private CoapMessage decode(InetSocketAddress remoteEndpoint, ChannelBuffer buffer)
-            throws InvalidHeaderException, InvalidOptionException {
+            throws HeaderDecodingException, OptionCodecException {
 
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4)
-            throw new InvalidHeaderException(CoapMessage.MESSAGE_ID_UNDEFINED, remoteEndpoint);
+            throw new HeaderDecodingException(CoapMessage.MESSAGE_ID_UNDEFINED, remoteEndpoint);
 
 
         //Decode the header values
@@ -113,17 +113,17 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
         //Check whether the protocol version is supported (=1)
         if(version != CoapMessage.PROTOCOL_VERSION)
-            throw new InvalidHeaderException(messageID, remoteEndpoint);
+            throw new HeaderDecodingException(messageID, remoteEndpoint);
 
 
         //Check whether TKL indicates a not allowed token length
         if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH)
-            throw new InvalidHeaderException(messageID, remoteEndpoint);
+            throw new HeaderDecodingException(messageID, remoteEndpoint);
 
 
         //Check whether there are enough unread bytes left to read the token
         if(buffer.readableBytes() < tokenLength)
-            throw new InvalidHeaderException(messageID, remoteEndpoint);
+            throw new HeaderDecodingException(messageID, remoteEndpoint);
 
 
         //Handle empty message (ignore everything but the first 4 bytes)
@@ -140,7 +140,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
             //There is no empty NON message defined, so send a RST
             else
-                throw new InvalidHeaderException(messageID, remoteEndpoint);
+                throw new HeaderDecodingException(messageID, remoteEndpoint);
         }
 
 
@@ -167,7 +167,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             try {
                 setOptions(coapMessage, buffer);
             }
-            catch (InvalidOptionException e) {
+            catch (OptionCodecException e) {
                 e.setMessageID(messageID);
                 e.setToken(new Token(token));
                 e.setRemoteEndpoint(remoteEndpoint);
@@ -196,7 +196,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
     }
 
 
-    private void setOptions(CoapMessage coapMessage, ChannelBuffer buffer) throws InvalidOptionException{
+    private void setOptions(CoapMessage coapMessage, ChannelBuffer buffer) throws OptionCodecException {
 
         //Decode the options
         int previousOptionNumber = 0;
@@ -267,7 +267,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 
                 //Critical malformed options in requests cause an exception
                 else if(OptionValue.isCritical(actualOptionNumber))
-                    throw new InvalidOptionException(actualOptionNumber);
+                    throw new OptionCodecException(actualOptionNumber);
                 
                 //Not critical malformed options in requests are silently ignored... 
                 else
@@ -293,8 +293,8 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         Throwable cause = exceptionEvent.getCause();
 
         //Invalid Header Exceptions cause a RST
-        if(cause instanceof InvalidHeaderException){
-            de.uniluebeck.itm.ncoap.communication.codec.InvalidHeaderException ex = (de.uniluebeck.itm.ncoap.communication.codec.InvalidHeaderException) cause;
+        if(cause instanceof HeaderDecodingException){
+            HeaderDecodingException ex = (HeaderDecodingException) cause;
 
             if (ex.getMessageID() != CoapMessage.MESSAGE_ID_UNDEFINED)
                 writeReset(ctx, ex.getMessageID(), ex.getRemoteEndpoint());
@@ -302,8 +302,8 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 log.warn("Ignore incoming message with malformed header...");
         }
 
-        else if(cause instanceof InvalidOptionException){
-            InvalidOptionException ex = (InvalidOptionException) cause;
+        else if(cause instanceof OptionCodecException){
+            OptionCodecException ex = (OptionCodecException) cause;
             MessageType.Name messageType = ex.getMessageType() == MessageType.Name.CON.getNumber() ?
                     MessageType.Name.ACK : MessageType.Name.NON;
 

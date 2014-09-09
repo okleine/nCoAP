@@ -51,6 +51,8 @@ import java.util.HashMap;
 
 
 /**
+ * This class is a container of useful helpers to deal with message types.
+ *
  * @author Oliver Kleine
  */
 public abstract class MessageType {
@@ -60,9 +62,25 @@ public abstract class MessageType {
     public static enum Name{
 
         UNKNOWN(-1),
+
+        /**
+         * Corresponds to Message Type 0
+         */
         CON(0),
+
+        /**
+         * Corresponds to Message Type 1
+         */
         NON(1),
+
+        /**
+         * Corresponds to Message Type 2
+         */
         ACK(2),
+
+        /**
+         * Corresponds to Message Type 3
+         */
         RST(3);
 
         private int number;
@@ -72,6 +90,10 @@ public abstract class MessageType {
             validNumbers.put(number, this);
         }
 
+        /**
+         * Returns the number that corresponds to the given {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
+         * @return the number that corresponds to the given {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
+         */
         public int getNumber(){
             return this.number;
         }

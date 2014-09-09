@@ -29,7 +29,7 @@
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 * following conditions are met:
 *
-*  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+*  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
 *    disclaimer.
 *
 *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -48,53 +48,67 @@
 */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import java.net.InetSocketAddress;
-
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.MessageType;
+
+import java.net.InetSocketAddress;
 
 /**
-* Instances are sent upstream by the {@link OutgoingMessageReliabilityHandler} whenever there was a retransmission
-* of a confirmable {@link CoapMessage}.
-*
-* @author Oliver Kleine
-*/
-public class InternalMessageRetransmittedMessage {
+ * Instances of {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutEvent} are sent
+ * upstream by the {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler}
+ * if a {@link de.uniluebeck.itm.ncoap.message.CoapMessage} of type {@link MessageType.Name#CON} was not acknowledged
+ * by the remote endpoint despite the maximum number of retransmission attempts.
+ *
+ * @author Oliver Kleine
+ */
+public class RetransmissionTimeoutEvent {
 
-    private InetSocketAddress remoteAddress;
-    private Token token;
     private int messageID;
+    private Token token;
+    private InetSocketAddress remoteEndpoint;
+
 
     /**
-     * @param remoteAddress the recipient of the retransmitted message
-     * @param token the token of the retransmitted message
+     * @param token a long value representing the token of the outgoing confirmable
+     * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that was not acknowledged by the recipient
+     *
+     * @param remoteEndpoint the address of the intended recipient of the outgoing confirmable
+     * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that did not acknowledge the reception
      */
-    public InternalMessageRetransmittedMessage(InetSocketAddress remoteAddress, Token token, int messageID) {
-        this.remoteAddress = remoteAddress;
-        this.token = token;
+    public RetransmissionTimeoutEvent(InetSocketAddress remoteEndpoint, int messageID, Token token){
         this.messageID = messageID;
+        this.token = token;
+        this.remoteEndpoint = remoteEndpoint;
     }
 
-    /**
-     * Returns the recipient of the retransmitted message
-     * @return the recipient of the retransmitted message
-     */
-    public InetSocketAddress getRemoteAddress() {
-        return remoteAddress;
-    }
 
     /**
-     * Returns the token of the retransmitted message
-     * @return the token of the retransmitted message
+     * Returns the token of the outgoing confirmable {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that was not
+     * acknowledged by the recipient
+     * @return the token of the outgoing confirmable {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that was not
+     * acknowledged by the recipient
      */
     public Token getToken() {
         return token;
     }
 
 
+    /**
+     * Returns the address of the intended recipient of the outgoing confirmable
+     * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that did not acknowledge the reception.
+     *
+     * @return the address of the intended recipient of the outgoing confirmable
+     * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that did not acknowledge the reception.
+     */
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
+    }
+
+
     @Override
     public String toString(){
-        return "[InternalMessageRetransmittedMessage]: " + remoteAddress + " (remote address), "
+        return "Retransmission Timeout Event: " + remoteEndpoint + " (remote address), "
                 + token + " (token)";
     }
 

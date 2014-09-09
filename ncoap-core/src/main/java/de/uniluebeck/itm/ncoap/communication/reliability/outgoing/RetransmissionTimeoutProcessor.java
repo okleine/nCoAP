@@ -40,7 +40,12 @@ import java.net.InetSocketAddress;
 public interface RetransmissionTimeoutProcessor {
 
     /**
-     * Method invoked by the nCoAP framework when there was an outgoing
+     * Method invoked by the nCoAP framework if there was an outgoing confirmable CoAP request that was neither
+     * acknowledged nor reseted by the recipient.
+     *
+     * @param remoteEndpoint the address of the remote endpoint to receive the transmitted message
+     * @param messageID the message ID of the transmitted message
+     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the transmitted message
      */
     public void processRetransmissionTimeout(InetSocketAddress remoteEndpoint, int messageID, Token token);
 }

@@ -32,8 +32,8 @@ import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
 import java.net.InetSocketAddress;
 
 /**
- * Interface to be implemented by instances of {@link CoapResponseProcessor}
- * that want to somehow know about each transmission attempt of the related {@link CoapRequest}, e.g. in order to print
+ * Interface to be implemented by instances of {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor}
+ * that want to somehow know about each transmission attempt of the related CoAP request, e.g. in order to print
  * it on screen or log it.
  *
  * @author Oliver Kleine
@@ -42,16 +42,19 @@ import java.net.InetSocketAddress;
 public interface TransmissionInformationProcessor {
 
     /**
-     * Method invoked by the {@link CoapClientApplication} for each attempt to send the {@link CoapRequest} related
-     * to this {@link CoapResponseProcessor}, i.e. this {@link CoapResponseProcessor} is supposed to process the
-     * awaited {@link CoapResponse}.
+     * Method invoked by the framework for each attempt to send the CoAP request related
+     * to this {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor}.
      *
      * This happens 5 times at maximum, once for the original request and 4 times for retransmission attempts if the
-     * {@link CoapRequest} was confirmable.
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} was confirmable.
      *
-     * @param retransmission <code>false</code> if the {@link CoapRequest} was transmitted for the first time (for both,
-     *                       {@link MessageType.Name#CON} and {@link MessageType.Name#NON) and <code>true</code> for
-     *                       retransmissions (for {@link MessageType.Name#CON} only).
+     * @param remoteEndpoint the address of the remote endpoint to receive the transmitted message
+     * @param messageID the message ID of the transmitted message
+     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the transmitted message
+     * @param retransmission <code>false</code> if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} was
+     *                       transmitted for the first time (for both, {@link MessageType.Name#CON} and
+     *                       {@link MessageType.Name#NON) and <code>true</code> for retransmissions
+     *                       (for {@link MessageType.Name#CON} only).
      */
-    public void messageTransmitted(InetSocketAddress remoteEndpint, int messageID, Token token, boolean retransmission);
+    public void messageTransmitted(InetSocketAddress remoteEndpoint, int messageID, Token token, boolean retransmission);
 }

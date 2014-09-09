@@ -49,6 +49,8 @@ public class StringOptionValue extends OptionValue<String> {
      */
     public StringOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
         super(optionNumber, value);
+
+        log.debug("String Option (#{}) created with value: '{}'.", optionNumber, this.getDecodedValue());
     }
 
     /**
@@ -127,6 +129,7 @@ public class StringOptionValue extends OptionValue<String> {
         int i;
         do{
             i = in.read();
+
             //-1 indicates end of stream
             if(i == -1)
                 break;

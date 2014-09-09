@@ -29,7 +29,10 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 05.03.14.
+ * This exception is thrown in case of the (very unlikely) event that no more message IDs are available for the
+ * given remote endpoint, i.e. there were 65535 messages sent to that remote endpoint within the last ~4 minutes.
+ *
+ * @author Oliver Kleine
  */
 public class NoMessageIDAvailableException extends Exception{
 
@@ -37,6 +40,13 @@ public class NoMessageIDAvailableException extends Exception{
     private long waitingPeriod;
     private Token token;
 
+    /**
+     * Creates a new instance of
+     * {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.NoMessageIDAvailableException}
+     * @param remoteEndpoint the address of the remote endpoint where there is currently no more message ID available
+     *                       for
+     * @param waitingPeriod the time to wait (in milliseconds) until there is at least one message ID available
+     */
     public NoMessageIDAvailableException(InetSocketAddress remoteEndpoint, long waitingPeriod){
         super("All message IDs for " + remoteEndpoint + " are in use. Wait for " +
                 waitingPeriod + " milliseconds");
@@ -45,21 +55,40 @@ public class NoMessageIDAvailableException extends Exception{
     }
 
 
-    public void setToken(Token token){
+    /**
+     * This method is called by the framework to set the token of the outgoing message that caused this exception
+     * @param token the token of the outgoing message that caused this exception
+     */
+    void setToken(Token token){
         this.token = token;
     }
 
-
+    /**
+     * Returns the address of the CoAP endpoint that was supposed to receive the outgoing message that caused this
+     * exception
+     * @return the address of the CoAP endpoint that was supposed to receive the outgoing message that caused this
+     * exception
+     */
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;
     }
 
 
+    /**
+     * Returns the time to wait (in milliseconds) until there is at least one message ID available
+     * @return the time to wait (in milliseconds) until there is at least one message ID available
+     */
     public long getWaitingPeriod() {
         return waitingPeriod;
     }
 
 
+    /**
+     * Returns the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the outgoing message that caused this
+     * exception
+     * @return the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the outgoing message that caused this
+     * exception
+     */
     public Token getToken() {
         return token;
     }

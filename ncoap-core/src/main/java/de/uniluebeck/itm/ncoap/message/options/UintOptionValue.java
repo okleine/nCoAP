@@ -51,6 +51,8 @@ public class UintOptionValue extends OptionValue<Long> {
 
     public UintOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
         super(optionNumber, shortenValue(value));
+
+        log.debug("Uint Option (#{}) created with value: {}", optionNumber, this.getDecodedValue());
     }
 
     public UintOptionValue(int optionNumber, long value) throws IllegalArgumentException {

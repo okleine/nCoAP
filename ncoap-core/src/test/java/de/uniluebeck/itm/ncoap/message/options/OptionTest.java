@@ -262,7 +262,7 @@
 //        }
 //    }
 //
-//    public static String optionListToString(Collection<Option> list) throws InvalidOptionException {
+//    public static String optionListToString(Collection<Option> list) throws OptionCodecException {
 //        StringBuilder res = new StringBuilder();
 //        for (Option option : list) {
 //            res.append(String.format("%-15s = %s\n",

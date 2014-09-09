@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.communication.codec.InvalidOptionException;
+import de.uniluebeck.itm.ncoap.communication.codec.OptionCodecException;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -207,9 +207,9 @@ public class CoapResponse extends CoapMessage {
      * @param locationURI The location URI of the newly created resource. The parts scheme, host, and port are
      * ignored anyway and thus may not be included in the URI object
      *
-     * @throws de.uniluebeck.itm.ncoap.communication.codec.InvalidOptionException if at least one of the options to be added is not valid
+     * @throws de.uniluebeck.itm.ncoap.communication.codec.OptionCodecException if at least one of the options to be added is not valid
      */
-    public void setLocationURI(URI locationURI) throws InvalidOptionException {
+    public void setLocationURI(URI locationURI) throws OptionCodecException {
 
         options.removeAll(OptionValue.Name.LOCATION_PATH);
         options.removeAll(OptionValue.Name.LOCATION_QUERY);
@@ -289,7 +289,7 @@ public class CoapResponse extends CoapMessage {
 //        try{
 //            Option option = Option.createUintOption(OptionRegistry.Option.Name.OBSERVE_RESPONSE, sequenceNumber);
 //            options.addOption(header.getMessageCode(), OptionRegistry.Option.Name.OBSERVE_RESPONSE, option);
-//        } catch (InvalidOptionException e) {
+//        } catch (OptionCodecException e) {
 //            options.removeAllOptions(OptionRegistry.Option.Name.OBSERVE_RESPONSE);
 //            log.error("This should never happen!", e);
 //        } catch (ToManyOptionsException e) {

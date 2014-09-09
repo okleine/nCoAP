@@ -29,7 +29,7 @@
 * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 * following conditions are met:
 *
-*  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+*  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
 *    disclaimer.
 *
 *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
@@ -48,68 +48,60 @@
 */
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.MessageType;
-
 import java.net.InetSocketAddress;
 
+import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+
 /**
- * Instances of {@link InternalRetransmissionTimeoutMessage} are sent upstream by the
- * {@link OutgoingMessageReliabilityHandler} if a {@link CoapMessage} of type
- * {@link MessageType.Name#CON} was not acknowledged despite the maximum number of
- * retransmission attempts.
- *
- * @author Oliver Kleine
- */
-public class InternalRetransmissionTimeoutMessage {
+* Instances are sent upstream by the {@link OutgoingMessageReliabilityHandler} whenever there was a retransmission
+* of a confirmable {@link CoapMessage}.
+*
+* @author Oliver Kleine
+*/
+public class MessageRetransmissionEvent {
 
-    private int messageID;
+    private InetSocketAddress remoteAddress;
     private Token token;
-    private InetSocketAddress remoteEndpoint;
-
+    private int messageID;
 
     /**
-     * @param token a long value representing the token of the outgoing confirmable {@link CoapMessage} that was not
-     *              acknowledged by the recipient
-     *
-     * @param remoteEndpoint the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that
-     *                      did not acknowledge the reception
+     * @param remoteAddress the recipient of the retransmitted message
+     * @param token the token of the retransmitted message
      */
-    public InternalRetransmissionTimeoutMessage(InetSocketAddress remoteEndpoint, int messageID, Token token){
-        this.messageID = messageID;
+    public MessageRetransmissionEvent(InetSocketAddress remoteAddress, Token token, int messageID) {
+        this.remoteAddress = remoteAddress;
         this.token = token;
-        this.remoteEndpoint = remoteEndpoint;
+        this.messageID = messageID;
     }
 
+    /**
+     * Returns the recipient of the retransmitted message
+     * @return the recipient of the retransmitted message
+     */
+    public InetSocketAddress getRemoteAddress() {
+        return remoteAddress;
+    }
 
     /**
-     * Returns the token of the outgoing confirmable {@link CoapMessage} that was not acknowledged by the recipient
-     * @return the token of the outgoing confirmable {@link CoapMessage} that was not acknowledged by the recipient
+     * Returns the token of the retransmitted message
+     * @return the token of the retransmitted message
      */
     public Token getToken() {
         return token;
     }
 
 
-    /**
-     * Returns the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that did not
-     * acknowledge the reception.
-     *
-     * @return the address of the intended recipient of the outgoing confirmable {@link CoapMessage} that did not
-     * acknowledge the reception.
-     */
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
-    }
-
-
     @Override
     public String toString(){
-        return "InternalRetransmissionTimeoutMessage: " + remoteEndpoint + " (remote address), "
+        return "Message Retransmission Event: " + remoteAddress + " (remote address), "
                 + token + " (token)";
     }
 
+    /**
+     * Returns the message ID of the retransmitted message
+     * @return the message ID of the retransmitted message
+     */
     public int getMessageID() {
         return messageID;
     }

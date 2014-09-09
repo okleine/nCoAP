@@ -22,28 +22,57 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
-package de.uniluebeck.itm.ncoap.message.options;
+import de.uniluebeck.itm.ncoap.application.client.Token;
+
+import java.net.InetSocketAddress;
 
 /**
- * Exception to be thrown whenever the {@link OptionValue} instance causing this exception, e.g. while being created,
- * is invalid, mostly because of an invalid value. Use {@link #getMessage()} for further details on the reason.
- *
- * @author Oliver Kleine
- */
-public class InvalidOptionException extends OptionException {
+* Instances are sent upstream (i.e. to the plugtest) by the {@link OutgoingMessageReliabilityHandler}
+* when there was an empty acknowledgement received indicating that a recipient received a a confirmable
+* message.
+*
+* @author Oliver Kleine
+*/
+public class EmptyAcknowledgementReceptionEvent {
+
+    private InetSocketAddress remoteEndpoint;
+    private int messageID;
+    private Token token;
 
     /**
-     * @param optionNumber the option number of the {@link OptionValue} that caused this exception
-     * @param msg a human-readable message to explain why this exception was thrown
+     * @param token the token of the confirmed message
      */
-    public InvalidOptionException(int optionNumber, String msg){
-        super(optionNumber, msg);
+    public EmptyAcknowledgementReceptionEvent(InetSocketAddress remoteEndpoint, int messageID,
+                                              Token token){
+        this.remoteEndpoint = remoteEndpoint;
+        this.messageID = messageID;
+        this.token = token;
+    }
+
+    /**
+     * Returns the token of the confirmed message
+     * @return the token of the confirmed message
+     */
+    public Token getToken(){
+        return token;
+    }
+
+    public int getMessageID() {
+        return messageID;
+    }
+
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 
     @Override
-    public String getMessage(){
-        return "Option No. " + this.getOptionNumber() + "caused: " + super.getMessage();
+    public String toString(){
+        return "[Internal message for empty ACK reception] "
+                + "Remote address: " + this.remoteEndpoint.toString()
+                + ", Token: " + token.toString();
     }
+
 
 }

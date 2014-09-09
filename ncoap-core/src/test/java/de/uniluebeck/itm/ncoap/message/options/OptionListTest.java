@@ -165,7 +165,7 @@
 //                    //fail if exception does not occur
 //                    fail("Missing exception for multiple " + optionName
 //                            + " options with " + codeConstraints.messageCode + " messageCode.");
-//                } catch(InvalidOptionException e) { }
+//                } catch(OptionCodecException e) { }
 //            }
 //
 //            //not allowed for this messageCode
@@ -176,7 +176,7 @@
 //                    //fail if exception does not occur
 //                    fail("Missing exception for " + optionName
 //                            + " option with " + codeConstraints.messageCode + " messageCode.");
-//                } catch(InvalidOptionException e) { }
+//                } catch(OptionCodecException e) { }
 //            }
 //        }
 //    }

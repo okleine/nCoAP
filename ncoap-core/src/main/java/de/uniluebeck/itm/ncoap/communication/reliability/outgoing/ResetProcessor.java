@@ -30,10 +30,21 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 08.03.14.
+ * Interface to be implemented by instances of {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor}
+ * to deal with incoming RST messages.
+ *
+ * @author Oliver Kleine
  */
 public interface ResetProcessor extends CoapResponseProcessor{
 
+    /**
+     * This method is invoked by the framework if the outgoing {@link de.uniluebeck.itm.ncoap.message.CoapRequest}
+     * caused an RST message at the server.
+     *
+     * @param remoteEndpoint the address of the server that sent the RST message
+     * @param messageID the message ID of the reseted CoAP request
+     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the reseted CoAP request
+     */
     public void processReset(InetSocketAddress remoteEndpoint, int messageID, Token token);
 
 }
