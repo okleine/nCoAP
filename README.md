@@ -1,14 +1,13 @@
 ## nCoAP
 
-### Java implementation of the CoAP protocol (draft 18)
+### Java implementation of the CoAP protocol (RFC 7252)
 
-See: http://tools.ietf.org/html/draft-ietf-core-coap-18
+See: https://datatracker.ietf.org/doc/rfc7252/
 
-Draft-18 is the one to become an RFC at some time, i.e., there are (if any) only few and minor changes expected in the
-future. This implementation currently supports the main protocol plus
+This implementation currently supports the main protocol according to RFC 7252 (without SSL) plus
 
 * the core link format (see https://datatracker.ietf.org/doc/rfc6690/) and
-* the observe extension (draft 12) (see http://tools.ietf.org/html/draft-ietf-core-observe-12).
+* the observe extension (draft 14) (see http://tools.ietf.org/html/draft-ietf-core-observe-14).
 
 ### Maven
 
