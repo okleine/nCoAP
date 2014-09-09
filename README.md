@@ -13,8 +13,10 @@ This implementation currently supports the main protocol according to RFC 7252 (
 
 The nCoAP project is organized in several maven modules, i.e.,
 
+```xml
 <groupId>de.uniluebeck.itm</groupId>
 <artifactId>ncoap-core</artifactId>
+```
 
 for the raw protocol implementation. For CoAP application development this probably what you want.
 To use the latest protocol implementation release add the following to your pom.xml
