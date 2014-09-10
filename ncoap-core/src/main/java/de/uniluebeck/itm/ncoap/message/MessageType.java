@@ -91,8 +91,8 @@ public abstract class MessageType {
         }
 
         /**
-         * Returns the number that corresponds to the given {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
-         * @return the number that corresponds to the given {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
+         * Returns the number that corresponds to this {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
+         * @return the number that corresponds to this {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
          */
         public int getNumber(){
             return this.number;

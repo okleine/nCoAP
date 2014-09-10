@@ -97,12 +97,22 @@ public class ObservationParams {
 
 
     /**
+     * Sets the initial sequence number, the first update notification will have <code>sequenceNumber + 1</code> as
+     * sequence number
+     *
+     * @param sequenceNumber the initial sequence number
+     */
+    public void setInitialSequenceNumber(long sequenceNumber){
+        this.notificationCount = new AtomicLong(sequenceNumber);
+    }
+
+    /**
      * Increments the sequence number to be used as {@link OptionValue.Name#OBSERVE} for update notifications by 1 and
      * returns the new value after incrementation.
      *
      * @return the new value after incrementation by 1
      */
-    public long nextNotification(){
+    public long getNextSequenceNumber(){
         return this.notificationCount.incrementAndGet();
     }
 

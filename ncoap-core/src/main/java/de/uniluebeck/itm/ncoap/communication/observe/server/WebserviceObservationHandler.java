@@ -235,7 +235,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
                 else{
                     ObservationParams params = observationsPerObserver.get(remoteEndpoint, coapResponse.getToken());
-
+                    params.setInitialSequenceNumber(coapResponse.getObservationSequenceNumber());
                     if(params.getLatestUpdateNotificationMessageID() != coapResponse.getMessageID()){
                         log.debug("Set latest message ID for observation to {}", coapResponse.getMessageID());
                         params.setLatestUpdateNotificationMessageID(coapResponse.getMessageID());
@@ -244,7 +244,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
                     if(params.getContentFormat() == ContentFormat.UNDEFINED)
                         params.setContentFormat(coapResponse.getContentFormat());
 
-                    coapResponse.setObserveOption(params.nextNotification());
+                    coapResponse.setObserveOption(params.getNextSequenceNumber());
                 }
             }
         }

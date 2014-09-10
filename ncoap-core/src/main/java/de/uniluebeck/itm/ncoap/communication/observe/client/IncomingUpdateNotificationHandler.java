@@ -59,7 +59,7 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
         if(me.getMessage() instanceof CoapRequest)
             handleOutgoingCoapRequest(ctx, me);
 
-        else if(me.getMessage() instanceof InternalStopObservationMessage)
+        else if(me.getMessage() instanceof ClientStopsObservationEvent)
             handleInternalStopObservationMessage(me);
 
         else
@@ -67,7 +67,7 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
     }
 
     private void handleInternalStopObservationMessage(MessageEvent me) {
-        InternalStopObservationMessage internalMessage = (InternalStopObservationMessage) me.getMessage();
+        ClientStopsObservationEvent internalMessage = (ClientStopsObservationEvent) me.getMessage();
 
         if(observations.remove(internalMessage.getRemoteEndpoint(), internalMessage.getToken())){
             me.getFuture().setSuccess();

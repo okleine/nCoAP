@@ -29,12 +29,30 @@ import de.uniluebeck.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
 
 
 /**
+ * Instances of {@link de.uniluebeck.itm.ncoap.message.CoapResponse} are created by an instance of
+ * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} to answer requests.
+ *
+ * <b>Note:</b> The given {@link MessageType.Name} (one of
+ * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} or
+ * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#NON}) may be changed
+ * by the framework before it is sent to the other CoAP endpoints. Such a change might e.g. happen if this
+ * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} was created with
+ * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} to answer a
+ * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} with
+ * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} and the framework did not yet send an empty
+ * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will
+ * ensure the {@link de.uniluebeck.itm.ncoap.message.MessageType} of this
+ * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} to be set to
+ * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#ACK} to make it a piggy-backed response.
+ *
  * @author Oliver Kleine
  */
 public class CoapResponse extends CoapMessage {
@@ -44,20 +62,14 @@ public class CoapResponse extends CoapMessage {
     private static final String NO_ERRROR_CODE = "Code no. %s is no error code!";
 
     /**
-     * Creates a new instance of {@link CoapResponse}.
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.message.CoapResponse}
      *
-     * <b>Note:</b> The given {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     * {@link MessageType.Name#NON}) may be changed
-     * by the framework before it is sent to the other CoAP endpoints. Such a change might e.g. happen if this
-     * {@link CoapResponse} was created with {@link MessageType.Name#CON} to answer a {@link CoapRequest} with
-     * {@link MessageType.Name#CON} and the framework did not yet send an empty {@link CoapMessage} with
-     * {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType} of this
-     * {@link CoapResponse} to be set to {@link MessageType.Name#ACK} to make it a piggy-backed response.
+     * @param messageType the {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
+     *                    (one of {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} or
+     *                    {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#NON}).
      *
-     *
-     * @param messageType the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     *                    {@link MessageType.Name#NON}). <b>Note:</b> the {@link MessageType} might be changed by the
-     *                    framework (see above).
+     *                    <b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
+     *                    framework (see class description).
      *
      * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
      *
@@ -71,17 +83,13 @@ public class CoapResponse extends CoapMessage {
     /**
      * Creates a new instance of {@link CoapResponse}.
      *
-     * <b>Note:</b> The given message type (either 0 or 1) may be changed by the framework before it is sent to the
-     * other CoAP endpoints. Such a change might e.g. happen if this {@link CoapResponse} was created with 0 (for
-     * {@link MessageType.Name#CON} or 1 (for {@link MessageType.Name#NON}) and is supposed to answer a
-     * {@link CoapRequest} with {@link MessageType.Name#CON} and the framework did not yet send an empty
-     * {@link CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType}
-     * of this {@link CoapResponse} to be set to {@link MessageType.Name#ACK} to make it a piggy-backed response.
+     * @param messageType the number representing the {@link de.uniluebeck.itm.ncoap.message.MessageType}
      *
-     * @param messageType the number representing the {@link MessageType} (<b>Note:</b> the {@link MessageType} might
-     *                    be changed by the framework (see above)).
+     *                    <b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
+     *                    framework (see class description).
      *
-     * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
+     * @param messageCode the {@link de.uniluebeck.itm.ncoap.message.MessageCode.Name} for this
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse}
      *
      * @throws java.lang.IllegalArgumentException
      */
@@ -98,16 +106,11 @@ public class CoapResponse extends CoapMessage {
      * the stacktrace of the given {@link Throwable} as payload (this is particularly useful for debugging). Basically,
      * this can be considered a shortcut to create error responses.
      *
-     * <b>Note:</b> The given {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     * {@link MessageType.Name#NON}) may be changed by the framework before it is sent to the other CoAP endpoints.
-     * Such a change might e.g. happen if this {@link CoapResponse} was created with {@link MessageType.Name#CON} to
-     * answer a {@link CoapRequest} with {@link MessageType.Name#CON} and the framework did not yet send an empty
-     * {@link CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will ensure the {@link MessageType} of
-     * this {@link CoapResponse} to be set to {@link MessageType.Name#ACK} to make it a piggy-backed response.
-     *
      * @param messageType the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     *                    {@link MessageType.Name#NON}). <b>Note:</b> the {@link MessageType} might be changed by the
-     *                    framework (see above).
+     *                    {@link MessageType.Name#NON}).
+     *
+     *                    <b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
+     *                    framework (see class description).
      * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
      *
      * @return a new instance of {@link CoapResponse} with the {@link Throwable#getMessage} as content (payload).
@@ -126,9 +129,33 @@ public class CoapResponse extends CoapMessage {
         return errorResponse;
     }
 
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.message.CoapResponse} with
+     * the stacktrace of the given {@link Throwable} as payload (this is particularly useful for debugging). Basically,
+     * this can be considered a shortcut to create error responses.
+     *
+     * @param messageType the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
+     *                    {@link MessageType.Name#NON}).
+     *
+     *                    <b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
+     *                    framework (see class description).
+     * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
+     *
+     * @return a new instance of {@link CoapResponse} with the {@link Throwable#getMessage} as content (payload).
+     *
+     * @throws java.lang.IllegalArgumentException if the given message code does not refer to an error
+     */
+    public static CoapResponse createErrorResponse(MessageType.Name messageType, MessageCode.Name messageCode,
+                                                   Throwable throwable) throws IllegalArgumentException{
+
+        StringWriter stringWriter = new StringWriter();
+        throwable.printStackTrace(new PrintWriter(stringWriter));
+        return createErrorResponse(messageType, messageCode, stringWriter.toString());
+    }
 
     /**
-     * Sets the {@link OptionValue.Name#ETAG} of this {@link CoapResponse}.
+     * Sets the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#ETAG} of this
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse}.
      *
      * @param etag the byte array that is supposed to represent the ETAG of the content returned by
      *             {@link #getContent()}.
@@ -152,11 +179,26 @@ public class CoapResponse extends CoapMessage {
     }
 
     /**
-     * Adds an {@link OptionValue.Name#OBSERVE} option with the given sequence number. The value of the option will
-     * correspond to the 3 least significant bytes of a (big endian) byte representation of the given sequence number,
-     * i.e. a given sequence number of <code>2^24 + 1</code> leads to a value of <code>1</code>.
+     * Adds an {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option with the given sequence
+     * number. The value of the option will correspond to the 3 least significant bytes of a (big endian) byte
+     * representation of the given sequence number, i.e. a given sequence number of <code>2^24 + 1</code> leads to a
+     * value of <code>1</code>.
      *
-     * <b>Note:</b> This method will override a possibly previously contained {@link OptionValue.Name#OBSERVE} option.
+     * <b>Note:</b>
+     * <ul>
+     *     <li>This method must to be invoked once by the
+     *     {@link de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice} that created this
+     *     instance of {@link de.uniluebeck.itm.ncoap.message.CoapResponse} to accept the observation request of the
+     *     remote endpoint an observer. Otherwise, the remote endpoint is not added to the list of observers.
+     *     However, for internal reasons the first update notification will contain the given sequence number + 1, so
+     *     it is recommended to invoke this method with parameter <code>0</code>.
+     *     </li>
+     *     <li>
+     *       Invocation of this method will override a possibly previously contained
+     *       {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option without any warning.
+     *     </li>
+     * </ul>
+     * <b>Note:</b>
      *
      * @param sequenceNumber the sequence number for the {@link OptionValue.Name#OBSERVE} to be set.
      */
@@ -173,11 +215,13 @@ public class CoapResponse extends CoapMessage {
     }
 
     /**
-     * Returns the decoded value of {@link OptionValue.Name#OBSERVE} if such an option is contained in this
-     * {@link CoapResponse} or <code>null</code> if there is no such option.
+     * Returns the decoded value of {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} if such
+     * an option is contained in this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or <code>null</code> if
+     * there is no such option.
      *
-     * @return the decoded value of {@link OptionValue.Name#OBSERVE} if such an option is contained in this
-     * {@link CoapResponse} or <code>null</code> if there is no such option.
+     * @return the decoded value of {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} if such
+     * an option is contained in this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or <code>null</code> if
+     * there is no such option.
      */
     public Long getObservationSequenceNumber(){
         if(!options.containsKey(OptionValue.Name.OBSERVE))
@@ -188,12 +232,13 @@ public class CoapResponse extends CoapMessage {
 
 
     /**
-     * Returns <code>true</code> if this {@link CoapResponse} is an update notification and <code>false</code>
-     * otherwise. A {@link CoapResponse} is considered an update notification if the  invocation of
-     * {@link #getObservationSequenceNumber()} returns a value other than <code>null</code>.
+     * Returns <code>true</code> if this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} is an update
+     * notification and <code>false</code> otherwise. A {@link de.uniluebeck.itm.ncoap.message.CoapResponse} is
+     * considered an update notification if the  invocation of {@link #getObservationSequenceNumber()} returns a
+     * value other than <code>null</code>.
      *
-     * @return <code>true</code> if this {@link CoapResponse} is an update notification and <code>false</code>
-     * otherwise.
+     * @return <code>true</code> if this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} is an update notification
+     * and <code>false</code> otherwise.
      */
     public boolean isUpdateNotification(){
         return this.getObservationSequenceNumber() != null;
@@ -207,9 +252,13 @@ public class CoapResponse extends CoapMessage {
      * @param locationURI The location URI of the newly created resource. The parts scheme, host, and port are
      * ignored anyway and thus may not be included in the URI object
      *
-     * @throws de.uniluebeck.itm.ncoap.communication.codec.OptionCodecException if at least one of the options to be added is not valid
+     * @throws java.lang.IllegalArgumentException if at least one of the options to be added is not valid. Previously
+     * to throwing the exception possibly contained options of
+     * {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#LOCATION_PATH} and
+     * {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#LOCATION_QUERY} are removed from this
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse}.
      */
-    public void setLocationURI(URI locationURI) throws OptionCodecException {
+    public void setLocationURI(URI locationURI) throws IllegalArgumentException {
 
         options.removeAll(OptionValue.Name.LOCATION_PATH);
         options.removeAll(OptionValue.Name.LOCATION_QUERY);
@@ -232,10 +281,10 @@ public class CoapResponse extends CoapMessage {
                     this.addStringOption(OptionValue.Name.LOCATION_QUERY, queryComponent);
             }
         }
-        catch(IllegalArgumentException e){
+        catch(IllegalArgumentException ex){
             options.removeAll(OptionValue.Name.LOCATION_PATH);
             options.removeAll(OptionValue.Name.LOCATION_QUERY);
-            throw e;
+            throw ex;
         }
     }
 
@@ -245,7 +294,7 @@ public class CoapResponse extends CoapMessage {
      * @return the URI reconstructed from the location URI related options contained in the message or null if there
      * are no location URI related options
      *
-     * @throws URISyntaxException if the URI to be reconstructed from options is invalid
+     * @throws java.net.URISyntaxException if the URI to be reconstructed from options is invalid
      */
     public URI getLocationURI() throws URISyntaxException {
 

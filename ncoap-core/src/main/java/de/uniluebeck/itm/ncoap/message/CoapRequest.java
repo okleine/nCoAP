@@ -32,6 +32,10 @@ import java.net.*;
 import java.util.*;
 
 /**
+ * Instances of {@link de.uniluebeck.itm.ncoap.message.CoapRequest} are created by
+ * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication}s to retrieve data from
+ * remote CoAP Webservices.
+ *
  * @author Oliver Kleine
  */
 public class CoapRequest extends CoapMessage {
@@ -53,6 +57,7 @@ public class CoapRequest extends CoapMessage {
      * @param messageCode A {@link MessageCode}
      * @param targetUri the recipients URI
      *
+     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
     public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri)
             throws IllegalArgumentException {
@@ -73,6 +78,8 @@ public class CoapRequest extends CoapMessage {
      *                 {@link OptionValue.Name#PROXY_URI}, if set to <code>false</code> the given target URI is
      *                 set as combination of {@link OptionValue.Name#URI_HOST}, {@link OptionValue.Name#URI_PORT},
      *                 {@link OptionValue.Name#URI_PATH}, and {@link OptionValue.Name#URI_QUERY}.
+     *
+     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
     public CoapRequest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri, boolean useProxy)
             throws IllegalArgumentException {
@@ -220,13 +227,13 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Sets the If-Match options according to the given {@link Collection} containing ETAGs. If there were any
-     * If-Match options present in this {@link CoapRequest} prior to the invocation of this method, these options are
-     * removed.
+     * If-Match options present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} prior to the invocation of
+     * this method, these options are removed.
      *
      * @param etags the ETAGs to be set as values for the If-Match options
      *
-     * @throws java.lang.IllegalArgumentException if at least one of the given <code>byte[]</code> to be set as values for If-Match
-     * options is invalid.
+     * @throws java.lang.IllegalArgumentException if at least one of the given <code>byte[]</code> to be set as values
+     * for If-Match options is invalid.
      */
     public void setIfMatch(byte[]... etags) throws IllegalArgumentException {
 
@@ -243,11 +250,11 @@ public class CoapRequest extends CoapMessage {
     }
 
     /**
-     * Returns a {@link Set<byte[]>} containing the values of the If-Match options. If no such option is present in
-     * this {@link CoapRequest} the returned set is empty.
+     * Returns a {@link java.util.Set<>} containing the values of the If-Match options. If no such option is present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} the returned set is empty.
      *
-     * @return a {@link Set<byte[]>} containing the values of the If-Match options. If no such option is present in
-     * this {@link CoapRequest} the returned set is empty.
+     * @return a {@link java.util.Set<>} containing the values of the If-Match options. If no such option is present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} the returned set is empty.
      */
     public Set<byte[]> getIfMatch(){
 
@@ -262,10 +269,10 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns the value of the URI host option or a literal representation of the recipients IP address if the URI
-     * host option is not present in this {@link CoapRequest}.
+     * host option is not present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      *
      * @return the value of the URI host option or <code>null</code> if the URI
-     * host option is not present in this {@link CoapRequest}.
+     * host option is not present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
     public String getUriHost(){
 
@@ -278,8 +285,8 @@ public class CoapRequest extends CoapMessage {
 
 
     /**
-     * Sets the ETAG options of this {@link CoapRequest}. If there are any ETAG options present in this
-     * {@link CoapRequest} prior to the invocation of this method, those options are removed.
+     * Sets the ETAG options of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}. If there are any ETAG options
+     * present in this request prior to the invocation of this method, those options are removed.
      *
      * @param etags the values for the ETAG options to be set
      *
@@ -301,11 +308,11 @@ public class CoapRequest extends CoapMessage {
     }
 
     /**
-     * Returns a {@link Set<byte[]>} containing the values of the ETAG options that are present in this
-     * {@link CoapRequest}. If there is no such option, then the returned set is empty.
+     * Returns a {@link Set<>} containing the values of the ETAG options that are present in this
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}. If there is no such option, then the returned set is empty.
      *
-     * @return  a {@link Set<byte[]>} containing the values of the ETAG options that are present in this
-     * {@link CoapRequest}. If there is no such option, then the returned set is empty.
+     * @return  a {@link Set<>} containing the values of the ETAG options that are present in this
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}. If there is no such option, then the returned set is empty.
      */
     public Set<byte[]> getEtags(){
         Set<byte[]> result = new HashSet<>();
@@ -317,9 +324,10 @@ public class CoapRequest extends CoapMessage {
     }
 
     /**
-     * Sets the If-Non-Match option in this {@link CoapRequest} and returns <code>true</code> if the option is set
-     * after method returns (may already have been set beforehand in a prior method invocation) or <code>false</code
-     * if the option is not set, e.g. because that option has no meaning with the message code of this {@link CoapRequest}
+     * Sets the If-Non-Match option in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} and returns
+     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
+     * method invocation) or <code>false</code if the option is not set, e.g. because that option has no meaning with
+     * the message code of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}
      *
      * @return <code>true</code> if the option is set after method returned or <code>false</code> otherwise.
      */
@@ -338,20 +346,20 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns <code>true</code> if the If-Non-Match option is present or <code>false</code> if there is
-     * no such option present in this {@link CoapRequest}.
+     * no such option present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      *
       * @return <code>true</code> if the If-Non-Match option is present or <code>false</code> if there is
-     * no such option present in this {@link CoapRequest}.
+     * no such option present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
     public boolean isIfNonMatchSet(){
         return options.containsKey(OptionValue.Name.IF_NONE_MATCH);
     }
 
     /**
-     * Sets the observe option in this {@link CoapRequest} and returns <code>true</code> if the option is set
-     * after method returns (may already have been set beforehand in a prior method invocation) or <code>false</code
-     * if the option is not set, e.g. because that option has no meaning with the message code of this
-     * {@link CoapRequest}.
+     * Sets the observe option in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} and returns
+     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
+     * method invocation) or <code>false</code if the option is not set, e.g. because that option has no meaning with
+     * the message code of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      *
      * @return <code>true</code> if the option is set after method returned or <code>false</code> otherwise.
      */
@@ -370,10 +378,10 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns <code>true</code> if the observe option (option no. 6) is present or <code>false</code> if there is
-     * no such option present in this {@link CoapRequest}.
+     * no such option present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      *
      * @return <code>true</code> if the observe option (option no. 6) is present or <code>false</code> if there is
-     * no such option present in this {@link CoapRequest}.
+     * no such option present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
     public boolean isObserveSet(){
         return options.containsKey(OptionValue.Name.OBSERVE);
@@ -381,10 +389,10 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns the value of the URI port option or {@link OptionValue#URI_PORT_DEFAULT} if the URI port option is not
-     * present in this {@link CoapRequest}.
+     * present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      *
      * @return the value of the URI port option or {@link OptionValue#URI_PORT_DEFAULT} if the URI port option is not
-     * present in this {@link CoapRequest}.
+     * present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
     public long getUriPort(){
         if(options.containsKey(OptionValue.Name.URI_PORT))
@@ -396,10 +404,10 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns the full path of the request URI reconstructed from the URI path options present in this
-     * {@link CoapRequest}. If no such option is set, the returned value is "/".
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}. If no such option is set, the returned value is "/".
      *
      * @return the full path of the request URI reconstructed from the URI path options present in this
-     * {@link CoapRequest}.
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
     public String getUriPath(){
         String result = "/";
@@ -416,10 +424,10 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns the full query of the request URI reconstructed from the URI query options present in this
-     * {@link CoapRequest} or the empty string ("") if no such option is present.
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} or the empty string ("") if no such option is present.
      *
      * @return the full query of the request URI reconstructed from the URI query options present in this
-     * {@link CoapRequest} or the empty string ("") if no such option is present.
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} or the empty string ("") if no such option is present.
      */
     public String getUriQuery(){
         String result = "";
@@ -441,8 +449,8 @@ public class CoapRequest extends CoapMessage {
      * Returns the value of the qiven query parameter from the contained values of {@link OptionValue.Name#URI_QUERY}
      * or <code>null</code> if no such {@link OptionValue.Name#URI_QUERY} is present.
      *
-     * Assume, this {@link CoapRequest} contains a {@link OptionValue.Name#URI_QUERY} "param1=example", then this
-     * method invocation with parameter set to "param1" (or "param1=") returns "example".
+     * Assume, this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} contains a {@link OptionValue.Name#URI_QUERY}
+     * "param1=example", then this method invocation with parameter set to "param1" (or "param1=") returns "example".
      *
      * @param parameter the parameter string to look up the value for.
      *
@@ -465,11 +473,13 @@ public class CoapRequest extends CoapMessage {
 
 
     /**
-     * Sets the content formats the client is willing to accept. See {@link ContentFormat} for a predefined set of such
+     * Sets the content formats the client is willing to accept. See
+     * {@link de.uniluebeck.itm.ncoap.message.options.ContentFormat} for a predefined set of such
      * numbers. <b>Note:</b> If this method throws an {@link java.lang.IllegalArgumentException}, all
      * {@link OptionValue.Name#ACCEPT} are removed from this {@link CoapRequest}.
      *
-     * @param contentFormatNumbers a {@link Collection} containing the content formats the client is willing to accept.
+     * @param contentFormatNumbers a {@link java.util.Collection} containing the content formats the client is willing
+     *                             to accept.
      *
      * @throws java.lang.IllegalArgumentException if one of the given numbers is not capable to represent a content
      * format
@@ -489,8 +499,8 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns a {@link Set<Long>} containing the numbers representing the accepted content formats. See
-     * {@link ContentFormat} for a predefined set of such numbers. If no such option is present in this
-     * {@link CoapRequest}, then the returned set is empty.
+     * {@link de.uniluebeck.itm.ncoap.message.options.ContentFormat} for a predefined set of such numbers. If no such
+     * option is present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}, then the returned set is empty.
      *
      * @return a {@link Set<Long>} containing the numbers representing the accepted content formats.
      */
@@ -506,47 +516,49 @@ public class CoapRequest extends CoapMessage {
 
     /**
      * Returns the value of the Proxy URI option if such an option is present in this {@link CoapRequest}. If no such
-     * option is present but a Proxy Scheme option, then the returned {@link URI} is reconstructed from the
+     * option is present but a Proxy Scheme option, then the returned {@link java.net.URI} is reconstructed from the
      * Proxy Scheme option and the URI host, URI port, URI path and URI query options.
      *
-     * If both options, Proxy URI and Proxy Scheme are not present in this {@link CoapRequest} this
-     * method returns <code>null</code>.
+     * If both options, Proxy URI and Proxy Scheme are not present in this
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} this method returns <code>null</code>.
      *
-     * @return the URI of the requested resource if this {@link CoapRequest} was (or is supposed to be) sent via a
-     * proxy or <code>null</code> if the request was (or is supposed to be) sent directly.
+     * @return the URI of the requested resource if this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} was
+     * (or is supposed to be) sent via a proxy or <code>null</code> if the request was (or is supposed to be) sent
+     * directly.
      *
      * @throws URISyntaxException if the value of the proxy URI option or the reconstruction from Proxy Scheme,
      * URI host, URI port, URI path, and URI query options is invalid.
      */
     public URI getProxyURI() throws URISyntaxException {
-        if(options.containsKey(OptionValue.Name.PROXY_URI))
-            return new URI(((StringOptionValue) options.get(OptionValue.Name.PROXY_URI).iterator().next()).getDecodedValue());
+        if(options.containsKey(OptionValue.Name.PROXY_URI)){
+            OptionValue proxyUriOptionValue = options.get(OptionValue.Name.PROXY_URI).iterator().next();
+            return new URI(((StringOptionValue) proxyUriOptionValue).getDecodedValue());
+        }
 
         if(options.get(OptionValue.Name.PROXY_SCHEME).size() == 1){
-            String scheme = ((StringOptionValue) options.get(OptionValue.Name.PROXY_SCHEME).iterator().next()).getDecodedValue();
+            OptionValue proxySchemeOptionValue = options.get(OptionValue.Name.PROXY_SCHEME).iterator().next();
+            String scheme = ((StringOptionValue) proxySchemeOptionValue).getDecodedValue();
             String uriHost = getUriHost();
-            int uriPort = ((UintOptionValue) options.get(OptionValue.Name.URI_PORT).iterator().next()).getDecodedValue().intValue();
+            OptionValue uriPortOptionValue = options.get(OptionValue.Name.URI_PORT).iterator().next();
+            int uriPort = ((UintOptionValue) uriPortOptionValue).getDecodedValue().intValue();
             String uriPath = getUriPath();
             String uriQuery = getUriQuery();
 
-            return new URI(scheme, null, uriHost, uriPort == OptionValue.URI_PORT_DEFAULT ? -1 : uriPort, uriPath, uriQuery,
-                    null);
+            return new URI(scheme, null, uriHost, uriPort == OptionValue.URI_PORT_DEFAULT ? -1 : uriPort, uriPath,
+                    uriQuery, null);
         }
 
         return null;
     }
 
     /**
-     * Returns <code>true</code> if the observe option is set on this {@link CoapRequest} or <code>false</code>
-     * otherwise.
+     * Returns <code>true</code> if the observe option is set on this
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} or <code>false</code> otherwise.
      *
-     * @return <code>true</code> if the observe option is set on this {@link CoapRequest} or <code>false</code>
-     * otherwise.
+     * @return <code>true</code> if the observe option is set on this
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} or <code>false</code> otherwise.
      */
     public boolean isObservationRequest(){
         return(!options.get(OptionValue.Name.OBSERVE).isEmpty());
     }
-
-
-
 }

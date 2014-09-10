@@ -28,8 +28,8 @@ import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedEvent;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedProcessor;
+import de.uniluebeck.itm.ncoap.communication.observe.client.ClientStopsObservationEvent;
 import de.uniluebeck.itm.ncoap.communication.observe.client.UpdateNotificationProcessor;
-import de.uniluebeck.itm.ncoap.communication.observe.client.InternalStopObservationMessage;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.MessageRetransmissionEvent;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutEvent;
@@ -134,8 +134,8 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         }
 
 
-        else if(me.getMessage() instanceof InternalStopObservationMessage){
-            InternalStopObservationMessage message = (InternalStopObservationMessage) me.getMessage();
+        else if(me.getMessage() instanceof ClientStopsObservationEvent){
+            ClientStopsObservationEvent message = (ClientStopsObservationEvent) me.getMessage();
 
             if(removeResponseCallback(message.getRemoteEndpoint(), message.getToken()) == null){
                 log.error("Could not stop observation (remote endpoints: {}, token: {})! No response processor found!",
@@ -329,8 +329,8 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                 !((UpdateNotificationProcessor) responseProcessor).continueObservation()){
 
             //Send internal message to stop the observation
-            InternalStopObservationMessage internalMessage =
-                    new InternalStopObservationMessage(remoteEndpoint, coapResponse.getToken());
+            ClientStopsObservationEvent internalMessage =
+                    new ClientStopsObservationEvent(remoteEndpoint, coapResponse.getToken());
 
             Channels.write(ctx.getChannel(), internalMessage);
         }

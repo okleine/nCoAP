@@ -33,21 +33,21 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public class InternalStopObservationMessage {
+public class ClientStopsObservationEvent {
 
     private InetSocketAddress remoteEndpoint;
     private Token token;
 
     /**
      * Creates a new instance of
-     * {@link de.uniluebeck.itm.ncoap.communication.observe.client.InternalStopObservationMessage}
+     * {@link ClientStopsObservationEvent}
      *
      * @param remoteEndpoint the {@link java.net.InetSocketAddress} of the remote endpoint providing the observed
      *                       service
      * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} to identify the observation to be
      *              stopped
      */
-    public InternalStopObservationMessage(InetSocketAddress remoteEndpoint, Token token) {
+    public ClientStopsObservationEvent(InetSocketAddress remoteEndpoint, Token token) {
         this.remoteEndpoint = remoteEndpoint;
         this.token = token;
     }
