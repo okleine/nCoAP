@@ -27,7 +27,7 @@ package de.uniluebeck.itm.ncoap.communication.reliability.incoming;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
-import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
+import de.uniluebeck.itm.ncoap.application.ApplicationShutdownEvent;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -272,7 +272,7 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         if(me.getMessage() instanceof CoapResponse)
             handleOutgoingCoapResponse(ctx, me);
 
-        else if(me.getMessage() instanceof InternalApplicationShutdownMessage)
+        else if(me.getMessage() instanceof ApplicationShutdownEvent)
             handleApplicationShutdown(ctx, me);
 
         else

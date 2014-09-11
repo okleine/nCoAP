@@ -32,14 +32,37 @@ package de.uniluebeck.itm.ncoap.application.server.webservice.linkformat;
  */
 public class EmptyLinkAttribute extends LinkAttribute<Void> {
 
-    public EmptyLinkAttribute(String attributeKey, Void value) throws IllegalArgumentException {
-        super(attributeKey, value);
+    /**
+     * The key of the observation attribute ("obs")
+     */
+    public static final String OBSERVABLE = "obs";
+
+    static{
+        LinkAttribute.registerAttribute(OBSERVABLE, new AttributeProperties(false, EMPTY_ATTRIBUTE));
     }
+
+    /**
+     * Creates a new instance of
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.EmptyLinkAttribute}
+     *
+     * @param key the key of the attribute (see static constants for supported keys, i.e. only "obs" so far)
+     */
+    public EmptyLinkAttribute(String key) throws IllegalArgumentException {
+        super(key, null);
+
+        if(LinkAttribute.getAttributeType(key) != LinkAttribute.EMPTY_ATTRIBUTE){
+            throw new IllegalArgumentException(
+                    "Given attribute key \"" + key + "\" does not refer to an empty attribute."
+            );
+        }
+    }
+
 
     @Override
     public int hashCode() {
         return this.getKey().hashCode();
     }
+
 
     @Override
     public boolean equals(Object object) {

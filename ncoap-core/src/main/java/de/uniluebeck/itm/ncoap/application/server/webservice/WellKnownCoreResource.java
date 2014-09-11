@@ -169,7 +169,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
                 linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
 
             else if(attributeType == LinkAttribute.EMPTY_ATTRIBUTE)
-                linkAttribute = new EmptyLinkAttribute(param[0], null);
+                linkAttribute = new EmptyLinkAttribute(param[0]);
 
             else
                 throw new IllegalArgumentException("This should never happen!");

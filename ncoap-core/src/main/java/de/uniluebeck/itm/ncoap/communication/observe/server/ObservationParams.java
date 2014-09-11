@@ -25,6 +25,7 @@
 package de.uniluebeck.itm.ncoap.communication.observe.server;
 
 import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.observe.client.UpdateNotificationAgeParams;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
@@ -101,8 +102,15 @@ public class ObservationParams {
      * sequence number
      *
      * @param sequenceNumber the initial sequence number
+     *
+     * @throws java.lang.IllegalArgumentException if the given sequence number is out of the allowed range
      */
-    public void setInitialSequenceNumber(long sequenceNumber){
+    public void setInitialSequenceNumber(long sequenceNumber) throws IllegalArgumentException{
+        if(sequenceNumber < 0 || sequenceNumber > UpdateNotificationAgeParams.THRESHOLD){
+            throw new IllegalArgumentException(
+                    "Sequence No. " + sequenceNumber + " out of range (0-" + UpdateNotificationAgeParams.THRESHOLD + ")"
+            );
+        }
         this.notificationCount = new AtomicLong(sequenceNumber);
     }
 
@@ -113,6 +121,7 @@ public class ObservationParams {
      * @return the new value after incrementation by 1
      */
     public long getNextSequenceNumber(){
+        notificationCount.compareAndSet(UpdateNotificationAgeParams.THRESHOLD, 0L);
         return this.notificationCount.incrementAndGet();
     }
 

@@ -28,7 +28,8 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
-import de.uniluebeck.itm.ncoap.communication.observe.server.InternalObservableWebserviceRegistrationMessage;
+import de.uniluebeck.itm.ncoap.communication.observe.server.ObservableWebserviceDeregistrationEvent;
+import de.uniluebeck.itm.ncoap.communication.observe.server.ObservableWebserviceRegistrationEvent;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.channel.*;
@@ -272,7 +273,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
             removedService.shutdown();
 
             if(removedService instanceof ObservableWebservice)
-                channel.write(new InternalServiceRemovedFromServerMessage(uriPath));
+                channel.write(new ObservableWebserviceDeregistrationEvent(uriPath));
         }
         else{
             log.error("Service {} could not be removed. Does not exist.", uriPath);
@@ -297,10 +298,10 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         log.info("Registered new service at " + webservice.getPath());
 
         if(webservice instanceof ObservableWebservice){
-            InternalObservableWebserviceRegistrationMessage message =
-                    new InternalObservableWebserviceRegistrationMessage((ObservableWebservice) webservice);
+            ObservableWebserviceRegistrationEvent registrationEvent =
+                    new ObservableWebserviceRegistrationEvent((ObservableWebservice) webservice);
 
-            ChannelFuture future = Channels.write(channel, message);
+            ChannelFuture future = Channels.write(channel, registrationEvent);
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {

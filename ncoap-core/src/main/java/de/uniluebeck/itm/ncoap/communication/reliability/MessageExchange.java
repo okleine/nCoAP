@@ -27,7 +27,8 @@ package de.uniluebeck.itm.ncoap.communication.reliability;
 import java.net.InetSocketAddress;
 
 /**
- * Abstract base class for message exchanges, i.e. associated request/response pairs.
+ * Abstract base class for message exchanges, i.e. associated message sharing the
+ * same message ID (e.g. CON/ACK).
  *
  * @author Oliver Kleine
 */

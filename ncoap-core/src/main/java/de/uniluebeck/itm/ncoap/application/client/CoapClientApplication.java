@@ -28,7 +28,7 @@ package de.uniluebeck.itm.ncoap.application.client;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
-import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
+import de.uniluebeck.itm.ncoap.application.ApplicationShutdownEvent;
 import de.uniluebeck.itm.ncoap.communication.observe.client.ClientStopsObservationEvent;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
@@ -347,7 +347,7 @@ public class CoapClientApplication {
     public final ChannelFuture shutdown(){
         log.warn("Start to shutdown " + this.name + " (Port : " + this.getPort() + ")");
 
-        InternalApplicationShutdownMessage shutdownMessage = new InternalApplicationShutdownMessage();
+        ApplicationShutdownEvent shutdownMessage = new ApplicationShutdownEvent();
         ChannelFuture shutdownFuture = Channels.write(this.channel, shutdownMessage);
 
         final ChannelFuture channelClosedFuture = this.channel.getCloseFuture();

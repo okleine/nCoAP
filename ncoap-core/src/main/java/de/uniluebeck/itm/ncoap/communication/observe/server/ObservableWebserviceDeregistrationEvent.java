@@ -46,37 +46,39 @@
 * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package de.uniluebeck.itm.ncoap.application.server;
+package de.uniluebeck.itm.ncoap.communication.observe.server;
 
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 
 /**
 * This internal message is sent downstream by the framework when a {@link Webservice} instance was removed from the
-* {@link CoapServerApplication} instance.
+* {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} instance.
 *
 * @author Oliver Kleine, Stefan Hüske
 */
-public class InternalServiceRemovedFromServerMessage {
+public class ObservableWebserviceDeregistrationEvent {
 
     private String servicePath;
 
     /**
-     * @param servicePath the path of the removed {@link Webservice} instance
+     * @param servicePath the path of the removed
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
      */
-    public InternalServiceRemovedFromServerMessage(String servicePath) {
+    public ObservableWebserviceDeregistrationEvent(String servicePath) {
         this.servicePath = servicePath;
     }
 
     /**
-     * Returns the path of the removed {@link Webservice} instance
-     * @return the path of the removed {@link Webservice} instance
+     * Returns the path of the removed {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
+     * @return the path of the removed {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
      */
     public String getServicePath() {
         return servicePath;
     }
 
+
     @Override
     public String toString(){
-        return "[Internal message] Service " + servicePath + " was removed from server.";
+        return "Webservice Deregistration Event: " + servicePath;
     }
 }

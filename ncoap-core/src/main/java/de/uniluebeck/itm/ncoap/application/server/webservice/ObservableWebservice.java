@@ -82,7 +82,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      */
     protected ObservableWebservice(String path, T initialStatus){
         this(path, initialStatus, OptionValue.MAX_AGE_DEFAULT);
-        this.setLinkAttribute(new EmptyLinkAttribute("obs", null));
+        this.setLinkAttribute(new EmptyLinkAttribute(EmptyLinkAttribute.OBSERVABLE));
     }
 
 

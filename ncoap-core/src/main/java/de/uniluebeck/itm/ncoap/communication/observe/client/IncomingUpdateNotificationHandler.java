@@ -24,9 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.observe.client;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.*;
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -38,19 +36,26 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 20.03.14.
+ * The {@link de.uniluebeck.itm.ncoap.communication.observe.client.IncomingUpdateNotificationHandler} deals with
+ * running observations. It e.g. ensures that incoming update notifications answered with a RST if the
+ * observation was canceled by the {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication}.
+ *
+ * @author Oliver Kleine
  */
 public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
-
     private static final String ERROR = "There is no running observation to cancel for remote endpoints %s and token %s";
 
-    private Multimap<InetSocketAddress, Token> observations;
+    private Table<InetSocketAddress, Token, UpdateNotificationAgeParams> observations;
+    private final Object monitor = new Object();
 
-
+    /**
+     * Creates a new instance of
+     * {@link de.uniluebeck.itm.ncoap.communication.observe.client.IncomingUpdateNotificationHandler}
+     */
     public IncomingUpdateNotificationHandler(){
-        this.observations = Multimaps.synchronizedMultimap(HashMultimap.<InetSocketAddress, Token>create());
+        this.observations = HashBasedTable.create();
     }
 
 
@@ -60,41 +65,54 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
             handleOutgoingCoapRequest(ctx, me);
 
         else if(me.getMessage() instanceof ClientStopsObservationEvent)
-            handleInternalStopObservationMessage(me);
+            handleClientStopsObservationEvent(ctx, me);
 
         else
             ctx.sendDownstream(me);
     }
 
-    private void handleInternalStopObservationMessage(MessageEvent me) {
+
+    private void handleClientStopsObservationEvent(ChannelHandlerContext ctx, MessageEvent me) {
         ClientStopsObservationEvent internalMessage = (ClientStopsObservationEvent) me.getMessage();
 
-        if(observations.remove(internalMessage.getRemoteEndpoint(), internalMessage.getToken())){
-            me.getFuture().setSuccess();
-
-            log.info("Observation stopped! Future update notifications from {} with token {} will cause a RST.",
-                    internalMessage.getRemoteEndpoint(), internalMessage.getToken());
+        UpdateNotificationAgeParams latestAgeParams;
+        synchronized (monitor){
+            latestAgeParams = observations.remove(internalMessage.getRemoteEndpoint(), internalMessage.getToken());
         }
 
-        else{
-            String errorMessage = String.format(ERROR, internalMessage.getRemoteEndpoint().toString(),
-                    internalMessage.getToken().toString());
+        if(latestAgeParams != null){
+                me.getFuture().setSuccess();
+                log.info("Observation stopped! Next update notification from {} with token {} will cause a RST.",
+                        internalMessage.getRemoteEndpoint(), internalMessage.getToken());
+            }
 
-            me.getFuture().setFailure(new Exception(errorMessage));
+            else{
+                String errorMessage = String.format(ERROR, internalMessage.getRemoteEndpoint().toString(),
+                        internalMessage.getToken().toString());
 
-            log.error(errorMessage);
-        }
+                me.getFuture().setFailure(new Exception(errorMessage));
+                log.error(errorMessage);
+            }
+
+        ctx.sendDownstream(me);
     }
+
 
     private void handleOutgoingCoapRequest(ChannelHandlerContext ctx, MessageEvent me) {
         CoapRequest coapRequest = (CoapRequest) me.getMessage();
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
 
-        if(coapRequest.isObserveSet() && !observations.containsEntry(remoteEndpoint, coapRequest.getToken()))
-            observations.put(remoteEndpoint, coapRequest.getToken());
+        if(coapRequest.isObserveSet() && !observations.contains(remoteEndpoint, coapRequest.getToken())){
+            synchronized (monitor){
+                if(!observations.contains(remoteEndpoint, coapRequest.getToken())){
+                    observations.put(remoteEndpoint, coapRequest.getToken(), new UpdateNotificationAgeParams(0L, 0L));
+                }
+            }
+        }
 
         ctx.sendDownstream(me);
     }
+
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
@@ -109,12 +127,45 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
     private void handleIncomingCoapResponse(ChannelHandlerContext ctx, MessageEvent me) {
         CoapResponse coapResponse = (CoapResponse) me.getMessage();
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        Token token = coapResponse.getToken();
 
-        if(coapResponse.isUpdateNotification() && !observations.containsEntry(remoteEndpoint, coapResponse.getToken()))
+        //Current response is NO update notification
+        if(!coapResponse.isUpdateNotification()){
+            if(observations.contains(remoteEndpoint, token)){
+                synchronized (monitor){
+                    observations.remove(remoteEndpoint, token);
+                }
+            }
+        }
+
+        //Current response is update notification but there is no suitable observation
+        else if(!observations.contains(remoteEndpoint, token)){
             sendResetMessage(ctx, remoteEndpoint, coapResponse.getMessageID());
+        }
 
-        else
-            ctx.sendUpstream(me);
+        //Current response is update notification and there is a suitable observation
+        else{
+            synchronized (monitor){
+                //Lookup age parameters of latest update notification
+                UpdateNotificationAgeParams params1 = observations.get(remoteEndpoint, token);
+
+                //Get age parameters from newly received update notification
+                long receivedSequenceNo = coapResponse.getObservationSequenceNumber();
+                UpdateNotificationAgeParams params2 =
+                        new UpdateNotificationAgeParams(System.currentTimeMillis(), receivedSequenceNo);
+
+                if(UpdateNotificationAgeParams.isParams2Newer(params1, params2)){
+                    observations.put(remoteEndpoint, token, params2);
+                }
+
+                else{
+                    log.warn("Received update notification is older than latest. IGNORE!");
+                    return;
+                }
+            }
+        }
+
+        ctx.sendUpstream(me);
     }
 
 
@@ -137,5 +188,4 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
             });
         }
     }
-
 }

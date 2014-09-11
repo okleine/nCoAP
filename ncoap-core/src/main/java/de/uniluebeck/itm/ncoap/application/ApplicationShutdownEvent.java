@@ -22,39 +22,11 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-package de.uniluebeck.itm.ncoap.communication.observe.server;
-
-import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
-import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
+package de.uniluebeck.itm.ncoap.application;
 
 /**
-* This internal message is sent downstream when there is a new {@link ObservableWebservice} instance registered
-* on the {@link CoapServerApplication} instance
-*
-* @author Oliver Kleine
-*/
-public class InternalObservableWebserviceRegistrationMessage {
-
-    private ObservableWebservice webservice;
-
-    /**
-     * @param webservice the newly registered {@link ObservableWebservice} instance
-     */
-    public InternalObservableWebserviceRegistrationMessage(ObservableWebservice webservice){
-        this.webservice = webservice;
-    }
-
-    /**
-     * Returns the newly registered {@link ObservableWebservice} instance
-     * @return the newly registered {@link ObservableWebservice} instance
-     */
-    public ObservableWebservice getWebservice() {
-        return webservice;
-    }
-
-    @Override
-    public String toString(){
-        return "[ObservableResourceRegistration] Path: " + webservice.getPath();
-    }
-}
+ * Internal message that is sent downstream to indicate an approaching shutdown of the application.
+ *
+ * @author Oliver Kleine
+ */
+public class ApplicationShutdownEvent {}

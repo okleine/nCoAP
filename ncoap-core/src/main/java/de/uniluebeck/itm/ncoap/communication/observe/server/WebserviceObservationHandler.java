@@ -30,7 +30,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
 
 import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.application.server.InternalServiceRemovedFromServerMessage;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent;
@@ -178,10 +177,10 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
         if(me.getMessage() instanceof CoapResponse)
             handleOutgoingCoapResponse(ctx, me);
 
-        else if(me.getMessage() instanceof InternalObservableWebserviceRegistrationMessage)
+        else if(me.getMessage() instanceof ObservableWebserviceRegistrationEvent)
             handleInternalObservableWebserviceRegistrationMessage(me);
 
-        else if(me.getMessage() instanceof InternalServiceRemovedFromServerMessage)
+        else if(me.getMessage() instanceof ObservableWebserviceDeregistrationEvent)
             handleInternalServiceRemovedFromServerMessage(ctx, me);
 
         else
@@ -192,8 +191,8 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
     private void handleInternalServiceRemovedFromServerMessage(ChannelHandlerContext ctx, MessageEvent me) {
 
-        InternalServiceRemovedFromServerMessage internalMessage =
-                (InternalServiceRemovedFromServerMessage) me.getMessage();
+        ObservableWebserviceDeregistrationEvent internalMessage =
+                (ObservableWebserviceDeregistrationEvent) me.getMessage();
 
         synchronized (monitor){
 
@@ -214,8 +213,8 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
     private void handleInternalObservableWebserviceRegistrationMessage(MessageEvent me) {
 
-        InternalObservableWebserviceRegistrationMessage registrationMessage =
-                (InternalObservableWebserviceRegistrationMessage) me.getMessage();
+        ObservableWebserviceRegistrationEvent registrationMessage =
+                (ObservableWebserviceRegistrationEvent) me.getMessage();
 
         registrationMessage.getWebservice().addObserver(this);
     }

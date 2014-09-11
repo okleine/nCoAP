@@ -39,67 +39,38 @@ import java.util.*;
 public abstract class LinkAttribute<T> {
 
     /**
-     * The key of the content type attribute ("ct")
-     */
-    public static final String CONTENT_TYPE = "ct";
-
-    /**
-     * The key of the resource type attribute ("rt")
-     */
-    public static final String RESOURCE_TYPE = "rt";
-
-    /**
-     * The key of the interface attribute ("if")
-     */
-    public static final String INTERFACE = "if";
-
-    /**
-     * The key of the maximum size estimation attribute ("sz")
-     */
-    public static final String MAX_SIZE_ESTIMATE = "sz";
-
-    /**
-     * The key of the observation attribute ("obs")
-     */
-    public static final String OBSERVABLE = "obs";
-
-    /**
-     * The integer value representing the internal type for empty attributes, i.e. attributes without value
+     * The integer value (0) representing the internal type for empty attributes, i.e. attributes without value
      */
     public static final int EMPTY_ATTRIBUTE = 0;
 
     /**
-     * The integer value representing the internal type for long attributes, i.e. attributes with numeric values
+     * The integer value (1) representing the internal type for long attributes, i.e. attributes with numeric values
      */
     public static final int LONG_ATTRIBUTE = 1;
 
     /**
-     * The integer value representing the internal type for string attributes, i.e. attributes with string values
+     * The integer value (2) representing the internal type for string attributes, i.e. attributes with string values
      */
     public static final int STRING_ATTRIBUTE = 2;
 
     private String key;
     private T value;
 
+    private static Map<String, AttributeProperties> properties = new HashMap<>();
 
-    private static Map<String, AttributeCharacteristics> characteristics = new HashMap<>();
-    static{
-        characteristics.put(    CONTENT_TYPE,       new AttributeCharacteristics(true,  LONG_ATTRIBUTE));
-        characteristics.put(    RESOURCE_TYPE,      new AttributeCharacteristics(true,  STRING_ATTRIBUTE));
-        characteristics.put(    INTERFACE,          new AttributeCharacteristics(false, STRING_ATTRIBUTE));
-        characteristics.put(    MAX_SIZE_ESTIMATE,  new AttributeCharacteristics(false, LONG_ATTRIBUTE));
-        characteristics.put(    OBSERVABLE,         new AttributeCharacteristics(false, EMPTY_ATTRIBUTE));
+    static void registerAttribute(String key, AttributeProperties attributeProperties){
+        properties.put(key, attributeProperties);
     }
-
 
     protected LinkAttribute(String attributeKey, T value) throws IllegalArgumentException{
         this.key = attributeKey;
 
-        if(!characteristics.containsKey(attributeKey))
+        if(!properties.containsKey(attributeKey))
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
 
         this.value = value;
     }
+
 
     /**
      * Returns the key of the link attribute
@@ -127,28 +98,36 @@ public abstract class LinkAttribute<T> {
 
 
     public static boolean allowsMultipleValues(String attributeKey){
-        if(!characteristics.containsKey(attributeKey))
+        if(!properties.containsKey(attributeKey))
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
 
-        return characteristics.get(attributeKey).isMultipleValues();
+        return properties.get(attributeKey).isMultipleValues();
     }
 
-
+    /**
+     * Returns the number corresponding to the given attribute key, i.e. 0, 1, or 2 (see static constants) or
+     * -1 for unknown attributes.
+     *
+     * @param attributeKey the key to retrieve the attribute type for
+     *
+     * @return the number corresponding to the given attribute key, i.e. 0, 1, or 2 (see static constants) or
+     * -1 for unknown attributes.
+     */
     public static int getAttributeType(String attributeKey) throws IllegalArgumentException{
-        if(characteristics.containsKey(attributeKey))
-            return characteristics.get(attributeKey).getAttributeType();
+        if(properties.containsKey(attributeKey))
+            return properties.get(attributeKey).getAttributeType();
 
-        throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
+        return -1;
     }
 
 
-    private static class AttributeCharacteristics{
+    static class AttributeProperties {
 
         private boolean multipleValues;
         private int attributeType;
 
 
-        private AttributeCharacteristics(boolean multipleValues, int attributeType){
+        AttributeProperties(boolean multipleValues, int attributeType){
             this.multipleValues = multipleValues;
             this.attributeType = attributeType;
         }

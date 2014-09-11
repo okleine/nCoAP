@@ -29,8 +29,10 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.EmptyLinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.StringLinkAttribute;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.apache.log4j.Logger;
@@ -38,7 +40,6 @@ import org.apache.log4j.Logger;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -49,46 +50,60 @@ import java.util.concurrent.TimeUnit;
  */
 public class SimpleObservableTimeService extends ObservableWebservice<Long> {
 
-    private Logger log = Logger.getLogger(SimpleObservableTimeService.class.getName());
-    private ScheduledFuture periodicUpdateFuture;
-
-    public static int RESOURCE_UPDATE_INTERVAL_MILLIS = 5000;
     public static long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
+    private static Logger log = Logger.getLogger(SimpleObservableTimeService.class.getName());
 
-    private Map<Long, String> templates;
-
-
-
-
-    public SimpleObservableTimeService(String path) {
-        super(path, System.currentTimeMillis());
-
-        this.templates = new HashMap<>();
-
-        //add support for utf-8 plain-text content
-        addContentFormat(
+    private static HashMap<Long, String> payloadTemplates = new HashMap<>();
+    static{
+        //Add template for plaintext UTF-8 payload
+        payloadTemplates.put(
                 ContentFormat.TEXT_PLAIN_UTF8,
                 "The current time is %02d:%02d:%02d"
         );
 
-        //add support for xml content
-        addContentFormat(
+        //Add template for XML payload
+        payloadTemplates.put(
                 ContentFormat.APP_XML,
                 "<time>\n" + "\t<hour>%02d</hour>\n" + "\t<minute>%02d</minute>\n" + "\t<second>%02d</second>\n</time>"
         );
     }
 
+    private ScheduledFuture periodicUpdateFuture;
+    private int updateInterval;
 
-    private void addContentFormat(long contentFormat, String template){
-        this.templates.put(contentFormat, template);
-        this.setLinkAttribute(new LongLinkAttribute(LinkAttribute.CONTENT_TYPE, contentFormat));
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.applications.SimpleObservableTimeService}
+     * @param path the path of the URI of this service
+     * @param updateInterval the interval (in millis) for resource status updates (e.g. 5000 for every 5 seconds).
+     */
+    public SimpleObservableTimeService(String path, int updateInterval) {
+        super(path, System.currentTimeMillis());
+
+        //Set the update interval, i.e. the frequency of resource updates
+        this.updateInterval = updateInterval;
+
+        //Sets the link attributes for supported content types ('ct')
+        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
+        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.APP_XML));
+
+        //Sets the link attribute for the resource type ('rt')
+        String attributeValue = "The actual UTC time (updated every " + updateInterval + " millis)";
+        this.setLinkAttribute(new StringLinkAttribute(StringLinkAttribute.RESOURCE_TYPE, attributeValue));
+
+        //Sets the link attribute for max-size estimation ('sz')
+        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.MAX_SIZE_ESTIMATE, 100L));
+
+        //Sets the link attribute for interface description ('if')
+        this.setLinkAttribute(new StringLinkAttribute(StringLinkAttribute.INTERFACE, "CoAP GET"));
     }
+
 
     @Override
     public void setScheduledExecutorService(ScheduledExecutorService executorService){
         super.setScheduledExecutorService(executorService);
         schedulePeriodicResourceUpdate();
     }
+
 
     @Override
     public MessageType.Name getMessageTypeForUpdateNotification(InetSocketAddress remoteEndpoint, Token token) {
@@ -104,7 +119,7 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
 
     @Override
     public void updateEtag(Long resourceStatus) {
-        //nothing to do here...
+        //nothing to do here as the ETAG is constructed on demand in the getEtag(long contentFormat) method
     }
 
 
@@ -114,14 +129,14 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
             @Override
             public void run() {
                 try{
-                    setResourceStatus(System.currentTimeMillis(), RESOURCE_UPDATE_INTERVAL_MILLIS / 1000);
+                    setResourceStatus(System.currentTimeMillis(), updateInterval / 1000);
                     log.info("New status of resource " + getPath() + ": " + getResourceStatus());
                 }
                 catch(Exception ex){
                     log.error("Exception while updating actual time...", ex);
                 }
             }
-        },0, RESOURCE_UPDATE_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
+        }, 0, updateInterval, TimeUnit.MILLISECONDS);
     }
 
 
@@ -223,7 +238,7 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
         long minutes = remainder / 60000;
         long seconds = (remainder % 60000) / 1000;
 
-        String template = templates.get(contentFormat);
+        String template = payloadTemplates.get(contentFormat);
 
         if(template == null)
             return null;

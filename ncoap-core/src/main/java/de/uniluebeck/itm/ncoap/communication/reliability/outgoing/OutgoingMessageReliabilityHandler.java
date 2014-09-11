@@ -25,7 +25,7 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import com.google.common.collect.*;
-import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
+import de.uniluebeck.itm.ncoap.application.ApplicationShutdownEvent;
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedEvent;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
@@ -148,7 +148,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
             writeCoapMessage(ctx, me);
 
 
-        else if(me.getMessage() instanceof InternalApplicationShutdownMessage)
+        else if(me.getMessage() instanceof ApplicationShutdownEvent)
             handleApplicationShutdown(me.getFuture());
 
         else

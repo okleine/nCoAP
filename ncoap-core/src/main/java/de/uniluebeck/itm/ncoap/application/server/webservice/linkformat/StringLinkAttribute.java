@@ -32,11 +32,36 @@ package de.uniluebeck.itm.ncoap.application.server.webservice.linkformat;
  */
 public class StringLinkAttribute extends LinkAttribute<String> {
 
+    /**
+     * The key of the resource type attribute ("rt")
+     */
+    public static final String RESOURCE_TYPE = "rt";
+
+    /**
+     * The key of the interface attribute ("if")
+     */
+    public static final String INTERFACE = "if";
+
+    static{
+        LinkAttribute.registerAttribute(RESOURCE_TYPE, new AttributeProperties(true, STRING_ATTRIBUTE));
+        LinkAttribute.registerAttribute(INTERFACE, new AttributeProperties(false, STRING_ATTRIBUTE));
+    }
+
+    /**
+     * Creates a new instance of
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.StringLinkAttribute}
+     *
+     * @param key the key of the attribute (see static constants for supported keys)
+     * @param value the attributes value
+     */
     public StringLinkAttribute(String key, String value) {
         super(key, value);
 
-        if(LinkAttribute.getAttributeType(key) != LinkAttribute.STRING_ATTRIBUTE)
-            throw new IllegalArgumentException("Attribute \"" + key + "\" must not have string values");
+        if(LinkAttribute.getAttributeType(key) != LinkAttribute.STRING_ATTRIBUTE){
+            throw new IllegalArgumentException(
+                    "Given attribute key \"" + key + "\" does not refer to a string attribute."
+            );
+        }
     }
 
     @Override

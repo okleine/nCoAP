@@ -25,18 +25,43 @@
 package de.uniluebeck.itm.ncoap.application.server.webservice.linkformat;
 
 /**
- * A {@link LongLinkAttribute} is a {@link LinkAttribute} with values of type string
+ * A {@link LongLinkAttribute} is a {@link LinkAttribute} with values of type 'Long'
  * ({@link LinkAttribute#LONG_ATTRIBUTE}).
  *
  * @author Oliver Kleine
  */
 public class LongLinkAttribute extends LinkAttribute<Long> {
 
+    /**
+     * The key of the content type attribute ("ct")
+     */
+    public static final String CONTENT_TYPE = "ct";
+
+    /**
+     * The key of the maximum size estimation attribute ("sz")
+     */
+    public static final String MAX_SIZE_ESTIMATE = "sz";
+
+    static{
+        LinkAttribute.registerAttribute(CONTENT_TYPE, new AttributeProperties(true, LONG_ATTRIBUTE));
+        LinkAttribute.registerAttribute(MAX_SIZE_ESTIMATE, new AttributeProperties(false, LONG_ATTRIBUTE));
+    }
+
+    /**
+     * Creates a new instance of
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute}
+     *
+     * @param key the key of the attribute (see static constants for supported keys)
+     * @param value the attributes value
+     */
     public LongLinkAttribute(String key, Long value) {
         super(key, value);
 
-        if(LinkAttribute.getAttributeType(key) != LinkAttribute.LONG_ATTRIBUTE)
-            throw new IllegalArgumentException("Attribute \"" + key + "\" must not have string values");
+        if(LinkAttribute.getAttributeType(key) != LinkAttribute.LONG_ATTRIBUTE){
+            throw new IllegalArgumentException(
+                    "Given attribute key \"" + key + "\" does not refer to a numeric attribute."
+            );
+        }
     }
 
 

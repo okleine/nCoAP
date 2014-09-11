@@ -25,7 +25,7 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.ncoap.application.InternalApplicationShutdownMessage;
+import de.uniluebeck.itm.ncoap.application.ApplicationShutdownEvent;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedEvent;
 import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedProcessor;
 import de.uniluebeck.itm.ncoap.communication.observe.client.ClientStopsObservationEvent;
@@ -121,7 +121,7 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
             }, 0, TimeUnit.MILLISECONDS);
         }
 
-        else if (me.getMessage() instanceof InternalApplicationShutdownMessage){
+        else if (me.getMessage() instanceof ApplicationShutdownEvent){
             executorService.schedule(new Runnable(){
 
                 @Override
