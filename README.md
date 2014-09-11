@@ -18,7 +18,7 @@ The nCoAP project is organized in several maven modules, i.e.,
 <artifactId>ncoap-core</artifactId>
 ```
 
-for the raw protocol implementation. For CoAP application development this probably what you want.
+for the raw protocol implementation. For CoAP application development this is probably what you want.
 To use the latest protocol implementation release add the following to your pom.xml
 
 ```xml

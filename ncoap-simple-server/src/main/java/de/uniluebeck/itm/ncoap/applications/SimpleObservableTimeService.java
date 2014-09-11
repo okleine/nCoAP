@@ -196,7 +196,7 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
             coapResponse.setMaxAge(resourceStatus.getMaxAge());
 
             if(coapRequest.isObserveSet())
-                coapResponse.setObserveOption(0);
+                coapResponse.setObserveOption(56789);
         }
 
         //if no payload could be generated, i.e. none of the accepted content formats (according to the

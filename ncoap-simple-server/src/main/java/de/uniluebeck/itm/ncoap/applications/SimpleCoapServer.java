@@ -42,7 +42,7 @@ public class SimpleCoapServer extends CoapServerApplication {
         SimpleNotObservableWebservice simpleWebservice = new SimpleNotObservableWebservice("/simple", "Oliver", 5000);
         server.registerService(simpleWebservice);
 
-        SimpleObservableTimeService timeService = new SimpleObservableTimeService("/utc-time");
+        SimpleObservableTimeService timeService = new SimpleObservableTimeService("/utc-time", 5000);
         server.registerService(timeService);
     }
 

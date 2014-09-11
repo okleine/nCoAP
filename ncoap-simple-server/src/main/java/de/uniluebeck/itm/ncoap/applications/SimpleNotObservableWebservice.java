@@ -51,8 +51,8 @@ public class SimpleNotObservableWebservice extends NotObservableWebservice<Strin
     protected SimpleNotObservableWebservice(String servicePath, String initialStatus, long lifetimeSeconds) {
         super(servicePath, initialStatus, lifetimeSeconds);
 
-        this.setLinkAttribute(new LongLinkAttribute(LinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
-        this.setLinkAttribute(new LongLinkAttribute(LinkAttribute.CONTENT_TYPE, ContentFormat.APP_XML));
+        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
+        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.APP_XML));
     }
 
 

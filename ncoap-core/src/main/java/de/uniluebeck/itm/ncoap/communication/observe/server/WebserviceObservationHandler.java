@@ -234,7 +234,9 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
                 else{
                     ObservationParams params = observationsPerObserver.get(remoteEndpoint, coapResponse.getToken());
-                    params.setInitialSequenceNumber(coapResponse.getObservationSequenceNumber());
+                    if(params.getNotifiationCount() == 0){
+                        params.setInitialSequenceNumber(coapResponse.getObservationSequenceNumber());
+                    }
                     if(params.getLatestUpdateNotificationMessageID() != coapResponse.getMessageID()){
                         log.debug("Set latest message ID for observation to {}", coapResponse.getMessageID());
                         params.setLatestUpdateNotificationMessageID(coapResponse.getMessageID());
@@ -262,6 +264,10 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
         ObservationParams[] observations = tmp.toArray(new ObservationParams[tmp.size()]);
 
         for(final ObservationParams params : observations){
+            if(params.getNotifiationCount() == 0){
+                continue;
+            }
+
             long contentFormat = params.getContentFormat();
 
             if(!statusCache.containsKey(contentFormat))
@@ -308,9 +314,9 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if(!future.isSuccess())
-                        log.warn("No message ID available for update notification for {} with token {} " +
-                                "(observing \"{}\".", new Object[]{params.getRemoteEndpoint(), params.getToken(),
-                                params.getWebservicePath()});
+                        log.error("Could not send update notification for {} with token {} " +
+                                "(observing \"{}\").", new Object[]{params.getRemoteEndpoint(), params.getToken(),
+                                params.getWebservicePath(), future.getCause()});
                     else
                         log.info("Update notification sent: {}", updateNotification);
                 }

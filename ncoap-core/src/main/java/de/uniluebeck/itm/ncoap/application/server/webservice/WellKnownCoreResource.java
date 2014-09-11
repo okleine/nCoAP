@@ -194,10 +194,14 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
 
             String previousKey = null;
             for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webservice.getLinkAttributes()) {
-                buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : ";" + linkAttribute.getKey());
+                buffer.append(linkAttribute.getKey().equals(previousKey) ? "" : ";" + linkAttribute.getKey());
 
-                if(!(linkAttribute instanceof EmptyLinkAttribute))
-                    buffer.append("=").append(linkAttribute.getValue());
+                if(!(linkAttribute instanceof EmptyLinkAttribute)){
+
+                    buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : "=")
+                          .append(linkAttribute.getValue());
+                }
+
 
                 previousKey = linkAttribute.getKey();
             }

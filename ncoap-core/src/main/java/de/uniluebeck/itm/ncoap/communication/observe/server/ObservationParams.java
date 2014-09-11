@@ -108,7 +108,7 @@ public class ObservationParams {
     public void setInitialSequenceNumber(long sequenceNumber) throws IllegalArgumentException{
         if(sequenceNumber < 0 || sequenceNumber > UpdateNotificationAgeParams.THRESHOLD){
             throw new IllegalArgumentException(
-                    "Sequence No. " + sequenceNumber + " out of range (0-" + UpdateNotificationAgeParams.THRESHOLD + ")"
+                "Sequence No. " + sequenceNumber + " out of range (0-" + UpdateNotificationAgeParams.THRESHOLD + ")"
             );
         }
         this.notificationCount = new AtomicLong(sequenceNumber);
@@ -190,4 +190,8 @@ public class ObservationParams {
         this.latestUpdateNotificationMessageID = latestUpdateNotificationMessageID;
     }
 
+
+    public long getNotifiationCount(){
+        return this.notificationCount.get();
+    }
 }
