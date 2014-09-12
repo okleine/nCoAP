@@ -39,6 +39,7 @@ import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
+import de.uniluebeck.itm.ncoap.message.options.UintOptionValue;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +88,9 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                             ((OutgoingCoapMessageWrapper) me.getMessage()).getCoapResponseProcessor();
 
                     //Requests with an observe option need an instance of UpdateNotificationProcessor!
-                    if(coapMessage instanceof CoapRequest && ((CoapRequest) coapMessage).isObserveSet()){
+                    if(coapMessage instanceof CoapRequest
+                            && ((CoapRequest) coapMessage).getObserve() != UintOptionValue.UNDEFINED){
+
                         if(!(coapResponseProcessor instanceof UpdateNotificationProcessor)){
                             log.warn("Given instance of CoapResponseProcessor is no instance of " +
                                     "UpdateNotificationProcessor! Remove OBSERVE option from request!");

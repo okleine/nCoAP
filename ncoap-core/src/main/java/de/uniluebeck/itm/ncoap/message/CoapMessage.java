@@ -331,12 +331,12 @@ public abstract class CoapMessage {
     public void addOption(int optionNumber, OptionValue optionValue) throws IllegalArgumentException {
         this.checkOptionPermission(optionNumber);
 
-        if(optionNumber == OptionValue.Name.OBSERVE && MessageCode.isRequest(this.getMessageCode())
-            && optionValue.getValue().length > 0){
-
-            throw new IllegalArgumentException(String.format(OUT_OF_ALLOWED_RANGE,
-                    optionValue.getValue().length, 6, 0, 0));
-        }
+//        if(optionNumber == OptionValue.Name.OBSERVE && MessageCode.isRequest(this.getMessageCode())
+//            && optionValue.getValue().length > 0){
+//
+//            throw new IllegalArgumentException(String.format(OUT_OF_ALLOWED_RANGE,
+//                    optionValue.getValue().length, 6, 0, 0));
+//        }
 
         for(int containedOption : options.keySet()){
             if(OptionValue.mutuallyExcludes(containedOption, optionNumber))

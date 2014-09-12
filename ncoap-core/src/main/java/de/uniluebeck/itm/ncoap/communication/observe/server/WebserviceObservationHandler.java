@@ -89,8 +89,16 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
-        if((me.getMessage() instanceof CoapRequest) && ((CoapRequest) me.getMessage()).isObserveSet())
-            handleIncomingCoapObserveRequest(ctx, me);
+        if((me.getMessage() instanceof CoapRequest)){
+            if(((CoapRequest) me.getMessage()).getObserve() == 0)
+                handleIncomingObserverRegistrationRequest(ctx, me);
+
+            else if(((CoapRequest) me.getMessage()).getObserve() == 1)
+                handleIncomingObserverDeregistrationRequest(ctx, me);
+
+            else
+                ctx.sendUpstream(me);
+        }
 
         else if(me.getMessage() instanceof ResetReceptionEvent)
             handleInternalResetReceivedMessage(ctx, me);
@@ -103,7 +111,24 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
     }
 
 
-    private void handleIncomingCoapObserveRequest(ChannelHandlerContext ctx, MessageEvent me) {
+    private void handleIncomingObserverDeregistrationRequest(ChannelHandlerContext ctx, MessageEvent me){
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
+        CoapRequest coapRequest = (CoapRequest) me.getMessage();
+
+        synchronized (monitor){
+            ObservationParams params = observationsPerObserver.remove(remoteEndpoint, coapRequest.getToken());
+            if(!(params == null)){
+                observationsPerService.remove(params.getWebservicePath(), params);
+                log.info("Removed {} as observer for \"{}\" because of de-registration request!",
+                        params.getRemoteEndpoint(), params.getWebservicePath());
+            }
+
+        }
+
+        ctx.sendUpstream(me);
+    }
+
+    private void handleIncomingObserverRegistrationRequest(ChannelHandlerContext ctx, MessageEvent me) {
 
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
         CoapRequest coapRequest = (CoapRequest) me.getMessage();

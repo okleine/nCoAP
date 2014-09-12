@@ -261,7 +261,7 @@ public class CoapRequest extends CoapMessage {
         Set<OptionValue> ifMatchOptionValues = options.get(OptionValue.Name.IF_MATCH);
         Set<byte[]> result = new HashSet<>(ifMatchOptionValues.size());
 
-       for (OptionValue ifMatchOptionValue : ifMatchOptionValues)
+        for (OptionValue ifMatchOptionValue : ifMatchOptionValues)
                 result.add(((OpaqueOptionValue) ifMatchOptionValue).getDecodedValue());
 
         return result;
@@ -361,19 +361,15 @@ public class CoapRequest extends CoapMessage {
      * method invocation) or <code>false</code if the option is not set, e.g. because that option has no meaning with
      * the message code of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      *
-     * @return <code>true</code> if the option is set after method returned or <code>false</code> otherwise.
+     * @param register <code>true</code> if this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} is supposed
+     *                 to register as an observer and <code>false</code> to deregister as observer, i.e. cancel
+     *                 an ongoing observation
      */
-    public boolean setObserve(){
-        if(options.containsKey(OptionValue.Name.OBSERVE))
-            return true;
+    public void setObserve(boolean register){
+        this.removeOptions(OptionValue.Name.OBSERVE);
 
-        try{
-            this.addOption(OptionValue.Name.OBSERVE, new UintOptionValue(OptionValue.Name.OBSERVE, 0));
-            return true;
-        }
-        catch(IllegalArgumentException e){
-            return false;
-        }
+        UintOptionValue optionValue = new UintOptionValue(OptionValue.Name.OBSERVE, register ? 0 : 1);
+        this.addOption(OptionValue.Name.OBSERVE, optionValue);
     }
 
     /**
@@ -383,8 +379,11 @@ public class CoapRequest extends CoapMessage {
      * @return <code>true</code> if the observe option (option no. 6) is present or <code>false</code> if there is
      * no such option present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
-    public boolean isObserveSet(){
-        return options.containsKey(OptionValue.Name.OBSERVE);
+    public long getObserve(){
+        if(!options.containsKey(OptionValue.Name.OBSERVE))
+            return UintOptionValue.UNDEFINED;
+
+        return (long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
     }
 
     /**

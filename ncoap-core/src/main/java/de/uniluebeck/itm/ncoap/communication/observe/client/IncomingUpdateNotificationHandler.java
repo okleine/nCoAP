@@ -102,7 +102,7 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
         CoapRequest coapRequest = (CoapRequest) me.getMessage();
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
 
-        if(coapRequest.isObserveSet() && !observations.contains(remoteEndpoint, coapRequest.getToken())){
+        if(coapRequest.getObserve() == 0 && !observations.contains(remoteEndpoint, coapRequest.getToken())){
             synchronized (monitor){
                 if(!observations.contains(remoteEndpoint, coapRequest.getToken())){
                     observations.put(remoteEndpoint, coapRequest.getToken(), new UpdateNotificationAgeParams(0L, 0L));

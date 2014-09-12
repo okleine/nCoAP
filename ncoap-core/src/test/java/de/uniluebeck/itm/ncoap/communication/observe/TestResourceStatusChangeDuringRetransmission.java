@@ -59,7 +59,7 @@ public class TestResourceStatusChangeDuringRetransmission extends AbstractCoapCo
         URI targetUri = new URI("coap", null, "localhost", 5683, "/observable", null, null);
 
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
-        coapRequest.setObserve();
+        coapRequest.setObserve(true);
 
     }
 

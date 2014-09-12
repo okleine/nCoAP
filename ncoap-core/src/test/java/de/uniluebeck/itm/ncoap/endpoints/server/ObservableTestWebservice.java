@@ -203,7 +203,7 @@ public class ObservableTestWebservice extends ObservableWebservice<Integer> {
             coapResponse.setEtag(wrappedResourceStatus.getEtag());
             coapResponse.setMaxAge(wrappedResourceStatus.getMaxAge());
 
-            if(coapRequest.isObserveSet())
+            if(coapRequest.getObserve() == 0)
                 coapResponse.setObserveOption(0);
 
             responseFuture.set(coapResponse);
