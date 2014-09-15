@@ -412,7 +412,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                     new EmptyAcknowledgementReceptionEvent(
                             remoteEndpoint,
                             coapMessage.getMessageID(),
-                            coapMessage.getToken());
+                            messageExchange.getCoapMessage().getToken());
 
             Channels.fireMessageReceived(ctx.getChannel(), internalMessage, remoteEndpoint);
         }

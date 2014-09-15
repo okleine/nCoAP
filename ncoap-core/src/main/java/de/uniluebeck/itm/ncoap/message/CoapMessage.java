@@ -130,10 +130,14 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.LOCATION_QUERY,     MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
+        optionOccurenceConstraints.put(MessageCode.Name.DELETED_202.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.ETAG,               ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.MAX_AGE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.CONTENT_FORMAT,     ONCE);
+
+        optionOccurenceConstraints.put(MessageCode.Name.CHANGED_204.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);

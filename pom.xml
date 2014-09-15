@@ -20,6 +20,7 @@
         <module>ncoap-core</module>
         <module>ncoap-simple-client</module>
         <module>ncoap-simple-server</module>
+      <module>ncoap-etsi-plugtest-client</module>
     </modules>
 
     <distributionManagement>

@@ -88,7 +88,7 @@ public class SimpleCoapClient extends CoapClientApplication{
 
         //Observe or not?
         if(arguments.isObserve())
-            coapRequest.setObserve();
+            coapRequest.setObserve(true);
 
         //Determine recipient (proxy or webservice host)
         InetSocketAddress recipient;

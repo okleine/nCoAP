@@ -261,6 +261,8 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             //failed option creation leads to an illegal argument exception
             catch (IllegalArgumentException e) {
 
+                log.warn("Exception while decoding option!", e);
+
                 //Malformed options in responses are silently ignored...
                 if(MessageCode.isResponse(coapMessage.getMessageCode()))
                     log.warn("Silently ignore malformed option no. {} in incoming response.", actualOptionNumber);
