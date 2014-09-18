@@ -33,7 +33,7 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutEvent;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
@@ -103,7 +103,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
         else if(me.getMessage() instanceof ResetReceptionEvent)
             handleInternalResetReceivedMessage(ctx, me);
 
-        else if(me.getMessage() instanceof RetransmissionTimeoutEvent)
+        else if(me.getMessage() instanceof TransmissionTimeoutEvent)
             handleInternalRetransmissionTimeoutMessage(ctx, me);
 
         else
@@ -153,7 +153,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
     private void handleInternalRetransmissionTimeoutMessage(ChannelHandlerContext ctx, MessageEvent me) {
 
-        RetransmissionTimeoutEvent timeoutMessage = (RetransmissionTimeoutEvent) me.getMessage();
+        TransmissionTimeoutEvent timeoutMessage = (TransmissionTimeoutEvent) me.getMessage();
 
         if(observationsPerObserver.contains(timeoutMessage.getRemoteEndpoint(), timeoutMessage.getToken())){
             ObservationParams params = removeObserver(timeoutMessage.getRemoteEndpoint(), timeoutMessage.getToken());

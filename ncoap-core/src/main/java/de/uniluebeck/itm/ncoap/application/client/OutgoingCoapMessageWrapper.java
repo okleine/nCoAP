@@ -35,17 +35,22 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 class OutgoingCoapMessageWrapper {
 
     private final CoapMessage coapMessage;
-    private final CoapResponseProcessor coapResponseProcessor;
+    private final CoapClientCallback coapClientCallback;
 
     /**
      * Creates a new {@link OutgoingCoapMessageWrapper}
+     *
+     * <b>Note:</b> Override {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback
+     * #continueObservation(java.net.InetSocketAddress, Token)} on the given callback to keep observations running!
+     *
      * @param coapMessage the {@link de.uniluebeck.itm.ncoap.message.CoapMessage} to be sent
-     * @param coapResponseProcessor the {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor} to be
-     *                              called by the framework for incoming responses and other events
+     * @param responseProcessor the {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback} to be
+     *                          called by the framework for incoming responses and other events
      */
-    OutgoingCoapMessageWrapper(CoapMessage coapMessage, CoapResponseProcessor coapResponseProcessor){
+    OutgoingCoapMessageWrapper(CoapMessage coapMessage, CoapClientCallback responseProcessor){
+
         this.coapMessage = coapMessage;
-        this.coapResponseProcessor = coapResponseProcessor;
+        this.coapClientCallback = responseProcessor;
     }
 
     /**
@@ -57,10 +62,10 @@ class OutgoingCoapMessageWrapper {
     }
 
     /**
-     * Returns the {@link CoapResponseProcessor} to process the awaited {@link CoapMessage} and other events
-     * @return the {@link CoapResponseProcessor} to process the awaited {@link CoapMessage} and other events
+     * Returns the {@link CoapClientCallback} to process the awaited {@link CoapMessage} and other events
+     * @return the {@link CoapClientCallback} to process the awaited {@link CoapMessage} and other events
      */
-    public CoapResponseProcessor getCoapResponseProcessor() {
-        return coapResponseProcessor;
+    public CoapClientCallback getCoapClientCallback() {
+        return coapClientCallback;
     }
 }

@@ -32,9 +32,7 @@ import de.uniluebeck.itm.ncoap.application.ApplicationShutdownEvent;
 import de.uniluebeck.itm.ncoap.communication.observe.client.ClientStopsObservationEvent;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetProcessor;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor;
-import de.uniluebeck.itm.ncoap.communication.observe.client.UpdateNotificationProcessor;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -57,7 +55,7 @@ import java.util.concurrent.*;
  * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapMessage}s to a (remote)
  * server or proxy.
  * 
- * With {@link #sendCoapRequest(CoapRequest, CoapResponseProcessor, InetSocketAddress)} it e.g. provides an
+ * With {@link #sendCoapRequest(CoapRequest, CoapClientCallback, InetSocketAddress)} it e.g. provides an
  * easy-to-use method to write CoAP requests to a server.
  * 
  * Furthermore, with {@link #sendCoapPing(ResetProcessor, InetSocketAddress)} it provides a method to test if a remote
@@ -206,20 +204,19 @@ public class CoapClientApplication {
 
     /**
      * Sends a {@link CoapRequest} to the given remote endpoints, i.e. CoAP server or proxy, and registers the
-     * given {@link CoapResponseProcessor} to be called upon reception of a {@link CoapResponse}.
+     * given {@link CoapClientCallback} to be called upon reception of a {@link CoapResponse}.
      *
-     * <b>Note:</b> if the given {@link CoapRequest} has the observe option set, {@link CoapRequest#isObserveSet()}
-     * returns <code>true</code>, then the given {@link CoapResponseProcessor} must implement
-     * {@link UpdateNotificationProcessor}. Otherwise the nCoAP framework silently removes the observe option!
+     * <b>Note:</b> Override {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback
+     * #continueObservation(java.net.InetSocketAddress, Token)} on the given callback for observations!
      *
      * @param coapRequest the {@link CoapRequest} to be sent
      *
-     * @param coapResponseProcessor the {@link CoapResponseProcessor} to process the corresponding response, resp.
+     * @param coapClientCallback the {@link CoapClientCallback} to process the corresponding response, resp.
      *                              update notification (which are also instances of {@link CoapResponse}.
      *
      * @param remoteEndpoint the desired recipient of the given {@link CoapRequest}
      */
-    public void sendCoapRequest(final CoapRequest coapRequest, final CoapResponseProcessor coapResponseProcessor,
+    public void sendCoapRequest(final CoapRequest coapRequest, final CoapClientCallback coapClientCallback,
                                 final InetSocketAddress remoteEndpoint){
 
         scheduledExecutorService.schedule(new Runnable(){
@@ -227,7 +224,7 @@ public class CoapClientApplication {
             @Override
             public void run() {
                 OutgoingCoapMessageWrapper message =
-                        new OutgoingCoapMessageWrapper(coapRequest, coapResponseProcessor);
+                        new OutgoingCoapMessageWrapper(coapRequest, coapClientCallback);
 
                 ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
                 future.addListener(new ChannelFutureListener() {
@@ -238,8 +235,8 @@ public class CoapClientApplication {
                                     new Object[]{remoteEndpoint.getAddress().getHostAddress(),
                                             remoteEndpoint.getPort(), coapRequest});
 
-                            if (coapResponseProcessor instanceof TransmissionInformationProcessor)
-                                ((TransmissionInformationProcessor) coapResponseProcessor).messageTransmitted(
+                            if (coapClientCallback instanceof TransmissionInformationProcessor)
+                                ((TransmissionInformationProcessor) coapClientCallback).messageTransmitted(
                                         remoteEndpoint,
                                         coapRequest.getMessageID(),
                                         coapRequest.getToken(),
@@ -282,25 +279,32 @@ public class CoapClientApplication {
 
     /**
      * Sends a CoAP PING, i.e. a {@link CoapMessage} with {@link MessageType.Name#CON} and
-     * {@link MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the given {@link ResetProcessor}
+     * {@link MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the given
+     * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback}
      * to be called upon reception of the corresponding {@link MessageType.Name#RST} message (CoAP PONG).
      *
-     * @param resetProcessor the {@link ResetProcessor} to be called upon reception of the corresponding
-     *                       {@link MessageType.Name#RST} message.
+     * Make sure to override {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback#
+     * processReset(de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent)}!
+     *
+     * @param clientCallback the {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback} to be called
+     *                       upon reception of the corresponding {@link MessageType.Name#RST} message.
+     *                       <b>Note:</b> To handle the CoAP PONG, i.e. the empty RST, the method
+     *                       {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback#processReset(
+     *                       de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent)}
+     *                       should be overridden
      * @param remoteEndpoint the desired recipient of the CoAP PING message
      */
-    public void sendCoapPing(final ResetProcessor resetProcessor, final InetSocketAddress remoteEndpoint){
+    public void sendCoapPing(final CoapClientCallback clientCallback, final InetSocketAddress remoteEndpoint){
 
         scheduledExecutorService.schedule(new Runnable(){
 
             @Override
             public void run() {
 
-                final CoapMessage resetMessage =
-                        CoapMessage.createEmptyConfirmableMessage(CoapMessage.MESSAGE_ID_UNDEFINED);
+                final CoapMessage coapPing = CoapMessage.createPing(CoapMessage.UNDEFINED_MESSAGE_ID);
 
                 OutgoingCoapMessageWrapper message =
-                        new OutgoingCoapMessageWrapper(resetMessage, resetProcessor);
+                        new OutgoingCoapMessageWrapper(coapPing, clientCallback);
 
                 ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
                 future.addListener(new ChannelFutureListener() {
@@ -309,15 +313,7 @@ public class CoapClientApplication {
                         if(future.isSuccess()){
                             log.debug("Sent to {}:{}: {}",
                                     new Object[]{remoteEndpoint.getAddress().getHostAddress(),
-                                            remoteEndpoint.getPort(), resetMessage});
-
-                            if (resetProcessor instanceof TransmissionInformationProcessor)
-                                ((TransmissionInformationProcessor) resetProcessor).messageTransmitted(
-                                        remoteEndpoint,
-                                        resetMessage.getMessageID(),
-                                        resetMessage.getToken(),
-                                        false
-                                );
+                                            remoteEndpoint.getPort(), coapPing});
                         }
                         else{
                             log.error("Message could not be sent!", future.getCause());

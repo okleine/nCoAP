@@ -49,70 +49,35 @@
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.application.client.MessageExchangeEvent;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 
 import java.net.InetSocketAddress;
 
 /**
- * Instances of {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutEvent} are sent
+ * Instances of {@link TransmissionTimeoutEvent} are sent
  * upstream by the {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler}
  * if a {@link de.uniluebeck.itm.ncoap.message.CoapMessage} of type {@link MessageType.Name#CON} was not acknowledged
  * by the remote endpoint despite the maximum number of retransmission attempts.
  *
  * @author Oliver Kleine
  */
-public class RetransmissionTimeoutEvent {
-
-    private int messageID;
-    private Token token;
-    private InetSocketAddress remoteEndpoint;
+public class TransmissionTimeoutEvent extends MessageExchangeEvent{
 
 
     /**
-     * @param token a long value representing the token of the outgoing confirmable
-     * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that was not acknowledged by the recipient
-     *
-     * @param remoteEndpoint the address of the intended recipient of the outgoing confirmable
-     * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that did not acknowledge the reception
+     * @param remoteEndpoint the socket address of the remote endpoint that did not confirm the reception in time
+     * @param messageID the message ID of the outgoing message that was not confirmed in time
+     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the outgoing message that was not
+     *              confirmed in time
      */
-    public RetransmissionTimeoutEvent(InetSocketAddress remoteEndpoint, int messageID, Token token){
-        this.messageID = messageID;
-        this.token = token;
-        this.remoteEndpoint = remoteEndpoint;
+    public TransmissionTimeoutEvent(InetSocketAddress remoteEndpoint, int messageID, Token token){
+        super(remoteEndpoint, messageID, token, true);
     }
-
-
-    /**
-     * Returns the token of the outgoing confirmable {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that was not
-     * acknowledged by the recipient
-     * @return the token of the outgoing confirmable {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that was not
-     * acknowledged by the recipient
-     */
-    public Token getToken() {
-        return token;
-    }
-
-
-    /**
-     * Returns the address of the intended recipient of the outgoing confirmable
-     * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that did not acknowledge the reception.
-     *
-     * @return the address of the intended recipient of the outgoing confirmable
-     * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} that did not acknowledge the reception.
-     */
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
-    }
-
 
     @Override
     public String toString(){
-        return "Retransmission Timeout Event: " + remoteEndpoint + " (remote address), "
-                + token + " (token)";
-    }
-
-    public int getMessageID() {
-        return messageID;
+        return "MESSAGE TRANSMISSION TIMEOUT (to " + this.getRemoteEndpoint() + " with message ID "
+                + this.getMessageID() + " and token " + this.getToken() + ")";
     }
 }

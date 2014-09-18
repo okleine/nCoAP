@@ -96,7 +96,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
         //Decode the Message Header which must have a length of exactly 4 bytes
         if(buffer.readableBytes() < 4)
-            throw new HeaderDecodingException(CoapMessage.MESSAGE_ID_UNDEFINED, remoteEndpoint);
+            throw new HeaderDecodingException(CoapMessage.UNDEFINED_MESSAGE_ID, remoteEndpoint);
 
 
         //Decode the header values
@@ -136,7 +136,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 return CoapMessage.createEmptyReset(messageID);
 
             else if(messageType == MessageType.Name.CON.getNumber())
-                return CoapMessage.createEmptyConfirmableMessage(messageID);
+                return CoapMessage.createPing(messageID);
 
             //There is no empty NON message defined, so send a RST
             else
@@ -298,7 +298,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         if(cause instanceof HeaderDecodingException){
             HeaderDecodingException ex = (HeaderDecodingException) cause;
 
-            if (ex.getMessageID() != CoapMessage.MESSAGE_ID_UNDEFINED)
+            if (ex.getMessageID() != CoapMessage.UNDEFINED_MESSAGE_ID)
                 writeReset(ctx, ex.getMessageID(), ex.getRemoteEndpoint());
             else
                 log.warn("Ignore incoming message with malformed header...");

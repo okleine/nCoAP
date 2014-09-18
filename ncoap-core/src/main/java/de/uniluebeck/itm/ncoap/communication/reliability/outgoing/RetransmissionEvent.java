@@ -22,29 +22,34 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
-
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
 
 import java.net.InetSocketAddress;
 
+import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.application.client.MessageExchangeEvent;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
+
 /**
-* Interface to be implemented by instances of {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback} to get informed if an outgoing
-* {@link CoapRequest} was neither acknowledged nor reseted by the intended recipient.
+* Instances are sent upstream by the {@link OutgoingMessageReliabilityHandler} whenever there was a retransmission
+* of a confirmable {@link CoapMessage}.
 *
 * @author Oliver Kleine
 */
-public interface RetransmissionTimeoutProcessor {
+public class RetransmissionEvent extends MessageExchangeEvent{
 
     /**
-     * Method invoked by the nCoAP framework if there was an outgoing confirmable CoAP request that was neither
-     * acknowledged nor reseted by the recipient.
-     *
-     * @param remoteEndpoint the address of the remote endpoint to receive the transmitted message
-     * @param messageID the message ID of the transmitted message
-     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the transmitted message
+     * @param remoteEndpoint the desired recipient of the retransmitted message
+     * @param messageID the message ID of the retransmitted message
+     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the retransmitted message
      */
-    public void processRetransmissionTimeout(InetSocketAddress remoteEndpoint, int messageID, Token token);
+    public RetransmissionEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+        super(remoteEndpoint, messageID, token, false);
+    }
+
+    @Override
+    public String toString(){
+        return "MESSAGE RETRANSMITTED (to  " + this.getRemoteEndpoint() + " with message ID " + this.getMessageID()
+                + " and token " + this.getToken() + ")";
+    }
 }

@@ -62,7 +62,7 @@ public abstract class CoapMessage {
     /**
      * Internal constant to indicate that the message ID was not yet set (-1)
      */
-    public static final int MESSAGE_ID_UNDEFINED = -1;
+    public static final int UNDEFINED_MESSAGE_ID = -1;
 
     /**
      * The maximum length of the byte array that backs the {@link Token} of {@link CoapMessage} (8)
@@ -242,7 +242,7 @@ public abstract class CoapMessage {
      * invocation of {@link #CoapMessage(int, int, int, de.uniluebeck.itm.ncoap.application.client.Token)} with
      * <ul>
      *     <li>
-     *         message ID: {@link CoapMessage#MESSAGE_ID_UNDEFINED} (to be set automatically by the framework)
+     *         message ID: {@link CoapMessage#UNDEFINED_MESSAGE_ID} (to be set automatically by the framework)
      *     </li>
      *     <li>
      *         token: {@link Token#Token(byte[])} with empty byte array.
@@ -254,7 +254,7 @@ public abstract class CoapMessage {
      * @throws IllegalArgumentException if one of the given arguments is invalid
      */
     protected CoapMessage(int messageType, int messageCode) throws IllegalArgumentException {
-        this(messageType, messageCode, MESSAGE_ID_UNDEFINED, new Token(new byte[0]));
+        this(messageType, messageCode, UNDEFINED_MESSAGE_ID, new Token(new byte[0]));
     }
 
 
@@ -298,7 +298,7 @@ public abstract class CoapMessage {
      *
      * @throws IllegalArgumentException if the given message ID is out of the allowed range
      */
-    public static CoapMessage createEmptyConfirmableMessage(int messageID) throws IllegalArgumentException{
+    public static CoapMessage createPing(int messageID) throws IllegalArgumentException{
         return new CoapMessage(MessageType.Name.CON.getNumber(), MessageCode.Name.EMPTY.getNumber(), messageID,
                 new Token(new byte[0])){};
     }
@@ -493,9 +493,9 @@ public abstract class CoapMessage {
     }
 
     /**
-     * Returns the message ID (or {@link CoapMessage#MESSAGE_ID_UNDEFINED} if not set)
+     * Returns the message ID (or {@link CoapMessage#UNDEFINED_MESSAGE_ID} if not set)
      *
-     * @return the message ID (or {@link CoapMessage#MESSAGE_ID_UNDEFINED} if not set)
+     * @return the message ID (or {@link CoapMessage#UNDEFINED_MESSAGE_ID} if not set)
      */
     public int getMessageID() {
         return this.messageID;

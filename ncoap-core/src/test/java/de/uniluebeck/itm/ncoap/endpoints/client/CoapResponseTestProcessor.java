@@ -28,30 +28,21 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SortedSetMultimap;
 import com.google.common.collect.TreeMultimap;
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAcknowledgementProcessor;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetProcessor;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAcknowledgementReceptionEvent;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 
-/**
-* Instance of {@link CoapResponseProcessor} additionally implementing {@link RetransmissionTimeoutProcessor},
-* {@link EmptyAcknowledgementProcessor}, and {@link RetransmissionTimeoutProcessor} to handle all possible
-* events related to a sent {@link CoapRequest}.
-*/
-public class CoapResponseTestProcessor implements CoapResponseProcessor, RetransmissionTimeoutProcessor,
-        EmptyAcknowledgementProcessor, TransmissionInformationProcessor, ResetProcessor {
+public class CoapResponseTestProcessor extends CoapClientCallback {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -59,29 +50,29 @@ public class CoapResponseTestProcessor implements CoapResponseProcessor, Retrans
     private SortedMap<Long, CoapResponse> coapResponses;
 
     //internal messages
-    private SortedSetMultimap<Long, InternalMessageDataWrapper> emptyACKs;
-    private SortedSetMultimap<Long, InternalMessageDataWrapper> emptyRSTs;
-    private SortedSetMultimap<Long, InternalMessageDataWrapper> transmissions;
-    private SortedSetMultimap <Long, InternalMessageDataWrapper> transmissionTimeouts;
+    private SortedSetMultimap<Long, EmptyAcknowledgementReceptionEvent> emptyACKs;
+    private SortedSetMultimap<Long, ResetReceptionEvent> emptyRSTs;
+    private SortedSetMultimap<Long, RetransmissionEvent> transmissions;
+    private SortedSetMultimap <Long, TransmissionTimeoutEvent> transmissionTimeouts;
 
 
     public CoapResponseTestProcessor(){
         this.coapResponses = Collections.synchronizedSortedMap(new TreeMap<Long, CoapResponse>());
 
         this.emptyACKs = Multimaps.synchronizedSortedSetMultimap(
-                TreeMultimap.<Long, InternalMessageDataWrapper>create(Ordering.natural(), Ordering.arbitrary())
+                TreeMultimap.<Long, EmptyAcknowledgementReceptionEvent>create(Ordering.natural(), Ordering.arbitrary())
         );
 
         this.emptyRSTs = Multimaps.synchronizedSortedSetMultimap(
-                TreeMultimap.<Long, InternalMessageDataWrapper>create(Ordering.natural(), Ordering.arbitrary())
+                TreeMultimap.<Long, ResetReceptionEvent>create(Ordering.natural(), Ordering.arbitrary())
         );
 
         this.transmissions = Multimaps.synchronizedSortedSetMultimap(
-                TreeMultimap.<Long, InternalMessageDataWrapper>create(Ordering.natural(), Ordering.arbitrary())
+                TreeMultimap.<Long, RetransmissionEvent>create(Ordering.natural(), Ordering.arbitrary())
         );
 
         this.transmissionTimeouts = Multimaps.synchronizedSortedSetMultimap(
-                TreeMultimap.<Long, InternalMessageDataWrapper>create(Ordering.natural(), Ordering.arbitrary())
+                TreeMultimap.<Long, TransmissionTimeoutEvent>create(Ordering.natural(), Ordering.arbitrary())
         );
     }
 
@@ -94,46 +85,41 @@ public class CoapResponseTestProcessor implements CoapResponseProcessor, Retrans
 
 
     @Override
-    public void messageTransmitted(InetSocketAddress remoteEndpoint, int messageID,  final Token token,
-                                   boolean retransmission) {
+    public void processRetransmission(RetransmissionEvent event) {
 
         long actualTime = System.currentTimeMillis();
-        transmissions.put(actualTime, new InternalMessageDataWrapper(remoteEndpoint, messageID, token));
+        transmissions.put(actualTime, event);
 
-        log.info("Transmission for message with ID {} to {} (Token: {}) finished.",
-                new Object[]{messageID, remoteEndpoint, token});
+        log.info("{}", event);
     }
 
 
     @Override
-    public void processRetransmissionTimeout(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+    public void processTransmissionTimeout(TransmissionTimeoutEvent event) {
 
         long actualTime = System.currentTimeMillis();
-        transmissionTimeouts.put(actualTime, new InternalMessageDataWrapper(remoteEndpoint, messageID, token));
+        transmissionTimeouts.put(actualTime, event);
 
-        log.info("Transmission TIMED OUT for message with ID {} to {} (Token: {})",
-                new Object[]{messageID, remoteEndpoint, token});
+        log.info("{}", event);
     }
 
 
     @Override
-    public void processEmptyAcknowledgement(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+    public void processEmptyAcknowledgement(EmptyAcknowledgementReceptionEvent event) {
 
         long actualTime = System.currentTimeMillis();
-        emptyACKs.put(actualTime, new InternalMessageDataWrapper(remoteEndpoint, messageID, token));
+        emptyACKs.put(actualTime, event);
 
-        log.info("Empty ACK received for message with ID {} to {} (Token: {})",
-                new Object[]{messageID, remoteEndpoint, token});
+        log.info("{}", event);
     }
 
     @Override
-    public void processReset(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+    public void processReset(ResetReceptionEvent event) {
 
         long actualTime = System.currentTimeMillis();
-        emptyRSTs.put(actualTime, new InternalMessageDataWrapper(remoteEndpoint, messageID, token));
+        emptyRSTs.put(actualTime, event);
 
-        log.info("RST received for message with ID {} to {} (Token: {})",
-                new Object[]{messageID, remoteEndpoint, token});
+        log.info("{}", event);
     }
 
     /**
@@ -148,22 +134,22 @@ public class CoapResponseTestProcessor implements CoapResponseProcessor, Retrans
     }
 
 
-    public SortedSetMultimap<Long, InternalMessageDataWrapper> getEmptyACKs(){
+    public SortedSetMultimap<Long, EmptyAcknowledgementReceptionEvent> getEmptyACKs(){
         return this.emptyACKs;
     }
 
 
-    public SortedSetMultimap<Long, InternalMessageDataWrapper> getEmptyRSTs(){
+    public SortedSetMultimap<Long, ResetReceptionEvent> getEmptyRSTs(){
         return this.emptyRSTs;
     }
 
 
-    public SortedSetMultimap<Long, InternalMessageDataWrapper> getTransmissions(){
+    public SortedSetMultimap<Long, RetransmissionEvent> getTransmissions(){
         return this.transmissions;
     }
 
 
-    public SortedSetMultimap<Long, InternalMessageDataWrapper> getTransmissionTimeouts(){
+    public SortedSetMultimap<Long, TransmissionTimeoutEvent> getTransmissionTimeouts(){
         return this.transmissionTimeouts;
     }
 }

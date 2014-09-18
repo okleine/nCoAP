@@ -100,17 +100,15 @@ public class TokenFactory {
      * @return a {@link ListenableFuture<Token>} that will be set with a {@link Token} that is not already in use to
      * for ongoing communications with the given {@link InetSocketAddress}.
      */
-    public synchronized Token getNextToken(InetSocketAddress remoteEndpoint) throws NoTokenAvailableException {
+    public synchronized Token getNextToken(InetSocketAddress remoteEndpoint) {
 
         Token nextToken = getNextTokenInOrder(remoteEndpoint);
 
-        if(nextToken == null){
-            throw new NoTokenAvailableException(remoteEndpoint);
-        }
-        else{
+        if(nextToken != null){
             usedTokens.put(remoteEndpoint, nextToken);
-            return nextToken;
         }
+
+        return nextToken;
     }
 
 

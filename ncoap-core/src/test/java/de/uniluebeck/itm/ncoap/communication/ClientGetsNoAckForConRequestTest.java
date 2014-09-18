@@ -26,9 +26,9 @@ package de.uniluebeck.itm.ncoap.communication;
 
 import com.google.common.collect.SortedSetMultimap;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent;
 import de.uniluebeck.itm.ncoap.endpoints.client.CoapResponseTestProcessor;
 import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
-import de.uniluebeck.itm.ncoap.endpoints.client.InternalMessageDataWrapper;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -62,7 +62,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     private static CoapRequest coapRequest;
 
     private static CoapClientApplication client;
-    private static CoapResponseTestProcessor responseProcessor;
+    private static CoapResponseTestProcessor callback;
 
     private static CoapTestEndpoint testEndpoint;
 
@@ -82,7 +82,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
         testEndpoint = new CoapTestEndpoint();
 
         client = new CoapClientApplication("CoAP Testclient");
-        responseProcessor = new CoapResponseTestProcessor();
+        callback = new CoapResponseTestProcessor();
         URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
     }
@@ -124,9 +124,8 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
 
         //Send coapRequest
         InetSocketAddress remoteEndpoint = new InetSocketAddress("127.0.0.1", testEndpoint.getPort());
-        client.sendCoapRequest(coapRequest, responseProcessor, remoteEndpoint);
-
         timeRequestSent = System.currentTimeMillis();
+        client.sendCoapRequest(coapRequest, callback, remoteEndpoint);
 
         //Wait for the message ID to retire (takes 247 seconds).
         Thread.sleep(50000);
@@ -164,17 +163,13 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     @Test
     public void testRetransmissionsWereSentInTime(){
 
-        int expectedMessages = 5;
+        int expectedMessages = 4;
 
-        SortedSetMultimap<Long, InternalMessageDataWrapper> tranmissions = responseProcessor.getTransmissions();
-        assertEquals("Wrong number of sent messages!", expectedMessages, tranmissions.size());
+        SortedSetMultimap<Long, RetransmissionEvent> transmissions = callback.getTransmissions();
+        assertEquals("Wrong number of sent messages!", expectedMessages, transmissions.size());
 
 
-        Iterator<Map.Entry<Long, InternalMessageDataWrapper>> transmissionIterator =
-                tranmissions.entries().iterator();
-
-        //ignore first message...
-        transmissionIterator.next();
+        Iterator<Map.Entry<Long, RetransmissionEvent>> transmissionIterator = transmissions.entries().iterator();
 
         long[][] delay = new long[][]{
                 new long[]{2000, 3000}, new long[]{6000, 9000}, new long[]{14000, 21000}, new long[]{30000, 45000}
@@ -202,25 +197,22 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     @Test
     public void testClientReceivesTimeoutNotification(){
         assertFalse("Client did not receive a timeout notification at all.",
-                responseProcessor.getTransmissionTimeouts().isEmpty());
+                callback.getTransmissionTimeouts().isEmpty());
 
         long minDelay = 247000;
 
-        SortedSet<Long> transmissionTimes =
-                (SortedSet<Long>) responseProcessor.getTransmissions().keySet();
-
-        long firstTransmissionTime = transmissionTimes.first();
-
-        SortedSet<Long> transmissionTimeoutTimes =
-                (SortedSet<Long>) responseProcessor.getTransmissionTimeouts().keySet();
-
+//        SortedSet<Long> transmissionTimes =
+//                (SortedSet<Long>) callback.getTransmissions().keySet();
+//
+//        long firstTransmissionTime = transmissionTimes.first();
+//
+        SortedSet<Long> transmissionTimeoutTimes = (SortedSet<Long>) callback.getTransmissionTimeouts().keySet();
         long transmissionTimeoutTime = transmissionTimeoutTimes.first();
 
-        long actualDelay = transmissionTimeoutTime - firstTransmissionTime;
+        long actualDelay = transmissionTimeoutTime - timeRequestSent;
 
         String format = "Internal transmission timeout notification (expected minimum delay: %d millis, actual: %d" +
                 "millis)";
-
         log.info(String.format(format, minDelay, actualDelay));
 
         assertTrue("Internal transmission timeout notification was too early!", minDelay <= actualDelay);

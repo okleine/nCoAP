@@ -22,42 +22,60 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.codec;
-
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.application.client.MessageExchangeEvent;
+package de.uniluebeck.itm.ncoap.application.client;
 
 import java.net.InetSocketAddress;
 
 /**
- * An instance of {@link de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedEvent} is sent upstream
- * whenever the encoding of an outgoing CoAP message failed.
+ * Abstract base class for internal events that are caused within an ongoing or aspired message exchange
  *
  * @author Oliver Kleine
  */
-public class EncodingFailedEvent extends MessageExchangeEvent{
+public abstract class MessageExchangeEvent{
 
-    private final Throwable cause;
+    private int messageID;
+    private Token token;
+    private InetSocketAddress remoteEndpoint;
+    private boolean error;
 
-    /**
-     * @param remoteEndoint the remote endpoint which was the intended recipient of the message that caused this
-     *                      event
-     * @param messageID the message ID of the message that caused this event
-     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the message that caused this
-     *              event
-     * @param cause the {@link java.lang.Throwable} that caused this event (the {@link Throwable#getMessage()} method
-     *              is supposed to explain the reason)
-     */
-    EncodingFailedEvent(InetSocketAddress remoteEndoint, int messageID, Token token, Throwable cause){
-        super(remoteEndoint, messageID, token, true);
-        this.cause = cause;
+    protected MessageExchangeEvent(InetSocketAddress remoteEndpoint, int messageID, Token token, boolean error) {
+        this.messageID = messageID;
+        this.token = token;
+        this.remoteEndpoint = remoteEndpoint;
+        this.error = error;
     }
 
     /**
-     * Returns the {@link java.lang.Throwable} that caused encoding to fail
-     * @return the {@link java.lang.Throwable} that caused encoding to fail
+     * Returns the remote endpoint of the message exchange (i.e. communication) that caused this event
+     * @return the remote endpoint of the message exchange (i.e. communication) that caused this event
      */
-    public Throwable getCause() {
-        return this.cause;
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
+    }
+
+    /**
+     * Returns the token of the message exchange (i.e. communication) that caused this event
+     * @return the token of the message exchange (i.e. communication) that caused this event
+     */
+    public Token getToken() {
+        return token;
+    }
+
+    /**
+     * Returns the message ID of the message that caused this event
+     * @return the message ID of the message that caused this event
+     */
+    public int getMessageID() {
+        return messageID;
+    }
+
+    /**
+     * Returns <code>true</code> if this event causes the related message exchange to stop and <code>false</code>
+     * otherwise
+     * @return <code>true</code> if this event causes the related message exchange to stop and <code>false</code>
+     * otherwise
+     */
+    public boolean isError() {
+        return error;
     }
 }

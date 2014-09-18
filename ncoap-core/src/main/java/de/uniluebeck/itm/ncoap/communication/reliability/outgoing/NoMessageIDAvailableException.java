@@ -38,7 +38,6 @@ public class NoMessageIDAvailableException extends Exception{
 
     private InetSocketAddress remoteEndpoint;
     private long waitingPeriod;
-    private Token token;
 
     /**
      * Creates a new instance of
@@ -55,13 +54,13 @@ public class NoMessageIDAvailableException extends Exception{
     }
 
 
-    /**
-     * This method is called by the framework to set the token of the outgoing message that caused this exception
-     * @param token the token of the outgoing message that caused this exception
-     */
-    void setToken(Token token){
-        this.token = token;
-    }
+//    /**
+//     * This method is called by the framework to set the token of the outgoing message that caused this exception
+//     * @param token the token of the outgoing message that caused this exception
+//     */
+//    void setToken(Token token){
+//        this.token = token;
+//    }
 
     /**
      * Returns the address of the CoAP endpoint that was supposed to receive the outgoing message that caused this
@@ -83,13 +82,13 @@ public class NoMessageIDAvailableException extends Exception{
     }
 
 
-    /**
-     * Returns the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the outgoing message that caused this
-     * exception
-     * @return the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the outgoing message that caused this
-     * exception
-     */
-    public Token getToken() {
-        return token;
-    }
+//    /**
+//     * Returns the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the outgoing message that caused this
+//     * exception
+//     * @return the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the outgoing message that caused this
+//     * exception
+//     */
+//    public Token getToken() {
+//        return token;
+//    }
 }

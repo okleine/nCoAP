@@ -206,7 +206,7 @@
 //    public void test2ndReceivedMessageHasMsgTypeCON() {
 //        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
-//        String message = "Response Msg Type is not CON";
+//        String message = "Response Msg EventType is not CON";
 //        assertEquals(message, MessageType.CON, receivedMessage.getMessageType());
 //    }
 //}

@@ -22,29 +22,20 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
+import de.uniluebeck.itm.ncoap.application.client.MessageExchangeEvent;
 import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 import java.net.InetSocketAddress;
 
 /**
-* Interface to be implemented by instances of {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback} to get informed if an outgoing
-* {@link CoapRequest} was neither acknowledged nor reseted by the intended recipient.
-*
-* @author Oliver Kleine
-*/
-public interface RetransmissionTimeoutProcessor {
+ * Created by olli on 16.09.14.
+ */
+public class NoMessageIDAvailableEvent extends MessageExchangeEvent{
 
-    /**
-     * Method invoked by the nCoAP framework if there was an outgoing confirmable CoAP request that was neither
-     * acknowledged nor reseted by the recipient.
-     *
-     * @param remoteEndpoint the address of the remote endpoint to receive the transmitted message
-     * @param messageID the message ID of the transmitted message
-     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} of the transmitted message
-     */
-    public void processRetransmissionTimeout(InetSocketAddress remoteEndpoint, int messageID, Token token);
+    protected NoMessageIDAvailableEvent(InetSocketAddress remoteEndpoint, Token token) {
+        super(remoteEndpoint, CoapMessage.UNDEFINED_MESSAGE_ID, token, true);
+    }
 }

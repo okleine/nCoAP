@@ -26,13 +26,11 @@ package de.uniluebeck.itm.ncoap.communication.reliability.outgoing;
 
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
 
 import java.net.InetSocketAddress;
 
 /**
- * Interface to be implemented by instances of {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor}
+ * Interface to be implemented by instances of {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback}
  * that want to somehow know about each transmission attempt of the related CoAP request, e.g. in order to print
  * it on screen or log it.
  *
@@ -43,7 +41,7 @@ public interface TransmissionInformationProcessor {
 
     /**
      * Method invoked by the framework for each attempt to send the CoAP request related
-     * to this {@link de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor}.
+     * to this {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback}.
      *
      * This happens 5 times at maximum, once for the original request and 4 times for retransmission attempts if the
      * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} was confirmable.

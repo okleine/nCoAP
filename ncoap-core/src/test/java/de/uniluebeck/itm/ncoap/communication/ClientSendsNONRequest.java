@@ -175,7 +175,7 @@
 //    public void testReceivedMessageHasMsgTypeNON() {
 //        SortedMap<Long, CoapMessage> receivedMessages = endpoints.getReceivedCoapMessages();
 //        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
-//        String message = "Response Msg Type is not NON";
+//        String message = "Response Msg EventType is not NON";
 //        assertEquals(message, MessageType.NON, receivedMessage.getMessageType());
 //    }
 //}

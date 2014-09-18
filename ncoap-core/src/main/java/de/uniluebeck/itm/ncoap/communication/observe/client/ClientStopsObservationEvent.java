@@ -33,7 +33,7 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public class ClientStopsObservationEvent {
+public class ClientStopsObservationEvent{
 
     private InetSocketAddress remoteEndpoint;
     private Token token;

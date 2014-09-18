@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.applications;
 
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
+import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
 import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor;
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by olli on 20.03.14.
  */
-public class SimpleCoapResponseProcessor implements CoapResponseProcessor, TransmissionInformationProcessor,
+public class SimpleCoapResponseProcessor implements CoapClientCallback, TransmissionInformationProcessor,
         RetransmissionTimeoutProcessor{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());

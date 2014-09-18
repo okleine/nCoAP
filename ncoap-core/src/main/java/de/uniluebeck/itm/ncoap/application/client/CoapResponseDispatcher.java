@@ -26,20 +26,11 @@ package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.application.ApplicationShutdownEvent;
-import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedEvent;
-import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedProcessor;
 import de.uniluebeck.itm.ncoap.communication.observe.client.ClientStopsObservationEvent;
-import de.uniluebeck.itm.ncoap.communication.observe.client.UpdateNotificationProcessor;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.*;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.MessageRetransmissionEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
-import de.uniluebeck.itm.ncoap.message.options.OptionValue;
-import de.uniluebeck.itm.ncoap.message.options.UintOptionValue;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * The {@link CoapResponseDispatcher} is responsible for processing incoming {@link CoapResponse}s. Each
- * {@link CoapRequest} needs an associated instance of {@link CoapResponseProcessor}
+ * {@link CoapRequest} needs an associated instance of {@link CoapClientCallback}
  *
  * @author Oliver Kleine
  */
@@ -60,13 +51,13 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
     private TokenFactory tokenFactory;
 
-    private HashBasedTable<InetSocketAddress, Token, CoapResponseProcessor> responseProcessors;
+    private HashBasedTable<InetSocketAddress, Token, CoapClientCallback> clientCallbacks;
 
     private ScheduledExecutorService executorService;
 
 
     public CoapResponseDispatcher(ScheduledExecutorService executorService, TokenFactory tokenFactory){
-        this.responseProcessors = HashBasedTable.create();
+        this.clientCallbacks = HashBasedTable.create();
         this.executorService = executorService;
         this.tokenFactory = tokenFactory;
     }
@@ -84,39 +75,43 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                     final CoapMessage coapMessage =
                             ((OutgoingCoapMessageWrapper) me.getMessage()).getCoapMessage();
 
-                    final CoapResponseProcessor coapResponseProcessor =
-                            ((OutgoingCoapMessageWrapper) me.getMessage()).getCoapResponseProcessor();
+                    final CoapClientCallback coapClientCallback =
+                            ((OutgoingCoapMessageWrapper) me.getMessage()).getCoapClientCallback();
 
-                    //Requests with an observe option need an instance of UpdateNotificationProcessor!
-                    if(coapMessage instanceof CoapRequest
-                            && ((CoapRequest) coapMessage).getObserve() != UintOptionValue.UNDEFINED){
-
-                        if(!(coapResponseProcessor instanceof UpdateNotificationProcessor)){
-                            log.warn("Given instance of CoapResponseProcessor is no instance of " +
-                                    "UpdateNotificationProcessor! Remove OBSERVE option from request!");
-                            coapMessage.removeOptions(OptionValue.Name.OBSERVE);
-                        }
-                    }
+//                    //Requests with an observe option need an instance of UpdateNotificationProcessor!
+//                    if(coapMessage instanceof CoapRequest
+//                            && ((CoapRequest) coapMessage).getObserve() != UintOptionValue.UNDEFINED){
+//
+//                        if(!(coapClientCallback instanceof UpdateNotificationProcessor)){
+//                            log.warn("Given instance of CoapClientCallback is no instance of " +
+//                                    "UpdateNotificationProcessor! Remove OBSERVE option from request!");
+//                            coapMessage.removeOptions(OptionValue.Name.OBSERVE);
+//                        }
+//                    }
 
                     final InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
 
                     try {
                         //Prepare CoAP request, the response reception and then send the CoAP request
-                        coapMessage.setToken(tokenFactory.getNextToken(remoteEndpoint));
+                        Token token = tokenFactory.getNextToken(remoteEndpoint);
 
-                        //Add the response callback to wait for the incoming response
-                        addResponseCallback(remoteEndpoint, coapMessage.getToken(), coapResponseProcessor);
-
-                        //Send the request
-                        sendCoapMessage(ctx, me.getFuture(), coapMessage, remoteEndpoint);
-
-                    } catch (NoTokenAvailableException e) {
-                        if (coapResponseProcessor instanceof NoTokenAvailableProcessor) {
-                            NoTokenAvailableProcessor processor = (NoTokenAvailableProcessor) coapResponseProcessor;
-                            processor.processNoTokenAvailable(remoteEndpoint);
+                        if(token == null){
+                            NoTokenAvailableEvent event = new NoTokenAvailableEvent(remoteEndpoint);
+                            coapClientCallback.processMessageExchangeEvent(event);
                         }
-                    } catch (Exception e) {
-                        log.error("This should never happen!", e);
+
+                        else{
+                            coapMessage.setToken(token);
+
+                            //Add the response callback to wait for the incoming response
+                            addResponseCallback(remoteEndpoint, coapMessage.getToken(), coapClientCallback);
+
+                            //Send the request
+                            sendCoapMessage(ctx, me.getFuture(), coapMessage, remoteEndpoint);
+                        }
+                    }
+                    catch (Exception ex) {
+                        log.error("This should never happen!", ex);
                         removeResponseCallback(remoteEndpoint, coapMessage.getToken());
                     }
                 }
@@ -129,7 +124,7 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
                 @Override
                 public void run() {
-                    CoapResponseDispatcher.this.responseProcessors.clear();
+                    CoapResponseDispatcher.this.clientCallbacks.clear();
                     ctx.sendDownstream(me);
                 }
 
@@ -181,27 +176,27 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                 }
 
                 else{
-                    Throwable cause = future.getCause();
+//                    Throwable cause = future.getCause();
+//
+//                    if(cause instanceof NoMessageIDAvailableException){
+//                        NoMessageIDAvailableException exception = (NoMessageIDAvailableException) cause;
+//
+//                        InetSocketAddress remoteEndpoint = exception.getRemoteEndpoint();
+//                        Token token = exception.getToken();
+//
+//                        CoapClientCallback callback = removeResponseCallback(remoteEndpoint, token);
+//
+//                        if(callback != null && callback instanceof NoMessageIDAvailableProcessor){
+//                            ((NoMessageIDAvailableProcessor) callback).handleNoMessageIDAvailable(
+//                                    remoteEndpoint, exception.getWaitingPeriod()
+//                            );
+//                        }
+//                        else{
+//                            log.error("Removed response callback for token {} for {}", token, remoteEndpoint);
+//                        }
+//                    }
 
-                    if(cause instanceof NoMessageIDAvailableException){
-                        NoMessageIDAvailableException exception = (NoMessageIDAvailableException) cause;
-
-                        InetSocketAddress remoteEndpoint = exception.getRemoteEndpoint();
-                        Token token = exception.getToken();
-
-                        CoapResponseProcessor callback = removeResponseCallback(remoteEndpoint, token);
-
-                        if(callback != null && callback instanceof NoMessageIDAvailableProcessor){
-                            ((NoMessageIDAvailableProcessor) callback).handleNoMessageIDAvailable(
-                                    remoteEndpoint, exception.getWaitingPeriod()
-                            );
-                        }
-                        else{
-                            log.error("Removed response callback for token {} for {}", token, remoteEndpoint);
-                        }
-                    }
-
-                    log.warn("Could not write CoAP Request!", cause);
+                    log.error("Could not write CoAP Request!", future.getCause());
                 }
             }
         });
@@ -211,9 +206,9 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
 
     private synchronized void addResponseCallback(InetSocketAddress remoteEndpoint, Token token,
-                                                  CoapResponseProcessor coapResponseProcessor){
+                                                  CoapClientCallback coapClientCallback){
 
-        if(!(responseProcessors.put(remoteEndpoint, token, coapResponseProcessor) == null))
+        if(!(clientCallbacks.put(remoteEndpoint, token, coapClientCallback) == null))
             log.error("Tried to use token {} for {} twice!", token, remoteEndpoint);
         else
             log.debug("Added response processor for token {} from {}.", token,
@@ -221,25 +216,25 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
     }
 
 
-    private synchronized CoapResponseProcessor removeResponseCallback(InetSocketAddress remoteEndpoint,
+    private synchronized CoapClientCallback removeResponseCallback(InetSocketAddress remoteEndpoint,
                                                                       Token token){
 
-        CoapResponseProcessor result = responseProcessors.remove(remoteEndpoint, token);
+        CoapClientCallback result = clientCallbacks.remove(remoteEndpoint, token);
 
         if(result != null)
             log.debug("Removed response processor for token {} from {}.", token,
                     remoteEndpoint);
 
-        log.debug("Number of clients waiting for response: {}. ", responseProcessors.size());
+        log.debug("Number of clients waiting for response: {}. ", clientCallbacks.size());
         return result;
     }
 
     /**
      * This method is automatically invoked by the framework and relates incoming responses to open requests and invokes
-     * the appropriate method of the {@link CoapResponseProcessor} instance given with the {@link CoapRequest}.
+     * the appropriate method of the {@link CoapClientCallback} instance given with the {@link CoapRequest}.
      *
      * The invoked method depends on the message contained in the {@link org.jboss.netty.channel.MessageEvent}. See
-     * {@link CoapResponseProcessor} for more details on possible status updates.
+     * {@link CoapClientCallback} for more details on possible status updates.
      *
      * @param ctx The {@link org.jboss.netty.channel.ChannelHandlerContext} to relate this handler to the {@link org.jboss.netty.channel.Channel}
      * @param me The {@link org.jboss.netty.channel.MessageEvent} containing the {@link de.uniluebeck.itm.ncoap.message.CoapMessage}
@@ -251,38 +246,28 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         if(me.getMessage() instanceof CoapResponse)
             handleCoapResponse(ctx, (CoapResponse) me.getMessage(), (InetSocketAddress) me.getRemoteAddress());
 
-        else if(me.getMessage() instanceof EmptyAcknowledgementReceptionEvent)
-            handleEmptyAcknowledgementReceptionEvent((EmptyAcknowledgementReceptionEvent) me.getMessage());
-
-        else if(me.getMessage() instanceof ResetReceptionEvent)
-            handleResetEvent((ResetReceptionEvent) me.getMessage());
-
-        else if(me.getMessage() instanceof RetransmissionTimeoutEvent)
-            handleRetransmissionTimeoutEvent((RetransmissionTimeoutEvent) me.getMessage());
-
-        else if(me.getMessage() instanceof MessageRetransmissionEvent)
-            handleMessageRetransmittedEvent((MessageRetransmissionEvent) me.getMessage());
-
-        else if(me.getMessage() instanceof EncodingFailedEvent)
-            handleEncodingFailedEvent((EncodingFailedEvent) me.getMessage());
+        else if(me.getMessage() instanceof MessageExchangeEvent)
+            handleMessageExchangeEvent((MessageExchangeEvent) me.getMessage());
 
         else
             log.warn("Could not deal with message: {}", me.getMessage());
     }
 
 
-    private void handleEncodingFailedEvent(EncodingFailedEvent event) {
-        CoapResponseProcessor responseProcessor =
-                removeResponseCallback(event.getRemoteEndoint(), event.getToken());
+    private void handleMessageExchangeEvent(MessageExchangeEvent event) {
+        CoapClientCallback responseProcessor;
 
-        if(responseProcessor == null){
-            log.error("No response processor found for internal encoding failed message...");
-            return;
-        }
+        //find the response processor for the incoming event
+        if(event.isError())
+            responseProcessor = clientCallbacks.remove(event.getRemoteEndpoint(), event.getToken());
+        else
+            responseProcessor = clientCallbacks.get(event.getRemoteEndpoint(), event.getToken());
 
-        if(responseProcessor instanceof EncodingFailedProcessor)
-            ((EncodingFailedProcessor) responseProcessor).processEncodingFailed(event.getCause());
-
+        //process the event
+        if(responseProcessor != null)
+            responseProcessor.processMessageExchangeEvent(event);
+        else
+            log.warn("No response processor found for event: {}!", event);
     }
 
 
@@ -290,10 +275,9 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
                                     InetSocketAddress remoteEndpoint){
 
         log.debug("CoAP response received: {}.", coapResponse);
+        Token token = coapResponse.getToken();
 
-        final CoapResponseProcessor responseProcessor;
-
-        if(!responseProcessors.contains(remoteEndpoint, coapResponse.getToken())){
+        if(!clientCallbacks.contains(remoteEndpoint, token)){
 
             log.warn("No response processor found for CoAP response from {} ({})", remoteEndpoint , coapResponse);
 
@@ -303,122 +287,35 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
             return;
         }
 
+        final CoapClientCallback clientCallback;
+
         //if the response is a (regular, i.e. no error) update notification, keep the response processor in use
         if(coapResponse.isUpdateNotification() && !MessageCode.isErrorMessage(coapResponse.getMessageCode())){
-            responseProcessor = responseProcessors.get(remoteEndpoint, coapResponse.getToken());
+            clientCallback = clientCallbacks.get(remoteEndpoint, token);
 
-            if(!(responseProcessor instanceof UpdateNotificationProcessor)){
-                removeResponseCallback(remoteEndpoint, coapResponse.getToken());
+            if(!clientCallback.continueObservation(remoteEndpoint, token)){
+                removeResponseCallback(remoteEndpoint, token);
 
-                if(!tokenFactory.passBackToken(remoteEndpoint, coapResponse.getToken()))
+                if(!tokenFactory.passBackToken(remoteEndpoint, token))
                     log.error("Could not pass back token from message: {}", coapResponse);
+
+                //Send internal message to stop the observation
+                ClientStopsObservationEvent event = new ClientStopsObservationEvent(remoteEndpoint, token);
+                Channels.write(ctx.getChannel(), event);
             }
         }
 
         //for regular responses, i.e. no update notifications, remove the response processor and pass back the token
         else{
-            responseProcessor = removeResponseCallback(remoteEndpoint, coapResponse.getToken());
-            if(!tokenFactory.passBackToken(remoteEndpoint, coapResponse.getToken()))
+            clientCallback = removeResponseCallback(remoteEndpoint, token);
+            if(!tokenFactory.passBackToken(remoteEndpoint, token))
                 log.error("Could not pass back token from message: {}", coapResponse);
         }
 
         //Process the CoAP response
-        log.debug("Callback found for token {}.", coapResponse.getToken());
-        responseProcessor.processCoapResponse(coapResponse);
-
-
-        //if the observation is not to be continued remove the response processor
-        if(responseProcessor instanceof UpdateNotificationProcessor &&
-                !((UpdateNotificationProcessor) responseProcessor).continueObservation()){
-
-            //Send internal message to stop the observation
-            ClientStopsObservationEvent internalMessage =
-                    new ClientStopsObservationEvent(remoteEndpoint, coapResponse.getToken());
-
-            Channels.write(ctx.getChannel(), internalMessage);
-        }
+        log.debug("Callback found for token {} from {}.", token, remoteEndpoint);
+        clientCallback.processCoapResponse(coapResponse);
     }
-
-
-    private void handleEmptyAcknowledgementReceptionEvent(EmptyAcknowledgementReceptionEvent event){
-        //find proper callback
-        CoapResponseProcessor callback =
-                responseProcessors.get(event.getRemoteEndpoint(), event.getToken());
-
-        if(callback == null){
-            log.warn("No response processor found for empty ACK for token {} from {}.", event.getToken(),
-                    event.getRemoteEndpoint());
-            return;
-        }
-
-        if(callback instanceof EmptyAcknowledgementProcessor)
-            ((EmptyAcknowledgementProcessor) callback).processEmptyAcknowledgement(
-                    event.getRemoteEndpoint(), event.getMessageID(), event.getToken()
-            );
-
-    }
-
-
-    private void handleResetEvent(ResetReceptionEvent event) {
-        //find proper callback
-        CoapResponseProcessor callback =
-                responseProcessors.get(event.getRemoteEndpoint(), event.getToken());
-
-        if(callback == null){
-            log.error("No response processor found for RST for token {} from {}.", event.getToken(),
-                    event.getRemoteEndpoint());
-            return;
-        }
-
-        if(callback instanceof ResetProcessor)
-            ((ResetProcessor) callback).processReset(
-                    event.getRemoteEndpoint(),
-                    event.getMessageID(),
-                    event.getToken()
-            );
-    }
-
-
-    private void handleMessageRetransmittedEvent(MessageRetransmissionEvent event){
-
-        CoapResponseProcessor callback =
-                responseProcessors.get(event.getRemoteAddress(), event.getToken());
-
-        if(callback != null && callback instanceof TransmissionInformationProcessor)
-            ((TransmissionInformationProcessor) callback).messageTransmitted(
-                    event.getRemoteAddress(),
-                    event.getMessageID(),
-                    event.getToken(),
-                    true
-            );
-
-    }
-
-
-    private void handleRetransmissionTimeoutEvent(RetransmissionTimeoutEvent event){
-
-        //Find proper callback
-        CoapResponseProcessor callback =
-                removeResponseCallback(event.getRemoteEndpoint(), event.getToken());
-
-        //Invoke method of callback instance
-        if(callback != null && callback instanceof RetransmissionTimeoutProcessor)
-            ((RetransmissionTimeoutProcessor) callback).processRetransmissionTimeout(
-                    event.getRemoteEndpoint(),
-                    event.getMessageID(),
-                    event.getToken()
-            );
-
-        //pass the token back
-        if(!tokenFactory.passBackToken(event.getRemoteEndpoint(), event.getToken())){
-            log.error("Could not pass back token {} for {} from retransmission timeout!",
-                    event.getToken(), event.getRemoteEndpoint());
-        }
-        else{
-            log.debug("Passed back token from timeout message!");
-        }
-    }
-
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ee){

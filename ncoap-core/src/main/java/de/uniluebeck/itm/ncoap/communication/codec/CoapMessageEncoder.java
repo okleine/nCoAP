@@ -76,7 +76,6 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
-import de.uniluebeck.itm.ncoap.application.client.CoapResponseProcessor;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -93,7 +92,7 @@ import java.net.InetSocketAddress;
  * the application.
  *
  * <b>Note for instances of {@link CoapClientApplication}:</b>Implement {@link EncodingFailedProcessor} within your
- * {@link CoapResponseProcessor} instance (which was supposed to handle an awaited response) to get your application
+ * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback} instance (which was supposed to handle an awaited response) to get your application
  * informed about such an error.
  *
  * @author Oliver Kleine

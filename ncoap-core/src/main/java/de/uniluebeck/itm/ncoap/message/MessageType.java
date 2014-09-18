@@ -64,22 +64,22 @@ public abstract class MessageType {
         UNKNOWN(-1),
 
         /**
-         * Corresponds to Message Type 0
+         * Corresponds to Message EventType 0
          */
         CON(0),
 
         /**
-         * Corresponds to Message Type 1
+         * Corresponds to Message EventType 1
          */
         NON(1),
 
         /**
-         * Corresponds to Message Type 2
+         * Corresponds to Message EventType 2
          */
         ACK(2),
 
         /**
-         * Corresponds to Message Type 3
+         * Corresponds to Message EventType 3
          */
         RST(3);
 

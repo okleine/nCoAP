@@ -71,7 +71,7 @@ public class ObservationParams {
         this.etags = etags;
         this.contentFormat = ContentFormat.UNDEFINED;
         this.notificationCount = new AtomicLong(0);
-        this.latestUpdateNotificationMessageID = CoapMessage.MESSAGE_ID_UNDEFINED;
+        this.latestUpdateNotificationMessageID = CoapMessage.UNDEFINED_MESSAGE_ID;
     }
 
 
