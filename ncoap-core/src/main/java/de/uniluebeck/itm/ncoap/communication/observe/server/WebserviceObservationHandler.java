@@ -343,7 +343,7 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
                                 "(observing \"{}\").", new Object[]{params.getRemoteEndpoint(), params.getToken(),
                                 params.getWebservicePath(), future.getCause()});
                     else
-                        log.info("Update notification sent: {}", updateNotification);
+                        log.info("Update notification sent to {}: {}", params.getRemoteEndpoint(), updateNotification);
                 }
             });
         }

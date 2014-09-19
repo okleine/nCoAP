@@ -42,7 +42,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 
-public class CoapResponseTestProcessor extends CoapClientCallback {
+public class CoapClientTestCallback extends CoapClientCallback {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -56,7 +56,7 @@ public class CoapResponseTestProcessor extends CoapClientCallback {
     private SortedSetMultimap <Long, TransmissionTimeoutEvent> transmissionTimeouts;
 
 
-    public CoapResponseTestProcessor(){
+    public CoapClientTestCallback(){
         this.coapResponses = Collections.synchronizedSortedMap(new TreeMap<Long, CoapResponse>());
 
         this.emptyACKs = Multimaps.synchronizedSortedSetMultimap(

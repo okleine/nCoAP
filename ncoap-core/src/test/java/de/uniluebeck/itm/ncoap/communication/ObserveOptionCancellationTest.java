@@ -48,7 +48,7 @@
 // */
 //package de.uniluebeck.itm.ncoap.communication;
 //
-//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapClientTestCallback;
 //import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 //import de.uniluebeck.itm.ncoap.plugtest.server.webservice.ObservableTestWebservice;
@@ -85,7 +85,7 @@
 //    private static ObservableTestWebservice service;
 //
 //    private static CoapTestEndpoint endpoints;
-//    private static CoapResponseTestProcessor responseProcessor;
+//    private static CoapClientTestCallback responseProcessor;
 //
 //    //requests
 //    private static CoapRequest observationRequest1;
@@ -112,7 +112,7 @@
 //        server.registerService(service);
 //
 //        endpoints = new CoapTestEndpoint();
-//        responseProcessor = new CoapResponseTestProcessor();
+//        responseProcessor = new CoapClientTestCallback();
 //
 //        URI targetURI = new URI("coap://localhost:" + server.getServerPort() + PATH_TO_SERVICE);
 //

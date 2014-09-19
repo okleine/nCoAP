@@ -64,7 +64,7 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
         if(me.getMessage() instanceof CoapRequest)
             handleOutgoingCoapRequest(ctx, me);
 
-        else if(me.getMessage() instanceof ClientStopsObservationEvent)
+        else if(me.getMessage() instanceof ObservationCancelationEvent)
             handleClientStopsObservationEvent(ctx, me);
 
         else
@@ -73,26 +73,26 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
 
 
     private void handleClientStopsObservationEvent(ChannelHandlerContext ctx, MessageEvent me) {
-        ClientStopsObservationEvent internalMessage = (ClientStopsObservationEvent) me.getMessage();
+        ObservationCancelationEvent event = (ObservationCancelationEvent) me.getMessage();
 
         UpdateNotificationAgeParams latestAgeParams;
         synchronized (monitor){
-            latestAgeParams = observations.remove(internalMessage.getRemoteEndpoint(), internalMessage.getToken());
+            latestAgeParams = observations.remove(event.getRemoteEndpoint(), event.getToken());
         }
 
         if(latestAgeParams != null){
-                me.getFuture().setSuccess();
-                log.info("Observation stopped! Next update notification from {} with token {} will cause a RST.",
-                        internalMessage.getRemoteEndpoint(), internalMessage.getToken());
-            }
+            me.getFuture().setSuccess();
+            log.info("Observation stopped! Next update notifications (if any) from {} with token {} will cause a RST.",
+                    event.getRemoteEndpoint(), event.getToken());
+        }
 
-            else{
-                String errorMessage = String.format(ERROR, internalMessage.getRemoteEndpoint().toString(),
-                        internalMessage.getToken().toString());
+        else{
+            String errorMessage = String.format(ERROR, event.getRemoteEndpoint().toString(),
+                    event.getToken().toString());
 
-                me.getFuture().setFailure(new Exception(errorMessage));
-                log.error(errorMessage);
-            }
+            me.getFuture().setFailure(new Exception(errorMessage));
+            log.error(errorMessage);
+        }
 
         ctx.sendDownstream(me);
     }
@@ -152,14 +152,15 @@ public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
                 //Get age parameters from newly received update notification
                 long receivedSequenceNo = coapResponse.getObservationSequenceNumber();
                 UpdateNotificationAgeParams params2 =
-                        new UpdateNotificationAgeParams(System.currentTimeMillis(), receivedSequenceNo);
+                        new UpdateNotificationAgeParams(receivedSequenceNo, System.currentTimeMillis());
 
                 if(UpdateNotificationAgeParams.isParams2Newer(params1, params2)){
                     observations.put(remoteEndpoint, token, params2);
                 }
 
                 else{
-                    log.warn("Received update notification is older than latest. IGNORE!");
+                    log.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
+                            params2, params1);
                     return;
                 }
             }

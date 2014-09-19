@@ -49,7 +49,7 @@
 //package de.uniluebeck.itm.ncoap.communication;
 //
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapClientTestCallback;
 //import de.uniluebeck.itm.ncoap.plugtest.server.CoapTestServer;
 //import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebService;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -82,8 +82,8 @@
 //
 //    private static final int NUMBER_OF_PARALLEL_REQUESTS = 100;
 //
-//    private static CoapResponseTestProcessor[] responseProcessors =
-//            new CoapResponseTestProcessor[NUMBER_OF_PARALLEL_REQUESTS];
+//    private static CoapClientTestCallback[] responseProcessors =
+//            new CoapClientTestCallback[NUMBER_OF_PARALLEL_REQUESTS];
 //
 //    private static CoapRequest[] requests = new CoapRequest[NUMBER_OF_PARALLEL_REQUESTS];
 //
@@ -92,7 +92,7 @@
 //    @Override
 //    public void setupLogging() throws Exception {
 //        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.TestParallelRequests").setLevel(Level.DEBUG);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor").setLevel(Level.DEBUG);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.client.CoapClientTestCallback").setLevel(Level.DEBUG);
 //    }
 //
 //    @Override
@@ -110,7 +110,7 @@
 //        client = new CoapClientApplication();
 //
 //        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-//            responseProcessors[i] = new CoapResponseTestProcessor();
+//            responseProcessors[i] = new CoapClientTestCallback();
 //            requests[i] =  new CoapRequest(MessageType.CON, MessageCode.GET,
 //                    new URI("coap://localhost:" + server.getServerPort() + "/service" + (i+1)));
 //        }

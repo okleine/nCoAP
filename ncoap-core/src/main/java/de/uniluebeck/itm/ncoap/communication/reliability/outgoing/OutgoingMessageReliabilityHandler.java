@@ -236,7 +236,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
         log.debug("Write update notification: {}", updateNotification);
 
-
         //for CON update notifications update potentially running retransmissions
         if(updateNotification.getMessageTypeName() == MessageType.Name.CON){
 
@@ -341,8 +340,9 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
 
     private void handleEncodingFailedMessage(ChannelHandlerContext ctx, MessageEvent me) {
 
-        InetSocketAddress remoteEndpoint = ((EncodingFailedEvent) me.getMessage()).getRemoteEndpoint();
-        int messageID = ((EncodingFailedEvent) me.getMessage()).getMessageID();
+        EncodingFailedEvent event = (EncodingFailedEvent) me.getMessage();
+        InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
+        int messageID = event.getMessageID();
 
         //Try to cancel open retransmissions (if any)
         stopRetransmission(remoteEndpoint, messageID);
@@ -464,7 +464,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
     }
 
 
-    private void retransmitMessage(OutgoingReliableMessageExchange messageExchange){
+    private void retransmitMessage(final OutgoingReliableMessageExchange messageExchange){
 
         final CoapMessage coapMessage = messageExchange.getCoapMessage();
         final InetSocketAddress remoteEndpoint = messageExchange.getRemoteEndpoint();
@@ -480,8 +480,6 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
                 if(future.isSuccess()){
                     fireRetransmissionEvent(remoteEndpoint, coapMessage.getToken(),
                             coapMessage.getMessageID());
-
-                    log.info("Retransmitted message: {}", coapMessage);
                 }
                 else{
                     log.error("Error during message retransmission!", future.getCause());
@@ -490,6 +488,7 @@ public class OutgoingMessageReliabilityHandler extends SimpleChannelHandler impl
         });
 
         messageExchange.increaseRetransmissionCount();
+        log.info("Retransmission #{}: {}",  messageExchange.getRetransmissionCount(), coapMessage);
     }
 
 

@@ -41,9 +41,10 @@ import java.net.URI;
 /**
  * Created by olli on 18.03.14.
  */
-public class TestResourceStatusChangeDuringRetransmission extends AbstractCoapCommunicationTest{
+public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommunicationTest{
 
-    private static CoapServerApplication coapServerApplication;
+    private static CoapServerApplication server;
+    private static ObservableTestWebservice service;
     private static CoapTestEndpoint client;
 
     private static CoapRequest coapRequest;
@@ -51,12 +52,13 @@ public class TestResourceStatusChangeDuringRetransmission extends AbstractCoapCo
 
     @Override
     public void setupComponents() throws Exception {
-        coapServerApplication = new CoapServerApplication();
-        coapServerApplication.registerService(new ObservableTestWebservice("/observable", 0, 0, 5000));
+        server = new CoapServerApplication();
+        service = new ObservableTestWebservice("/observable", 0, 0);
+        server.registerService(service);
 
         client = new CoapTestEndpoint();
 
-        URI targetUri = new URI("coap", null, "localhost", 5683, "/observable", null, null);
+        URI targetUri = new URI("coap", null, "localhost", -1, "/observable", null, null);
 
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
         coapRequest.setObserve(true);
@@ -66,20 +68,29 @@ public class TestResourceStatusChangeDuringRetransmission extends AbstractCoapCo
     @Override
     public void createTestScenario() throws Exception {
         client.writeMessage(coapRequest, new InetSocketAddress("localhost", 5683));
-
-        Thread.sleep(70000);
+        Thread.sleep(5000);
+        service.setResourceStatus(2, 120);
+        Thread.sleep(10000);
+        service.setResourceStatus(3, 120);
+        Thread.sleep(50000);
     }
 
     @Override
     public void shutdownComponents() throws Exception {
-        coapServerApplication.shutdown();
+        server.shutdown();
         client.shutdown();
     }
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.outgoing").setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.outgoing")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe.server.WebserviceObservationHandler")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice")
+                .setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint")
+                .setLevel(Level.INFO);
     }
 
     @Test

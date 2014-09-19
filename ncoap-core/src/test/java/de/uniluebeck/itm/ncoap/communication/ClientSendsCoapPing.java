@@ -26,7 +26,7 @@ package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.endpoints.client.CoapResponseTestProcessor;
+import de.uniluebeck.itm.ncoap.endpoints.client.CoapClientTestCallback;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -42,13 +42,13 @@ public class ClientSendsCoapPing extends AbstractCoapCommunicationTest{
 
     private static CoapClientApplication coapClientApplication;
     private static CoapServerApplication coapServerApplication;
-    private static CoapResponseTestProcessor resetProcessor;
+    private static CoapClientTestCallback resetProcessor;
 
 
     @Override
     public void setupComponents() throws Exception {
         coapClientApplication = new CoapClientApplication();
-        resetProcessor = new CoapResponseTestProcessor();
+        resetProcessor = new CoapClientTestCallback();
         coapServerApplication = new CoapServerApplication();
     }
 

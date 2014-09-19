@@ -29,25 +29,26 @@ import de.uniluebeck.itm.ncoap.application.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Instances of this class are sent downstream if a client decides to stop a running observation.
+ * Instances of this class are sent downstream if a client decides to stop a running observation. This event is
+ * supposed to send an RST messages upon reception of the next update notification.
  *
  * @author Oliver Kleine
  */
-public class ClientStopsObservationEvent{
+public class ObservationCancelationEvent {
 
     private InetSocketAddress remoteEndpoint;
     private Token token;
 
     /**
      * Creates a new instance of
-     * {@link ClientStopsObservationEvent}
+     * {@link ObservationCancelationEvent}
      *
      * @param remoteEndpoint the {@link java.net.InetSocketAddress} of the remote endpoint providing the observed
      *                       service
      * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} to identify the observation to be
      *              stopped
      */
-    public ClientStopsObservationEvent(InetSocketAddress remoteEndpoint, Token token) {
+    public ObservationCancelationEvent(InetSocketAddress remoteEndpoint, Token token) {
         this.remoteEndpoint = remoteEndpoint;
         this.token = token;
     }

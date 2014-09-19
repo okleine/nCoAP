@@ -267,14 +267,15 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         if(removedService != null){
             log.info("Service {} removed from server.", uriPath);
 
-            if(removedService instanceof ObservableWebservice)
-                ((ObservableWebservice) removedService).prepareShutdown();
+//            if(removedService instanceof ObservableWebservice)
+//                ((ObservableWebservice) removedService).prepareShutdown();
 
             removedService.shutdown();
 
             if(removedService instanceof ObservableWebservice)
-                channel.write(new ObservableWebserviceDeregistrationEvent(uriPath));
+                Channels.write(this.channel, new ObservableWebserviceDeregistrationEvent(uriPath));
         }
+
         else{
             log.error("Service {} could not be removed. Does not exist.", uriPath);
         }

@@ -49,7 +49,7 @@
 //package de.uniluebeck.itm.ncoap.communication;
 //
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapClientTestCallback;
 //import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.message.*;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -79,7 +79,7 @@
 //
 //    private static CoapClientApplication coapClient;
 //    private static CoapRequest coapRequest;
-//    private static CoapResponseTestProcessor responseProcessor;
+//    private static CoapClientTestCallback responseProcessor;
 //
 //    private static CoapTestEndpoint coapEndpoint;
 //    private static CoapResponse updateNotification1;
@@ -98,7 +98,7 @@
 //        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, serviceUri);
 //        coapRequest.setObserveOptionRequest();
 //
-//        responseProcessor = new CoapResponseTestProcessor();
+//        responseProcessor = new CoapClientTestCallback();
 //
 //        updateNotification1 = new CoapResponse(MessageCode.CONTENT_205);
 //        updateNotification1.getHeader().setMessageType(MessageType.ACK);

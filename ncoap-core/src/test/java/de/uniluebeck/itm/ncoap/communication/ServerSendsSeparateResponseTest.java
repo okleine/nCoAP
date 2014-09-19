@@ -49,7 +49,7 @@
 //package de.uniluebeck.itm.ncoap.communication;
 //
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.client.CoapResponseTestProcessor;
+//import de.uniluebeck.itm.ncoap.plugtest.client.CoapClientTestCallback;
 //import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.message.*;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -75,7 +75,7 @@
 //public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTest {
 //
 //    private static CoapClientApplication client;
-//    private static CoapResponseTestProcessor responseProcessor;
+//    private static CoapClientTestCallback responseProcessor;
 //    private static CoapRequest request;
 //
 //    private static CoapTestEndpoint endpoints;
@@ -101,7 +101,7 @@
 //        URI targetUri = new URI("coap://localhost:" + endpoints.getPort());
 //        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
 //
-//        responseProcessor = new CoapResponseTestProcessor();
+//        responseProcessor = new CoapClientTestCallback();
 //    }
 //
 //    @Override

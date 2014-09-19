@@ -26,19 +26,11 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.application.ApplicationShutdownEvent;
-import de.uniluebeck.itm.ncoap.communication.observe.client.ClientStopsObservationEvent;
 import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.MessageType;
-import de.uniluebeck.itm.ncoap.message.MessageCode;
-
+import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -49,7 +41,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.*;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapMessage}s to a (remote)
@@ -58,8 +52,8 @@ import java.util.concurrent.*;
  * With {@link #sendCoapRequest(CoapRequest, CoapClientCallback, InetSocketAddress)} it e.g. provides an
  * easy-to-use method to write CoAP requests to a server.
  * 
- * Furthermore, with {@link #sendCoapPing(ResetProcessor, InetSocketAddress)} it provides a method to test if a remote
- * CoAP endpoints (i.e. the CoAP application and not only the host(!)) is alive.
+ * Furthermore, with {@link #sendCoapPing(CoapClientCallback, java.net.InetSocketAddress)} it provides a method to test
+ * if a remote CoAP endpoint (i.e. the CoAP application and not only the host(!)) is alive.
  * 
  * @author Oliver Kleine
 */
@@ -234,14 +228,6 @@ public class CoapClientApplication {
                             log.debug("Sent to {}:{}: {}",
                                     new Object[]{remoteEndpoint.getAddress().getHostAddress(),
                                             remoteEndpoint.getPort(), coapRequest});
-
-                            if (coapClientCallback instanceof TransmissionInformationProcessor)
-                                ((TransmissionInformationProcessor) coapClientCallback).messageTransmitted(
-                                        remoteEndpoint,
-                                        coapRequest.getMessageID(),
-                                        coapRequest.getToken(),
-                                        false
-                                );
                         }
                     }
                 });
@@ -251,31 +237,34 @@ public class CoapClientApplication {
     }
 
 
-    public void quitObservation(final InetSocketAddress remoteEndpoint, final Token token){
-
-        scheduledExecutorService.schedule(new Runnable(){
-
-            @Override
-            public void run() {
-                ClientStopsObservationEvent message = new ClientStopsObservationEvent(remoteEndpoint, token);
-                ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
-
-                if(log.isErrorEnabled())
-                    future.addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) throws Exception {
-                            if(future.isSuccess()){
-                                log.info("Observation of {} with token {} stopped.", remoteEndpoint, token);
-                            }
-                            else{
-                                log.error("Could not stop observation!", future.getCause());
-                            }
-                        }
-                    });
-            }
-
-        }, 0, TimeUnit.MILLISECONDS);
-    }
+//    public void cancelObservation(InetSocketAddress remoteEndpoint, Token token, boolean confirmable){
+//
+//        MessageType.Name messageType = confirmable ? MessageType.Name.CON : MessageType.Name.ACK;
+//        CoapRequest coapRequest = new CoapRequest(messageType, MessageCode.Name.GET, remoteEndpoint)
+//
+//        scheduledExecutorService.schedule(new Runnable(){
+//
+//            @Override
+//            public void run() {
+//                ObservationCancelationEvent event = new ObservationCancelationEvent(remoteEndpoint, token, false);
+//                ChannelFuture future = Channels.write(channel, event);
+//
+//                if(log.isErrorEnabled())
+//                    future.addListener(new ChannelFutureListener() {
+//                        @Override
+//                        public void operationComplete(ChannelFuture future) throws Exception {
+//                            if(future.isSuccess()){
+//                                log.info("Observation of {} with token {} stopped.", remoteEndpoint, token);
+//                            }
+//                            else{
+//                                log.error("Could not stop observation!", future.getCause());
+//                            }
+//                        }
+//                    });
+//            }
+//
+//        }, 0, TimeUnit.MILLISECONDS);
+//    }
 
     /**
      * Sends a CoAP PING, i.e. a {@link CoapMessage} with {@link MessageType.Name#CON} and

@@ -24,13 +24,17 @@
  */
 package de.uniluebeck.itm.ncoap.communication.observe.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Created by olli on 11.09.14.
  */
 public class UpdateNotificationAgeParams{
 
     public static long THRESHOLD = (long) Math.pow(2, 23);
-    
+    private static Logger log = LoggerFactory.getLogger(UpdateNotificationAgeParams.class.getName());
+
     long sequenceNo;
     long timestamp;
 
@@ -41,17 +45,21 @@ public class UpdateNotificationAgeParams{
 
     public static boolean isParams2Newer(UpdateNotificationAgeParams params1, UpdateNotificationAgeParams params2){
         if(params1.sequenceNo < params2.sequenceNo && params2.sequenceNo - params1.sequenceNo < THRESHOLD){
+            log.debug("Criterion 1 matches: Params2 ({}) is newer than Params1 ({}).", params2, params1);
             return true;
         }
 
         if(params1.sequenceNo > params2.sequenceNo && params1.sequenceNo - params2.sequenceNo > THRESHOLD){
+            log.debug("Criterion 2 matches: Params2 ({}) is newer than Params1 ({}).", params2, params1);
             return true;
         }
 
         if(params2.timestamp > params1.timestamp + 128000L){
+            log.debug("Criterion 3 matches: Params2 ({}) is newer than Params1 ({}).", params2, params1);
             return true;
         }
 
+        log.debug("No criterion matches: Params2 ({}) is older than Params1 ({}).", params2, params1);
         return false;
     }
 

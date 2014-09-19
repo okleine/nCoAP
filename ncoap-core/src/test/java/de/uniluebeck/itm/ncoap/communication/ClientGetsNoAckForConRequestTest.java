@@ -27,7 +27,7 @@ package de.uniluebeck.itm.ncoap.communication;
 import com.google.common.collect.SortedSetMultimap;
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent;
-import de.uniluebeck.itm.ncoap.endpoints.client.CoapResponseTestProcessor;
+import de.uniluebeck.itm.ncoap.endpoints.client.CoapClientTestCallback;
 import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -62,7 +62,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     private static CoapRequest coapRequest;
 
     private static CoapClientApplication client;
-    private static CoapResponseTestProcessor callback;
+    private static CoapClientTestCallback callback;
 
     private static CoapTestEndpoint testEndpoint;
 
@@ -82,7 +82,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
         testEndpoint = new CoapTestEndpoint();
 
         client = new CoapClientApplication("CoAP Testclient");
-        callback = new CoapResponseTestProcessor();
+        callback = new CoapClientTestCallback();
         URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
     }

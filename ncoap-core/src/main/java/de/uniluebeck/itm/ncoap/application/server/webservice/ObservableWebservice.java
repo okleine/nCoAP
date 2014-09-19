@@ -203,10 +203,10 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     }
 
 
-    public void prepareShutdown(){
-        setChanged();
-        notifyObservers(true);
-    }
+//    public void prepareShutdown(){
+////        setChanged();
+////        notifyObservers(true);
+//    }
 
 
     /**
