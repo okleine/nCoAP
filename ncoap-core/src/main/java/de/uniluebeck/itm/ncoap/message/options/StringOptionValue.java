@@ -123,10 +123,12 @@ public class StringOptionValue extends OptionValue<String> {
      */
     public static byte[] convertToByteArrayWithoutPercentEncoding(String s) throws IllegalArgumentException{
 
+        log.debug("With percent encoding: {}", s);
         ByteArrayInputStream in = new ByteArrayInputStream(s.getBytes(CoapMessage.CHARSET));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         int i;
+
         do{
             i = in.read();
 
@@ -152,8 +154,13 @@ public class StringOptionValue extends OptionValue<String> {
             else{
                 out.write(i);
             }
+
         } while(true);
 
-        return out.toByteArray();
+        byte[] result = out.toByteArray();
+
+        log.debug("Without percent encoding: {}", new String(result, CoapMessage.CHARSET));
+
+        return result;
     }
 }

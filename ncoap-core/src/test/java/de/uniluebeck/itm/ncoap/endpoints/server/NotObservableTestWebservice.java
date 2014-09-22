@@ -110,7 +110,7 @@ public class NotObservableTestWebservice extends NotObservableWebservice<String>
                                    InetSocketAddress remoteAddress)
             throws Exception{
 
-        log.debug("Incoming request for resource " + getPath());
+        log.info("Incoming request for resource " + getPath());
 
         //Delay the incoming requests
         if(this.pretendedProcessingTimeForRequests > 0)

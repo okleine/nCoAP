@@ -184,8 +184,8 @@ public class CoapRequest extends CoapMessage {
         if(targetUri.getPort() != -1 && targetUri.getPort() != OptionValue.URI_PORT_DEFAULT)
             addUriPortOption(targetUri.getPort());
 
-        addUriPathOptions(targetUri.getRawPath());
-        addUriQueryOptions(targetUri.getRawQuery());
+        addUriPathOptions(targetUri.getPath());
+        addUriQueryOptions(targetUri.getQuery());
 
     }
 
@@ -205,6 +205,9 @@ public class CoapRequest extends CoapMessage {
             //Path must not start with "/" to be further processed
             if(uriPath.startsWith("/"))
                 uriPath = uriPath.substring(1);
+
+            if("".equals(uriPath))
+                return;
 
             for(String pathComponent : uriPath.split("/")){
                 this.addStringOption(OptionValue.Name.URI_PATH, pathComponent);

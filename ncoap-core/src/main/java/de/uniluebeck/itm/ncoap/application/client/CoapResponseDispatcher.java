@@ -110,6 +110,7 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
                 //Send the request
                 sendCoapMessage(ctx, me.getFuture(), coapMessage, remoteEndpoint);
+                return;
             }
             catch (Exception ex) {
                 log.error("This should never happen!", ex);

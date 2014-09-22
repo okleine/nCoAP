@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
@@ -129,6 +130,16 @@ public class CoapTestEndpoint extends SimpleChannelHandler {
         return receivedCoapMessages;
     }
 
+
+    public CoapMessage getReceivedMessage(int index) throws IndexOutOfBoundsException{
+        Iterator<Long> receptionTimes = this.receivedCoapMessages.keySet().iterator();
+
+        for(int i = 0; i < index; i++){
+            receptionTimes.next();
+        }
+
+        return receivedCoapMessages.get(receptionTimes.next());
+    }
 
     public synchronized void setReceptionEnabled(boolean receptionEnabled) {
         this.receptionEnabled = receptionEnabled;

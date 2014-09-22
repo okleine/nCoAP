@@ -57,7 +57,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class DecodeEncodedMessageTest extends AbstractCoapTest{
 
-    @Parameterized.Parameters(name = "{index} test: {0}")
+    @Parameterized.Parameters(name = "Test {index}: {0}")
     public static Collection<Object[]> data() throws Exception {
 
         initializeLogging();
