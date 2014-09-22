@@ -45,8 +45,8 @@ public class HeaderDecodingException extends Exception{
      * @param messageID the message ID of the message that caused
      * @param remoteEndpoint the malformed message origin
      */
-    public HeaderDecodingException(int messageID, InetSocketAddress remoteEndpoint){
-        super();
+    public HeaderDecodingException(int messageID, InetSocketAddress remoteEndpoint, String message){
+        super(message);
         this.messageID = messageID;
         this.remoteEndpoint = remoteEndpoint;
     }

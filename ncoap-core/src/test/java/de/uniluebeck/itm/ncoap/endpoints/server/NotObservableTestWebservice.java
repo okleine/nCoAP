@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.fail;
@@ -46,10 +48,17 @@ import static org.junit.Assert.fail;
 *
 * @author Oliver Kleine
 */
-public class NotObservableTestWebService extends NotObservableWebservice<String> {
+public class NotObservableTestWebservice extends NotObservableWebservice<String> {
 
-    public static final long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
-    private static Logger log = LoggerFactory.getLogger(NotObservableTestWebService.class.getName());
+    private static Logger log = LoggerFactory.getLogger(NotObservableTestWebservice.class.getName());
+
+    private static final long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
+    private static List<Long> supportedContentFormats = new ArrayList<>(2);
+    static{
+        supportedContentFormats.add(DEFAULT_CONTENT_FORMAT);
+        supportedContentFormats.add(ContentFormat.APP_XML);
+    }
+
 
     private long pretendedProcessingTimeForRequests;
 
@@ -60,7 +69,7 @@ public class NotObservableTestWebService extends NotObservableWebservice<String>
      * @param pretendedProcessingTimeForRequests the time to delay the processing of incoming {@link CoapRequest}s (to
      *                                           simulate long processing time)
      */
-    public NotObservableTestWebService(String path, String initialStatus, long lifetimeSeconds,
+    public NotObservableTestWebservice(String path, String initialStatus, long lifetimeSeconds,
                                        long pretendedProcessingTimeForRequests){
 
         super(path, initialStatus, lifetimeSeconds);
@@ -107,41 +116,47 @@ public class NotObservableTestWebService extends NotObservableWebservice<String>
         if(this.pretendedProcessingTimeForRequests > 0)
             delay();
 
-        //Initialize variables
-        CoapResponse coapResponse;
-        byte[] serializedContent = null;
-        long contentFormat = -1;
-
-        //create response content
-        Set<Long> acceptedContentFormats = coapRequest.getAcceptedContentFormats();
-
-        if(acceptedContentFormats.size() == 0){
-            serializedContent = getSerializedResourceStatus(DEFAULT_CONTENT_FORMAT);
-        }
-        else{
-            Iterator<Long> accepted = acceptedContentFormats.iterator();
-            while(serializedContent == null && accepted.hasNext()){
-                contentFormat = accepted.next();
-                serializedContent = getSerializedResourceStatus(contentFormat);
-            }
-        }
+        Long contentFormat = determineResponseContentFormat(coapRequest);
 
         //create error response if content could not be created
-        if(serializedContent == null){
-            coapResponse = new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.BAD_REQUEST_400);
+        if(contentFormat == null){
+            CoapResponse coapResponse =
+                    new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.BAD_REQUEST_400);
 
             String content = "None of accepted content formats is supported by this Webservice.";
             coapResponse.setContent(content.getBytes(CoapMessage.CHARSET));
+            responseFuture.set(coapResponse);
         }
 
         //create response with content if available
         else{
-            coapResponse = new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.CONTENT_205);
-            coapResponse.setContent(serializedContent, contentFormat);
+            byte[] content = getSerializedResourceStatus(contentFormat);
+            CoapResponse coapResponse =
+                    new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.CONTENT_205);
+
+            coapResponse.setContent(content, contentFormat);
+            responseFuture.set(coapResponse);
+        }
+    }
+
+
+    private Long determineResponseContentFormat(CoapRequest coapRequest){
+        Iterator<Long> acceptedContentFormats = coapRequest.getAcceptedContentFormats().iterator();
+
+        Long contentFormat = null;
+
+        if(!acceptedContentFormats.hasNext()){
+            contentFormat  = DEFAULT_CONTENT_FORMAT;
         }
 
-        //set the future with the created CoAP response
-        responseFuture.set(coapResponse);
+        while(contentFormat == null && acceptedContentFormats.hasNext()){
+            long candidate = acceptedContentFormats.next();
+            if(supportedContentFormats.contains(candidate)){
+                contentFormat = candidate;
+            }
+        }
+
+        return contentFormat;
     }
 
 
@@ -149,7 +164,10 @@ public class NotObservableTestWebService extends NotObservableWebservice<String>
     public byte[] getSerializedResourceStatus(long contentFormat) {
         if(contentFormat == ContentFormat.TEXT_PLAIN_UTF8)
             return getResourceStatus().getBytes(Charset.forName("UTF-8"));
-        else
-            return null;
+
+        if(contentFormat == ContentFormat.APP_XML)
+            return ("<status>" + getResourceStatus() + "</status>").getBytes(Charset.forName("UTF-8"));
+
+        return null;
     }
 }

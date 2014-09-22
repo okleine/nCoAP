@@ -118,10 +118,10 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
         //write request
         client.sendCoapRequest(request, clientCallback, new InetSocketAddress("localhost", server.getPort()));
 
-        Thread.sleep(3000);
+        Thread.sleep(5000);
         service.setResourceStatus(2, 10);
 
-        Thread.sleep(10000);
+        Thread.sleep(5000);
 
 
         server.shutdown();
@@ -140,7 +140,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
         CoapResponse response = clientCallback.getCoapResponses().get(receptionTimes.next());
 
-        assertEquals("Messagt type is not ACK", MessageType.Name.ACK, response.getMessageTypeName());
+        assertEquals("Message type is not ACK", MessageType.Name.ACK, response.getMessageTypeName());
 
         assertEquals("Content does not match.", "Status #1",
                 response.getContent().toString(Charset.forName("UTF-8")));
@@ -153,7 +153,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
         CoapResponse response = clientCallback.getCoapResponses().get(receptionTimes.next());
 
-        assertEquals("Message type is not CON", MessageType.Name.CON, response.getMessageTypeName());
+        assertEquals("Wrong Message Code!", MessageCode.Name.CONTENT_205, response.getMessageCodeName());
 
         assertEquals("Content does not match.", "Status #2",
                 response.getContent().toString(Charset.forName("UTF-8")));
@@ -166,8 +166,6 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
         receptionTimes.next();
 
         CoapResponse response = clientCallback.getCoapResponses().get(receptionTimes.next());
-
-//        assertEquals("Messagt type is not CON", MessageType.Name.CON, response.getMessageTypeName());
 
         assertEquals("MessageCode is not 404", MessageCode.Name.NOT_FOUND_404, response.getMessageCodeName());
     }

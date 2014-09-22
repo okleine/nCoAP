@@ -209,6 +209,8 @@ public class IncomingMessageReliabilityHandler extends SimpleChannelHandler {
         //Check if there is an ongoing
         if(oldMessageExchange != null){
 
+            log.info("Duplicate of confirmable request received. Send ACK and IGNORE!");
+
             if (oldMessageExchange instanceof IncomingReliableMessageExchange){
 
                 //if the old message exchange is reliable and the empty ACK was already sent send another empty ACK

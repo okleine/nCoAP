@@ -51,7 +51,7 @@
 //import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 //import de.uniluebeck.itm.ncoap.plugtest.client.CoapClientTestCallback;
 //import de.uniluebeck.itm.ncoap.plugtest.server.CoapTestServer;
-//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebservice;
 //import de.uniluebeck.itm.ncoap.message.CoapRequest;
 //import de.uniluebeck.itm.ncoap.message.CoapResponse;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -102,7 +102,7 @@
 //
 //        //Add different webservices to server
 //        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-//            server.registerService(new NotObservableTestWebService("/service" + (i+1),
+//            server.registerService(new NotObservableTestWebservice("/service" + (i+1),
 //                    "Status of Webservice " + (i+1), 0));
 //        }
 //

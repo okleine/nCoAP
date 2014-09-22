@@ -49,7 +49,8 @@ public abstract class AbstractCoapTest {
         }
     }
 
-    private static void initializeLogging(){
+
+    protected static void initializeLogging(){
         if(!isLoggingConfigured){
 
             //asynchronous appender

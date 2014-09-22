@@ -50,7 +50,7 @@
 //
 //import de.uniluebeck.itm.ncoap.plugtest.endpoints.CoapTestEndpoint;
 //import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebService;
+//import de.uniluebeck.itm.ncoap.plugtest.server.webservice.NotObservableTestWebservice;
 //import de.uniluebeck.itm.ncoap.message.*;
 //import de.uniluebeck.itm.ncoap.message.MessageCode;
 //
@@ -75,7 +75,7 @@
 //public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
 //
 //    private static CoapServerApplication server;
-//    private static NotObservableTestWebService service;
+//    private static NotObservableTestWebservice service;
 //    private static String PATH_TO_SERVICE = "/could/be/any/path";
 //    private static String PAYLOAD = "some arbitrary payload";
 //
@@ -92,7 +92,7 @@
 //    @Override
 //    public void setupComponents() throws Exception {
 //        server = new CoapServerApplication(0);
-//        service = new NotObservableTestWebService(PATH_TO_SERVICE, PAYLOAD, 0);
+//        service = new NotObservableTestWebservice(PATH_TO_SERVICE, PAYLOAD, 0);
 //        server.registerService(service);
 //
 //        endpoints = new CoapTestEndpoint();

@@ -89,14 +89,17 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
     }
 
 
-    private CoapMessage decode(InetSocketAddress remoteEndpoint, ChannelBuffer buffer)
+    protected CoapMessage decode(InetSocketAddress remoteEndpoint, ChannelBuffer buffer)
             throws HeaderDecodingException, OptionCodecException {
 
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
 
         //Decode the Message Header which must have a length of exactly 4 bytes
-        if(buffer.readableBytes() < 4)
-            throw new HeaderDecodingException(CoapMessage.UNDEFINED_MESSAGE_ID, remoteEndpoint);
+        if(buffer.readableBytes() < 4){
+            String message = "Encoded CoAP messages MUST have min. 4 bytes. This has " + buffer.readableBytes() + "!";
+            throw new HeaderDecodingException(CoapMessage.UNDEFINED_MESSAGE_ID, remoteEndpoint, message);
+        }
+
 
 
         //Decode the header values
@@ -112,18 +115,26 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 new Object[]{messageType, tokenLength, messageCode, messageID});
 
         //Check whether the protocol version is supported (=1)
-        if(version != CoapMessage.PROTOCOL_VERSION)
-            throw new HeaderDecodingException(messageID, remoteEndpoint);
+        if(version != CoapMessage.PROTOCOL_VERSION){
+            String message = "CoAP version (" + version + ") is other than \"1\"!";
+            throw new HeaderDecodingException(messageID, remoteEndpoint, message);
+        }
+
 
 
         //Check whether TKL indicates a not allowed token length
-        if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH)
-            throw new HeaderDecodingException(messageID, remoteEndpoint);
+        if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH){
+            String message = "TKL value (" + tokenLength + ") is larger than 8!";
+            throw new HeaderDecodingException(messageID, remoteEndpoint, message);
+        }
+
 
 
         //Check whether there are enough unread bytes left to read the token
-        if(buffer.readableBytes() < tokenLength)
-            throw new HeaderDecodingException(messageID, remoteEndpoint);
+        if(buffer.readableBytes() < tokenLength){
+            String message = "TKL value is " + tokenLength + " but only " + buffer.readableBytes() + " bytes left!";
+            throw new HeaderDecodingException(messageID, remoteEndpoint, message);
+        }
 
 
         //Handle empty message (ignore everything but the first 4 bytes)
@@ -140,7 +151,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
             //There is no empty NON message defined, so send a RST
             else
-                throw new HeaderDecodingException(messageID, remoteEndpoint);
+                throw new HeaderDecodingException(messageID, remoteEndpoint, "Empty NON messages are invalid!");
         }
 
 

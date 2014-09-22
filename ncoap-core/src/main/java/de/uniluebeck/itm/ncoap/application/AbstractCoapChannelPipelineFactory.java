@@ -35,7 +35,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Created by olli on 08.02.14.
+ * Abstract base class for pipeline factories for both clients and servers.
+ *
+ * @author Oliver Kleine
  */
 public abstract class AbstractCoapChannelPipelineFactory implements ChannelPipelineFactory {
 
@@ -53,7 +55,7 @@ public abstract class AbstractCoapChannelPipelineFactory implements ChannelPipel
 
     //This is only availabe on client pipelines
     public static final String INCOMING_UPDATE_NOTIFICATION_HANDLER = "IncomingUpdateNotificationHandler";
-    public static final String RESPONSE_DISPATCHER = "ResponseHandler";
+    public static final String RESPONSE_DISPATCHER = "ResponseDispatcher";
 
     private Map<String, ChannelHandler> handler;
 

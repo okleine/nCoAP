@@ -25,6 +25,7 @@
 package de.uniluebeck.itm.ncoap.endpoints;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import de.uniluebeck.itm.ncoap.application.client.MessageExchangeEvent;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
@@ -112,10 +113,12 @@ public class CoapTestEndpoint extends SimpleChannelHandler {
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        if ((e.getMessage() instanceof CoapMessage) && receptionEnabled) {
+        if(!receptionEnabled){
+            return;
+        }
 
+        if((e.getMessage() instanceof CoapMessage)) {
             receivedCoapMessages.put(System.currentTimeMillis(), (CoapMessage) e.getMessage());
-
             log.info("Incoming #{} (from {}): {}.",
                     new Object[]{getReceivedCoapMessages().size(), e.getRemoteAddress(), e.getMessage()});
         }

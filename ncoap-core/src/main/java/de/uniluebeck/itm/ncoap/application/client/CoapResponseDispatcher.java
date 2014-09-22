@@ -53,8 +53,7 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
     private HashBasedTable<InetSocketAddress, Token, CoapClientCallback> clientCallbacks;
 
-    private ScheduledExecutorService executorService;
-
+    ScheduledExecutorService executorService;
 
     public CoapResponseDispatcher(ScheduledExecutorService executorService, TokenFactory tokenFactory){
         this.clientCallbacks = HashBasedTable.create();
@@ -67,9 +66,6 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
     public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent me){
 
         if(me.getMessage() instanceof OutgoingCoapMessageWrapper){
-//            executorService.schedule(new Runnable() {
-//                @Override
-//                public void run() {
 
             //Extract parameters for message transmission
             final CoapMessage coapMessage =
@@ -82,19 +78,15 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
 
             try {
                 if(coapMessage instanceof CoapRequest && ((CoapRequest) coapMessage).getObserve() == 1){
-                    Token token = coapMessage.getToken();
-                    if(removeResponseCallback(remoteEndpoint, token) != null){
-                        log.info("Removed callback for observation (Remote Endpoint: {}, Token: {})",
-                                remoteEndpoint, token);
 
-                        ObservationCancelationEvent event = new ObservationCancelationEvent(remoteEndpoint, token);
-                        Channels.write(ctx.getChannel(), event);
-                    }
-                    else{
-                        log.error("Could not remove callback for observation (Remote Endpoint: {}, Token: {})",
-                                remoteEndpoint, coapMessage.getToken());
-                        return;
-                    }
+                    executorService.schedule(new Runnable(){
+                        @Override
+                        public void run() {
+                            Token token = coapMessage.getToken();
+                            ObservationCancelationEvent event = new ObservationCancelationEvent(remoteEndpoint, token);
+                            Channels.write(ctx.getChannel(), event);
+                        }
+                    }, 0, TimeUnit.SECONDS);
                 }
 
                 else{
@@ -125,19 +117,9 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
             }
         }
 
-//            }, 0, TimeUnit.MILLISECONDS);
-
 
         else if (me.getMessage() instanceof ApplicationShutdownEvent){
-            executorService.schedule(new Runnable(){
-
-                @Override
-                public void run() {
-                    CoapResponseDispatcher.this.clientCallbacks.clear();
-                    ctx.sendDownstream(me);
-                }
-
-            }, 0, TimeUnit.MILLISECONDS);
+            this.clientCallbacks.clear();
         }
 
 
@@ -145,31 +127,14 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
             ObservationCancelationEvent message = (ObservationCancelationEvent) me.getMessage();
 
             if(removeResponseCallback(message.getRemoteEndpoint(), message.getToken()) == null){
-                log.error("Could not stop observation (remote endpoints: {}, token: {})! No response processor found!",
+                log.error("Could not stop observation (remote endpoints: {}, token: {})! No callback found!",
                         message.getRemoteEndpoint(), message.getToken());
-
-                me.getFuture().setFailure(new Exception("Observation could not be stopped!"));
             }
-
-            else{
-                ctx.sendDownstream(me);
-            }
-
         }
 
+        ctx.sendDownstream(me);
 
-        else{
-            executorService.schedule(new Runnable(){
-
-                @Override
-                public void run() {
-                    ctx.sendDownstream(me);
-                }
-
-            }, 0, TimeUnit.MILLISECONDS);
-        }
     }
-
 
 
     private void sendCoapMessage(ChannelHandlerContext ctx, ChannelFuture future, final CoapMessage coapMessage,
