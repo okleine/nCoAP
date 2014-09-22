@@ -25,8 +25,9 @@
 package de.uniluebeck.itm.ncoap.etsi.client;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
 import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAcknowledgementProcessor;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAcknowledgementReceptionEvent;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.junit.BeforeClass;
@@ -60,7 +61,7 @@ public class TD_COAP_CORE_09 {
         final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(SERVER), 5683);
 
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
-        client.sendCoapRequest(coapRequest, new EmptyAcknowledgementProcessor() {
+        client.sendCoapRequest(coapRequest, new CoapClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 TD_COAP_CORE_09.coapResponse = coapResponse;
@@ -68,8 +69,8 @@ public class TD_COAP_CORE_09 {
             }
 
             @Override
-            public void processEmptyAcknowledgement(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-                TD_COAP_CORE_09.emptyAck = CoapMessage.createEmptyAcknowledgement(messageID);
+            public void processEmptyAcknowledgement(EmptyAcknowledgementReceptionEvent event) {
+                TD_COAP_CORE_09.emptyAck = CoapMessage.createEmptyAcknowledgement(event.getMessageID());
                 System.out.println("Empty ACK (from " + targetAddress + "): " + emptyAck);
             }
 

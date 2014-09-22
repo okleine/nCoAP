@@ -61,7 +61,7 @@ public class SimpleCoapClient extends CoapClientApplication{
 
     private ClientCmdLineArgumentsWrapper arguments;
 
-    private SimpleCoapResponseProcessor responseProcessor;
+    private SimpleCoapClientCallback responseProcessor;
 
     /**
      * Creates a new instance of {@link SimpleCoapClient}.
@@ -103,7 +103,7 @@ public class SimpleCoapClient extends CoapClientApplication{
         if(arguments.isObserve())
             responseProcessor = new SimpleUpdateNotificationProcessor(arguments.getMaxUpdates());
         else
-            responseProcessor = new SimpleCoapResponseProcessor();
+            responseProcessor = new SimpleCoapClientCallback();
 
         //Send the CoAP request
         this.sendCoapRequest(coapRequest, responseProcessor, recipient);

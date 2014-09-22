@@ -25,23 +25,19 @@
 package de.uniluebeck.itm.ncoap.applications;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionTimeoutProcessor;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionInformationProcessor;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent;
+import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by olli on 20.03.14.
  */
-public class SimpleCoapResponseProcessor implements CoapClientCallback, TransmissionInformationProcessor,
-        RetransmissionTimeoutProcessor{
+public class SimpleCoapClientCallback extends CoapClientCallback {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -51,7 +47,7 @@ public class SimpleCoapResponseProcessor implements CoapClientCallback, Transmis
     private AtomicBoolean timedOut;
 
 
-    public SimpleCoapResponseProcessor(){
+    public SimpleCoapClientCallback(){
         this.responseReceived = new AtomicBoolean(false);
         this.transmissionCounter = new AtomicInteger(0);
         this.timedOut = new AtomicBoolean(false);
@@ -80,26 +76,15 @@ public class SimpleCoapResponseProcessor implements CoapClientCallback, Transmis
 
 
     @Override
-    public void messageTransmitted(InetSocketAddress remoteEndpoint, int messageID, Token token,
-                                   boolean retransmission) {
+    public void processRetransmission(RetransmissionEvent event) {
         int value = transmissionCounter.incrementAndGet();
-
-        if(retransmission){
-            log.info("Transmission #{} for message with ID {} to {} (Token: {})",
-                    new Object[]{value, messageID, remoteEndpoint, token});
-        }
-        else{
-            log.info("Message with ID {} written to {} (Token: {})",
-                    new Object[]{messageID, remoteEndpoint, token});
-        }
+        log.info("#{}: {}", value, event);
     }
 
 
     @Override
-    public void processRetransmissionTimeout(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-        log.info("Internal timeout for message with ID {} to {} (Token: {})",
-                new Object[]{messageID, remoteEndpoint, token});
-
+    public void processTransmissionTimeout(TransmissionTimeoutEvent event) {
+        log.info("{}", event);
         timedOut.set(true);
     }
 
