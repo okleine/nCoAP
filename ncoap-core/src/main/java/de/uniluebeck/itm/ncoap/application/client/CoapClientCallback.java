@@ -52,6 +52,8 @@ import java.net.InetSocketAddress;
  */
 public abstract class CoapClientCallback {
 
+    private boolean observing = false;
+
     /**
      * Method invoked by the {@link CoapClientApplication} for an incoming response (which is of any type but
      * empty {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#ACK} or
@@ -62,20 +64,24 @@ public abstract class CoapClientCallback {
     public abstract void processCoapResponse(CoapResponse coapResponse);
 
 
+    void setObserving(){
+        this.observing = true;
+    }
+
+    boolean isObserving(){
+        return this.observing;
+    }
     /**
      * This method is called by the framework whenever an update notification was received, i.e. this method is
      * only called if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} that is associated with this
      * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback} had the
      * {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} set to <code>0</code>.
      *
-     * @param remoteEndpoint the remote endpoint that provides the observed service
-     * @param token the {@link Token} to identify the observation
-     *
      * @return <code>true</code> if the observation is to be continued, <code>false</code> if the observation
      * is to be canceled (next update notification will cause a RST being send to the remote endpoint). Default,
      * (i.e. if not overridden), is <code>false</code>, i.e. observations stops after first update notification.
      */
-    public boolean continueObservation(InetSocketAddress remoteEndpoint, Token token){
+    public boolean continueObservation(){
         return false;
     }
 

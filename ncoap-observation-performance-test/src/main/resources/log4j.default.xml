@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd" >
+<log4j:configuration>
+
+    <appender name="console" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%-23d{yyyy-MM-dd HH:mm:ss,SSS} | %-32.32t | %-35.35c{1} | %-5p | %m%n"/>
+        </layout>
+    </appender>
+
+    <appender name="async" class="org.apache.log4j.AsyncAppender">
+        <param name="BufferSize" value="1000000"/>
+        <appender-ref ref="console"/>
+    </appender>
+
+    <logger name="de.uniluebeck.itm.ncoap.examples">
+        <level value="info"/>
+    </logger>
+
+    <root>
+        <priority value="warn"/>
+        <appender-ref ref="async"/>
+    </root>
+</log4j:configuration>

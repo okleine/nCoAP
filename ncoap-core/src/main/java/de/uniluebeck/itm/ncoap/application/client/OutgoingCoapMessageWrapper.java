@@ -25,6 +25,7 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
+import de.uniluebeck.itm.ncoap.message.CoapRequest;
 
 /**
  * The {@link OutgoingCoapMessageWrapper} is an internal wrapper class for outgoing CoAP messages sent by a client,
@@ -49,8 +50,14 @@ class OutgoingCoapMessageWrapper {
      */
     OutgoingCoapMessageWrapper(CoapMessage coapMessage, CoapClientCallback responseProcessor){
 
+        if(coapMessage instanceof CoapRequest && ((CoapRequest) coapMessage).getObserve() == 0){
+            responseProcessor.setObserving();
+        }
+
         this.coapMessage = coapMessage;
         this.coapClientCallback = responseProcessor;
+
+
     }
 
     /**

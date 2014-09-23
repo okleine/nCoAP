@@ -124,14 +124,14 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
         }
 
 
-        else if(me.getMessage() instanceof ObservationCancelationEvent){
-            ObservationCancelationEvent message = (ObservationCancelationEvent) me.getMessage();
-
-            if(removeResponseCallback(message.getRemoteEndpoint(), message.getToken()) == null){
-                log.error("Could not stop observation (remote endpoints: {}, token: {})! No callback found!",
-                        message.getRemoteEndpoint(), message.getToken());
-            }
-        }
+//        else if(me.getMessage() instanceof ObservationCancelationEvent){
+//            ObservationCancelationEvent message = (ObservationCancelationEvent) me.getMessage();
+//
+//            if(removeResponseCallback(message.getRemoteEndpoint(), message.getToken()) == null){
+//                log.error("Could not stop observation (remote endpoints: {}, token: {})! No callback found!",
+//                        message.getRemoteEndpoint(), message.getToken());
+//            }
+//        }
 
         ctx.sendDownstream(me);
 
@@ -239,30 +239,27 @@ public class CoapResponseDispatcher extends SimpleChannelHandler{
             return;
         }
 
-        final CoapClientCallback clientCallback;
+        final CoapClientCallback clientCallback = clientCallbacks.get(remoteEndpoint, token);
 
-        //if the response is a (regular, i.e. no error) update notification, keep the response processor in use
-        if(coapResponse.isUpdateNotification() && !MessageCode.isErrorMessage(coapResponse.getMessageCode())){
-            clientCallback = clientCallbacks.get(remoteEndpoint, token);
+        if(clientCallback.isObserving()){
 
-            if(!clientCallback.continueObservation(remoteEndpoint, token)){
+            if(!coapResponse.isUpdateNotification() || MessageCode.isErrorMessage(coapResponse.getMessageCode())){
                 removeResponseCallback(remoteEndpoint, token);
-
-                if(!tokenFactory.passBackToken(remoteEndpoint, token))
-                    log.error("Could not pass back token from message: {}", coapResponse);
-
-                //Send internal message to stop the observation
-                ObservationCancelationEvent event = new ObservationCancelationEvent(remoteEndpoint, token);
-                Channels.write(ctx.getChannel(), event);
+                tokenFactory.passBackToken(remoteEndpoint, token);
             }
+
+            //Send internal message to stop the observation
+            ObservationCancelationEvent event = new ObservationCancelationEvent(remoteEndpoint, token);
+            Channels.write(ctx, Channels.future(ctx.getChannel()), event);
+
         }
 
-        //for regular responses, i.e. no update notifications, remove the response processor and pass back the token
         else{
-            clientCallback = removeResponseCallback(remoteEndpoint, token);
-            if(!tokenFactory.passBackToken(remoteEndpoint, token))
-                log.error("Could not pass back token from message: {}", coapResponse);
+            removeResponseCallback(remoteEndpoint, token);
+            tokenFactory.passBackToken(remoteEndpoint, token);
         }
+
+
 
         //Process the CoAP response
         log.debug("Callback found for token {} from {}.", token, remoteEndpoint);

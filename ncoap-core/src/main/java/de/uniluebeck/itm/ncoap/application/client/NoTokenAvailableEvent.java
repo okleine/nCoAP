@@ -27,11 +27,15 @@ package de.uniluebeck.itm.ncoap.application.client;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 16.09.14.
+ * This internal event is created in the (very unlikely) case that there is no
+ * {@link de.uniluebeck.itm.ncoap.application.client.Token} available to start a conversation with the
+ * remote endpoint.
+ *
+ * @author Oliver Kleine
  */
 public class NoTokenAvailableEvent extends MessageExchangeEvent {
 
-    public NoTokenAvailableEvent(InetSocketAddress remoteSocket) {
-        super(remoteSocket, -1, null, true);
+    public NoTokenAvailableEvent(InetSocketAddress remoteEndpoint) {
+        super(remoteEndpoint, -1, null, true);
     }
 }

@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 /**
  * The {@link de.uniluebeck.itm.ncoap.communication.observe.client.IncomingUpdateNotificationHandler} deals with
@@ -45,7 +46,7 @@ import java.net.InetSocketAddress;
 public class IncomingUpdateNotificationHandler extends SimpleChannelHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
-    private static final String ERROR = "There is no running observation to cancel for remote endpoints %s and token %s";
+    private static final String ERROR = "No running observation to cancel for remote endpoints %s and token %s found!";
 
     private Table<InetSocketAddress, Token, UpdateNotificationAgeParams> observations;
     private final Object monitor = new Object();

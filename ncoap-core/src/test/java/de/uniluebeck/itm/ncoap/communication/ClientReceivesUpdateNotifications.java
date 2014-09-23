@@ -202,7 +202,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
         private Logger log = Logger.getLogger(SpecificClientCallback.class.getName());
 
         @Override
-        public boolean continueObservation(InetSocketAddress remoteEndpoint, Token token){
+        public boolean continueObservation(){
             log.debug("TEST!!!");
             return true;
         }

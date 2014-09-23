@@ -83,7 +83,7 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
 
     /**
      * Creates the well-known/core resource at path /.well-known/core as defined in the CoAP draft
-     * @param initialStatus the Map containing all available path
+     * @param initialStatus the {@link java.util.Map} containing all available path
      */
     public WellKnownCoreResource(Map<String, Webservice> initialStatus) {
         super("/.well-known/core", initialStatus, 0);

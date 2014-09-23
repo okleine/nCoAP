@@ -21,6 +21,7 @@
         <module>ncoap-simple-client</module>
         <module>ncoap-simple-server</module>
       <module>ncoap-etsi-plugtest-client</module>
+      <module>ncoap-observation-performance-test</module>
     </modules>
 
     <distributionManagement>

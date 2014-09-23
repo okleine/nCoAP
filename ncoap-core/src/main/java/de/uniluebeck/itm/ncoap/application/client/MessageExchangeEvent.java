@@ -31,7 +31,7 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public abstract class MessageExchangeEvent{
+public abstract class MessageExchangeEvent {
 
     private int messageID;
     private Token token;

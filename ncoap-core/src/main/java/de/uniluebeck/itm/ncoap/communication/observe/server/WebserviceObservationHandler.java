@@ -322,7 +322,10 @@ public class WebserviceObservationHandler extends SimpleChannelHandler implement
 
             //Set content related options for the update notification
             updateNotification.setMaxAge(wrappedResourceStatus.getMaxAge());
-            updateNotification.setEtag(wrappedResourceStatus.getEtag());
+
+            byte[] etag = wrappedResourceStatus.getEtag();
+            if(etag.length > 0)
+                updateNotification.setEtag(wrappedResourceStatus.getEtag());
 
             updateNotification.setObserveOption(UintOptionValue.UNDEFINED);
 
