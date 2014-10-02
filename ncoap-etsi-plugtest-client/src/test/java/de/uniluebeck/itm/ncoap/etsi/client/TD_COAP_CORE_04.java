@@ -25,7 +25,7 @@
 package de.uniluebeck.itm.ncoap.etsi.client;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.apache.log4j.Logger;
@@ -58,14 +58,14 @@ public class TD_COAP_CORE_04 {
     public static void sendRequest() throws Exception{
         LoggingConfiguration.configure();
 
-        CoapClientApplication client = ApplicationFactory.getCoapClientApplication();
+        CoapClientApplication client = ApplicationFactory.getClient();
         URI targetUri = new URI("coap", null, SERVER, -1, "/test", null, null);
         final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(SERVER), 5683);
 
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.POST, targetUri);
         coapRequest.setContent("Arbitrary payload...".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 
-        client.sendCoapRequest(coapRequest, new CoapClientCallback() {
+        client.sendCoapRequest(coapRequest, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 TD_COAP_CORE_04.coapResponse = coapResponse;

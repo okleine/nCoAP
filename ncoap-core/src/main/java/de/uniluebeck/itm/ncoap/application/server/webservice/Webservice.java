@@ -22,35 +22,12 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/**
-* Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
-* All rights reserved
-*
-* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-* following conditions are met:
-*
-*  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
-*    disclaimer.
-*
-*  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-*    following disclaimer in the documentation and/or other materials provided with the distribution.
-*
-*  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
-*    products derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-* GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
+import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -59,10 +36,8 @@ import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.locks.ReadWriteLock;
 
 /**
 * This is the interface to be implemented to realize a CoAP webservice. The generic type T means, that the object
@@ -137,7 +112,7 @@ public interface Webservice<T> {
      *
      * @param executorService a {@link ScheduledExecutorService} instance.
      */
-    public void setScheduledExecutorService(ScheduledExecutorService executorService);
+    public void setExecutor(ScheduledExecutorService executorService);
 
 
     /**
@@ -147,7 +122,7 @@ public interface Webservice<T> {
      * @return the {@link ScheduledExecutorService} instance which is used to schedule and execute any
      * web service related tasks.
      */
-    public ScheduledExecutorService getScheduledExecutorService();
+    public ScheduledExecutorService getExecutor();
 
 
     /**
@@ -194,7 +169,7 @@ public interface Webservice<T> {
 
 
     /**
-     * Method to process an incoming {@link CoapRequest} asynchronously. The implementation of this method is dependant
+     * Method to process an inbound {@link CoapRequest} asynchronously. The implementation of this method is dependant
      * on the concrete webservice. Processing a message might cause a new status of the resource or even the deletion
      * of the complete resource, i.e. this {@link Webservice} instance.
      *
@@ -204,7 +179,7 @@ public interface Webservice<T> {
      * with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} and {@link Exception#getMessage()} as content.
      *
      * @param responseFuture the {@link SettableFuture} instance to set the {@link CoapResponse} which is the result
-     *                       of the incoming {@link CoapRequest}.
+     *                       of the inbound {@link CoapRequest}.
      *                       {@link SettableFuture<CoapResponse>#set(CoapResponse)} to send it to the client.
      * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
      * @param remoteEndpoint The address of the sender of the request

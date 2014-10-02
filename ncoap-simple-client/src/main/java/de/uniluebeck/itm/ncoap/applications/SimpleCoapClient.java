@@ -49,9 +49,9 @@ import java.net.*;
  * 2. To start the observation of <code>coap://example.org:5683/obs</code> one can start the {@link SimpleCoapClient}
  * using e.g. the following command line parameters:
  * <br><br>
- * <code>--host example.org --port 5683 --path /obs --observe --maxUpdates 5 --duration 60</code>
+ * <code>--host example.org --port 5683 --path /obs --observing --maxUpdates 5 --duration 60</code>
  * <br><br>
- * This will cause a confirmable {@link CoapRequest} with the observe option set to be sent to the Webservice and
+ * This will cause a confirmable {@link CoapRequest} with the observing option set to be sent to the Webservice and
  * either await 5 update notifications or 60 seconds to pass (whatever happens first). If one of this shutdown criteria
  * is satisfied, the application is shut down after another delay of 10 seconds.
  *

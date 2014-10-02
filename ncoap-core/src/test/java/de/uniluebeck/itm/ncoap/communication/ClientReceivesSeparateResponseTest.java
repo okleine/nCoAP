@@ -26,7 +26,7 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint;
 import de.uniluebeck.itm.ncoap.endpoints.server.NotObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 /**
 * Tests to verify the server functionality related to separate responses.
 *
-* @author Stefan Hueske
+* @author Oliver Kleine, Stefan Hueske
 */
 public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicationTest{
 
@@ -60,24 +60,26 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
     private static CoapServerApplication server;
     private static NotObservableTestWebservice service;
 
-    private static CoapTestEndpoint endpoint;
+    private static DummyEndpoint endpoint;
     private static CoapRequest request;
 
     private static long requestSentTime;
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap").setLevel(Level.DEBUG);
-        //Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.outgoing").setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint")
+                .setLevel(Level.INFO);
     }
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServerApplication(0);
+        server = new CoapServerApplication();
         service = new NotObservableTestWebservice(PATH_TO_SERVICE, PAYLOAD, 0, 3000);
         server.registerService(service);
 
-        endpoint = new CoapTestEndpoint();
+        endpoint = new DummyEndpoint();
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
         request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
         request.setMessageID(12345);

@@ -72,7 +72,8 @@
 package de.uniluebeck.itm.ncoap.communication.codec;
 
 import com.google.common.primitives.Ints;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
+import de.uniluebeck.itm.ncoap.communication.events.MiscellaneousErrorEvent;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;
@@ -90,10 +91,6 @@ import java.net.InetSocketAddress;
  * A {@link CoapMessageEncoder} serializes outgoing {@link CoapMessage}s. In the (rather unlikely) case that there is
  * an exception thrown during the encoding process, an internal message is sent upstream, i.e. in the direction of
  * the application.
- *
- * <b>Note for instances of {@link CoapClientApplication}:</b>Implement {@link EncodingFailedProcessor} within your
- * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback} instance (which was supposed to handle an awaited response) to get your application
- * informed about such an error.
  *
  * @author Oliver Kleine
  */
@@ -319,9 +316,8 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint,
                                                    int messageID, Token token, Throwable cause){
 
-        EncodingFailedEvent internalMessage =
-                new EncodingFailedEvent(remoteEndpoint, messageID, token, cause);
-
-        Channels.fireMessageReceived(ctx, internalMessage);
+        MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteEndpoint, messageID, token,
+                cause.getMessage());
+        Channels.fireMessageReceived(ctx, event);
     }
 }

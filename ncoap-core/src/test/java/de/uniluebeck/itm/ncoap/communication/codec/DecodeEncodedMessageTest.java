@@ -27,7 +27,7 @@ package de.uniluebeck.itm.ncoap.communication.codec;
 
 import com.google.common.collect.Lists;
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.communication.codec.tools.CoapTestDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.tools.CoapTestEncoder;
 import de.uniluebeck.itm.ncoap.message.*;
@@ -41,7 +41,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;

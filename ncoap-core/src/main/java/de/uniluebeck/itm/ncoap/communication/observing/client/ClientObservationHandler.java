@@ -25,8 +25,9 @@
 package de.uniluebeck.itm.ncoap.communication.observing.client;
 
 import com.google.common.collect.*;
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceivedEvent;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
+import de.uniluebeck.itm.ncoap.communication.events.client.ObservationCancelledEvent;
+import de.uniluebeck.itm.ncoap.communication.events.ResetReceivedEvent;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -40,7 +41,7 @@ import java.net.InetSocketAddress;
 
 /**
  * The {@link ClientObservationHandler} deals with
- * running observations. It e.g. ensures that incoming update notifications answered with a RST if the
+ * running observations. It e.g. ensures that inbound update notifications answered with a RST if the
  * observation was canceled by the {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication}.
  *
  * @author Oliver Kleine
@@ -50,8 +51,6 @@ public class ClientObservationHandler extends SimpleChannelHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private Table<InetSocketAddress, Token, ResourceStatusAge> observations;
-
-    private final Object monitor = new Object();
 
     /**
      * Creates a new instance of
@@ -97,8 +96,12 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         else if(me.getMessage() instanceof ObservationCancelledEvent){
             handleObservationCancelledEvent((ObservationCancelledEvent) me.getMessage());
         }
-        else{
+        else if(me.getMessage() instanceof CoapMessage){
             ctx.sendDownstream(me);
+        }
+        else{
+            log.warn("Event: {}", me.getMessage());
+            me.getFuture().setSuccess();
         }
     }
 
@@ -123,8 +126,8 @@ public class ClientObservationHandler extends SimpleChannelHandler {
                 startObservation(remoteEndpoint, token);
             }
 
-            else if(observe == 1){
-                log.debug("Stop observation due to \"observing == 1\" (remote endpoint: {}, token: {})",
+            else{
+                log.debug("Stop observation due to \"observe != 0\" (remote endpoint: {}, token: {})",
                         remoteEndpoint, token);
                 stopObservation(remoteEndpoint, token);
             }
@@ -177,38 +180,38 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         //Current response is NO update notification or is an error response (which SHOULD implicate the first)
         if(!coapResponse.isUpdateNotification() || MessageCode.isErrorMessage(coapResponse.getMessageCode())){
             if(observations.contains(remoteEndpoint, token)){
-                log.debug("Stop observation (remote address: {}, token: {}) due to received response: {}",
+                log.info("Stop observation (remote address: {}, token: {}) due to received response: {}",
                         new Object[]{remoteEndpoint, token, coapResponse});
 
                 stopObservation(remoteEndpoint, token);
             }
         }
 
-        //Current response is update notification but there is no suitable observation
-        else if(!observations.contains(remoteEndpoint, token)){
-            log.warn("No observation found for update notification (remote endpoint: {}, token: {}). Send RST!",
-                    remoteEndpoint, token);
-            CoapMessage emptyRST = CoapMessage.createEmptyReset(coapResponse.getMessageID());
-            Channels.write(ctx, Channels.future(ctx.getChannel()) , emptyRST, remoteEndpoint);
-        }
-
-        //Current response is update notification and there is a suitable observation
-        else{
-            //Lookup status age of latest update notification
-            ResourceStatusAge latestStatusAge = observations.get(remoteEndpoint, token);
-
-            //Get status age from newly received update notification
-            long receivedSequenceNo = coapResponse.getObservationSequenceNumber();
-            ResourceStatusAge receivedStatusAge = new ResourceStatusAge(receivedSequenceNo, System.currentTimeMillis());
-
-            if(ResourceStatusAge.isReceivedStatusNewer(latestStatusAge, receivedStatusAge)){
-                updateStatusAge(remoteEndpoint, token, receivedStatusAge);
+        else if(coapResponse.isUpdateNotification()){
+            //current response is update notification but there is no suitable observation
+            if(!observations.contains(remoteEndpoint, token)){
+                log.warn("No observation found for update notification (remote endpoint: {}, token: {}).",
+                        remoteEndpoint, token);
             }
 
-            else{
-                log.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
-                        receivedStatusAge, latestStatusAge);
-                return;
+            //Current response is (non-error) update notification and there is a suitable observation
+            else if(coapResponse.isUpdateNotification() && !MessageCode.isErrorMessage(coapResponse.getMessageCode())){
+                //Lookup status age of latest update notification
+                ResourceStatusAge latestStatusAge = observations.get(remoteEndpoint, token);
+
+                //Get status age from newly received update notification
+                long receivedSequenceNo = coapResponse.getObserve();
+                ResourceStatusAge receivedStatusAge = new ResourceStatusAge(receivedSequenceNo, System.currentTimeMillis());
+
+                if(ResourceStatusAge.isReceivedStatusNewer(latestStatusAge, receivedStatusAge)){
+                    updateStatusAge(remoteEndpoint, token, receivedStatusAge);
+                }
+
+                else{
+                    log.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
+                            receivedStatusAge, latestStatusAge);
+                    return;
+                }
             }
         }
 

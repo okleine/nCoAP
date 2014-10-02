@@ -66,7 +66,7 @@ public class ClientSendsTheSameRequestTwice2 extends AbstractCoapCommunicationTe
     @Override
     public void setupComponents() throws Exception {
         server = new CoapServerApplication();
-        server.registerService(new NotObservableTestWebservice(PATH, "Status 1", 0, 6000));
+        server.registerService(new NotObservableTestWebservice(PATH, "Status 1", 0, 4000));
 
         endpoint = new DummyEndpoint();
 
@@ -97,11 +97,6 @@ public class ClientSendsTheSameRequestTwice2 extends AbstractCoapCommunicationTe
         Thread.sleep(3000);
 
         endpoint.writeMessage(coapRequest2, serverSocket);
-        Thread.sleep(3500);
-
-        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(endpoint.getReceivedMessage(2).getMessageID());
-        endpoint.writeMessage(emptyACK, serverSocket);
-
         Thread.sleep(2000);
     }
 
@@ -121,7 +116,7 @@ public class ClientSendsTheSameRequestTwice2 extends AbstractCoapCommunicationTe
 
     @Test
     public void testEndpointReceivedThreeMessages(){
-        assertEquals(3, endpoint.getReceivedCoapMessages().size());
+        assertEquals(2, endpoint.getReceivedCoapMessages().size());
     }
 
     @Test
@@ -134,23 +129,12 @@ public class ClientSendsTheSameRequestTwice2 extends AbstractCoapCommunicationTe
     }
 
     @Test
-    public void testSecondMessageisEmptyAck(){
+    public void testSecondMessage(){
         CoapMessage message2 = endpoint.getReceivedMessage(1);
 
-        assertEquals("Second message is not empty!", MessageCode.Name.EMPTY, message2.getMessageCodeName());
-        assertEquals("Second message has wrong ID!", messageID, message2.getMessageID());
-        assertEquals("Second message is no ACK!", MessageType.Name.ACK, message2.getMessageTypeName());
-    }
-
-    @Test
-    public void testThirdMessage(){
-        CoapMessage message3 = endpoint.getReceivedMessage(2);
-
         assertEquals("Third message has wrong message code!", MessageCode.Name.CONTENT_205,
-                message3.getMessageCodeName());
+                message2.getMessageCodeName());
 
-        assertEquals("3rd message has wrong message type!", MessageType.Name.CON, message3.getMessageTypeName());
+        assertEquals("3rd message has wrong message type!", MessageType.Name.ACK, message2.getMessageTypeName());
     }
-
-
 }

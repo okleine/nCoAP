@@ -27,7 +27,7 @@ package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.endpoints.client.CoapClientTestCallback;
+import de.uniluebeck.itm.ncoap.endpoints.client.ClientTestCallback;
 import de.uniluebeck.itm.ncoap.endpoints.server.NotObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -56,8 +56,8 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     private static final int NUMBER_OF_PARALLEL_REQUESTS = 100;
 
-    private static CoapClientTestCallback[] clientCallbacks =
-            new CoapClientTestCallback[NUMBER_OF_PARALLEL_REQUESTS];
+    private static ClientTestCallback[] clientCallbacks =
+            new ClientTestCallback[NUMBER_OF_PARALLEL_REQUESTS];
 
     private static CoapRequest[] requests = new CoapRequest[NUMBER_OF_PARALLEL_REQUESTS];
 
@@ -68,7 +68,9 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.server.NotObservableTestWebservice")
                 .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.client.CoapClientTestCallback")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.client.ClientTestCallback")
                 .setLevel(Level.INFO);
     }
 
@@ -88,7 +90,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         client = new CoapClientApplication();
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            clientCallbacks[i] = new CoapClientTestCallback();
+            clientCallbacks[i] = new ClientTestCallback();
             requests[i] =  new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET,
                     new URI("coap://localhost:" + server.getPort() + "/service" + (i+1)));
         }

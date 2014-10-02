@@ -30,12 +30,12 @@ import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
-* Instances are sent upstream by the {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler} whenever there was a retransmission
+* Instances are sent upstream by the {@link de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing.ServerOutboundReliabilityHandler} whenever there was a retransmission
 * of a confirmable {@link CoapMessage}.
 *
 * @author Oliver Kleine
 */
-public class MessageRetransmittedEvent extends MessageExchangeEvent {
+public class MessageRetransmittedEvent extends MessageTransferEvent {
 
     /**
      * @param remoteEndpoint the desired recipient of the retransmitted message

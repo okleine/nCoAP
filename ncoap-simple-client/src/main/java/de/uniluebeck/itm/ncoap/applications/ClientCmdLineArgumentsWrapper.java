@@ -67,7 +67,7 @@ public class ClientCmdLineArgumentsWrapper {
             usage = "Sets the maximum duration (in seconds) before shutdown (default = 60)")
     private int duration = 60;
 
-    @Option(name = "--observe",
+    @Option(name = "--observing",
             usage = "Empty argument that causes the addressed webservice to be observed")
     private boolean observe = false;
 
@@ -173,9 +173,9 @@ public class ClientCmdLineArgumentsWrapper {
     }
 
     /**
-     * Returns <code>true</code> if <code>--observe</code> was set as command line parameter
+     * Returns <code>true</code> if <code>--observing</code> was set as command line parameter
      * and <code>false</code> otherwise.
-     * @return <code>true</code> if <code>--observe</code> was set as command line parameter
+     * @return <code>true</code> if <code>--observing</code> was set as command line parameter
      * and <code>false</code> otherwise.
      */
     public boolean isObserve() {

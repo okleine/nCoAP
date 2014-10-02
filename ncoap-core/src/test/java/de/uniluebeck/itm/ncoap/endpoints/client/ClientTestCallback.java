@@ -24,22 +24,13 @@
  */
 package de.uniluebeck.itm.ncoap.endpoints.client;
 
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.SortedSetMultimap;
-import com.google.common.collect.TreeMultimap;
-import de.uniluebeck.itm.ncoap.communication.dispatch.client.ClientCallback;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAcknowledgementReceptionEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionTimeoutEvent;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 
 public class ClientTestCallback extends ClientCallback {
@@ -50,30 +41,20 @@ public class ClientTestCallback extends ClientCallback {
     private SortedMap<Long, CoapResponse> coapResponses;
 
     //internal messages
-    private SortedSetMultimap<Long, EmptyAcknowledgementReceptionEvent> emptyACKs;
-    private SortedSetMultimap<Long, ResetReceptionEvent> emptyRSTs;
-    private SortedSetMultimap<Long, RetransmissionEvent> transmissions;
-    private SortedSetMultimap <Long, TransmissionTimeoutEvent> transmissionTimeouts;
+    private Set<Long> emptyACKs;
+    private Set<Long> emptyRSTs;
+    private Set<Long> transmissions;
+    private Set<Long> transmissionTimeouts;
 
 
     public ClientTestCallback(){
-        this.coapResponses = Collections.synchronizedSortedMap(new TreeMap<Long, CoapResponse>());
-
-        this.emptyACKs = Multimaps.synchronizedSortedSetMultimap(
-                TreeMultimap.<Long, EmptyAcknowledgementReceptionEvent>create(Ordering.natural(), Ordering.arbitrary())
+        this.coapResponses = Collections.synchronizedSortedMap(
+                new TreeMap<Long, CoapResponse>(Ordering.natural())
         );
-
-        this.emptyRSTs = Multimaps.synchronizedSortedSetMultimap(
-                TreeMultimap.<Long, ResetReceptionEvent>create(Ordering.natural(), Ordering.arbitrary())
-        );
-
-        this.transmissions = Multimaps.synchronizedSortedSetMultimap(
-                TreeMultimap.<Long, RetransmissionEvent>create(Ordering.natural(), Ordering.arbitrary())
-        );
-
-        this.transmissionTimeouts = Multimaps.synchronizedSortedSetMultimap(
-                TreeMultimap.<Long, TransmissionTimeoutEvent>create(Ordering.natural(), Ordering.arbitrary())
-        );
+        this.emptyACKs = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
+        this.emptyRSTs = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
+        this.transmissions = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
+        this.transmissionTimeouts = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
     }
 
 
@@ -85,41 +66,37 @@ public class ClientTestCallback extends ClientCallback {
 
 
     @Override
-    public void processRetransmission(RetransmissionEvent event) {
-
+    public void processRetransmission() {
         long actualTime = System.currentTimeMillis();
-        transmissions.put(actualTime, event);
-
-        log.info("{}", event);
+        transmissions.add(actualTime);
+        log.info("Retransmission #{}.", transmissions.size());
     }
 
 
     @Override
-    public void processTransmissionTimeout(TransmissionTimeoutEvent event) {
+    public void processTransmissionTimeout() {
 
         long actualTime = System.currentTimeMillis();
-        transmissionTimeouts.put(actualTime, event);
-
-        log.info("{}", event);
+        transmissionTimeouts.add(actualTime);
+        log.info("Conversation Timout!");
     }
 
 
     @Override
-    public void processEmptyAcknowledgement(EmptyAcknowledgementReceptionEvent event) {
+    public void processEmptyAcknowledgement() {
 
         long actualTime = System.currentTimeMillis();
-        emptyACKs.put(actualTime, event);
-
-        log.info("{}", event);
+        emptyACKs.add(actualTime);
+        log.info("Received empty ACK!");
     }
 
     @Override
-    public void processReset(ResetReceptionEvent event) {
+    public void processReset() {
 
         long actualTime = System.currentTimeMillis();
-        emptyRSTs.put(actualTime, event);
+        emptyRSTs.add(actualTime);
 
-        log.info("{}", event);
+        log.info("Received RST!");
     }
 
     /**
@@ -134,22 +111,22 @@ public class ClientTestCallback extends ClientCallback {
     }
 
 
-    public SortedSetMultimap<Long, EmptyAcknowledgementReceptionEvent> getEmptyACKs(){
+    public Set<Long> getEmptyACKs(){
         return this.emptyACKs;
     }
 
 
-    public SortedSetMultimap<Long, ResetReceptionEvent> getEmptyRSTs(){
+    public Set<Long> getEmptyRSTs(){
         return this.emptyRSTs;
     }
 
 
-    public SortedSetMultimap<Long, RetransmissionEvent> getTransmissions(){
+    public Set<Long> getTransmissions(){
         return this.transmissions;
     }
 
 
-    public SortedSetMultimap<Long, TransmissionTimeoutEvent> getTransmissionTimeouts(){
+    public Set<Long> getTransmissionTimeouts(){
         return this.transmissionTimeouts;
     }
 }

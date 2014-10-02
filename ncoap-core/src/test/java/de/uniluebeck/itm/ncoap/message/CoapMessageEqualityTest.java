@@ -25,7 +25,7 @@
 package de.uniluebeck.itm.ncoap.message;
 
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.junit.Assert;
 import org.junit.Test;

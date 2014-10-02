@@ -26,6 +26,7 @@ package de.uniluebeck.itm.ncoap.communication.observe.client;
 
 import com.google.common.collect.Lists;
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
+import de.uniluebeck.itm.ncoap.communication.observing.client.ResourceStatusAge;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
@@ -94,13 +95,13 @@ public class ResourceStatusAgeTest extends AbstractCoapTest{
     public ResourceStatusAgeTest(long v1, long v2, long t1, long t2, boolean expected){
 
         CoapResponse coapResponse1 = new CoapResponse(MessageType.Name.CON, MessageCode.Name.CONTENT_205);
-        coapResponse1.setObserveOption(v1);
+        coapResponse1.setObserve(v1);
 
         CoapResponse coapResponse2 = new CoapResponse(MessageType.Name.CON, MessageCode.Name.CONTENT_205);
-        coapResponse2.setObserveOption(v2);
+        coapResponse2.setObserve(v2);
 
-        long sequenceNo1 = coapResponse1.getObservationSequenceNumber();
-        long sequenceNo2 = coapResponse2.getObservationSequenceNumber();
+        long sequenceNo1 = coapResponse1.getObserve();
+        long sequenceNo2 = coapResponse2.getObserve();
         log.info("Observe Option Values: V1 =  " + sequenceNo1 + ", V2 = " + sequenceNo2);
         log.info("Timestamps: T1 = " + t1 + ", T2 = " + t1 + ", (T2 > T1 + 128 sec [" + (t2 > t1 + 128000) + "])");
 
@@ -124,6 +125,6 @@ public class ResourceStatusAgeTest extends AbstractCoapTest{
             message = "Params1 (" + this.params1 + ") should be considered newer than Params2 (" + this.params2 + ")";
         }
 
-        assertTrue(message, ResourceStatusAge.isParams2Newer(params1, params2) == expected);
+        assertTrue(message, ResourceStatusAge.isReceivedStatusNewer(params1, params2) == expected);
     }
 }

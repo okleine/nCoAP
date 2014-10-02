@@ -25,6 +25,7 @@
 package de.uniluebeck.itm.ncoap.message;
 
 import de.uniluebeck.itm.ncoap.communication.codec.OptionCodecException;
+import de.uniluebeck.itm.ncoap.communication.observing.client.ResourceStatusAge;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,69 +180,78 @@ public class CoapResponse extends CoapMessage {
     }
 
     /**
-     * Adds an {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option with the given sequence
-     * number. The value of the option will correspond to the 3 least significant bytes of a (big endian) byte
-     * representation of the given sequence number, i.e. a given sequence number of <code>2^24 + 1</code> leads to a
-     * value of <code>1</code>.
-     *
-     * <b>Note:</b>
-     * <ul>
-     *     <li>This method must to be invoked once by the
-     *     {@link de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice} that created this
-     *     instance of {@link de.uniluebeck.itm.ncoap.message.CoapResponse} to accept the observation request of the
-     *     remote endpoint an observer. Otherwise, the remote endpoint is not added to the list of observers.
-     *     However, for internal reasons the first update notification will contain the given sequence number + 1, so
-     *     it is recommended to invoke this method with parameter <code>0</code>.
-     *     </li>
-     *     <li>
-     *       Invocation of this method will override a possibly previously contained
-     *       {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option without any warning.
-     *     </li>
-     * </ul>
-     * <b>Note:</b>
-     *
-     * @param sequenceNumber the sequence number for the {@link OptionValue.Name#OBSERVE} to be set.
+     * Sets the observe option to a proper value automatically. This method is to be invoked by instances of
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice} if an inbound
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} to start a new observation is accepted.
      */
-    public void setObserveOption(long sequenceNumber){
-        try {
-            this.removeOptions(OptionValue.Name.OBSERVE);
-            sequenceNumber = sequenceNumber & 0xFFFFFF;
-            this.addUintOption(OptionValue.Name.OBSERVE, sequenceNumber);
-        }
-        catch (IllegalArgumentException e){
-            this.removeOptions(OptionValue.Name.OBSERVE);
-            log.error("This should never happen.", e);
-        }
+    public void setObserve(){
+        this.setObserve(System.currentTimeMillis() % ResourceStatusAge.MODULUS);
     }
 
-    /**
-     * Returns the decoded value of {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} if such
-     * an option is contained in this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or <code>null</code> if
-     * there is no such option.
-     *
-     * @return the decoded value of {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} if such
-     * an option is contained in this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or <code>null</code> if
-     * there is no such option.
-     */
-    public Long getObservationSequenceNumber(){
-        if(!options.containsKey(OptionValue.Name.OBSERVE))
-            return null;
-        else
-            return (Long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
-    }
+//    /**
+//     * Adds an {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option with the given sequence
+//     * number. The value of the option will correspond to the 3 least significant bytes of a (big endian) byte
+//     * representation of the given sequence number, i.e. a given sequence number of <code>2^24 + 1</code> leads to a
+//     * value of <code>1</code>.
+//     *
+//     * <b>Note:</b>
+//     * <ul>
+//     *     <li>This method must to be invoked once by the
+//     *     {@link de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice} that created this
+//     *     instance of {@link de.uniluebeck.itm.ncoap.message.CoapResponse} to accept the observation request of the
+//     *     remote endpoint an observer. Otherwise, the remote endpoint is not added to the list of observers.
+//     *     However, for internal reasons the first update notification will contain the given sequence number + 1, so
+//     *     it is recommended to invoke this method with parameter <code>0</code>.
+//     *     </li>
+//     *     <li>
+//     *       Invocation of this method will override a possibly previously contained
+//     *       {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option without any warning.
+//     *     </li>
+//     * </ul>
+//     * <b>Note:</b>
+//     *
+//     * @param sequenceNumber the sequence number for the {@link OptionValue.Name#OBSERVE} to be set.
+//     */
+//    public void setObserveOption(long sequenceNumber){
+//        try {
+//            this.removeOptions(OptionValue.Name.OBSERVE);
+//            sequenceNumber = sequenceNumber & 0xFFFFFF;
+//            this.addUintOption(OptionValue.Name.OBSERVE, sequenceNumber);
+//        }
+//        catch (IllegalArgumentException e){
+//            this.removeOptions(OptionValue.Name.OBSERVE);
+//            log.error("This should never happen.", e);
+//        }
+//    }
+
+//    /**
+//     * Returns the decoded value of {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} if such
+//     * an option is contained in this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or <code>null</code> if
+//     * there is no such option.
+//     *
+//     * @return the decoded value of {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} if such
+//     * an option is contained in this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or <code>null</code> if
+//     * there is no such option.
+//     */
+//    public Long getObservationSequenceNumber(){
+//        if(!options.containsKey(OptionValue.Name.OBSERVE))
+//            return null;
+//        else
+//            return (Long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
+//    }
 
 
     /**
      * Returns <code>true</code> if this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} is an update
      * notification and <code>false</code> otherwise. A {@link de.uniluebeck.itm.ncoap.message.CoapResponse} is
-     * considered an update notification if the  invocation of {@link #getObservationSequenceNumber()} returns a
+     * considered an update notification if the  invocation of {@link #getObserve()} returns a
      * value other than <code>null</code>.
      *
      * @return <code>true</code> if this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} is an update notification
      * and <code>false</code> otherwise.
      */
     public boolean isUpdateNotification(){
-        return this.getObservationSequenceNumber() != null;
+        return this.getObserve() != UintOptionValue.UNDEFINED;
     }
 
 
@@ -325,12 +335,12 @@ public class CoapResponse extends CoapMessage {
     }
 
 //    /**
-//     * Set the observe option. This causes eventually already contained observe options to be removed from
+//     * Set the observing option. This causes eventually already contained observing options to be removed from
 //     * the list even in case of an exception.
 //     *
-//     * @param sequenceNumber the sequence number for the observe option
+//     * @param sequenceNumber the sequence number for the observing option
 //     *
-//     * @throws ToManyOptionsException if adding an observe options would exceed the maximum number of
+//     * @throws ToManyOptionsException if adding an observing options would exceed the maximum number of
 //     * options per message.
 //     */
 //    public void setObserveOptionValue(long sequenceNumber) throws ToManyOptionsException {

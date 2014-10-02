@@ -311,10 +311,10 @@ public class CoapRequest extends CoapMessage {
     }
 
     /**
-     * Returns a {@link Set<>} containing the values of the ETAG options that are present in this
+     * Returns a {@link Set} containing the values of the ETAG options that are present in this
      * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}. If there is no such option, then the returned set is empty.
      *
-     * @return  a {@link Set<>} containing the values of the ETAG options that are present in this
+     * @return  a {@link Set} containing the values of the ETAG options that are present in this
      * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}. If there is no such option, then the returned set is empty.
      */
     public Set<byte[]> getEtags(){
@@ -358,36 +358,6 @@ public class CoapRequest extends CoapMessage {
         return options.containsKey(OptionValue.Name.IF_NONE_MATCH);
     }
 
-    /**
-     * Sets the observe option in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} and returns
-     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
-     * method invocation) or <code>false</code if the option is not set, e.g. because that option has no meaning with
-     * the message code of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
-     *
-     * @param register <code>true</code> if this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} is supposed
-     *                 to register as an observer and <code>false</code> to deregister as observer, i.e. cancel
-     *                 an ongoing observation
-     */
-    public void setObserve(boolean register){
-        this.removeOptions(OptionValue.Name.OBSERVE);
-
-        UintOptionValue optionValue = new UintOptionValue(OptionValue.Name.OBSERVE, register ? 0 : 1);
-        this.addOption(OptionValue.Name.OBSERVE, optionValue);
-    }
-
-    /**
-     * Returns <code>true</code> if the observe option (option no. 6) is present or <code>false</code> if there is
-     * no such option present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
-     *
-     * @return <code>true</code> if the observe option (option no. 6) is present or <code>false</code> if there is
-     * no such option present in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
-     */
-    public long getObserve(){
-        if(!options.containsKey(OptionValue.Name.OBSERVE))
-            return UintOptionValue.UNDEFINED;
-
-        return (long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
-    }
 
     /**
      * Returns the value of the URI port option or {@link OptionValue#URI_PORT_DEFAULT} if the URI port option is not
@@ -554,10 +524,10 @@ public class CoapRequest extends CoapMessage {
     }
 
     /**
-     * Returns <code>true</code> if the observe option is set on this
+     * Returns <code>true</code> if the observing option is set on this
      * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} or <code>false</code> otherwise.
      *
-     * @return <code>true</code> if the observe option is set on this
+     * @return <code>true</code> if the observing option is set on this
      * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} or <code>false</code> otherwise.
      */
     public boolean isObservationRequest(){

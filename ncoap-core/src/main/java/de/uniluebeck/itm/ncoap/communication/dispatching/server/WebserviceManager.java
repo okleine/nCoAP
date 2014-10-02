@@ -22,15 +22,16 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.communication.dispatching.server;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.application.server.WebserviceNotFoundHandler;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
-import de.uniluebeck.itm.ncoap.communication.observe.server.ObservableWebserviceDeregistrationEvent;
-import de.uniluebeck.itm.ncoap.communication.observe.server.ObservableWebserviceRegistrationEvent;
+import de.uniluebeck.itm.ncoap.communication.events.MessageTransferEvent;
+import de.uniluebeck.itm.ncoap.communication.events.server.ObservableWebserviceDeregistrationEvent;
+import de.uniluebeck.itm.ncoap.communication.events.server.ObservableWebserviceRegistrationEvent;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.channel.*;
@@ -42,32 +43,32 @@ import java.util.HashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * The {@link WebserviceManager} is the topmost {@link ChannelHandler} of the {@link ChannelPipeline} returned
- * by {@link de.uniluebeck.itm.ncoap.application.server.ServerChannelPipelineFactory}. It is responsible to dispatch incoming {@link CoapRequest}s, i.e.
- *
- * <ul>
- *     <li>invoke the method {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} of
- *     the addressed {@link Webservice} instance (if it exists) or</li>
- *     <li>invoke the method
- *     {@link de.uniluebeck.itm.ncoap.application.server.WebserviceNotFoundHandler#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} if the
- *     incoming {@link CoapRequest} addresses a service that does not (yet) exist.
- *     </li>
- * </ul>
- *
- * Upon invocation of the method it awaits a proper {@link CoapResponse} and sends that response downstream, i.e.
- * in the direction of the local socket, i.e. to the client that sent the {@link CoapRequest}.
- *
- * However, the {@link WebserviceManager} is aware of all registered {@link Webservice} instances and is thus to be
- * used to register new {@link Webservice} instances, e.g. while processing an incoming {@link CoapRequest} with
- * {@link MessageCode.Name#POST}. That is why all {@link Webservice} instances can reference their
- * {@link WebserviceManager} via {@link Webservice#getWebserviceManager()}.
- *
- * Last but not least it checks whether the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#IF_NONE_MATCH} is set on incoming {@link CoapRequest}s
- * and sends a {@link CoapResponse} with {@link MessageCode.Name#PRECONDITION_FAILED_412} if the option was set but the
- * addressed {@link Webservice} already exists.
- *
- * @author Oliver Kleine
- */
+* The {@link WebserviceManager} is the topmost {@link ChannelHandler} of the {@link ChannelPipeline} returned
+* by {@link de.uniluebeck.itm.ncoap.application.server.ServerChannelPipelineFactory}. It is responsible to dispatch inbound {@link CoapRequest}s, i.e.
+*
+* <ul>
+*     <li>invoke the method {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} of
+*     the addressed {@link Webservice} instance (if it exists) or</li>
+*     <li>invoke the method
+*     {@link WebserviceNotFoundHandler#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} if the
+*     inbound {@link CoapRequest} addresses a service that does not (yet) exist.
+*     </li>
+* </ul>
+*
+* Upon invocation of the method it awaits a proper {@link CoapResponse} and sends that response downstream, i.e.
+* in the direction of the local socket, i.e. to the client that sent the {@link CoapRequest}.
+*
+* However, the {@link WebserviceManager} is aware of all registered {@link Webservice} instances and is thus to be
+* used to register new {@link Webservice} instances, e.g. while processing an inbound {@link CoapRequest} with
+* {@link MessageCode.Name#POST}. That is why all {@link Webservice} instances can reference their
+* {@link WebserviceManager} via {@link Webservice#getWebserviceManager()}.
+*
+* Last but not least it checks whether the {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#IF_NONE_MATCH} is set on inbound {@link CoapRequest}s
+* and sends a {@link CoapResponse} with {@link MessageCode.Name#PRECONDITION_FAILED_412} if the option was set but the
+* addressed {@link Webservice} already exists.
+*
+* @author Oliver Kleine
+*/
 public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
@@ -79,10 +80,10 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
     private ScheduledExecutorService executorService;
     private WebserviceNotFoundHandler webServiceNotFoundHandler;
     private Channel channel;
-
+    private boolean shutdown;
 
     /**
-     * @param webServiceNotFoundHandler Instance of {@link WebserviceNotFoundHandler} to deal with incoming {@link CoapRequest}s with
+     * @param webServiceNotFoundHandler Instance of {@link WebserviceNotFoundHandler} to deal with inbound {@link CoapRequest}s with
      *                          {@link MessageCode.Name#PUT} if the addresses {@link Webservice} does not exist.
      *
      * @param executorService the {@link ScheduledExecutorService} to process the task to send a {@link CoapResponse}
@@ -93,7 +94,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         this.registeredServices = new HashMap<>();
         this.executorService = executorService;
         this.webServiceNotFoundHandler = webServiceNotFoundHandler;
-        
+        this.shutdown = false;
         registerService(new WellKnownCoreResource(registeredServices));
     }
 
@@ -104,7 +105,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      *
      * @param channel the {@link Channel} to be used for messages to be sent to other handlers in that channel
      */
-    void setChannel(Channel channel){
+    public void setChannel(Channel channel){
         this.channel = channel;
     }
 
@@ -128,8 +129,13 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         if(me.getMessage() instanceof CoapRequest)
             messageReceived(ctx, (CoapRequest) me.getMessage(), (InetSocketAddress) me.getRemoteAddress());
 
-        else
-            log.debug("Server ignores incoming message: {}", me.getMessage());
+        else if(me.getMessage() instanceof MessageTransferEvent){
+            log.debug("IGNORE EVENT: {}", me.getMessage());
+        }
+
+        else{
+            log.warn("IGNORE MESSAGE OF UNKNOWN TYPE: {}", me.getMessage());
+        }
 
 
         me.getFuture().setSuccess();
@@ -153,7 +159,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
                     sendCoapResponse(ctx, remoteEndpoint, coapResponse);
                 }
                 catch (Exception e) {
-                    log.error("Exception while processing incoming request", e);
+                    log.error("Exception while processing inbound request", e);
                     CoapResponse errorResponse = CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
                                     MessageCode.Name.INTERNAL_SERVER_ERROR_500, e.getMessage());
 
@@ -179,7 +185,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
             else if(coapRequest.isIfNonMatchSet())
                 sendPreconditionFailed(coapRequest.getMessageTypeName(), coapRequest.getUriPath(), responseFuture);
 
-            //The incoming request is to be handled by the addressed service
+            //The inbound request is to be handled by the addressed service
             else
                 webservice.processCoapRequest(responseFuture, coapRequest, remoteEndpoint);
 
@@ -225,8 +231,10 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent){
-        Throwable cause = exceptionEvent.getCause();
-        log.error("Unsupported exception caught! Don't know what to do...", cause);
+        if(!shutdown){
+            Throwable cause = exceptionEvent.getCause();
+            log.error("Unsupported exception caught! Don't know what to do...", cause);
+        }
     }
 
 
@@ -247,7 +255,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
         //some time to send possible update notifications (404_NOT_FOUND) to observers
         try{
-            Thread.sleep(1000);
+            Thread.sleep(3000);
         }
         catch (InterruptedException e) {
             log.error("Interrupted while shutting down CoapServerApplication!", e);
@@ -284,6 +292,9 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         return removedService == null;
     }
 
+    public void setShutdown(){
+        this.shutdown = true;
+    }
 
     /**
      * Registers a Webservice instance at the server. After registration the service will be available at the path
@@ -311,8 +322,6 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
                 }
             });
         }
-
-        webservice.setScheduledExecutorService(executorService);
     }
 
 }

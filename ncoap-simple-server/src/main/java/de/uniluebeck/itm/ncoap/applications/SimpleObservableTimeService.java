@@ -26,11 +26,9 @@ package de.uniluebeck.itm.ncoap.applications;
 
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
-import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.EmptyLinkAttribute;
-import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.StringLinkAttribute;
 import de.uniluebeck.itm.ncoap.message.*;
@@ -99,8 +97,8 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
 
 
     @Override
-    public void setScheduledExecutorService(ScheduledExecutorService executorService){
-        super.setScheduledExecutorService(executorService);
+    public void setExecutor(ScheduledExecutorService executorService){
+        super.setExecutor(executorService);
         schedulePeriodicResourceUpdate();
     }
 
@@ -124,7 +122,7 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
 
 
     private void schedulePeriodicResourceUpdate(){
-        this.periodicUpdateFuture = getScheduledExecutorService().scheduleAtFixedRate(new Runnable(){
+        this.periodicUpdateFuture = getExecutor().scheduleAtFixedRate(new Runnable(){
 
             @Override
             public void run() {

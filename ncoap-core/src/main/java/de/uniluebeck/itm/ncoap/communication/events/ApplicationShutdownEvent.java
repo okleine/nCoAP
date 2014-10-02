@@ -29,4 +29,10 @@ package de.uniluebeck.itm.ncoap.communication.events;
  *
  * @author Oliver Kleine
  */
-public class ApplicationShutdownEvent {}
+public class ApplicationShutdownEvent {
+
+    @Override
+    public String toString(){
+        return "APPLICATION SHUTDOWN EVENT!";
+    }
+}

@@ -22,14 +22,16 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
-import de.uniluebeck.itm.ncoap.communication.observe.server.WebserviceObservationHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
+import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
+import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceNotFoundHandler;
+import de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler;
+import de.uniluebeck.itm.ncoap.communication.reliability.InboundReliabilityHandler;
+import de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -40,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 
@@ -50,7 +53,7 @@ import java.util.concurrent.ThreadFactory;
 * one can register {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instances and by this means make them available at their specified path.
 *
 * Each instance of {@link CoapServerApplication} is automatically bound to a local port to listen at for
-* incoming requests.
+* inbound requests.
 *
 * @author Oliver Kleine
 */
@@ -62,7 +65,7 @@ public class CoapServerApplication{
 
     private WebserviceManager webserviceManager;
     private DatagramChannel channel;
-
+    private ScheduledExecutorService executor;
     /**
      * This constructor creates an instance of {@link CoapServerApplication}
      * @param webServiceNotFoundHandler
@@ -82,15 +85,16 @@ public class CoapServerApplication{
         int numberOfThreads = Math.max(Runtime.getRuntime().availableProcessors() * 2, 4);
         log.info("No. of I/O Threads: {}", numberOfThreads);
 
-        ScheduledThreadPoolExecutor executorService = new ScheduledThreadPoolExecutor(numberOfThreads, threadFactory);
-        executorService.setRemoveOnCancelPolicy(true);
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(numberOfThreads, threadFactory);
+        executor.setRemoveOnCancelPolicy(true);
+        this.executor = executor;
 
         //Create bootstrap
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(executorService, numberOfThreads/2);
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(this.executor, numberOfThreads/2);
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
 
         ServerChannelPipelineFactory pipelineFactory =
-                new ServerChannelPipelineFactory(executorService, webServiceNotFoundHandler);
+                new ServerChannelPipelineFactory(this.executor, webServiceNotFoundHandler);
 
 
         bootstrap.setPipelineFactory(pipelineFactory);
@@ -105,33 +109,33 @@ public class CoapServerApplication{
 
         webServiceNotFoundHandler.setWebserviceManager(webserviceManager);
 
-        //Set the ChannelHandlerContext for the outgoing reliability handler
-        OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler =
-                (OutgoingMessageReliabilityHandler) this.channel.getPipeline()
-                        .get(AbstractCoapChannelPipelineFactory.OUTGOING_MESSAGE_RELIABILITY_HANDLER);
+        //Set the ChannelHandlerContext for the outbound reliability handler
+        OutboundReliabilityHandler outboundReliabilityHandler =
+                (OutboundReliabilityHandler) this.channel.getPipeline()
+                                 .get(ServerChannelPipelineFactory.SERVER_OUTBOUND_RELIABILITY_HANDLER);
 
-        outgoingMessageReliabilityHandler.setChannelHandlerContext(
+        outboundReliabilityHandler.setChannelHandlerContext(
                 this.channel.getPipeline()
-                        .getContext(AbstractCoapChannelPipelineFactory.OUTGOING_MESSAGE_RELIABILITY_HANDLER)
+                        .getContext(ServerChannelPipelineFactory.SERVER_OUTBOUND_RELIABILITY_HANDLER)
         );
 
-        //Set the ChannelHandlerContext for the incoming reliability handler
-        IncomingMessageReliabilityHandler incomingMessageReliabilityHandler =
-                (IncomingMessageReliabilityHandler) this.channel.getPipeline()
-                        .get(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER);
+        //Set the ChannelHandlerContext for the inbound reliability handler
+        InboundReliabilityHandler inboundReliabilityHandler =
+                         (InboundReliabilityHandler) this.channel.getPipeline()
+                                 .get(ServerChannelPipelineFactory.SERVER_INBOUND_RELIABILITY_HANDLER);
 
-        incomingMessageReliabilityHandler.setChannelHandlerContext(
+        inboundReliabilityHandler.setChannelHandlerContext(
                 this.channel.getPipeline()
-                        .getContext(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER)
+                        .getContext(ServerChannelPipelineFactory.SERVER_INBOUND_RELIABILITY_HANDLER)
         );
 
         //Set the ChannelHandlerContext for the webservice observation handler
-        WebserviceObservationHandler webserviceObservationHandler =
-                (WebserviceObservationHandler) this.channel.getPipeline()
-                        .get(AbstractCoapChannelPipelineFactory.OBSERVATION_HANDLER);
+        ServerObservationHandler serverObservationHandler =
+                (ServerObservationHandler) this.channel.getPipeline()
+                        .get(ServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER);
 
-        webserviceObservationHandler.setChannelHandlerContext(
-                this.channel.getPipeline().getContext(AbstractCoapChannelPipelineFactory.OBSERVATION_HANDLER)
+        serverObservationHandler.setChannelHandlerContext(
+                this.channel.getPipeline().getContext(ServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER)
         );
 
     }
@@ -175,6 +179,11 @@ public class CoapServerApplication{
     public int getPort(){
         return this.channel.getLocalAddress().getPort();
     }
+
+    public ScheduledExecutorService getExecutor(){
+        return this.executor;
+    }
+
 
     public void shutdown(){
         log.warn("Shutdown server...");

@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.applications;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

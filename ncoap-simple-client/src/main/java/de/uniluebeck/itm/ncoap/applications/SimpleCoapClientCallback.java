@@ -24,9 +24,9 @@
  */
 package de.uniluebeck.itm.ncoap.applications;
 
-import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionTimeoutEvent;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
+import de.uniluebeck.itm.ncoap.communication.events.MessageRetransmittedEvent;
+import de.uniluebeck.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by olli on 20.03.14.
  */
-public class SimpleCoapClientCallback extends CoapClientCallback {
+public class SimpleCoapClientCallback extends ClientCallback {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -76,7 +76,7 @@ public class SimpleCoapClientCallback extends CoapClientCallback {
 
 
     @Override
-    public void processRetransmission(RetransmissionEvent event) {
+    public void processRetransmission(MessageRetransmittedEvent event) {
         int value = transmissionCounter.incrementAndGet();
         log.info("#{}: {}", value, event);
     }

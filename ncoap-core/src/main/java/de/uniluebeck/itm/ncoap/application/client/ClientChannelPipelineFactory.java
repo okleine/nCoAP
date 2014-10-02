@@ -25,12 +25,13 @@
 
 package de.uniluebeck.itm.ncoap.application.client;
 
-import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
+import de.uniluebeck.itm.ncoap.application.CoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
-import de.uniluebeck.itm.ncoap.communication.observe.client.IncomingUpdateNotificationHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.TokenFactory;
+import de.uniluebeck.itm.ncoap.communication.observing.client.ClientObservationHandler;
+import de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.handler.execution.ExecutionHandler;
@@ -45,14 +46,29 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * @author Oliver Kleine
  */
-public class ClientChannelPipelineFactory extends AbstractCoapChannelPipelineFactory {
+public class ClientChannelPipelineFactory extends CoapChannelPipelineFactory {
+
+    /**
+     * The constant to identify the observation handler of a CoAP Client
+     */
+    public static String CLIENT_OBSERVATION_HANDLER = "ClientObservationHandler";
+
+    /**
+     * The constant to identify the reliability handler of a CoAP Client
+     */
+    public static String OUTBOUND_RELIABILITY_HANDLER = "OutboundReliabilityHandler";
+
+    /**
+     * The constant to identify the callback manager of a CoAP Client
+     */
+    public static String CLIENT_CALLBACK_MANAGER = "ClientCallbackManager";
 
     /**
      * Creates a new instance of {@link ClientChannelPipelineFactory}.
      *
      * @param executorService The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      *
-     * @param tokenFactory The {@link TokenFactory} to be used for generating {@link Token}s for outgoing
+     * @param tokenFactory The {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.TokenFactory} to be used for generating {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s for outgoing
      *                     {@link CoapRequest}s
      */
     public ClientChannelPipelineFactory(ScheduledExecutorService executorService, TokenFactory tokenFactory){
@@ -62,13 +78,9 @@ public class ClientChannelPipelineFactory extends AbstractCoapChannelPipelineFac
         addChannelHandler(ENCODER, new CoapMessageEncoder());
         addChannelHandler(DECODER, new CoapMessageDecoder());
 
-        addChannelHandler(INCOMING_UPDATE_NOTIFICATION_HANDLER, new IncomingUpdateNotificationHandler());
-
-        addChannelHandler(OUTGOING_MESSAGE_RELIABILITY_HANDLER, new OutgoingMessageReliabilityHandler(executorService));
-
-        addChannelHandler(INCOMING_MESSAGE_RELIABILITY_HANDLER, new IncomingMessageReliabilityHandler(executorService));
-
-        addChannelHandler(RESPONSE_DISPATCHER, new CoapResponseDispatcher(executorService, tokenFactory));
+        addChannelHandler(OUTBOUND_RELIABILITY_HANDLER, new OutboundReliabilityHandler(executorService));
+        addChannelHandler(CLIENT_OBSERVATION_HANDLER, new ClientObservationHandler());
+        addChannelHandler(CLIENT_CALLBACK_MANAGER, new ClientCallbackManager(executorService, tokenFactory));
     }
 
 }

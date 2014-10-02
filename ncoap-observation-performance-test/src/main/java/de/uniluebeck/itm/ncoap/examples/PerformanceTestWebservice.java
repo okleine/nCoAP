@@ -1,7 +1,7 @@
 package de.uniluebeck.itm.ncoap.examples;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -18,19 +20,22 @@ public class PerformanceTestWebservice extends ObservableWebservice<Integer> {
 
     private static Logger log = LoggerFactory.getLogger(PerformanceTestWebservice.class.getName());
 
+    private static final long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
+
     private final int serviceNo;
     private final int updateInterval;
 
 
-    public PerformanceTestWebservice(int serviceNo, int initialStatus, int updateInterval){
-        super("/service/" + String.format("%03d", serviceNo), initialStatus);
+    public PerformanceTestWebservice(int serviceNo, int initialStatus, int updateInterval,
+                                     ScheduledExecutorService executor){
+        super("/service/" + String.format("%03d", serviceNo), initialStatus, executor);
         this.serviceNo = serviceNo;
         this.updateInterval = updateInterval;
     }
 
 
     public void initialize(){
-        this.getScheduledExecutorService().scheduleAtFixedRate(new Runnable(){
+        this.getExecutor().scheduleAtFixedRate(new Runnable(){
 
             @Override
             public void run() {
@@ -74,6 +79,7 @@ public class PerformanceTestWebservice extends ObservableWebservice<Integer> {
         if(contentFormat == ContentFormat.TEXT_PLAIN_UTF8){
             result = "Service " + String.format("%03d", serviceNo) + ": Status " + getResourceStatus();
         }
+
         else if(contentFormat == ContentFormat.APP_XML){
             result = "<service>\n" +
                      "\t<number>" + String.format("%03d", serviceNo) + "<number>\n" +
@@ -84,6 +90,7 @@ public class PerformanceTestWebservice extends ObservableWebservice<Integer> {
         if(result != null){
             return result.getBytes(CoapMessage.CHARSET);
         }
+
         else {
             return null;
         }
@@ -114,7 +121,7 @@ public class PerformanceTestWebservice extends ObservableWebservice<Integer> {
             else{
                 coapResponse = new CoapResponse(MessageType.Name.CON, MessageCode.Name.CONTENT_205);
                 coapResponse.setContent(getSerializedResourceStatus(contentFormat), contentFormat);
-                coapResponse.setObserveOption(0);
+                coapResponse.setObserve();
             }
         }
 
@@ -124,14 +131,22 @@ public class PerformanceTestWebservice extends ObservableWebservice<Integer> {
 
     private long determineResponseContentFormat(CoapRequest coapRequest){
 
-        if(coapRequest.getAcceptedContentFormats().contains(ContentFormat.TEXT_PLAIN_UTF8)){
+        Set<Long> accepted = coapRequest.getAcceptedContentFormats();
+
+        if(accepted.isEmpty()){
+            return DEFAULT_CONTENT_FORMAT;
+        }
+
+        else if(coapRequest.getAcceptedContentFormats().contains(ContentFormat.TEXT_PLAIN_UTF8)){
             return ContentFormat.TEXT_PLAIN_UTF8;
         }
 
-        if(coapRequest.getAcceptedContentFormats().contains(ContentFormat.APP_XML)){
+        else if(coapRequest.getAcceptedContentFormats().contains(ContentFormat.APP_XML)){
             return ContentFormat.APP_XML;
         }
 
-        return ContentFormat.UNDEFINED;
+        else{
+            return ContentFormat.UNDEFINED;
+        }
     }
 }

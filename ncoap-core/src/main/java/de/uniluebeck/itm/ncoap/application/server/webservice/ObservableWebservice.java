@@ -22,11 +22,12 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.collect.LinkedHashMultimap;
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.application.server.WebserviceManager;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.EmptyLinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.message.MessageType;
@@ -70,7 +71,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
     private T resourceStatus;
     private long resourceStatusExpiryDate;
 
-    private ScheduledExecutorService scheduledExecutorService;
+    private ScheduledExecutorService executor;
 
 
     /**
@@ -80,8 +81,8 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      * @param path the path this {@link ObservableWebservice} is registered at.
      * @param initialStatus the initial status of this {@link ObservableWebservice}.
      */
-    protected ObservableWebservice(String path, T initialStatus){
-        this(path, initialStatus, OptionValue.MAX_AGE_DEFAULT);
+    protected ObservableWebservice(String path, T initialStatus, ScheduledExecutorService executor){
+        this(path, initialStatus, OptionValue.MAX_AGE_DEFAULT, executor);
         this.setLinkAttribute(new EmptyLinkAttribute(EmptyLinkAttribute.OBSERVABLE));
     }
 
@@ -92,11 +93,13 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
      * @param lifetimeSeconds the number of seconds the initial status may be considered fresh, i.e. cachable by
      *                        proxies or clients.
      */
-    protected ObservableWebservice(String path, T initialStatus, long lifetimeSeconds){
+    protected ObservableWebservice(String path, T initialStatus, long lifetimeSeconds,
+                                   ScheduledExecutorService executor){
         this.path = path;
         this.linkAttributes = LinkedHashMultimap.create();
 
         this.readWriteLock = new ReentrantReadWriteLock(false);
+        setExecutor(executor);
         setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
@@ -146,8 +149,8 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
 
     @Override
-    public void setScheduledExecutorService(ScheduledExecutorService executorService){
-        this.scheduledExecutorService = executorService;
+    public void setExecutor(ScheduledExecutorService executorService){
+        this.executor = executorService;
         executorService.scheduleAtFixedRate(new Runnable(){
 
             @Override
@@ -170,8 +173,8 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
 
     @Override
-    public ScheduledExecutorService getScheduledExecutorService(){
-        return this.scheduledExecutorService;
+    public ScheduledExecutorService getExecutor(){
+        return this.executor;
     }
 
 
@@ -182,24 +185,34 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
 
     @Override
-    public synchronized final void setResourceStatus(T resourceStatus, long lifetimeSeconds){
-        try{
-            readWriteLock.writeLock().lock();
-            this.resourceStatus = resourceStatus;
-            this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
+    public synchronized final void setResourceStatus(final T resourceStatus, final long lifetimeSeconds){
+        this.executor.submit(new Runnable(){
 
-            this.updateEtag(resourceStatus);
+            @Override
+            public void run() {
+                try{
+                    readWriteLock.writeLock().lock();
+                    ObservableWebservice.this.resourceStatus = resourceStatus;
 
-            log.debug("New status of {} successfully set (expires in {} seconds).", this.path, lifetimeSeconds);
+                    ObservableWebservice.this.resourceStatusExpiryDate =
+                            System.currentTimeMillis() + (lifetimeSeconds * 1000);
 
-            //Notify observers (methods inherited from abstract class Observable)
-            setChanged();
-            notifyObservers(false);
-        }
+                    ObservableWebservice.this.updateEtag(resourceStatus);
 
-        finally {
-            readWriteLock.writeLock().unlock();
-        }
+                    log.debug("New status of {} successfully set (expires in {} seconds).",
+                            ObservableWebservice.this.path, lifetimeSeconds);
+
+                    //Notify observers (methods inherited from abstract class Observable)
+                    setChanged();
+                    notifyObservers(false);
+                }
+
+                finally {
+                    readWriteLock.writeLock().unlock();
+                }
+            }
+        });
+
     }
 
 
@@ -211,7 +224,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
     /**
      * This method and {@link #getWrappedResourceStatus(java.util.Set)} are the only recommended way to retrieve
-     * the actual resource status that is used for a {@link CoapResponse} to answer an incoming {@link CoapRequest}.
+     * the actual resource status that is used for a {@link CoapResponse} to answer an inbound {@link CoapRequest}.
      *
      * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
@@ -249,7 +262,7 @@ public abstract class ObservableWebservice<T> extends Observable implements Webs
 
     /**
      * This method and {@link #getWrappedResourceStatus(long)} are the only recommended ways to retrieve
-     * the actual resource status that is used for a {@link CoapResponse} to answer an incoming {@link CoapRequest}.
+     * the actual resource status that is used for a {@link CoapResponse} to answer an inbound {@link CoapRequest}.
      *
      * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.

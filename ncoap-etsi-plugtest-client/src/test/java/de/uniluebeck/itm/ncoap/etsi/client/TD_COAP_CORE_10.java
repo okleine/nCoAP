@@ -25,7 +25,7 @@
 package de.uniluebeck.itm.ncoap.etsi.client;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -56,7 +56,7 @@ public class TD_COAP_CORE_10 {
     public static void sendRequest() throws Exception{
         LoggingConfiguration.configure();
 
-        CoapClientApplication client = ApplicationFactory.getCoapClientApplication();
+        CoapClientApplication client = ApplicationFactory.getClient();
 
         //This is a dirty hack to force the client to use a non-empty token for the second request
         wasteEmptyToken(client);
@@ -67,7 +67,7 @@ public class TD_COAP_CORE_10 {
         final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(SERVER), 5683);
 
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
-        client.sendCoapRequest(coapRequest, new CoapClientCallback() {
+        client.sendCoapRequest(coapRequest, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 TD_COAP_CORE_10.coapResponse = coapResponse;
@@ -84,7 +84,7 @@ public class TD_COAP_CORE_10 {
         final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(fakeURI.getHost()), 5683);
         CoapRequest fakeRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, fakeURI);
 
-        client.sendCoapRequest(fakeRequest, new CoapClientCallback() {
+        client.sendCoapRequest(fakeRequest, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 //Nothing to do...

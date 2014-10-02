@@ -25,8 +25,8 @@
 package de.uniluebeck.itm.ncoap.applications.etsi.client;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.apache.log4j.Logger;
@@ -49,7 +49,7 @@ public class TestClient extends CoapClientApplication{
         URI targetUri = new URI("coap", null, serverName, -1, "/test", null, null);
         final CoapRequest coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
 
-        CoapClientCallback core01ResponseProcessor = new CoapClientCallback() {
+        ClientCallback core01ResponseProcessor = new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 synchronized (monitor){
@@ -96,7 +96,7 @@ public class TestClient extends CoapClientApplication{
         URI targetUri = new URI("coap", null, serverName, -1, "/test", null, null);
         final CoapRequest coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.DELETE, targetUri);
 
-        CoapClientCallback core01ResponseProcessor = new CoapClientCallback() {
+        ClientCallback core01ResponseProcessor = new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 synchronized (monitor){
@@ -140,7 +140,7 @@ public class TestClient extends CoapClientApplication{
         final CoapRequest coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.PUT, targetUri);
         coapRequest.setContent("Arbitrary payload...".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 
-        CoapClientCallback responseProcessor = new CoapClientCallback() {
+        ClientCallback responseProcessor = new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 synchronized (monitor){
@@ -189,7 +189,7 @@ public class TestClient extends CoapClientApplication{
         final CoapRequest coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.POST, targetUri);
         coapRequest.setContent("Arbitrary payload...".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 
-        CoapClientCallback responseProcessor = new CoapClientCallback() {
+        ClientCallback responseProcessor = new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 synchronized (monitor){

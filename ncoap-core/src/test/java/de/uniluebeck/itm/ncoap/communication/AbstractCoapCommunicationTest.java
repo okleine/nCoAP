@@ -25,23 +25,23 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
-import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 
-import org.apache.log4j.*;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.junit.AfterClass;
 
+
 /**
-* Abstract class to be extended by all tests classes to test communication functionality, i.e. all
-* tests using at least one of {@link CoapClientApplication}, {@link CoapServerApplication}.
-*
-* @author Oliver Kleine
-*/
+ * Abstract class to be extended by all tests classes to test communication functionality, i.e. all
+ * tests using at least one of
+ * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication}, or
+ * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}.
+ *
+ * @author Oliver Kleine
+ */
 public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
 
-    protected static Logger log = Logger.getLogger(AbstractCoapCommunicationTest.class.getName());
-
+    private static Logger log = Logger.getLogger(AbstractCoapCommunicationTest.class.getName());
 
     private static boolean areComponentsSetup = false;
     private static boolean isTestScenarioCreated = false;
@@ -49,11 +49,13 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
 
 
     /**
-     * This method is to instanciate all necessary instances of {@link CoapClientApplication},
-     * {@link CoapServerApplication} and {@link CoapTestEndpoint}.
+     * This method is to create all necessary instances of
+     * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication},
+     * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} and
+     * {@link de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint}.
      *
      * Additionally all necessary instances of webservices are supposed to be created and registered at the
-     * {@link CoapServerApplication} instance(s)
+     * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} instance(s)
      *
      * @throws Exception
      */
@@ -65,8 +67,10 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
     public abstract void createTestScenario() throws Exception;
 
     /**
-     * This method is to shutdown all existing instances of {@link CoapClientApplication},
-     * {@link CoapServerApplication} and {@link CoapTestEndpoint}.
+     * This method is to shutdown all existing instances of
+     * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication},
+     * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}, and
+     * {@link de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint}.
      *
      * @throws Exception
      */
@@ -75,9 +79,12 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
 
     public AbstractCoapCommunicationTest(){
 
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.AbstractCoapCommunicationTest")
+                .setLevel(Level.INFO);
+
         try {
             if(!areComponentsSetup){
-                log.info("Start: " + this.getClass().getName());
+                log.info("START TEST (" + this.getClass().getSimpleName() + ")");
                 setupComponents();
                 areComponentsSetup = true;
             }
@@ -85,13 +92,13 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
             if(!isTestScenarioCreated){
                 createTestScenario();
                 isTestScenarioCreated = true;
-                log.info("Scenario created for: " + this.getClass().getName());
+                log.info("SCENARIO CREATED (" + this.getClass().getSimpleName() + ")");
             }
 
             if(!areComponentsShutdown){
                 shutdownComponents();
                 areComponentsShutdown = true;
-                log.info("Components shutdown for: " + this.getClass().getName());
+                log.info("COMPONENTS SHUT DOWN (" + this.getClass().getSimpleName() + ")");
             }
 
         }

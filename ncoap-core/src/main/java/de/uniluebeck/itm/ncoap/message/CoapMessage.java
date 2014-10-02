@@ -30,7 +30,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Longs;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -239,7 +239,7 @@ public abstract class CoapMessage {
 
     /**
      * Creates a new instance of {@link CoapMessage}. Invocation of this constructor has the same effect as
-     * invocation of {@link #CoapMessage(int, int, int, de.uniluebeck.itm.ncoap.application.client.Token)} with
+     * invocation of {@link #CoapMessage(int, int, int, de.uniluebeck.itm.ncoap.communication.dispatching.client.Token)} with
      * <ul>
      *     <li>
      *         message ID: {@link CoapMessage#UNDEFINED_MESSAGE_ID} (to be set automatically by the framework)
@@ -607,6 +607,46 @@ public abstract class CoapMessage {
             return ((UintOptionValue) options.get(OptionValue.Name.MAX_AGE).iterator().next()).getDecodedValue();
         else
             return OptionValue.MAX_AGE_DEFAULT;
+    }
+
+
+    /**
+     * Sets the observing option in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} and returns
+     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
+     * method invocation) or <code>false</code if the option is not set, e.g. because that option has no meaning with
+     * the message code of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     *
+     * @param value <code>true</code> if this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} is supposed
+     *              to register as an observer and <code>false</code> to deregister as observer, i.e. cancel
+     *               an ongoing observation
+     */
+    public void setObserve(long value){
+        try {
+            this.removeOptions(OptionValue.Name.OBSERVE);
+            value = value & 0xFFFFFF;
+            this.addUintOption(OptionValue.Name.OBSERVE, value);
+        }
+        catch (IllegalArgumentException e){
+            this.removeOptions(OptionValue.Name.OBSERVE);
+            log.error("This should never happen.", e);
+        }
+    }
+
+
+    /**
+     * Returns the value of the observing option (no.6) or
+     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     *
+     * @return he value of the observing option (no.6) or
+     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     */
+    public long getObserve(){
+        if(!options.containsKey(OptionValue.Name.OBSERVE))
+            return UintOptionValue.UNDEFINED;
+
+        return (long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
     }
 
     /**

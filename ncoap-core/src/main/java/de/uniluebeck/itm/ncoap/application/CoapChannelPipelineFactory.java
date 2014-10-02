@@ -47,11 +47,7 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
     public static final String ENCODER = "Encoder";
     public static final String DECODER = "Decoder";
 
-
-
-
     private Map<String, ChannelHandler> handler;
-
 
     protected CoapChannelPipelineFactory(){
              this.handler = new LinkedHashMap<>();

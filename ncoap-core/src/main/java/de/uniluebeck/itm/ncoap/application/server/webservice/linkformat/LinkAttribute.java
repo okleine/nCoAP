@@ -24,11 +24,10 @@
  */
 package de.uniluebeck.itm.ncoap.application.server.webservice.linkformat;
 
-import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import java.util.*;
 
 /**
- * Each {@link Webservice} can be enriched with {@link LinkAttribute}s to provide additional information about its
+ * Each {@link Web} can be enriched with {@link LinkAttribute}s to provide additional information about its
  * capabilities in terms of offered content formats, observability, etc...
  *
  * However, the attached {@link LinkAttribute}s are accessible to interested clients via the

@@ -26,9 +26,9 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
-import de.uniluebeck.itm.ncoap.endpoints.client.CoapClientTestCallback;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
+import de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.client.ClientTestCallback;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -55,22 +55,22 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
     private static final String PAYLOAD = "Some arbitrary content!";
 
     private static CoapClientApplication client;
-    private static CoapClientTestCallback callback;
+    private static ClientTestCallback callback;
     private static CoapRequest coapRequest;
 
-    private static CoapTestEndpoint endpoint;
+    private static DummyEndpoint endpoint;
     private static InetSocketAddress endpointSocket;
 
     @Override
     public void setupComponents() throws Exception {
 
         //Create endpoint
-        endpoint = new CoapTestEndpoint();
+        endpoint = new DummyEndpoint();
         endpointSocket = new InetSocketAddress("localhost", endpoint.getPort());
 
         //Create client and callback
         client = new CoapClientApplication();
-        callback = new CoapClientTestCallback();
+        callback = new ClientTestCallback();
 
         URI targetUri =  new URI("coap://localhost:" + endpoint.getPort() + "/");
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
@@ -84,9 +84,11 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.client.CoapClientTestCallback")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.client.ClientTestCallback")
                 .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.client")
                 .setLevel(Level.INFO);
     }
 
@@ -101,7 +103,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
               (2) |<-------ACK-RESPONSE---------|           testEndpoint responds
                   |                             |
               (3) |<-------ACK-RESPONSE---------|           testEndpoint sends the response again,
-                  |                             |           nothing should happen here when the client
+                  |                             |           nothing should happen here if the client
                   |                             |           removed the callback as expected
         */
 
@@ -119,13 +121,13 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         CoapResponse response = new CoapResponse(MessageType.Name.ACK, MessageCode.Name.CONTENT_205);
         response.setMessageID(messageID);
         response.setToken(token);
-        response.setContent("Some payload!".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+        response.setContent(PAYLOAD.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
 
         //Wait some time
         Thread.sleep(300);
 
-        //write response #2
+        //write response #2 (should be ignored by the client!)
         endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
 
         //Wait some time

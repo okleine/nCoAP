@@ -25,19 +25,23 @@
 package de.uniluebeck.itm.ncoap.etsi.client;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 
 /**
  * Created by olli on 15.09.14.
  */
 public class ApplicationFactory{
 
-    private static ApplicationFactory instance = new ApplicationFactory();
-
-    private static CoapClientApplication coapClientApplication = new CoapClientApplication();
+    private static CoapClientApplication client = new CoapClientApplication();
+    private static CoapServerApplication server = new CoapServerApplication();
 
     private ApplicationFactory(){}
 
-    public static CoapClientApplication getCoapClientApplication(){
-        return coapClientApplication;
+    public static CoapClientApplication getClient(){
+        return client;
+    }
+
+    public static CoapServerApplication getServer(){
+        return server;
     }
 }

@@ -51,7 +51,9 @@ public abstract class AbstractCoapTest {
 
 
     protected static void initializeLogging(){
+
         if(!isLoggingConfigured){
+            Logger.getRootLogger().removeAllAppenders();
 
             //asynchronous appender
             AsyncAppender asyncAppender = new AsyncAppender();

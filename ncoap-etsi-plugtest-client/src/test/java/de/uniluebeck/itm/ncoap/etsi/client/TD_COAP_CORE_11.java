@@ -25,9 +25,7 @@
 package de.uniluebeck.itm.ncoap.etsi.client;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAcknowledgementReceptionEvent;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.junit.BeforeClass;
@@ -48,7 +46,7 @@ public class TD_COAP_CORE_11 {
     private static final int WAITING_TIME = 8000;
 
     private static CoapRequest coapRequest;
-    private static CoapMessage emptyAck;
+    private static boolean emptyAck;
     private static CoapResponse coapResponse;
 
 
@@ -56,18 +54,20 @@ public class TD_COAP_CORE_11 {
     public static void sendRequest() throws Exception{
         LoggingConfiguration.configure();
 
-        CoapClientApplication client = ApplicationFactory.getCoapClientApplication();
+        CoapClientApplication client = ApplicationFactory.getClient();
 
         //This is a dirty hack to force the client to use a non-empty token for the second request
         wasteEmptyToken(client);
         Thread.sleep(2);
         //---------------------
 
+        TD_COAP_CORE_11.emptyAck = false;
+
         URI targetUri = new URI("coap", null, SERVER, -1, "/separate", null, null);
         final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(SERVER), 5683);
 
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
-        client.sendCoapRequest(coapRequest, new CoapClientCallback() {
+        client.sendCoapRequest(coapRequest, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 TD_COAP_CORE_11.coapResponse = coapResponse;
@@ -75,8 +75,8 @@ public class TD_COAP_CORE_11 {
             }
 
             @Override
-            public void processEmptyAcknowledgement(EmptyAcknowledgementReceptionEvent event) {
-                TD_COAP_CORE_11.emptyAck = CoapMessage.createEmptyAcknowledgement(event.getMessageID());
+            public void processEmptyAcknowledgement() {
+                TD_COAP_CORE_11.emptyAck = true;
                 System.out.println("Empty ACK (from " + targetAddress + "): " + emptyAck);
             }
 
@@ -91,7 +91,7 @@ public class TD_COAP_CORE_11 {
         final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(fakeURI.getHost()), 5683);
         CoapRequest fakeRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, fakeURI);
 
-        client.sendCoapRequest(fakeRequest, new CoapClientCallback() {
+        client.sendCoapRequest(fakeRequest, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 //Nothing to do...
@@ -107,8 +107,7 @@ public class TD_COAP_CORE_11 {
 
     @Test
     public void testEmptyAckMessageID(){
-        assertTrue("NO EMPTY ACK RECEIVED!", emptyAck != null);
-        assertEquals("WRONG MESSAGE ID IN EMPTY ACK!", coapRequest.getMessageID(), emptyAck.getMessageID());
+        assertTrue("NO EMPTY ACK RECEIVED!", emptyAck);
     }
 
     @Test

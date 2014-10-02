@@ -22,6 +22,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.communication.dispatching.server;
 
 import com.google.common.util.concurrent.SettableFuture;
@@ -34,16 +35,16 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 /**
- * Instances of {@link WebserviceNotFoundHandler} are supposed to handle incoming {@link CoapRequest}s that are
- * addresses to a not (yet?) existing {@link Webservice}.
- *
- * The framework calls the method {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} for
- * incoming {@link CoapRequest}s if the addressed {@link Webservice} does NOT exist (if the addressed
- * {@link Webservice} exists the framework invokes
- * {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}.
- *
- * @author Oliver Kleine
- */
+* Instances of {@link WebserviceNotFoundHandler} are supposed to handle inbound {@link CoapRequest}s that are
+* addresses to a not (yet?) existing {@link Webservice}.
+*
+* The framework calls the method {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} for
+* inbound {@link CoapRequest}s if the addressed {@link Webservice} does NOT exist (if the addressed
+* {@link Webservice} exists the framework invokes
+* {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}.
+*
+* @author Oliver Kleine
+*/
 public abstract class WebserviceNotFoundHandler {
 
     private WebserviceManager webserviceManager;
@@ -57,13 +58,14 @@ public abstract class WebserviceNotFoundHandler {
      * @param webserviceManager the {@link WebserviceManager} that is supposed to be used to register newly created
      * {@link Webservice} instances.
      */
-    final void setWebserviceManager(WebserviceManager webserviceManager){
+    public final void setWebserviceManager(WebserviceManager webserviceManager){
         this.webserviceManager = webserviceManager;
     }
 
 
     /**
-     * @return the {@link WebserviceManager} for this CoAP server. The {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager} instance can be e.g.
+     * @return the {@link WebserviceManager} for this CoAP server. The
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager} instance can be e.g.
      * used to register new {@link Webservice} instances using {@link WebserviceManager#registerService(Webservice)}.
      */
     protected WebserviceManager getWebserviceManager(){
@@ -71,7 +73,7 @@ public abstract class WebserviceNotFoundHandler {
     }
 
     /**
-     * This method is invoked by the framework on incoming {@link CoapRequest}s with {@link MessageCode.Name#PUT} if
+     * This method is invoked by the framework on inbound {@link CoapRequest}s with {@link MessageCode.Name#PUT} if
      * there is no {@link Webservice} registered at the path given as {@link CoapRequest#getUriPath()}.
      *
      * @param responseFuture the {@link SettableFuture} to be set with a proper {@link CoapResponse} to indicate
@@ -93,6 +95,7 @@ public abstract class WebserviceNotFoundHandler {
      * @return a new default {@link WebserviceNotFoundHandler} instance
      */
     public static WebserviceNotFoundHandler getDefault(){
+
         return new WebserviceNotFoundHandler() {
 
             private String message = "Webservice \"%s\" not found.";
@@ -101,7 +104,6 @@ public abstract class WebserviceNotFoundHandler {
             public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                            InetSocketAddress remoteEndpoint) {
                 try {
-
                     CoapResponse coapResponse =
                             new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.NOT_FOUND_404);
 

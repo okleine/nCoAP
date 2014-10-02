@@ -57,7 +57,7 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public class TransmissionTimeoutEvent extends MessageExchangeEvent {
+public class TransmissionTimeoutEvent extends MessageTransferEvent {
 
     /**
      * @param remoteEndpoint the remote endpoint of the conversation

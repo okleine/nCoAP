@@ -25,15 +25,10 @@
 
 package de.uniluebeck.itm.ncoap.communication.dispatching.client;
 
-import de.uniluebeck.itm.ncoap.application.client.MessageExchangeEvent;
-import de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAckReceivedEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceivedEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionTimeoutEvent;
+import de.uniluebeck.itm.ncoap.communication.events.MessageTransferEvent;
+import de.uniluebeck.itm.ncoap.communication.events.*;
+import de.uniluebeck.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.message.*;
-
-import java.net.InetSocketAddress;
 
 
 /**
@@ -42,7 +37,7 @@ import java.net.InetSocketAddress;
  * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} but also notifications on several events, e.g.
  * the retranmission of a confirmable message.
  *
- * However, to handle incoming {@link de.uniluebeck.itm.ncoap.message.CoapResponse}s the method
+ * However, to handle inbound {@link de.uniluebeck.itm.ncoap.message.CoapResponse}s the method
  * {@link #processCoapResponse(de.uniluebeck.itm.ncoap.message.CoapResponse)} is to be overridden. To handle
  * the several types of events the corresponding methods are to be overridden (which is optional!).
  *
@@ -56,7 +51,7 @@ public abstract class ClientCallback {
     private boolean observing = false;
 
     /**
-     * Method invoked by the {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication} for an incoming response (which is of any type but
+     * Method invoked by the {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication} for an inbound response (which is of any type but
      * empty {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#ACK} or
      * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#RST}).
      *
@@ -87,39 +82,31 @@ public abstract class ClientCallback {
     }
 
 
-    final void processMessageExchangeEvent(MessageExchangeEvent event){
+    final void processMessageExchangeEvent(MessageTransferEvent event){
 
-        if(event instanceof EmptyAckReceivedEvent)
-            processEmptyAcknowledgement((EmptyAckReceivedEvent) event);
+        if(event instanceof EmptyAckReceivedEvent){
+            processEmptyAcknowledgement();
+        }
 
-        else if(event instanceof ResetReceivedEvent)
-            processReset((ResetReceivedEvent) event);
+        else if(event instanceof ResetReceivedEvent){
+            processReset();
+        }
 
-        else if(event instanceof RetransmissionEvent)
-            processRetransmission((RetransmissionEvent) event);
+        else if(event instanceof MessageRetransmittedEvent){
+            processRetransmission();
+        }
 
-        else if(event instanceof TransmissionTimeoutEvent)
-            processTransmissionTimeout((TransmissionTimeoutEvent) event);
-
-        else if(event instanceof EncodingFailedEvent)
-            processEncodingFailed((EncodingFailedEvent) event);
+        else if(event instanceof TransmissionTimeoutEvent){
+            processTransmissionTimeout();
+        }
 
         else if(event instanceof MessageIDAssignedEvent){
-            processNoTokenAvailable(event.getRemoteEndpoint());
+            processMessageIDAssignment(event.getMessageID());
         }
-    }
 
-    /**
-     * This method is called by the framework if all available
-     * {@link de.uniluebeck.itm.ncoap.application.client.Token}s for the given remote endpoint are actually in use.
-     *
-     * <b>Note:</b>To handle this (very unlikely) event this method is to be overridden.
-     *
-     * @param remoteEndpoint the remote endpoint for which no {@link de.uniluebeck.itm.ncoap.application.client.Token}
-     *                       was available
-     */
-    public void processNoTokenAvailable(InetSocketAddress remoteEndpoint) {
-        //to be overridden by extending classes
+        else if(event instanceof MiscellaneousErrorEvent){
+            processMiscellaneousError(((MiscellaneousErrorEvent) event).getDescription());
+        }
     }
 
 
@@ -127,13 +114,9 @@ public abstract class ClientCallback {
      * This method is called by the framework if there was no answer (either an empty ACK) or a proper CoAP response
      * from the remote endpoint received within the 247 seconds.
      *
-     * <b>Note:</b>To handle
-     * {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionTimeoutEvent}s this method is to
-     * be overridden.
-     *
-     * @param event the {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.TransmissionTimeoutEvent}
+     * <b>Note:</b>to somehow handle a conversation timeout this method is to be overridden.
      */
-    public void processTransmissionTimeout(TransmissionTimeoutEvent event) {
+    public void processTransmissionTimeout() {
         //to be overridden by extending classes
     }
 
@@ -142,9 +125,9 @@ public abstract class ClientCallback {
      * This method is called by the framework if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} corresponding
      * to this {@link ClientCallback} was answered with a RST.
      *
-     * @param event the {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceivedEvent}.
+     * <b>Note:</b>to somehow handle RST messaged this method is to be overridden.
      */
-    public void processReset(ResetReceivedEvent event) {
+    public void processReset() {
         //to be overridden by extending classes
     }
 
@@ -153,13 +136,9 @@ public abstract class ClientCallback {
      * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} corresponding to this
      * {@link ClientCallback}, i.e. up to 4 times.
      *
-     * <b>Note:</b> to handle
-     * {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent}s this method
-     * is to be overridden.
-     *
-     * @param event the {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.RetransmissionEvent}.
+     * <b>Note:</b> to somehow handle re-tranmissions this method is to be overridden.
      */
-    public void processRetransmission(RetransmissionEvent event) {
+    public void processRetransmission() {
         //to be overridden by extending classes
     }
 
@@ -167,29 +146,47 @@ public abstract class ClientCallback {
      * This method is called by the framework if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} corresponding
      * to this {@link ClientCallback} was confirmed with an empty ACK.
      *
-     * <b>Note:</b> to handle
-     * {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAckReceivedEvent}s this
-     * method is to be overridden.
-     *
-     * @param event the
-     * {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.EmptyAckReceivedEvent}.
+     * <b>Note:</b> to somehow handle the reception of an empty ACK this method is to be overridden.
      */
-    public void processEmptyAcknowledgement(EmptyAckReceivedEvent event){
+    public void processEmptyAcknowledgement(){
         //to be overridden by extending classes
     }
 
 
     /**
-     * This method is called by the framework if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} corresponding
-     * to this {@link ClientCallback} could not be encoded due to an
-     * error
+     * This method is called by the framework if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} associated with
+     * caused an error
      *
-     * <b>Note:</b> to handle {@link de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedEvent}s this method is
-     * to be overridden.
+     * <b>Note:</b> to handle {@link de.uniluebeck.itm.ncoap.communication.events.MiscellaneousErrorEvent}s this method
+     * is to be overridden.
      *
-     * @param event the {@link de.uniluebeck.itm.ncoap.communication.codec.EncodingFailedEvent}.
+     * @param description a description of the error that caused this event
      */
-    public void processEncodingFailed(EncodingFailedEvent event){
+    public void processMiscellaneousError(String description){
         //to be overridden by extending classes
     }
+
+
+    /**
+     * This method is invoked by the framework if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} that is
+     * associated with this callback is assigned a message ID.
+     *
+     * @param messageID the message ID that was assigned to the {@link de.uniluebeck.itm.ncoap.message.CoapRequest}
+     *                  that is associated with this callback
+     */
+    public void processMessageIDAssignment(int messageID){
+        //to be overridden by extending classes
+    }
+
+    /**
+     * This method is invoked by the framework if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} that is
+     * associated with this callback is assigned a {@link Token}.
+     *
+     * @param token the {@link Token} that was assigned to the
+     *              {@link de.uniluebeck.itm.ncoap.message.CoapRequest} that is associated with this callback
+     */
+    public void processTokenAssignment(Token token){
+        //to be overridden by extending classes
+    }
+
 }

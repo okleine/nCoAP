@@ -28,9 +28,9 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import java.net.InetSocketAddress;
 
 /**
- * An {@link HeaderDecodingException} indicates that the Header, i.e. the first 4 bytes of an incoming serialized
+ * An {@link HeaderDecodingException} indicates that the Header, i.e. the first 4 bytes of an inbound serialized
  * {@link CoapMessage} are malformed. This exception is thrown during the decoding process and causes an RST message
- * to be sent to the incoming message origin.
+ * to be sent to the inbound message origin.
  *
  * @author Oliver Kleine
  */
@@ -52,18 +52,18 @@ public class HeaderDecodingException extends Exception{
     }
 
     /**
-     * Returns the message ID of the incoming malformed message
+     * Returns the message ID of the inbound malformed message
      *
-     * @return the message ID of the incoming malformed message
+     * @return the message ID of the inbound malformed message
      */
     public int getMessageID() {
         return messageID;
     }
 
     /**
-     * Returns the malformed incoming messages origin CoAP endpoints
+     * Returns the malformed inbound messages origin CoAP endpoints
      *
-     * @return the malformed incoming messages origin CoAP endpoints
+     * @return the malformed inbound messages origin CoAP endpoints
      */
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;

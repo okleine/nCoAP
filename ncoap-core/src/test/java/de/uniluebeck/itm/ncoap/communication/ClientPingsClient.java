@@ -41,39 +41,37 @@ import static org.junit.Assert.assertFalse;
 */
 public class ClientPingsClient extends AbstractCoapCommunicationTest{
 
-    private static CoapClientApplication coapClientApplication;
-    private static CoapServerApplication coapServerApplication;
-    private static ClientTestCallback resetProcessor;
+    private static CoapClientApplication client1;
+    private static CoapClientApplication client2;
+    private static ClientTestCallback callback;
 
 
     @Override
     public void setupComponents() throws Exception {
-        coapClientApplication = new CoapClientApplication();
-        resetProcessor = new ClientTestCallback();
-        coapServerApplication = new CoapServerApplication();
+        client1 = new CoapClientApplication("CoAP Client #1");
+        client2 = new CoapClientApplication("CoAP Client #2");
+        callback = new ClientTestCallback();
     }
 
 
     @Override
     public void createTestScenario() throws Exception {
-        InetSocketAddress serverAddress = new InetSocketAddress("127.0.0.1", coapServerApplication.getPort());
-        coapClientApplication.sendCoapPing(resetProcessor, serverAddress);
-
-
+        InetSocketAddress client2Address = new InetSocketAddress("127.0.0.1", client2.getPort());
+        client1.sendCoapPing(callback, client2Address);
         Thread.sleep(1000);
     }
 
 
     @Override
     public void shutdownComponents() throws Exception {
-        coapClientApplication.shutdown();
-        coapServerApplication.shutdown();
+        client1.shutdown();
+        client2.shutdown();
     }
 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.InboundReliabilityHandler")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.dispatching.client")
               .setLevel(Level.INFO);
 
         Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints")
@@ -83,7 +81,7 @@ public class ClientPingsClient extends AbstractCoapCommunicationTest{
 
     @Test
     public void testResetReceived(){
-        assertFalse("No RST (Pong) received.", resetProcessor.getEmptyRSTs().isEmpty());
+        assertFalse("No RST (Pong) received.", callback.getEmptyRSTs().isEmpty());
     }
 
 }

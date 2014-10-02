@@ -26,9 +26,9 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
-import de.uniluebeck.itm.ncoap.endpoints.client.CoapClientTestCallback;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
+import de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.client.ClientTestCallback;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 
@@ -53,26 +53,26 @@ import static org.junit.Assert.assertEquals;
 public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTest {
 
     private static CoapClientApplication client;
-    private static CoapClientTestCallback clientCallback;
+    private static ClientTestCallback clientCallback;
     private static CoapRequest request;
 
-    private static CoapTestEndpoint endpoint;
+    private static DummyEndpoint endpoint;
     private static InetSocketAddress endpointSocket;
 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability").setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint.CoapTestEndpoint").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.client").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint.DummyEndpoint").setLevel(Level.DEBUG);
     }
 
     @Override
     public void setupComponents() throws Exception {
-        endpoint = new CoapTestEndpoint();
+        endpoint = new DummyEndpoint();
         endpointSocket = new InetSocketAddress("localhost", endpoint.getPort());
 
         client = new CoapClientApplication();
-        clientCallback = new CoapClientTestCallback();
+        clientCallback = new ClientTestCallback();
 
         URI targetUri = new URI("coap", null, "localhost", endpoint.getPort(), "/service/path", null, null);
         request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);

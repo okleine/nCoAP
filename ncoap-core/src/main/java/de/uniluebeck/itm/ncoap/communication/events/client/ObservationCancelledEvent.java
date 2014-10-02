@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.events.client;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 
 import java.net.InetSocketAddress;
 
@@ -36,8 +36,29 @@ import java.net.InetSocketAddress;
  */
 public class ObservationCancelledEvent {
 
+    public static enum Reason{
+        LAZY_CANCELLATION_BY_CLIENT("Lazily cancellation by Client (RST)!"),
+        ACTIVE_CANCELLATION_BY_CLIENT("Active cancellation by Client (GET)!");
+//        ERROR_RESPONSE("Received Response with Error Code!"),
+//        SEQUENCE_NO_MISSING("Received Reponse without Observation Sequence Number!"),
+//        RST_FROM_SERVER("Received RST from server!");
+
+
+        private String reason;
+
+        private Reason(String reason){
+            this.reason = reason;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+    }
+
+
     private InetSocketAddress remoteEndpoint;
     private Token token;
+    private Reason reason;
 
     /**
      * Creates a new instance of
@@ -45,12 +66,13 @@ public class ObservationCancelledEvent {
      *
      * @param remoteEndpoint the {@link java.net.InetSocketAddress} of the remote endpoint providing the observed
      *                       service
-     * @param token the {@link de.uniluebeck.itm.ncoap.application.client.Token} to identify the observation to be
+     * @param token the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} to identify the observation to be
      *              stopped
      */
-    public ObservationCancelledEvent(InetSocketAddress remoteEndpoint, Token token) {
+    public ObservationCancelledEvent(InetSocketAddress remoteEndpoint, Token token, Reason reason) {
         this.remoteEndpoint = remoteEndpoint;
         this.token = token;
+        this.reason = reason;
     }
 
 
@@ -64,10 +86,14 @@ public class ObservationCancelledEvent {
 
 
     /**
-     * Returns the {@link de.uniluebeck.itm.ncoap.application.client.Token} to identify the observation to be stopped
-     * @return the {@link de.uniluebeck.itm.ncoap.application.client.Token} to identify the observation to be stopped
+     * Returns the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} to identify the observation to be stopped
+     * @return the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} to identify the observation to be stopped
      */
     public Token getToken() {
         return token;
+    }
+
+    public String getReason() {
+        return reason.getReason();
     }
 }

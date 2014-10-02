@@ -24,7 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.codec;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -35,24 +35,24 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 /**
- * A {@link CoapMessageDecoder} de-serializes incoming messages. Please note the following:
+ * A {@link CoapMessageDecoder} de-serializes inbound messages. Please note the following:
  * <ul>
  *     <li>
- *          If the incoming message is a {@link CoapResponse} then malformed or unknown options are silently
+ *          If the inbound message is a {@link CoapResponse} then malformed or unknown options are silently
  *          ignored and the {@link CoapResponse} is further processed without these options.
  *     </li>
  *     <li>
- *          If the incoming message is a {@link CoapRequest}, then malformed or unsupported, i.e. unknown
+ *          If the inbound message is a {@link CoapRequest}, then malformed or unsupported, i.e. unknown
  *          non-critical options are silently ignored but critical options lead to an immediate
  *          {@link CoapResponse} with {@link MessageCode.Name#BAD_OPTION_402} being sent to the remote CoAP endpoints.
  *     </li>
  *     <li>
- *          Malformed incoming {@link CoapMessage}s with malformed header, e.g. a TKL field that does not correspond to
+ *          Malformed inbound {@link CoapMessage}s with malformed header, e.g. a TKL field that does not correspond to
  *          the actual tokens length, lead to an immediate {@link CoapMessage} with {@link MessageType.Name#RST} being
  *          sent to the remote CoAP endpoints.
  *     </li>
  *     <li>
- *         For incoming {@link CoapMessage}s with {@link MessageCode.Name#EMPTY} only the header, i.e. the first 4
+ *         For inbound {@link CoapMessage}s with {@link MessageCode.Name#EMPTY} only the header, i.e. the first 4
  *         bytes are decoded and further processed. Any following bytes contained in the same encoded message are
  *         ignored.
  *     </li>
@@ -276,7 +276,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
                 //Malformed options in responses are silently ignored...
                 if(MessageCode.isResponse(coapMessage.getMessageCode()))
-                    log.warn("Silently ignore malformed option no. {} in incoming response.", actualOptionNumber);
+                    log.warn("Silently ignore malformed option no. {} in inbound response.", actualOptionNumber);
                 
                 //Critical malformed options in requests cause an exception
                 else if(OptionValue.isCritical(actualOptionNumber))
@@ -284,7 +284,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 
                 //Not critical malformed options in requests are silently ignored... 
                 else
-                    log.warn("Silently ignore elective option no. {} in incoming request.", actualOptionNumber);
+                    log.warn("Silently ignore elective option no. {} in inbound request.", actualOptionNumber);
                 
 
             }
@@ -312,7 +312,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             if (ex.getMessageID() != CoapMessage.UNDEFINED_MESSAGE_ID)
                 writeReset(ctx, ex.getMessageID(), ex.getRemoteEndpoint());
             else
-                log.warn("Ignore incoming message with malformed header...");
+                log.warn("Ignore inbound message with malformed header...");
         }
 
         else if(cause instanceof OptionCodecException){

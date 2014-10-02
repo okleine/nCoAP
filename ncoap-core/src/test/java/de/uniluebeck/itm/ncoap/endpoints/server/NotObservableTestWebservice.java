@@ -22,6 +22,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.endpoints.server;
 
 import com.google.common.util.concurrent.SettableFuture;
@@ -39,12 +40,11 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.Assert.fail;
 
 /**
-* Simple implementation of {@link NotObservableWebservice} to handle incoming {@link CoapRequest}s.
+* Simple implementation of {@link NotObservableWebservice} to handle inbound {@link CoapRequest}s.
 *
 * @author Oliver Kleine
 */
@@ -66,7 +66,7 @@ public class NotObservableTestWebservice extends NotObservableWebservice<String>
      * @param path the path of this {@link NotObservableWebservice} URI
      * @param initialStatus the initial status of this {@link NotObservableWebservice}
      * @param lifetimeSeconds the lifetime of the initial status in seconds
-     * @param pretendedProcessingTimeForRequests the time to delay the processing of incoming {@link CoapRequest}s (to
+     * @param pretendedProcessingTimeForRequests the time to delay the processing of inbound {@link CoapRequest}s (to
      *                                           simulate long processing time)
      */
     public NotObservableTestWebservice(String path, String initialStatus, long lifetimeSeconds,
@@ -112,7 +112,7 @@ public class NotObservableTestWebservice extends NotObservableWebservice<String>
 
         log.info("Incoming request for resource " + getPath());
 
-        //Delay the incoming requests
+        //Delay the inbound requests
         if(this.pretendedProcessingTimeForRequests > 0)
             delay();
 

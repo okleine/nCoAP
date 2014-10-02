@@ -25,7 +25,7 @@
 
 package de.uniluebeck.itm.ncoap.communication.codec;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 
 import java.net.InetSocketAddress;
 import de.uniluebeck.itm.ncoap.message.options.OptionValue;

@@ -26,10 +26,11 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uniluebeck.itm.ncoap.application.AbstractCoapChannelPipelineFactory;
-import de.uniluebeck.itm.ncoap.application.ApplicationShutdownEvent;
-import de.uniluebeck.itm.ncoap.communication.reliability.incoming.IncomingMessageReliabilityHandler;
-import de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.TokenFactory;
+import de.uniluebeck.itm.ncoap.communication.events.ApplicationShutdownEvent;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.OutboundMessageWrapper;
+import de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.*;
@@ -49,10 +50,10 @@ import java.util.concurrent.TimeUnit;
  * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapMessage}s to a (remote)
  * server or proxy.
  * 
- * With {@link #sendCoapRequest(CoapRequest, CoapClientCallback, InetSocketAddress)} it e.g. provides an
+ * With {@link #sendCoapRequest(CoapRequest, de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback, InetSocketAddress)} it e.g. provides an
  * easy-to-use method to write CoAP requests to a server.
  * 
- * Furthermore, with {@link #sendCoapPing(CoapClientCallback, java.net.InetSocketAddress)} it provides a method to test
+ * Furthermore, with {@link #sendCoapPing(de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback, java.net.InetSocketAddress)} it provides a method to test
  * if a remote CoAP endpoint (i.e. the CoAP application and not only the host(!)) is alive.
  * 
  * @author Oliver Kleine
@@ -77,7 +78,7 @@ public class CoapClientApplication {
      * @param numberOfThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
      *                        if the given number is smaller then 4, the application will use 4 threads.
      *                        
-     * @param maxTokenLength the maximum length of {@link Token}s to be created by the {@link TokenFactory}. The minimum
+     * @param maxTokenLength the maximum length of {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s to be created by the {@link TokenFactory}. The minimum
      *                       length is <code>0</code>, the maximum length (and default value) is <code>8</code>. This
      *                       can be used to limit the amount of parallel requests (see {@link TokenFactory} for
      *                       details).
@@ -120,25 +121,12 @@ public class CoapClientApplication {
         //Create datagram channel
         this.channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(port));
 
-        //Set the ChannelHandlerContext for the outgoing reliability handler
-        OutgoingMessageReliabilityHandler outgoingMessageReliabilityHandler =
-                (OutgoingMessageReliabilityHandler) this.channel.getPipeline()
-                        .get(AbstractCoapChannelPipelineFactory.OUTGOING_MESSAGE_RELIABILITY_HANDLER);
+        //set the outbound reliability handler with its channel handler context
+        ChannelPipeline pipeline = this.channel.getPipeline();
+        String handlerName = ClientChannelPipelineFactory.OUTBOUND_RELIABILITY_HANDLER;
+        ChannelHandlerContext ctx = pipeline.getContext(handlerName);
+        ((OutboundReliabilityHandler) pipeline.get(handlerName)).setChannelHandlerContext(ctx);
 
-        outgoingMessageReliabilityHandler.setChannelHandlerContext(
-            this.channel.getPipeline()
-                    .getContext(AbstractCoapChannelPipelineFactory.OUTGOING_MESSAGE_RELIABILITY_HANDLER)
-        );
-
-        //Set the ChannelHandlerContext for the incoming reliability handler
-        IncomingMessageReliabilityHandler incomingMessageReliabilityHandler =
-                (IncomingMessageReliabilityHandler) this.channel.getPipeline()
-                        .get(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER);
-
-        incomingMessageReliabilityHandler.setChannelHandlerContext(
-                this.channel.getPipeline()
-                        .getContext(AbstractCoapChannelPipelineFactory.INCOMING_MESSAGE_RELIABILITY_HANDLER)
-        );
 
         log.info("New client channel created for address {}", this.channel.getLocalAddress());
     }
@@ -154,7 +142,7 @@ public class CoapClientApplication {
      * @param numberOfThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
      *                        if the given number is smaller then 4, the application will use 4 threads.
      *
-     * @param maxTokenLength the maximum length of {@link Token}s to be created by the {@link TokenFactory}. The minimum
+     * @param maxTokenLength the maximum length of {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s to be created by the {@link TokenFactory}. The minimum
      *                       length is <code>0</code>, the maximum length (and default value) is <code>8</code>. This
      *                       can be used to limit the amount of parallel requests (see {@link TokenFactory} for
      *                       details).
@@ -198,27 +186,26 @@ public class CoapClientApplication {
 
     /**
      * Sends a {@link CoapRequest} to the given remote endpoints, i.e. CoAP server or proxy, and registers the
-     * given {@link CoapClientCallback} to be called upon reception of a {@link CoapResponse}.
+     * given {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to be called upon reception of a {@link CoapResponse}.
      *
-     * <b>Note:</b> Override {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback
+     * <b>Note:</b> Override {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback
      * #continueObservation(java.net.InetSocketAddress, Token)} on the given callback for observations!
      *
      * @param coapRequest the {@link CoapRequest} to be sent
      *
-     * @param coapClientCallback the {@link CoapClientCallback} to process the corresponding response, resp.
+     * @param clientCallback the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to process the corresponding response, resp.
      *                              update notification (which are also instances of {@link CoapResponse}.
      *
      * @param remoteEndpoint the desired recipient of the given {@link CoapRequest}
      */
-    public void sendCoapRequest(final CoapRequest coapRequest, final CoapClientCallback coapClientCallback,
+    public void sendCoapRequest(final CoapRequest coapRequest, final ClientCallback clientCallback,
                                 final InetSocketAddress remoteEndpoint){
 
         scheduledExecutorService.schedule(new Runnable(){
 
             @Override
             public void run() {
-                OutgoingCoapMessageWrapper message =
-                        new OutgoingCoapMessageWrapper(coapRequest, coapClientCallback);
+                OutboundMessageWrapper message = new OutboundMessageWrapper(coapRequest, clientCallback);
 
                 ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
                 future.addListener(new ChannelFutureListener() {
@@ -246,8 +233,8 @@ public class CoapClientApplication {
 //
 //            @Override
 //            public void run() {
-//                ObservationCancelationEvent event = new ObservationCancelationEvent(remoteEndpoint, token, false);
-//                ChannelFuture future = Channels.write(channel, event);
+//                ObservationCancelledEvent events = new ObservationCancelledEvent(remoteEndpoint, token, false);
+//                ChannelFuture future = Channels.write(channel, events);
 //
 //                if(log.isErrorEnabled())
 //                    future.addListener(new ChannelFutureListener() {
@@ -269,49 +256,43 @@ public class CoapClientApplication {
     /**
      * Sends a CoAP PING, i.e. a {@link CoapMessage} with {@link MessageType.Name#CON} and
      * {@link MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the given
-     * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback}
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback}
      * to be called upon reception of the corresponding {@link MessageType.Name#RST} message (CoAP PONG).
      *
-     * Make sure to override {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback#
-     * processReset(de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent)}!
+     * Make sure to override {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback
+     * #processReset()}!
      *
-     * @param clientCallback the {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback} to be called
+     * @param clientCallback the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to be called
      *                       upon reception of the corresponding {@link MessageType.Name#RST} message.
      *                       <b>Note:</b> To handle the CoAP PONG, i.e. the empty RST, the method
-     *                       {@link de.uniluebeck.itm.ncoap.application.client.CoapClientCallback#processReset(
-     *                       de.uniluebeck.itm.ncoap.communication.reliability.outgoing.ResetReceptionEvent)}
-     *                       should be overridden
+     *                       {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback
+     *                       #processReset()} should be overridden
      * @param remoteEndpoint the desired recipient of the CoAP PING message
      */
-    public void sendCoapPing(final CoapClientCallback clientCallback, final InetSocketAddress remoteEndpoint){
+    public void sendCoapPing(final ClientCallback clientCallback, final InetSocketAddress remoteEndpoint){
 
-        scheduledExecutorService.schedule(new Runnable(){
+        scheduledExecutorService.submit(new Runnable() {
 
             @Override
             public void run() {
 
                 final CoapMessage coapPing = CoapMessage.createPing(CoapMessage.UNDEFINED_MESSAGE_ID);
+                OutboundMessageWrapper wrapper = new OutboundMessageWrapper(coapPing, clientCallback);
 
-                OutgoingCoapMessageWrapper message =
-                        new OutgoingCoapMessageWrapper(coapPing, clientCallback);
-
-                ChannelFuture future = Channels.write(channel, message, remoteEndpoint);
+                ChannelFuture future = Channels.write(channel, wrapper, remoteEndpoint);
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if(future.isSuccess()){
-                            log.debug("Sent to {}:{}: {}",
-                                    new Object[]{remoteEndpoint.getAddress().getHostAddress(),
-                                            remoteEndpoint.getPort(), coapPing});
-                        }
-                        else{
-                            log.error("Message could not be sent!", future.getCause());
+                        if(!future.isSuccess()) {
+                            Throwable cause = future.getCause();
+                            log.error("Error with CoAP ping!", cause);
+                            String description = cause == null ? "UNEXPECTED ERROR!" : cause.getMessage();
+                            clientCallback.processMiscellaneousError(description);
                         }
                     }
                 });
             }
-
-        }, 0, TimeUnit.MILLISECONDS);
+        });
 
     }
 

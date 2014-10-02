@@ -25,12 +25,13 @@
 package de.uniluebeck.itm.ncoap.etsi.client;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.CoapClientCallback;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -56,12 +57,12 @@ public class TD_COAP_CORE_02 {
     public static void sendRequest() throws Exception{
         LoggingConfiguration.configure();
 
-        CoapClientApplication client = ApplicationFactory.getCoapClientApplication();
+        CoapClientApplication client = ApplicationFactory.getClient();
         URI targetUri = new URI("coap", null, SERVER, -1, "/test", null, null);
         final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(SERVER), 5683);
 
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.DELETE, targetUri);
-        client.sendCoapRequest(coapRequest, new CoapClientCallback() {
+        client.sendCoapRequest(coapRequest, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 TD_COAP_CORE_02.coapResponse = coapResponse;
@@ -72,6 +73,10 @@ public class TD_COAP_CORE_02 {
         Thread.sleep(WAITING_TIME);
     }
 
+    @AfterClass
+    public static void waitSomeTime() throws Exception{
+        Thread.sleep(100);
+    }
 
     @Test
     public void testResponseCode() throws Exception {

@@ -22,37 +22,33 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.communication.observing.server;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.communication.observing.client.ResourceStatusAge;
-import de.uniluebeck.itm.ncoap.message.CoapMessage;
-import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
-import de.uniluebeck.itm.ncoap.message.options.OptionValue;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
+import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
+import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 
 import java.net.InetSocketAddress;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * {@link ObservationParams} is a wrapper class. Each instance contains all context information about a running
- * observation of an {@link Webservice}.
- *
- * @author Oliver Kleine
- */
+* {@link ObservationParams} is a wrapper class. Each instance contains all context information about a running
+* observation of an {@link Webservice}.
+*
+* @author Oliver Kleine
+*/
 public class ObservationParams {
 
     private InetSocketAddress remoteEndpoint;
     private Token token;
-    private int latestUpdateNotificationMessageID;
+    private int latestMessageID;
     private String webservicePath;
     private long contentFormat;
     private Set<byte[]> etags;
-
-    private AtomicLong notificationCount;
-
 
     /**
      * Creates a new instance of {@link ObservationParams}.
@@ -70,8 +66,7 @@ public class ObservationParams {
         this.webservicePath = webservicePath;
         this.etags = etags;
         this.contentFormat = ContentFormat.UNDEFINED;
-        this.notificationCount = new AtomicLong(0);
-        this.latestUpdateNotificationMessageID = CoapMessage.UNDEFINED_MESSAGE_ID;
+        this.latestMessageID = CoapMessage.UNDEFINED_MESSAGE_ID;
     }
 
 
@@ -97,40 +92,14 @@ public class ObservationParams {
     }
 
 
-    /**
-     * Sets the initial sequence number, the first update notification will have <code>sequenceNumber + 1</code> as
-     * sequence number
-     *
-     * @param sequenceNumber the initial sequence number
-     *
-     * @throws java.lang.IllegalArgumentException if the given sequence number is out of the allowed range
-     */
-    public void setInitialSequenceNumber(long sequenceNumber) throws IllegalArgumentException{
-        if(sequenceNumber < 0 || sequenceNumber > ResourceStatusAge.THRESHOLD){
-            throw new IllegalArgumentException(
-                "Sequence No. " + sequenceNumber + " out of range (0-" + ResourceStatusAge.THRESHOLD + ")"
-            );
-        }
-        this.notificationCount = new AtomicLong(sequenceNumber);
-    }
-
-    /**
-     * Increments the sequence number to be used as {@link OptionValue.Name#OBSERVE} for update notifications by 1 and
-     * returns the new value after incrementation.
-     *
-     * @return the new value after incrementation by 1
-     */
-    public long getNextSequenceNumber(){
-        notificationCount.compareAndSet(ResourceStatusAge.THRESHOLD, 0L);
-        return this.notificationCount.incrementAndGet();
-    }
-
 
     /**
      * Returns the number to be set as ({@link OptionValue.Name#CONTENT_FORMAT} for update notifications. This number
-     * represents the content format of the update notifications content.
+     * represents the content format of the update notifications content. If no content format is set yet the
+     * returned value is {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED}
      *
-     * @return the number to be set as ({@link OptionValue.Name#CONTENT_FORMAT} for update notifications
+     * @return the number to be set as ({@link OptionValue.Name#CONTENT_FORMAT} for update notifications or
+     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if no content format is defined, yet.
      */
     public long getContentFormat() {
         return this.contentFormat;
@@ -175,23 +144,19 @@ public class ObservationParams {
      *
      * @return the message ID of the latest update notification that was sent to the observing CoAP endpoints
      */
-    public int getLatestUpdateNotificationMessageID() {
-        return latestUpdateNotificationMessageID;
+    public int getLatestMessageID() {
+        return latestMessageID;
     }
 
 
     /**
      * Sets the message ID of the latest update notification that was sent to the observing CoAP endpoints
      *
-     * @param latestUpdateNotificationMessageID the message ID of the latest update notification that was sent to the
+     * @param latestMessageID the message ID of the latest update notification that was sent to the
      *                                          observing CoAP endpoints
      */
-    public void setLatestUpdateNotificationMessageID(int latestUpdateNotificationMessageID) {
-        this.latestUpdateNotificationMessageID = latestUpdateNotificationMessageID;
+    public void setLatestMessageID(int latestMessageID) {
+        this.latestMessageID = latestMessageID;
     }
 
-
-    public long getNotifiationCount(){
-        return this.notificationCount.get();
-    }
 }

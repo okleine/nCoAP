@@ -42,8 +42,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 
 
 /**
@@ -65,11 +64,11 @@ public class DummyEndpoint extends SimpleChannelHandler {
     private SortedMap<Long, CoapMessage> receivedCoapMessages =
             Collections.synchronizedSortedMap(new TreeMap<Long, CoapMessage>());
 
+    private ScheduledExecutorService executor;
 
     public DummyEndpoint() {
         //Create thread pool factory (for thread-naming)
-        ThreadFactory threadFactory =
-                new ThreadFactoryBuilder().setNameFormat("CoAP Endpoint I/O worker #%d").build();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Dummy Endpoint Thread#%d").build();
 
         //This is to suppress renaming of the threads by the netty framework
         ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
@@ -80,11 +79,16 @@ public class DummyEndpoint extends SimpleChannelHandler {
         });
 
         //Create the thread-pool using the previously defined factory
-        ScheduledThreadPoolExecutor executorService = new ScheduledThreadPoolExecutor(8, threadFactory);
+        this.executor = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
+                threadFactory, new RejectedExecutionHandler() {
+            @Override
+            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                log.error("Execution rejected!");
+            }
+        });
 
         //Create datagram datagramChannel to receive and send messages
-        ChannelFactory channelFactory =
-                new NioDatagramChannelFactory(executorService);
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor);
 
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
@@ -144,11 +148,33 @@ public class DummyEndpoint extends SimpleChannelHandler {
     }
 
 
-    public void writeMessage(CoapMessage coapMessage, InetSocketAddress remoteAddress) {
-        log.info("Write " + coapMessage);
-        Channels.write(channel, coapMessage, remoteAddress);
+    public void writeMessage(final CoapMessage coapMessage, final InetSocketAddress remoteAddress) {
+        try{
+            this.executor.schedule(new TransmissionTask(coapMessage, remoteAddress), 0, TimeUnit.MILLISECONDS);
+        }
+        catch(Exception ex){
+            log.error("EXCEPTION!", ex);
+        }
     }
 
+    private class TransmissionTask implements Runnable{
+
+        private CoapMessage coapMessage;
+        private InetSocketAddress remoteEndpoint;
+
+
+        private TransmissionTask(CoapMessage coapMessage, InetSocketAddress remoteEndpoint) {
+            this.coapMessage = coapMessage;
+            this.remoteEndpoint = remoteEndpoint;
+        }
+
+
+        @Override
+        public void run() {
+            log.info("Send CoAP message: {}", coapMessage);
+            Channels.write(channel, coapMessage, remoteEndpoint);
+        }
+    }
 
     /**
      * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and

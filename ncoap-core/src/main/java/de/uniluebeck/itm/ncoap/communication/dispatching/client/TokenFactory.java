@@ -44,7 +44,7 @@ import java.util.HashMap;
 import java.util.TreeSet;
 
 /**
- * The TokenFactory generates tokens to match incoming responses with open requests and enable the
+ * The TokenFactory generates tokens to match inbound responses with open requests and enable the
  * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallbackManager} to invoke the correct callback method.
  *
  * The CoAP specification makes no assumptions how to interpret the bytes returned by {@link Token#getBytes()()}, i.e.
@@ -88,7 +88,7 @@ public class TokenFactory {
 
 
     /**
-     * Returns a {@link Token} to be used with an outgoing {@link CoapRequest} to relate incoming
+     * Returns a {@link Token} to be used with an outgoing {@link CoapRequest} to relate inbound
      * {@link CoapResponse}(s) with that request. This {@link Token} is ensured to be unique in combination with the
      * given {@link InetSocketAddress}, i.e. as long as there are any other ongoing communications with the same
      * CoAP server, the returned {@link ListenableFuture<Token>} will be set with a {@link Token} that is different

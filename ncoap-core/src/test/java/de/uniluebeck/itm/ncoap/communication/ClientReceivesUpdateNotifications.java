@@ -26,8 +26,7 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
-import de.uniluebeck.itm.ncoap.application.client.Token;
-import de.uniluebeck.itm.ncoap.endpoints.client.CoapClientTestCallback;
+import de.uniluebeck.itm.ncoap.endpoints.client.ClientTestCallback;
 import de.uniluebeck.itm.ncoap.endpoints.server.ObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -54,7 +53,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
     private static final String PATH_TO_SERVICE = "/observable";
 
     private static CoapClientApplication client;
-    private static CoapClientTestCallback clientCallback;
+    private static ClientTestCallback clientCallback;
 
     private static CoapServerApplication server;
     private static ObservableTestWebservice service;
@@ -67,18 +66,21 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uniluebeck.itm.ncoap.communication.ClientReceivesUpdateNotifications$SpecificClientCallback")
                 .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.WebserviceManager")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager")
                 .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe.server.WebserviceObservationHandler")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler")
                 .setLevel(Level.INFO);
         Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice")
                 .setLevel(Level.DEBUG);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.client.ClientObservationHandler")
+                .setLevel(Level.INFO);
     }
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServerApplication(0);
-        service = new ObservableTestWebservice(PATH_TO_SERVICE, 1, 0);
+        server = new CoapServerApplication();
+
+        service = new ObservableTestWebservice(PATH_TO_SERVICE, 1, 0, server.getExecutor());
         server.registerService(service);
 
         client = new CoapClientApplication();
@@ -86,7 +88,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
         request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
-        request.setObserve(true);
+        request.setObserve(0);
     }
 
     @Override
@@ -197,7 +199,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 //    }
 
 
-    private class SpecificClientCallback extends CoapClientTestCallback{
+    private class SpecificClientCallback extends ClientTestCallback {
 
         private Logger log = Logger.getLogger(SpecificClientCallback.class.getName());
 

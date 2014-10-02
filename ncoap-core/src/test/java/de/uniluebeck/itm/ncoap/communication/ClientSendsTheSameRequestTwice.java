@@ -25,9 +25,9 @@
 
 package de.uniluebeck.itm.ncoap.communication;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
+import de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint;
 import de.uniluebeck.itm.ncoap.endpoints.server.NotObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -39,7 +39,6 @@ import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Iterator;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -57,7 +56,7 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
 
     private static CoapServerApplication server;
     private InetSocketAddress serverSocket;
-    private static CoapTestEndpoint endpoint;
+    private static DummyEndpoint endpoint;
 
     private static CoapRequest coapRequest1;
     private static CoapRequest coapRequest2;
@@ -67,9 +66,9 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
     @Override
     public void setupComponents() throws Exception {
         server = new CoapServerApplication();
-        server.registerService(new NotObservableTestWebservice(PATH, "Status 1", 0, 4000));
+        server.registerService(new NotObservableTestWebservice(PATH, "Status 1", 0, 6000));
 
-        endpoint = new CoapTestEndpoint();
+        endpoint = new DummyEndpoint();
 
         serverSocket = new InetSocketAddress("localhost", server.getPort());
 
@@ -98,13 +97,20 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
         Thread.sleep(3000);
 
         endpoint.writeMessage(coapRequest2, serverSocket);
-        Thread.sleep(8000);
+        Thread.sleep(3500);
+
+        CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(endpoint.getReceivedMessage(2).getMessageID());
+        endpoint.writeMessage(emptyACK, serverSocket);
+
+        Thread.sleep(2000);
     }
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints").setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability").setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability")
+                .setLevel(Level.INFO);
     }
 
     @Test
@@ -119,9 +125,8 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
     }
 
     @Test
-    public void testFirstMessage(){
-        Iterator<Long> timestamps = endpoint.getReceivedCoapMessages().keySet().iterator();
-        CoapMessage message1 = endpoint.getReceivedCoapMessages().get(timestamps.next());
+    public void testFirstMessageisEmptyAck(){
+        CoapMessage message1 = endpoint.getReceivedMessage(0);
 
         assertEquals("First message is not empty!", MessageCode.Name.EMPTY, message1.getMessageCodeName());
         assertEquals("First message has wrong ID!", messageID, message1.getMessageID());
@@ -129,11 +134,8 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
     }
 
     @Test
-    public void testSecondMessage(){
-        Iterator<Long> timestamps = endpoint.getReceivedCoapMessages().keySet().iterator();
-        timestamps.next();
-
-        CoapMessage message2 = endpoint.getReceivedCoapMessages().get(timestamps.next());
+    public void testSecondMessageisEmptyAck(){
+        CoapMessage message2 = endpoint.getReceivedMessage(1);
 
         assertEquals("Second message is not empty!", MessageCode.Name.EMPTY, message2.getMessageCodeName());
         assertEquals("Second message has wrong ID!", messageID, message2.getMessageID());
@@ -142,16 +144,12 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
 
     @Test
     public void testThirdMessage(){
-        Iterator<Long> timestamps = endpoint.getReceivedCoapMessages().keySet().iterator();
-        timestamps.next();
-        timestamps.next();
-
-        CoapMessage message3 = endpoint.getReceivedCoapMessages().get(timestamps.next());
+        CoapMessage message3 = endpoint.getReceivedMessage(2);
 
         assertEquals("Third message has wrong message code!", MessageCode.Name.CONTENT_205,
                 message3.getMessageCodeName());
 
-        assertEquals("Third message has wrong ID!", messageID, message3.getMessageID());
+        assertEquals("3rd message has wrong message type!", MessageType.Name.CON, message3.getMessageTypeName());
     }
 
 

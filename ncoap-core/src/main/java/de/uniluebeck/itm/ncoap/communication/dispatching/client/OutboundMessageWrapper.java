@@ -46,7 +46,7 @@ public class OutboundMessageWrapper {
      *
      * @param coapMessage the {@link de.uniluebeck.itm.ncoap.message.CoapMessage} to be sent
      * @param responseProcessor the {@link ClientCallback} to be
-     *                          called by the framework for incoming responses and other events
+     *                          called by the framework for inbound responses and other events
      */
     public OutboundMessageWrapper(CoapMessage coapMessage, ClientCallback responseProcessor){
 

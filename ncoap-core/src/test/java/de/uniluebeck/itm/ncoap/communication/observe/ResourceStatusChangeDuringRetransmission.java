@@ -22,10 +22,11 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.communication.observe;
 
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint;
 import de.uniluebeck.itm.ncoap.endpoints.server.ObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.communication.AbstractCoapCommunicationTest;
 import de.uniluebeck.itm.ncoap.message.*;
@@ -35,20 +36,19 @@ import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.SortedMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by olli on 18.03.14.
- */
+* Created by olli on 18.03.14.
+*/
 public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommunicationTest{
 
     private static CoapServerApplication server;
     private static ObservableTestWebservice service;
-    private static CoapTestEndpoint clientEndpoint;
+    private static DummyEndpoint clientEndpoint;
 
     private static CoapRequest coapRequest;
     private static SortedMap<Long, CoapMessage> receivedMessages;
@@ -56,15 +56,15 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
     @Override
     public void setupComponents() throws Exception {
         server = new CoapServerApplication();
-        service = new ObservableTestWebservice("/observable", 1, 0);
+        service = new ObservableTestWebservice("/observable", 1, 0, server.getExecutor());
         server.registerService(service);
 
-        clientEndpoint = new CoapTestEndpoint();
+        clientEndpoint = new DummyEndpoint();
 
         URI targetUri = new URI("coap", null, "localhost", -1, "/observable", null, null);
 
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
-        coapRequest.setObserve(true);
+        coapRequest.setObserve(0);
     }
 
     /**
@@ -129,13 +129,13 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.outgoing")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing")
                 .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe.server.WebserviceObservationHandler")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler")
                 .setLevel(Level.INFO);
         Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice")
                 .setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint")
                 .setLevel(Level.INFO);
     }
 
@@ -159,10 +159,10 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
 
             String message = String.format(
                     "OBS value (%d) of notification #%d is not larger than OBS value (%d) of  notification #%d!",
-                    actual.getObservationSequenceNumber(), (i+1), previous.getObservationSequenceNumber(), i
+                    actual.getObserve(), (i+1), previous.getObserve(), i
             );
 
-            assertTrue(message, actual.getObservationSequenceNumber() > previous.getObservationSequenceNumber());
+            assertTrue(message, actual.getObserve() > previous.getObserve());
 
         }
     }

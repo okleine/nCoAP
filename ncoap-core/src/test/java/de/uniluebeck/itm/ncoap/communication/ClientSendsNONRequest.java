@@ -26,23 +26,20 @@
 package de.uniluebeck.itm.ncoap.communication;
 
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint;
 import de.uniluebeck.itm.ncoap.endpoints.server.NotObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.message.*;
-import de.uniluebeck.itm.ncoap.message.MessageCode;
-
-import java.net.InetSocketAddress;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.SortedMap;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 
 /**
 * Tests to verify the server functionality related to piggy-backed responses.
@@ -56,13 +53,13 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
     private static String PATH_TO_SERVICE = "/could/be/any/path";
     private static String PAYLOAD = "some arbitrary payload";
 
-    private static CoapTestEndpoint endpoint;
+    private static DummyEndpoint endpoint;
     private static CoapRequest request;
 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint")
                 .setLevel(Level.INFO);
     }
 
@@ -72,7 +69,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
         service = new NotObservableTestWebservice(PATH_TO_SERVICE, PAYLOAD, 0, 0);
         server.registerService(service);
 
-        endpoint = new CoapTestEndpoint();
+        endpoint = new DummyEndpoint();
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
         request = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri);
         request.setMessageID(54321);

@@ -22,10 +22,14 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 /**
- * Created by olli on 17.03.14.
+ * Instances of {@link de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus} wrap a
+ * representation of the actual status with meta data on that representations.
+ *
+ * @author Oliver Kleine
  */
 public class WrappedResourceStatus {
 
@@ -34,6 +38,13 @@ public class WrappedResourceStatus {
     private byte[] etag;
     private long maxAge;
 
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus}
+     * @param content the serialized resource status
+     * @param contentFormat the number representing the serialization format
+     * @param etag the ETAG value of the actual status
+     * @param maxAge the number of seconds this status is allowed to be cached
+     */
     public WrappedResourceStatus(byte[] content, long contentFormat, byte[] etag, long maxAge) {
         this.content = content;
         this.contentFormat = contentFormat;
@@ -41,19 +52,35 @@ public class WrappedResourceStatus {
         this.maxAge = maxAge;
     }
 
-
+    /**
+     * Returns the serialized representation, i.e. the resource status
+     * @return the serialized representation, i.e. the resource status
+     */
     public byte[] getContent() {
         return content;
     }
 
+    /**
+     * Returns the number referring to the format of the serialized representation returned by {@link #getContent()}.
+     *
+     * @return the number referring to the format of the serialized representation
+     */
     public long getContentFormat() {
         return contentFormat;
     }
 
+    /**
+     * Returns the ETAG value of the serialized representation returned by {@link #getContent()}.
+     * @return the ETAG value of the serialized representation
+     */
     public byte[] getEtag() {
         return etag;
     }
 
+    /**
+     * Returns the number of seconds a cache is allowed to cache this status
+     * @return the number of seconds a cache is allowed to cache this status
+     */
     public long getMaxAge() {
         return maxAge;
     }

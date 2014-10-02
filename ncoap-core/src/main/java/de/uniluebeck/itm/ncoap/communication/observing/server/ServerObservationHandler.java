@@ -22,6 +22,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.communication.observing.server;
 
 import com.google.common.collect.HashBasedTable;
@@ -32,10 +33,11 @@ import com.google.common.collect.Table;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
+import de.uniluebeck.itm.ncoap.communication.events.MessageIDAssignedEvent;
 import de.uniluebeck.itm.ncoap.communication.events.ResetReceivedEvent;
 import de.uniluebeck.itm.ncoap.communication.events.server.ObservableWebserviceDeregistrationEvent;
 import de.uniluebeck.itm.ncoap.communication.events.server.ObservableWebserviceRegistrationEvent;
-import de.uniluebeck.itm.ncoap.communication.events.ConversationTimeoutEvent;
+import de.uniluebeck.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
@@ -49,31 +51,39 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * The {@link ServerObservationHandler} is responsible to inform observers whenever the status of an
- * {@link ObservableWebservice} changes. It itself registers as {@link Observer} on all instances of
- * {@link ObservableWebservice} instances running on this {@link CoapServerApplication} instance.
- *
- * @author Oliver Kleine
- */
+* The {@link ServerObservationHandler} is responsible to inform observations1 whenever the status of an
+* {@link ObservableWebservice} changes. It itself registers as {@link Observer} on all instances of
+* {@link ObservableWebservice} instances running on this {@link CoapServerApplication} instance.
+*
+* @author Oliver Kleine
+*/
 public class ServerObservationHandler extends SimpleChannelHandler implements Observer {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private final Object monitor = new Object();
-    private Table<InetSocketAddress, Token, ObservationParams> observationsPerObserver;
-    private Multimap<String, ObservationParams> observationsPerService;
+    private Table<InetSocketAddress, Token, ObservationParams> observations1;
+    private Multimap<String, ObservationParams> observations2;
+    private ReentrantReadWriteLock lock;
+    private ScheduledExecutorService executor;
 
     private ChannelHandlerContext ctx;
-
+    private Map<String, ScheduledFuture> updateTransmissionFutures;
 
     /**
      * Creates a new instance of {@link ServerObservationHandler}.
      */
-    public ServerObservationHandler(){
-        this.observationsPerObserver = HashBasedTable.create();
-        this.observationsPerService = HashMultimap.create();
+    public ServerObservationHandler(ScheduledExecutorService executor){
+        this.executor = executor;
+        this.observations1 = HashBasedTable.create();
+        this.observations2 = HashMultimap.create();
+        this.lock = new ReentrantReadWriteLock();
+        this.updateTransmissionFutures = Collections.synchronizedMap(new HashMap<String, ScheduledFuture>());
     }
 
 
@@ -102,32 +112,83 @@ public class ServerObservationHandler extends SimpleChannelHandler implements Ob
                 ctx.sendUpstream(me);
         }
 
+        else if(me.getMessage() instanceof MessageIDAssignedEvent){
+            handleMessageIDAssignedEvent(ctx, me);
+        }
+
         else if(me.getMessage() instanceof ResetReceivedEvent)
             handleInternalResetReceivedMessage(ctx, me);
 
-        else if(me.getMessage() instanceof ConversationTimeoutEvent)
-            handleInternalRetransmissionTimeoutMessage(ctx, me);
+        else if(me.getMessage() instanceof TransmissionTimeoutEvent)
+            handleTransmissionTimeoutEvent(ctx, me);
 
         else
             ctx.sendUpstream(me);
+    }
+
+    private void handleMessageIDAssignedEvent(ChannelHandlerContext ctx, MessageEvent me) {
+        MessageIDAssignedEvent event = (MessageIDAssignedEvent) me.getMessage();
+        InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
+        Token token = event.getToken();
+
+        try{
+            lock.readLock().lock();
+            if(!observations1.contains(remoteEndpoint, token)){
+                ctx.sendUpstream(me);
+                return;
+            }
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+
+        try{
+            lock.writeLock().lock();
+            if(observations1.contains(remoteEndpoint, token)){
+                ObservationParams obsParams = observations1.get(remoteEndpoint, token);
+                obsParams.setLatestMessageID(event.getMessageID());
+                ctx.sendUpstream(me);
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+
+
     }
 
 
     private void handleIncomingObserverDeregistrationRequest(ChannelHandlerContext ctx, MessageEvent me){
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
         CoapRequest coapRequest = (CoapRequest) me.getMessage();
+        Token token = coapRequest.getToken();
 
-        synchronized (monitor){
-            ObservationParams params = observationsPerObserver.remove(remoteEndpoint, coapRequest.getToken());
+        try{
+            lock.readLock().lock();
+            if(!observations1.contains(remoteEndpoint, token)){
+                ctx.sendUpstream(me);
+                return;
+            }
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+
+        try{
+            lock.writeLock().lock();
+
+            ObservationParams params = observations1.remove(remoteEndpoint, coapRequest.getToken());
             if(!(params == null)){
-                observationsPerService.remove(params.getWebservicePath(), params);
+                observations2.remove(params.getWebservicePath(), params);
                 log.info("Removed {} as observer for \"{}\" because of de-registration request!",
                         params.getRemoteEndpoint(), params.getWebservicePath());
             }
 
+            ctx.sendUpstream(me);
         }
-
-        ctx.sendUpstream(me);
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     private void handleIncomingObserverRegistrationRequest(ChannelHandlerContext ctx, MessageEvent me) {
@@ -135,37 +196,64 @@ public class ServerObservationHandler extends SimpleChannelHandler implements Ob
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
         CoapRequest coapRequest = (CoapRequest) me.getMessage();
 
-
         ObservationParams params = new ObservationParams(remoteEndpoint, coapRequest.getToken(),
                 coapRequest.getUriPath(), coapRequest.getEtags());
 
+        String webservicePath = coapRequest.getUriPath();
+        Token token = coapRequest.getToken();
+
         //a new observation request with the same token replaces an already running observation
-        synchronized (monitor){
-            ObservationParams oldParams = observationsPerObserver.put(remoteEndpoint, coapRequest.getToken(), params);
+        try{
+            lock.writeLock().lock();
 
-            if(oldParams != null)
-                observationsPerService.remove(coapRequest.getUriPath(), oldParams);
+            ObservationParams oldParams = observations1.put(remoteEndpoint, token, params);
+            if(oldParams != null){
+                observations2.remove(webservicePath, oldParams);
+            }
+            observations2.put(webservicePath, params);
 
-            observationsPerService.put(coapRequest.getUriPath(), params);
+            log.info("Registered new observer for {} (remote endpoint: {}, token: {})",
+                    new Object[]{webservicePath, remoteEndpoint, token});
+
+            ctx.sendUpstream(me);
         }
-
-        ctx.sendUpstream(me);
+        finally{
+            lock.writeLock().unlock();
+        }
     }
 
 
-    private void handleInternalRetransmissionTimeoutMessage(ChannelHandlerContext ctx, MessageEvent me) {
+    private void handleTransmissionTimeoutEvent(ChannelHandlerContext ctx, MessageEvent me) {
 
-        ConversationTimeoutEvent timeoutMessage = (ConversationTimeoutEvent) me.getMessage();
+        TransmissionTimeoutEvent event = (TransmissionTimeoutEvent) me.getMessage();
+        InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
+        Token token = event.getToken();
 
-        if(observationsPerObserver.contains(timeoutMessage.getRemoteEndpoint(), timeoutMessage.getToken())){
-            ObservationParams params = removeObserver(timeoutMessage.getRemoteEndpoint(), timeoutMessage.getToken());
-
-            if(params != null)
-                log.warn("Stopped observation of service {} by {} with token {} due to retransmission timeout.",
-                        new Object[]{params.getWebservicePath(), params.getRemoteEndpoint(), params.getToken()});
+        try{
+            lock.readLock().lock();
+            ObservationParams params = this.observations1.get(remoteEndpoint, token);
+            if(params == null || params.getLatestMessageID() != event.getMessageID()){
+                ctx.sendDownstream(me);
+                return;
+            }
+        }
+        finally {
+            lock.readLock().unlock();
         }
 
-        ctx.sendUpstream(me);
+        try{
+            lock.writeLock().lock();
+            ObservationParams params = removeObserver(event.getRemoteEndpoint(), event.getToken());
+            if(params != null){
+                log.warn("Stopped observation of service {} by {} with token {} due to retransmission timeout.",
+                        new Object[]{params.getWebservicePath(), params.getRemoteEndpoint(), params.getToken()});
+            }
+            ctx.sendUpstream(me);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+
     }
 
 
@@ -173,29 +261,59 @@ public class ServerObservationHandler extends SimpleChannelHandler implements Ob
 
         ResetReceivedEvent resetMessage = (ResetReceivedEvent) me.getMessage();
 
-        if(observationsPerObserver.contains(resetMessage.getRemoteEndpoint(), resetMessage.getToken())){
-            ObservationParams params = removeObserver(resetMessage.getRemoteEndpoint(), resetMessage.getToken());
-
-            if(params != null)
-                log.warn("Stopped observation of service {} by {} with token {} due to RST message.",
-                        new Object[]{params.getWebservicePath(), params.getRemoteEndpoint(), params.getToken()});
+        try{
+            lock.readLock().lock();
+            if(!observations1.contains(resetMessage.getRemoteEndpoint(), resetMessage.getToken())){
+                ctx.sendUpstream(me);
+                return;
+            }
+        }
+        finally {
+            lock.readLock().unlock();
         }
 
-        ctx.sendUpstream(me);
+        try{
+            lock.writeLock().lock();
+            ObservationParams params = removeObserver(resetMessage.getRemoteEndpoint(), resetMessage.getToken());
+
+            if(params != null){
+                log.warn("Stopped observation of service {} by {} with token {} due to RST message.",
+                        new Object[]{params.getWebservicePath(), params.getRemoteEndpoint(), params.getToken()});
+            }
+
+            ctx.sendUpstream(me);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
 
     private ObservationParams removeObserver(InetSocketAddress remoteEndpoint, Token token){
-        ObservationParams params = null;
-
-        synchronized (monitor){
-            if(observationsPerObserver.contains(remoteEndpoint, token)){
-                params = observationsPerObserver.get(remoteEndpoint, token);
-                observationsPerService.remove(params.getWebservicePath(), params);
+        try{
+            lock.readLock().lock();
+            if(!observations1.contains(remoteEndpoint, token)){
+                return null;
             }
         }
+        finally{
+            lock.readLock().unlock();
+        }
 
-        return params;
+        try{
+            lock.writeLock().lock();
+            if(observations1.contains(remoteEndpoint, token)){
+                ObservationParams params = observations1.get(remoteEndpoint, token);
+                observations2.remove(params.getWebservicePath(), params);
+                return params;
+            }
+            else{
+                return null;
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
 
@@ -218,12 +336,12 @@ public class ServerObservationHandler extends SimpleChannelHandler implements Ob
 
     private void handleInternalServiceRemovedFromServerMessage(ChannelHandlerContext ctx, MessageEvent me) {
 
-        ObservableWebserviceDeregistrationEvent internalMessage =
-                (ObservableWebserviceDeregistrationEvent) me.getMessage();
+        ObservableWebserviceDeregistrationEvent event = (ObservableWebserviceDeregistrationEvent) me.getMessage();
 
-        synchronized (monitor){
+        try{
+            lock.writeLock().lock();
 
-            Collection<ObservationParams> tmp = observationsPerService.get(internalMessage.getServicePath());
+            Collection<ObservationParams> tmp = observations2.get(event.getServicePath());
             ObservationParams[] observations = tmp.toArray(new ObservationParams[tmp.size()]);
 
             for(ObservationParams params : observations){
@@ -234,6 +352,9 @@ public class ServerObservationHandler extends SimpleChannelHandler implements Ob
 
                 Channels.write(ctx.getChannel(), coapResponse, params.getRemoteEndpoint());
             }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -252,105 +373,135 @@ public class ServerObservationHandler extends SimpleChannelHandler implements Ob
         InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
         CoapResponse coapResponse = (CoapResponse) me.getMessage();
 
-        if(observationsPerObserver.contains(remoteEndpoint, coapResponse.getToken())){
-            synchronized (monitor){
+        try{
+            lock.readLock().lock();
+            if(!observations1.contains(remoteEndpoint, coapResponse.getToken())){
+                ctx.sendDownstream(me);
+                return;
+            }
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+
+        try{
+            lock.writeLock().lock();
+            if(observations1.contains(remoteEndpoint, coapResponse.getToken())){
+                Token token = coapResponse.getToken();
                 if(!coapResponse.isUpdateNotification()){
-                    ObservationParams params = observationsPerObserver.remove(remoteEndpoint, coapResponse.getToken());
-                    observationsPerService.remove(params.getWebservicePath(), params);
+                    ObservationParams params = observations1.remove(remoteEndpoint, token);
+                    observations2.remove(params.getWebservicePath(), params);
                 }
 
                 else{
-                    ObservationParams params = observationsPerObserver.get(remoteEndpoint, coapResponse.getToken());
-                    if(params.getNotifiationCount() == 0){
-                        params.setInitialSequenceNumber(coapResponse.getObservationSequenceNumber());
-                    }
-                    if(params.getLatestUpdateNotificationMessageID() != coapResponse.getMessageID()){
-                        log.debug("Set latest message ID for observation to {}", coapResponse.getMessageID());
-                        params.setLatestUpdateNotificationMessageID(coapResponse.getMessageID());
-                    }
-
-                    if(params.getContentFormat() == ContentFormat.UNDEFINED)
-                        params.setContentFormat(coapResponse.getContentFormat());
-
-                    coapResponse.setObserveOption(params.getNextSequenceNumber());
+                    observations1.get(remoteEndpoint, token).setContentFormat(coapResponse.getContentFormat());
+                    coapResponse.setObserve();
                 }
+
+                ctx.sendDownstream(me);
             }
         }
-
-        ctx.sendDownstream(me);
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
 
     @Override
-    public void update(Observable observable, Object arg) {
-        ObservableWebservice webservice = (ObservableWebservice) observable;
+    public void update(Observable observable, final Object arg) {
+        final ObservableWebservice webservice = (ObservableWebservice) observable;
+        String path = webservice.getPath();
 
-        Map<Long, WrappedResourceStatus> statusCache = new HashMap<>();
-
-        Collection<ObservationParams> tmp = observationsPerService.get(webservice.getPath());
-        ObservationParams[] observations = tmp.toArray(new ObservationParams[tmp.size()]);
-
-        for(final ObservationParams params : observations){
-            if(params.getNotifiationCount() == 0){
-                continue;
-            }
-
-            long contentFormat = params.getContentFormat();
-
-            if(!statusCache.containsKey(contentFormat))
-                statusCache.put(contentFormat, webservice.getWrappedResourceStatus(contentFormat));
-
-            WrappedResourceStatus wrappedResourceStatus = statusCache.get(contentFormat);
-
-            //Determine the message type for the update notification
-            MessageType.Name messageType;
-            if(arg != null && arg instanceof MessageType.Name)
-                messageType = (MessageType.Name) arg;
-            else
-                messageType =
-                        webservice.getMessageTypeForUpdateNotification(params.getRemoteEndpoint(), params.getToken());
-
-            //Determine the message code for the update notification (depends on the ETAG options sent with the
-            //request that started the observation
-            final CoapResponse updateNotification;
-            if(params.getEtags().contains(wrappedResourceStatus.getEtag())){
-                updateNotification = new CoapResponse(messageType, MessageCode.Name.VALID_203);
-            }
-
-            else{
-                updateNotification = new CoapResponse(messageType, MessageCode.Name.CONTENT_205);
-                updateNotification.setContent(wrappedResourceStatus.getContent(), contentFormat);
-            }
-
-            //Set content related options for the update notification
-            updateNotification.setMaxAge(wrappedResourceStatus.getMaxAge());
-
-            byte[] etag = wrappedResourceStatus.getEtag();
-            if(etag.length > 0)
-                updateNotification.setEtag(wrappedResourceStatus.getEtag());
-
-            updateNotification.setObserveOption(UintOptionValue.UNDEFINED);
-
-
-            updateNotification.setMessageID(params.getLatestUpdateNotificationMessageID());
-            updateNotification.setToken(params.getToken());
-
-
-            //Send the update notification
-            ChannelFuture future =
-                    Channels.write(this.ctx.getChannel(), updateNotification, params.getRemoteEndpoint());
-
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if(!future.isSuccess())
-                        log.error("Could not send update notification for {} with token {} " +
-                                "(observing \"{}\").", new Object[]{params.getRemoteEndpoint(), params.getToken(),
-                                params.getWebservicePath(), future.getCause()});
-                    else
-                        log.debug("Update notification sent to {}: {}", params.getRemoteEndpoint(), updateNotification);
-                }
-            });
+        if(updateTransmissionFutures.containsKey(path)){
+            updateTransmissionFutures.remove(path).cancel(true);
         }
+
+        ScheduledFuture future = executor.schedule(new Runnable(){
+
+            @Override
+            public void run() {
+                Map<Long, WrappedResourceStatus> statusCache = new HashMap<>();
+
+                Collection<ObservationParams> tmp = observations2.get(webservice.getPath());
+                ObservationParams[] observations = tmp.toArray(new ObservationParams[tmp.size()]);
+
+                for(final ObservationParams params : observations){
+
+                    long contentFormat = params.getContentFormat();
+                    if(contentFormat == UintOptionValue.UNDEFINED){
+                        log.warn("Undefined content format for observation (path: {}, remote endpoint: {}, token: {})",
+                                new Object[]{params.getWebservicePath(), params.getRemoteEndpoint(), params.getToken()});
+                        continue;
+                    }
+
+                    if(!statusCache.containsKey(contentFormat))
+                        statusCache.put(contentFormat, webservice.getWrappedResourceStatus(contentFormat));
+
+                    WrappedResourceStatus wrappedResourceStatus = statusCache.get(contentFormat);
+
+                    //Determine the message type for the update notification
+                    MessageType.Name messageType;
+                    if(arg != null && arg instanceof MessageType.Name)
+                        messageType = (MessageType.Name) arg;
+                    else
+                        messageType =
+                                webservice.getMessageTypeForUpdateNotification(params.getRemoteEndpoint(), params.getToken());
+
+                    //Determine the message code for the update notification (depends on the ETAG options sent with the
+                    //request that started the observation
+                    final CoapResponse updateNotification;
+                    if(params.getEtags().contains(wrappedResourceStatus.getEtag())){
+                        updateNotification = new CoapResponse(messageType, MessageCode.Name.VALID_203);
+                    }
+
+                    else{
+                        updateNotification = new CoapResponse(messageType, MessageCode.Name.CONTENT_205);
+                        updateNotification.setContent(wrappedResourceStatus.getContent(), contentFormat);
+                    }
+
+                    //Set content related options for the update notification
+                    updateNotification.setMaxAge(wrappedResourceStatus.getMaxAge());
+
+                    byte[] etag = wrappedResourceStatus.getEtag();
+                    if(etag.length > 0)
+                        updateNotification.setEtag(wrappedResourceStatus.getEtag());
+
+                    updateNotification.setObserve();
+
+                    updateNotification.setMessageID(params.getLatestMessageID());
+                    updateNotification.setToken(params.getToken());
+
+
+                    //Send the update notification
+                    ChannelFuture future =
+                            Channels.write(ctx.getChannel(), updateNotification, params.getRemoteEndpoint());
+
+                    future.addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            if(!future.isSuccess()){
+                                String path = params.getWebservicePath();
+                                InetSocketAddress remoteEndpoint = params.getRemoteEndpoint();
+                                Token token = params.getToken();
+                                log.error("Could NOT SEND update notification for {} (remote endpoint: {}, token: {})",
+                                        new Object[]{path, remoteEndpoint, token});
+                            }
+                            else{
+                                if(log.isInfoEnabled()){
+                                    String path = params.getWebservicePath();
+                                    InetSocketAddress remoteEndpoint = params.getRemoteEndpoint();
+                                    Token token = params.getToken();
+                                    log.info("Update notification for {} sent (remote endpoint: {}, token: {})",
+                                            new Object[]{path, remoteEndpoint, token});
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+        }, 0, TimeUnit.MILLISECONDS);
+
+        updateTransmissionFutures.put(path, future);
     }
 }

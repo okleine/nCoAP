@@ -25,12 +25,13 @@
 
 package de.uniluebeck.itm.ncoap.communication.observe;
 
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
 import de.uniluebeck.itm.ncoap.communication.AbstractCoapCommunicationTest;
-import de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint;
+import de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint;
 import de.uniluebeck.itm.ncoap.endpoints.server.ObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.options.UintOptionValue;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
@@ -55,7 +56,7 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
     private static InetSocketAddress serverSocket;
     private static ObservableTestWebservice service;
 
-    private static CoapTestEndpoint clientEndpoint;
+    private static DummyEndpoint clientEndpoint;
 
 
     //requests
@@ -65,13 +66,13 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.outgoing")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing")
                 .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observe.server.WebserviceObservationHandler")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler")
                 .setLevel(Level.INFO);
         Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice")
                 .setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.CoapTestEndpoint")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.DummyEndpoint")
                 .setLevel(Level.INFO);
     }
 
@@ -80,27 +81,27 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
         server = new CoapServerApplication();
         serverSocket = new InetSocketAddress("localhost", server.getPort());
 
-        service = new ObservableTestWebservice(PATH_TO_SERVICE, 1, 0);
+        service = new ObservableTestWebservice(PATH_TO_SERVICE, 1, 0, server.getExecutor());
         server.registerService(service);
 
-        clientEndpoint = new CoapTestEndpoint();
+        clientEndpoint = new DummyEndpoint();
 
         URI targetURI = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
 
         request1 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetURI);
         request1.setMessageID(1);
         request1.setToken(new Token(new byte[]{1,2,3,4}));
-        request1.setObserve(true);
+        request1.setObserve(0);
 
         request2 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetURI);
         request2.setMessageID(2);
         request2.setToken(new Token(new byte[]{1,2,3,4}));
-        request2.setObserve(false);
+        request2.setObserve(1);
 
         request3 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetURI);
         request3.setMessageID(3);
         request3.setToken(new Token(new byte[]{2,3,4,5,6}));
-        request3.setObserve(true);
+        request3.setObserve(0);
     }
 
 
@@ -121,7 +122,7 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
 //                  |                             |
 //                  |---- GET OBS: 1------------->|          Cancel observation (with GET and OBS set to 1)
 //                  |                             |
-//                  |<------------------- ACK ----|          Receive ACK response (without observe option)
+//                  |<------------------- ACK ----|          Receive ACK response (without observing option)
 //                  |                             |
 //                  |                             |  <-----  Status update (new status: 3) (after 2000 ms)
 //                  |                             |
@@ -222,9 +223,6 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
 
         message = "Wrong payload!";
         assertEquals(message, "Status #1",receivedMessage.getContent().toString(Charset.forName("UTF-8")));
-
-        message = "Wrong observation sequence no.!";
-        Assert.assertEquals(message, new Long(1), ((CoapResponse) receivedMessage).getObservationSequenceNumber());
     }
 
     @Test
@@ -239,9 +237,6 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
 
         message = "Wrong payload!";
         assertEquals(message, "Status #2", receivedMessage.getContent().toString(Charset.forName("UTF-8")));
-
-        message = "Wrong observation sequence no.!";
-        Assert.assertEquals(message, new Long(2), ((CoapResponse) receivedMessage).getObservationSequenceNumber());
     }
 
     @Test
@@ -258,7 +253,7 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
         assertEquals(message, "Status #2", receivedMessage.getContent().toString(Charset.forName("UTF-8")));
 
         message = "There should be no observation sequence number!";
-        Assert.assertEquals(message, null, ((CoapResponse) receivedMessage).getObservationSequenceNumber());
+        Assert.assertEquals(message, new Long(UintOptionValue.UNDEFINED), new Long(receivedMessage.getObserve()));
     }
 
     @Test
@@ -273,9 +268,6 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
 
         message = "Wrong payload!";
         assertEquals(message, "Status #4", receivedMessage.getContent().toString(Charset.forName("UTF-8")));
-
-        message = "Wrong observation sequence no.!";
-        Assert.assertEquals(message, new Long(1), ((CoapResponse) receivedMessage).getObservationSequenceNumber());
     }
 
     @Test
@@ -283,15 +275,12 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
         CoapMessage receivedMessage = clientEndpoint.getReceivedMessage(4);
 
         String message = "Wrong message type!";
-        assertEquals(message, MessageType.Name.CON , receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageType.Name.CON, receivedMessage.getMessageTypeName());
 
         message = "Wrong message code!";
         assertEquals(message, MessageCode.Name.CONTENT_205, receivedMessage.getMessageCodeName());
 
         message = "Wrong payload!";
         assertEquals(message, "Status #5", receivedMessage.getContent().toString(Charset.forName("UTF-8")));
-
-        message = "Wrong observation sequence no.!";
-        Assert.assertEquals(message, new Long(2), ((CoapResponse) receivedMessage).getObservationSequenceNumber());
     }
 }

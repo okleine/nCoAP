@@ -22,11 +22,12 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package de.uniluebeck.itm.ncoap.endpoints.server;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
 import de.uniluebeck.itm.ncoap.message.*;
@@ -54,8 +55,7 @@ public class ObservableTestWebservice extends ObservableWebservice<Integer> {
 
     public static long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
 
-    private static int NO_AUTOMATIC_UPDATE = -1;
-
+    private static int NO_AUTOMATIC_UPDATE = 0;
 
     private static Logger log = LoggerFactory.getLogger(ObservableTestWebservice.class.getName());
 
@@ -66,12 +66,13 @@ public class ObservableTestWebservice extends ObservableWebservice<Integer> {
     /**
      * @param path the absolute path of the service
      * @param initialStatus the initial internal status
-     * @param artificalDelay the artificial delay in milliseconds to simulate a longer processing time for incoming
+     * @param artificalDelay the artificial delay in milliseconds to simulate a longer processing time for inbound
      *                       requests
      * @param updateInterval the time passing between two status updates (in milliseconds)
      */
-    public ObservableTestWebservice(String path, int initialStatus, long artificalDelay, final long updateInterval){
-        super(path, initialStatus);
+    public ObservableTestWebservice(String path, int initialStatus, long artificalDelay, final long updateInterval,
+                                    ScheduledExecutorService executor){
+        super(path, initialStatus, executor);
         this.artificalDelay = artificalDelay;
         this.updateInterval = updateInterval;
     }
@@ -79,17 +80,18 @@ public class ObservableTestWebservice extends ObservableWebservice<Integer> {
     /**
      * @param path the absolute path of the service
      * @param initialStatus the initial internal status
-     * @param artificalDelay the artificial delay in milliseconds to simulate a longer processing time for incoming
+     * @param artificalDelay the artificial delay in milliseconds to simulate a longer processing time for inbound
      *                       requests
      */
-    public ObservableTestWebservice(String path, int initialStatus, long artificalDelay){
-        this(path, initialStatus, artificalDelay, NO_AUTOMATIC_UPDATE);
+    public ObservableTestWebservice(String path, int initialStatus, long artificalDelay,
+                                    ScheduledExecutorService executor){
+        this(path, initialStatus, artificalDelay, NO_AUTOMATIC_UPDATE, executor);
     }
 
 
     @Override
-    public void setScheduledExecutorService(ScheduledExecutorService executorService){
-        super.setScheduledExecutorService(executorService);
+    public void setExecutor(ScheduledExecutorService executorService){
+        super.setExecutor(executorService);
 
         if(updateInterval != NO_AUTOMATIC_UPDATE){
             executorService.scheduleAtFixedRate(new Runnable(){
@@ -204,7 +206,7 @@ public class ObservableTestWebservice extends ObservableWebservice<Integer> {
             coapResponse.setMaxAge(wrappedResourceStatus.getMaxAge());
 
             if(coapRequest.getObserve() == 0)
-                coapResponse.setObserveOption(0);
+                coapResponse.setObserve();
 
             responseFuture.set(coapResponse);
         }

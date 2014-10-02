@@ -48,19 +48,18 @@
 */
 package de.uniluebeck.itm.ncoap.communication.events;
 
-import de.uniluebeck.itm.ncoap.application.client.MsgExchangeEvent;
-import de.uniluebeck.itm.ncoap.application.client.Token;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 
 import java.net.InetSocketAddress;
 
 /**
-* Instances are sent upstream (i.e. to the plugtest) by the {@link de.uniluebeck.itm.ncoap.communication.reliability.outgoing.OutgoingMessageReliabilityHandler}
+* Instances are sent upstream (i.e. to the plugtest) by the {@link de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing.ServerOutboundReliabilityHandler}
 * when there was an empty acknowledgement received indicating that a recipient received a a confirmable
 * message.
 *
 * @author Oliver Kleine
 */
-public class EmptyAckReceivedEvent extends MsgExchangeEvent {
+public class EmptyAckReceivedEvent extends MessageTransferEvent {
 
     /**
      * @param remoteEndpoint the remote endpoint that sent the empty ACK

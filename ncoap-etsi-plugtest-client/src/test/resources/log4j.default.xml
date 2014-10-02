@@ -14,7 +14,7 @@
     </appender>
 
     <logger name="de.uniluebeck.itm.ncoap">
-        <level value="debug"/>
+        <level value="warn"/>
     </logger>
 
     <root>
