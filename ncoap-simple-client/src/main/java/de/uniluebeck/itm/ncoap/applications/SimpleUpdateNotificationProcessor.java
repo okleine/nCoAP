@@ -68,7 +68,7 @@ public class SimpleUpdateNotificationProcessor extends SimpleCoapClientCallback{
     }
 
     @Override
-    public boolean continueObservation(InetSocketAddress remoteEndpoint, Token token) {
+    public boolean continueObservation() {
         boolean result = getResponseCount() < expectedNumberOfUpdateNotifications;
 
         log.info("No. of awaited responses: {} (Continue observation: {})",

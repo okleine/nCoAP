@@ -74,8 +74,8 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
      * @param path the path of the URI of this service
      * @param updateInterval the interval (in millis) for resource status updates (e.g. 5000 for every 5 seconds).
      */
-    public SimpleObservableTimeService(String path, int updateInterval) {
-        super(path, System.currentTimeMillis());
+    public SimpleObservableTimeService(String path, int updateInterval, ScheduledExecutorService executor) {
+        super(path, System.currentTimeMillis(), executor);
 
         //Set the update interval, i.e. the frequency of resource updates
         this.updateInterval = updateInterval;
@@ -194,7 +194,7 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
             coapResponse.setMaxAge(resourceStatus.getMaxAge());
 
             if(coapRequest.getObserve() == 0)
-                coapResponse.setObserveOption(56789);
+                coapResponse.setObserve();
         }
 
         //if no payload could be generated, i.e. none of the accepted content formats (according to the

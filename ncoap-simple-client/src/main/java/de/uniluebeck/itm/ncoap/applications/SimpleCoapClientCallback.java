@@ -76,15 +76,15 @@ public class SimpleCoapClientCallback extends ClientCallback {
 
 
     @Override
-    public void processRetransmission(MessageRetransmittedEvent event) {
+    public void processRetransmission() {
         int value = transmissionCounter.incrementAndGet();
-        log.info("#{}: {}", value, event);
+        log.info("Retransmission #{}", value);
     }
 
 
     @Override
-    public void processTransmissionTimeout(TransmissionTimeoutEvent event) {
-        log.info("{}", event);
+    public void processTransmissionTimeout() {
+        log.info("Transmission timed out...");
         timedOut.set(true);
     }
 
