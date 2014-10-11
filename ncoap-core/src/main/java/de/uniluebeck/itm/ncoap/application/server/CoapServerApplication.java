@@ -27,9 +27,8 @@ package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
+import de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
-import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceNotFoundHandler;
-import de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.InboundReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
@@ -66,12 +65,15 @@ public class CoapServerApplication{
     private WebserviceManager webserviceManager;
     private DatagramChannel channel;
     private ScheduledExecutorService executor;
+
     /**
-     * This constructor creates an instance of {@link CoapServerApplication}
-     * @param webServiceNotFoundHandler
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}
+     *
+     * @param webServiceNotFoundHandler to handle inbound {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s
+     *                                  targeting unknown services
+     * @param localSocket the IP address and port number for the server to listen at
      */
-    public CoapServerApplication(WebserviceNotFoundHandler webServiceNotFoundHandler,
-                                 InetSocketAddress localSocketAddress){
+    public CoapServerApplication(NotFoundHandler webServiceNotFoundHandler, InetSocketAddress localSocket){
 
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("CoAP Server I/O Thread#%d").build();
 
@@ -99,7 +101,7 @@ public class CoapServerApplication{
 
         bootstrap.setPipelineFactory(pipelineFactory);
 
-        this.channel = (DatagramChannel) bootstrap.bind(localSocketAddress);
+        this.channel = (DatagramChannel) bootstrap.bind(localSocket);
         log.debug("Bound to local address: {}", this.channel.getLocalAddress());
 
         this.webserviceManager =
@@ -112,63 +114,83 @@ public class CoapServerApplication{
         //Set the ChannelHandlerContext for the outbound reliability handler
         OutboundReliabilityHandler outboundReliabilityHandler =
                 (OutboundReliabilityHandler) this.channel.getPipeline()
-                                 .get(ServerChannelPipelineFactory.SERVER_OUTBOUND_RELIABILITY_HANDLER);
+                                 .get(ServerChannelPipelineFactory.OUTBOUND_RELIABILITY_HANDLER);
 
         outboundReliabilityHandler.setChannelHandlerContext(
                 this.channel.getPipeline()
-                        .getContext(ServerChannelPipelineFactory.SERVER_OUTBOUND_RELIABILITY_HANDLER)
+                        .getContext(ServerChannelPipelineFactory.OUTBOUND_RELIABILITY_HANDLER)
         );
 
         //Set the ChannelHandlerContext for the inbound reliability handler
         InboundReliabilityHandler inboundReliabilityHandler =
                          (InboundReliabilityHandler) this.channel.getPipeline()
-                                 .get(ServerChannelPipelineFactory.SERVER_INBOUND_RELIABILITY_HANDLER);
+                                 .get(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER);
 
         inboundReliabilityHandler.setChannelHandlerContext(
                 this.channel.getPipeline()
-                        .getContext(ServerChannelPipelineFactory.SERVER_INBOUND_RELIABILITY_HANDLER)
+                        .getContext(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER)
         );
-
-        //Set the ChannelHandlerContext for the webservice observation handler
-        ServerObservationHandler serverObservationHandler =
-                (ServerObservationHandler) this.channel.getPipeline()
-                        .get(ServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER);
-
-        serverObservationHandler.setChannelHandlerContext(
-                this.channel.getPipeline().getContext(ServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER)
-        );
-
     }
 
     public CoapServerApplication(InetSocketAddress localSocketAddress){
-        this(WebserviceNotFoundHandler.getDefault(), localSocketAddress);
+        this(NotFoundHandler.getDefault(), localSocketAddress);
     }
 
 
     /**
-     * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on the given port
-     * and already provides the default <code>.well-known/core</code> resource
+     * <p>Creates a new instance of {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}</p>
+     *
+     * <p><b>Note:</b> An instance created with this constructor uses
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler#getDefault()} to handle
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s targeting unknown services.
+     *
+     * @param serverPort the port number for the server to listen at (holds for all IP addresses of the server)
      */
     public CoapServerApplication(int serverPort){
-        this(WebserviceNotFoundHandler.getDefault(), new InetSocketAddress(serverPort));
+        this(NotFoundHandler.getDefault(), new InetSocketAddress(serverPort));
     }
 
-    public CoapServerApplication(WebserviceNotFoundHandler webServiceNotFoundHandler, int serverPort){
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}
+     *
+     * @param webServiceNotFoundHandler to handle inbound {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s
+     *                                  targeting unknown services
+     * @param serverPort the port number for the server to listen at (holds for all IP addresses of the server)
+     */
+    public CoapServerApplication(NotFoundHandler webServiceNotFoundHandler, int serverPort){
         this(webServiceNotFoundHandler, new InetSocketAddress(serverPort));
     }
 
     /**
-     * Constructor to create a new instance of {@link CoapServerApplication}. The server listens on port
-     * {@link #DEFAULT_COAP_SERVER_PORT} and already provides the default <code>.well-known/core</code> resource.
+     * <p>Creates a new instance of {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}</p>
+     *
+     * <p><b>Note:</b> An instance created with this constructor uses
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler#getDefault()} to handle
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s targeting unknown services and listens on port
+     * {@link #DEFAULT_COAP_SERVER_PORT} (all IP addresses)
      */
     public CoapServerApplication(){
         this(DEFAULT_COAP_SERVER_PORT);
     }
 
-    public CoapServerApplication(WebserviceNotFoundHandler webServiceNotFoundHandler){
+    /**
+     * <p>Creates a new instance of {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}</p>
+     *
+     * <p><b>Note:</b> An instance created with this constructor listens on port
+     * {@link #DEFAULT_COAP_SERVER_PORT} (all IP addresses)
+     */
+    public CoapServerApplication(NotFoundHandler webServiceNotFoundHandler){
         this(webServiceNotFoundHandler, DEFAULT_COAP_SERVER_PORT);
     }
 
+
+    /**
+     * Registeres a new {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} at this
+     * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}.
+     *
+     * @param webservice the {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance to
+     *                   be registered
+     */
     public void registerService(Webservice webservice){
         WebserviceManager manager =
                 (WebserviceManager)this.channel.getPipeline().get(ServerChannelPipelineFactory.WEBSERVICE_MANAGER);
@@ -176,15 +198,37 @@ public class CoapServerApplication{
         manager.registerService(webservice);
     }
 
+
+    /**
+     * Returns the port number this {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} listens at
+     * @return the port number this {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} listens at
+     */
     public int getPort(){
         return this.channel.getLocalAddress().getPort();
     }
 
+
+    /**
+     * Returns the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
+     * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} to handle tasks, e.g. write and
+     * receive messages. The returned {@link java.util.concurrent.ScheduledExecutorService} may also be used by
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}s to handle inbound
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s
+     *
+     * @return the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
+     * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} to handle tasks, e.g. write and
+     * receive messages.
+     */
     public ScheduledExecutorService getExecutor(){
         return this.executor;
     }
 
 
+    /**
+     * Gracefully shuts down the server by sequentially shutting down all its components, i.e. the registered
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}s and the
+     * {@link org.jboss.netty.channel.socket.DatagramChannel} to write and receive messages.
+     */
     public void shutdown(){
         log.warn("Shutdown server...");
 

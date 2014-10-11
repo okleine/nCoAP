@@ -53,15 +53,17 @@ import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import java.net.InetSocketAddress;
 
 /**
-* Instances are sent upstream (i.e. to the plugtest) by the {@link de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing.ServerOutboundReliabilityHandler}
-* when there was an empty acknowledgement received indicating that a recipient received a a confirmable
-* message.
-*
-* @author Oliver Kleine
-*/
-public class ResetReceivedEvent extends MessageTransferEvent {
+ * Instances are sent upstream by the
+ * {@link de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler}
+ * if there was a RST message received and a related outbound transfer was found.
+ *
+ * @author Oliver Kleine
+ */
+public class ResetReceivedEvent extends AbstractMessageTransferEvent {
 
     /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.events.ResetReceivedEvent}
+     *
      * @param remoteEndpoint the socket address of the remote endpoint that sent the RST
      * @param messageID the message ID that was contained in the received RST message
      * @param token the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} of the confirmed message
@@ -71,7 +73,7 @@ public class ResetReceivedEvent extends MessageTransferEvent {
     }
 
     @Override
-    public boolean stopConversation() {
+    public boolean stopsMessageExchange() {
         return true;
     }
 

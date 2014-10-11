@@ -29,18 +29,18 @@ import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Instances of {@link de.uniluebeck.itm.ncoap.communication.events.MiscellaneousErrorEvent} are sent upstream if some
- * error occurred while establishing a new {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageTransfer}.
+ * Abstract base class for internal events that are caused within an ongoing or aspired message exchange
  *
  * @author Oliver Kleine
  */
-public class MiscellaneousErrorEvent extends AbstractMessageTransferEvent {
+public abstract class AbstractMessageTransferEvent implements MessageTransferEvent{
 
-    private final String description;
+    private int messageID;
+    private Token token;
+    private InetSocketAddress remoteEndpoint;
 
     /**
-     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.events.MiscellaneousErrorEvent}
-     *
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.events.AbstractMessageTransferEvent}
      * @param remoteEndpoint the remote endpoint of the
      *                       {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageTransfer} that caused this
      *                       event
@@ -48,29 +48,42 @@ public class MiscellaneousErrorEvent extends AbstractMessageTransferEvent {
      *                  that caused this event
      * @param token the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} of the
      *              {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageTransfer} that caused this event
-     * @param description a human readable description of the error that caused this event
      */
-    public MiscellaneousErrorEvent(InetSocketAddress remoteEndpoint, int messageID, Token token, String description) {
-        super(remoteEndpoint, messageID, token);
-        this.description = description;
+    protected AbstractMessageTransferEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+        this.messageID = messageID;
+        this.token = token;
+        this.remoteEndpoint = remoteEndpoint;
     }
 
     /**
-     * Returns a human readable description of the error that caused this event
-     * @return a human readable description of the error that caused this event
+     * Returns the remote endpoint of the message exchange (i.e. communication) that caused this events
+     * @return the remote endpoint of the message exchange (i.e. communication) that caused this events
      */
-    public String getDescription(){
-        return this.description;
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 
-    @Override
-    public boolean stopsMessageExchange() {
-        return true;
+    /**
+     * Returns the token of the message exchange (i.e. communication) that caused this events
+     * @return the token of the message exchange (i.e. communication) that caused this events
+     */
+    public Token getToken() {
+        return token;
     }
 
-    @Override
-    public String toString(){
-        return "MISCELLANEOUS MESSAGE EXCHANGE ERROR (remote endpoint: " + this.getRemoteEndpoint() +
-                ", message ID: " + this.getMessageID() + ", token: " + this.getToken() + ")";
+    /**
+     * Returns the message ID of the message that caused this events
+     * @return the message ID of the message that caused this events
+     */
+    public int getMessageID() {
+        return messageID;
     }
+
+    /**
+     * Returns <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
+     * otherwise
+     * @return <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
+     * otherwise
+     */
+    public abstract boolean stopsMessageExchange();
 }

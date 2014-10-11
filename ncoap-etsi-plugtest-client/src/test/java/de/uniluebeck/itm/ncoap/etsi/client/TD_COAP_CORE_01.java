@@ -57,6 +57,7 @@ public class TD_COAP_CORE_01 {
 
     @BeforeClass
     public static void sendRequest() throws Exception{
+        System.out.println("*** BEGIN OF TD_COAP_CORE_01 ***");
         LoggingConfiguration.configure();
 
         CoapClientApplication client = ApplicationFactory.getClient();
@@ -78,6 +79,7 @@ public class TD_COAP_CORE_01 {
     @AfterClass
     public static void waitSomeTime() throws Exception{
         Thread.sleep(100);
+        System.out.println("*** END OF TD_COAP_CORE_01 ***");
     }
 
     @Test

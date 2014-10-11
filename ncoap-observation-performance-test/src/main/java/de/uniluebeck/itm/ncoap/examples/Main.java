@@ -45,7 +45,7 @@ import java.util.Set;
  */
 public class Main {
 
-    private static final int PARALLELITY = 200;
+    private static final int PARALLELITY = 100;
     private static final int DURATION = 20;
 
     private CoapClientApplication client;
@@ -53,7 +53,7 @@ public class Main {
     private CoapServerApplication server;
 
     private static void configureLogging() throws Exception{
-        System.out.println("Use default logging configuration, i.e. INFO level...\n");
+        System.out.println("Use default logging configuration, i.e. WARN level...\n");
         URL url = Main.class.getClassLoader().getResource("log4j.default.xml");
         System.out.println("Use config file " + url);
         DOMConfigurator.configure(url);
@@ -120,8 +120,9 @@ public class Main {
 
         Thread.sleep(DURATION * 1000);
 
-        main.client.shutdown();
         main.server.shutdown();
+        Thread.sleep(2000);
+        main.client.shutdown();
 
         Thread.sleep(1000);
         main.checkNotifications();

@@ -53,6 +53,7 @@ public class TD_COAP_CORE_09 {
 
     @BeforeClass
     public static void sendRequest() throws Exception{
+        System.out.println("*** BEGIN OF TD_COAP_CORE_09 ***");
         LoggingConfiguration.configure();
 
         TD_COAP_CORE_09.emptyAck = false;
@@ -80,9 +81,11 @@ public class TD_COAP_CORE_09 {
         Thread.sleep(WAITING_TIME);
     }
 
+
     @AfterClass
     public static void waitSomeTime() throws Exception{
         Thread.sleep(5000);
+        System.out.println("*** END OF TD_COAP_CORE_09 ***");
     }
 
     @Test

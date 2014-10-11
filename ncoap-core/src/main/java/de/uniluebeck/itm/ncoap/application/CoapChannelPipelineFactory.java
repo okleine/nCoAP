@@ -43,9 +43,28 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    public static final String EXECUTION_HANDLER = "ExecutionHandler";
-    public static final String ENCODER = "Encoder";
-    public static final String DECODER = "Decoder";
+    /**
+     * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
+     */
+    public static final String EXECUTION_HANDLER = "EH";
+
+    /**
+     * The name of the {@link de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder} instance
+     * of a CoAP application
+     */
+    public static final String ENCODER = "ENC";
+
+    /**
+     * The name of the {@link de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder} instance
+     * of a CoAP application
+     */
+    public static final String DECODER = "DEC";
+
+    /**
+     * The name of the {@link de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler} instance
+     * of a CoAP application
+     */
+    public static String OUTBOUND_RELIABILITY_HANDLER = "OutboundReliabilityHandler";
 
     private Map<String, ChannelHandler> handler;
 

@@ -76,7 +76,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
     @Override
     public void setupComponents() throws Exception {
         server = new CoapServerApplication();
-        service = new NotObservableTestWebservice(PATH_TO_SERVICE, PAYLOAD, 0, 3000);
+        service = new NotObservableTestWebservice(PATH_TO_SERVICE, PAYLOAD, 0, 3000, server.getExecutor());
         server.registerService(service);
 
         endpoint = new DummyEndpoint();

@@ -24,8 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.communication.reliability;
 
-import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
-import de.uniluebeck.itm.ncoap.communication.events.TransmissionTimeoutEvent;
+import de.uniluebeck.itm.ncoap.communication.events.MessageIDReleasedEvent;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.Channels;
@@ -96,7 +95,7 @@ public class MessageIDFactory{
      * @return the message ID to be used for outgoing messages or
      * {@link de.uniluebeck.itm.ncoap.message.CoapMessage#UNDEFINED_MESSAGE_ID} if all IDs are in use.
      */
-    public int getNextMessageID(InetSocketAddress remoteEndpoint, Token token){
+    public int getNextMessageID(InetSocketAddress remoteEndpoint){
 
         try{
             lock.readLock().lock();
@@ -124,8 +123,7 @@ public class MessageIDFactory{
                 int nextMessageID = allocations == null ? this.random.nextInt(MODULUS) :
                         (allocations.getFirst().getMessageID() + 1) % MODULUS;
 
-                AllocationRetirementTask retirementTask = new AllocationRetirementTask(remoteEndpoint, nextMessageID,
-                        token);
+                AllocationRetirementTask retirementTask = new AllocationRetirementTask(remoteEndpoint, nextMessageID);
 
                 if(allocations == null){
                     this.retirementTasks.put(remoteEndpoint, new ArrayDeque<AllocationRetirementTask>());
@@ -160,12 +158,10 @@ public class MessageIDFactory{
 
         private InetSocketAddress remoteEndpoint;
         private int messageID;
-        private Token token;
 
-        private AllocationRetirementTask(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+        private AllocationRetirementTask(InetSocketAddress remoteEndpoint, int messageID) {
             this.remoteEndpoint = remoteEndpoint;
             this.messageID = messageID;
-            this.token = token;
         }
 
         public int getMessageID() {
@@ -178,8 +174,7 @@ public class MessageIDFactory{
 
         @Override
         public void run() {
-            TransmissionTimeoutEvent event = new TransmissionTimeoutEvent(this.remoteEndpoint, this.messageID,
-                    this.token);
+            MessageIDReleasedEvent event = new MessageIDReleasedEvent(this.remoteEndpoint, this.messageID);
             Channels.fireMessageReceived(MessageIDFactory.this.channel, event);
 
             try{

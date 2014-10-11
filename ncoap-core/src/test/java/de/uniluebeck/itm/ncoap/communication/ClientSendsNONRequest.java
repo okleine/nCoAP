@@ -66,7 +66,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
     @Override
     public void setupComponents() throws Exception {
         server = new CoapServerApplication(0);
-        service = new NotObservableTestWebservice(PATH_TO_SERVICE, PAYLOAD, 0, 0);
+        service = new NotObservableTestWebservice(PATH_TO_SERVICE, PAYLOAD, 0, 0, server.getExecutor());
         server.registerService(service);
 
         endpoint = new DummyEndpoint();

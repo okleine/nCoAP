@@ -78,27 +78,27 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
      }
 
 
-    private void addReliableTransfer(InetSocketAddress remoteEndpoint, CoapMessage coapMessage){
+    private void addTransfer(InetSocketAddress remoteEndpoint, CoapMessage coapMessage, boolean reliable){
+        Token token = coapMessage.getToken();
+        int messageID = coapMessage.getMessageID();
+
         try{
             lock.writeLock().lock();
 
-            long delay = OutboundReliableMessageTransfer.provideRetransmissionDelay(1);
-            RetransmissionTask retransmissionTask = new RetransmissionTask(remoteEndpoint, coapMessage);
-            ScheduledFuture retransmissionFuture = this.executor.schedule(retransmissionTask, delay, MILLIS);
+            if(reliable){
+                long delay = OutboundReliableMessageTransfer.provideRetransmissionDelay(1);
+                RetransmissionTask retransmissionTask = new RetransmissionTask(remoteEndpoint, coapMessage);
+                ScheduledFuture retransmissionFuture = this.executor.schedule(retransmissionTask, delay, MILLIS);
 
-            Token token = coapMessage.getToken();
-            int messageID = coapMessage.getMessageID();
+                OutboundReliableMessageTransfer transfer = new OutboundReliableMessageTransfer(remoteEndpoint,
+                        messageID, token, retransmissionFuture);
 
-            OutboundMessageTransfer replaced = this.transfers.put(remoteEndpoint, coapMessage.getMessageID(),
-            new OutboundReliableMessageTransfer(remoteEndpoint, messageID, token, retransmissionFuture));
-
-            if(replaced != null){
-                log.error("Old token {} for transfer with {} and message ID {} was overridden by new token {}!",
-                new Object[]{replaced.getToken(), remoteEndpoint, replaced.getMessageID(), coapMessage.getToken()});
+                this.transfers.put(remoteEndpoint, coapMessage.getMessageID(), transfer);
             }
+
             else{
-                log.info("Added new reliable transfer (remote endpoint: {}, message ID: {})",
-                        remoteEndpoint, messageID);
+                OutboundMessageTransfer transfer = new OutboundMessageTransfer(remoteEndpoint, messageID, token);
+                this.transfers.put(remoteEndpoint, messageID, transfer);
             }
         }
 
@@ -108,7 +108,7 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
     }
 
 
-     private OutboundMessageTransfer removeReliableTransfer(InetSocketAddress remoteEndpoint, int messageID){
+     private OutboundMessageTransfer removeTransfer(InetSocketAddress remoteEndpoint, int messageID){
          try{
             lock.writeLock().lock();
             return this.transfers.remove(remoteEndpoint, messageID);
@@ -127,9 +127,10 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
             handleOutboundCoapMessage(ctx, me);
         }
         else{
+            log.debug("DOWNSTREAM AFTER (to {}): {}.", me.getRemoteAddress(), me.getMessage());
             ctx.sendDownstream(me);
         }
-        log.debug("DOWNSTREAM AFTER (to {}): {}.", me.getRemoteAddress(), me.getMessage());
+
     }
 
 
@@ -140,22 +141,35 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
         if(me.getMessage() instanceof CoapMessage) {
             handleInboundCoapMessage(ctx, me);
         }
-        else if(me.getMessage() instanceof TransmissionTimeoutEvent){
-            handleConversationTimeoutEvent(ctx, me);
+        else if(me.getMessage() instanceof MessageIDReleasedEvent){
+            handleMessageIDReleasedEvent(ctx, me);
         }
         else{
             ctx.sendUpstream(me);
         }
     }
 
-    private void handleConversationTimeoutEvent(ChannelHandlerContext ctx, MessageEvent me) {
-        TransmissionTimeoutEvent event = (TransmissionTimeoutEvent) me.getMessage();
+    
+    private void handleMessageIDReleasedEvent(ChannelHandlerContext ctx, MessageEvent me) {
+        MessageIDReleasedEvent event = (MessageIDReleasedEvent) me.getMessage();
         InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
         int messageID = event.getMessageID();
 
         if(this.transfers.contains(remoteEndpoint, messageID)){
-            removeReliableTransfer(remoteEndpoint, messageID);
-            log.info("Removed reliable transfer (remote endpoint: {}, message ID: {})", remoteEndpoint, messageID);
+            OutboundMessageTransfer transfer = removeTransfer(remoteEndpoint, messageID);
+            if(transfer != null){
+                if(transfer instanceof OutboundReliableMessageTransfer){
+                    log.info("Removed reliable transfer (remote endpoint: {}, message ID: {})", remoteEndpoint,
+                            messageID);
+                    Token token = transfer.getToken();
+                    Channels.fireMessageReceived(ctx, new TransmissionTimeoutEvent(remoteEndpoint, messageID, token));
+                }
+                else{
+                    log.info("Removed non-reliable transfer (remote endpoint: {}, message ID: {})", remoteEndpoint,
+                            messageID);
+                    ctx.sendUpstream(me);
+                }
+            }
         }
 
         ctx.sendUpstream(me);
@@ -180,10 +194,10 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
         try{
             lock.writeLock().lock();
 
-            OutboundMessageTransfer messageExchange = transfers.get(remoteEndpoint, messageID);
-            if(messageExchange instanceof OutboundReliableMessageTransfer){
+            OutboundMessageTransfer transfer = transfers.get(remoteEndpoint, messageID);
+            if(transfer instanceof OutboundReliableMessageTransfer){
                 ScheduledFuture retransmissionFuture =
-                        ((OutboundReliableMessageTransfer) messageExchange).getRetransmissionFuture();
+                        ((OutboundReliableMessageTransfer) transfer).getRetransmissionFuture();
 
                 //Try to cancel the retransmission
                 if(!retransmissionFuture.cancel(true)){
@@ -191,12 +205,13 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
                         "message ID: {})", remoteEndpoint, messageID);
                 }
 
-                long delay = retransmissionFuture.getDelay(TimeUnit.MILLISECONDS);
+                long delay = Math.max(retransmissionFuture.getDelay(TimeUnit.MILLISECONDS), 0);
 
                 RetransmissionTask retransmissionTask = new RetransmissionTask(remoteEndpoint, coapResponse);
+
                 retransmissionFuture = this.executor.schedule(retransmissionTask, delay, TimeUnit.MILLISECONDS);
 
-                ((OutboundReliableMessageTransfer) messageExchange).setRetransmissionFuture(retransmissionFuture);
+                ((OutboundReliableMessageTransfer) transfer).setRetransmissionFuture(retransmissionFuture);
                 return true;
             }
 
@@ -240,7 +255,7 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
             }
         }
 
-        int messageID = this.messageIDFactory.getNextMessageID(remoteEndpoint, coapMessage.getToken());
+        int messageID = this.messageIDFactory.getNextMessageID(remoteEndpoint);
 
         if(messageID == CoapMessage.UNDEFINED_MESSAGE_ID){
             MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteEndpoint, messageID,
@@ -251,12 +266,21 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
 
         else if(coapMessage.getMessageTypeName() == MessageType.Name.CON){
             coapMessage.setMessageID(messageID);
-            this.addReliableTransfer(remoteEndpoint, coapMessage);
+            this.addTransfer(remoteEndpoint, coapMessage, true);
+            log.debug("DOWNSTREAM AFTER (to {}): {}.", me.getRemoteAddress(), me.getMessage());
+            ctx.sendDownstream(me);
+        }
+
+        else if(coapMessage.getMessageTypeName() == MessageType.Name.NON){
+            coapMessage.setMessageID(messageID);
+            this.addTransfer(remoteEndpoint, coapMessage, false);
+            log.debug("DOWNSTREAM AFTER (to {}): {}.", me.getRemoteAddress(), me.getMessage());
             ctx.sendDownstream(me);
         }
 
         else{
             coapMessage.setMessageID(messageID);
+            log.debug("DOWNSTREAM AFTER (to {}): {}.", me.getRemoteAddress(), me.getMessage());
             ctx.sendDownstream(me);
         }
 
@@ -276,7 +300,7 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
          int messageID = coapMessage.getMessageID();
 
          if(messageType == MessageType.Name.ACK){
-             OutboundMessageTransfer messageExchange = removeReliableTransfer(remoteEndpoint, messageID);
+             OutboundMessageTransfer messageExchange = removeTransfer(remoteEndpoint, messageID);
 
              if(messageExchange != null && messageExchange instanceof OutboundReliableMessageTransfer){
 
@@ -285,15 +309,16 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
                              messageID);
                      ((OutboundReliableMessageTransfer) messageExchange).setConfirmed();
                      Token token = messageExchange.getToken();
-                     Channel channel = ctx.getChannel();
-                     Channels.fireMessageReceived(channel, new EmptyAckReceivedEvent(remoteEndpoint, messageID, token));
+                     Channels.fireMessageReceived(ctx, new EmptyAckReceivedEvent(remoteEndpoint, messageID, token));
 
-                     return;
+                     me.getFuture().setSuccess();
                  }
                  else{
                      log.info("Received non-empty ACK (remote endpoint: {}, message ID: {}).",
                              remoteEndpoint, messageID);
+
                      ((OutboundReliableMessageTransfer) messageExchange).setConfirmed();
+                     ctx.sendUpstream(me);
                  }
 
 
@@ -301,12 +326,11 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
 
              else{
                  log.warn("No open CON found for ACK (remote endpoint: {}, message ID: {})", remoteEndpoint, messageID);
-                 return;
              }
          }
 
          else if(messageType == MessageType.Name.RST){
-             OutboundMessageTransfer messageExchange = removeReliableTransfer(remoteEndpoint, messageID);
+             OutboundMessageTransfer messageExchange = removeTransfer(remoteEndpoint, messageID);
 
              if(messageExchange != null){
 
@@ -315,9 +339,7 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
                  }
 
                  Token token = messageExchange.getToken();
-                 Channel channel = ctx.getChannel();
-                 Channels.fireMessageReceived(channel, new ResetReceivedEvent(remoteEndpoint, messageID, token));
-                 return;
+                 Channels.fireMessageReceived(ctx, new ResetReceivedEvent(remoteEndpoint, messageID, token));
              }
 
              else{
@@ -325,7 +347,9 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
              }
          }
 
-         ctx.sendUpstream(me);
+         else{
+             ctx.sendUpstream(me);
+         }
      }
 
 
@@ -337,7 +361,7 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
 //         log.debug("Message ID {} is retired for remote endpoint {}!", messageID, remoteEndpoint);
 //
 //         if(this.transfers.contains(remoteEndpoint, messageID)){
-//             Token token = removeReliableTransfer(remoteEndpoint, messageID).getToken();
+//             Token token = removeTransfer(remoteEndpoint, messageID).getToken();
 //             TransmissionTimeoutEvent event = new TransmissionTimeoutEvent(remoteEndpoint, messageID, token);
 //             Channels.fireMessageReceived(this.ctx.getChannel(), event);
 //         }

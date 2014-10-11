@@ -53,7 +53,7 @@ public interface Webservice<T> {
      *
      * @return the (relative) path this service is registered at.
      */
-    public String getPath();
+    public String getUriPath();
 
 
     /**
@@ -77,19 +77,17 @@ public interface Webservice<T> {
 
 
     /**
-     * Returns the object of type T that holds the actual status of the resource represented by this
-     * {@link NotObservableWebservice}.
+     * <p>Returns the object of type T that holds the actual status of the resource represented by this
+     * {@link NotObservableWebservice}. Note, that this status is internal and just the base to create the
+     * payload of a {@link de.uniluebeck.itm.ncoap.message.CoapResponse}.</p>
      *
-     * Note, that this status is internal and thus independent from the payload of the {@link CoapResponse} to be
-     * computed by the inherited method {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}.
-     *
-     * Example: Assume this webservice represents a switch that has two states "on" and "off". The payload of the
+     * <p>Example: Assume this webservice represents a switch that has two states "on" and "off". The payload of the
      * previously mentioned {@link CoapResponse} could then be either "on" or "off". But since there are only
-     * two possible states {@link T} could be of type {@link Boolean}.
+     * two possible states {@link T} could be of type {@link Boolean}.</p>
      *
      * @return the object of type T that holds the actual resourceStatus of the resource
      */
-    public T getResourceStatus();
+    public T getStatus();
 
 
     /**
@@ -103,16 +101,6 @@ public interface Webservice<T> {
      * @param lifetimeSeconds the number of seconds this status is valid, i.e. cachable by clients or proxies.
      */
     public void setResourceStatus(T newStatus, long lifetimeSeconds);
-
-
-    /**
-     * This method is automatically invoked by the nCoAP framework when this service instance is registered at a
-     * {@link CoapServerApplication} instance (using {@link WebserviceManager#registerService(Webservice)}.
-     * So, usually there is no need to set another {@link ScheduledExecutorService} instance manually.
-     *
-     * @param executorService a {@link ScheduledExecutorService} instance.
-     */
-    public void setExecutor(ScheduledExecutorService executorService);
 
 
     /**
@@ -157,63 +145,83 @@ public interface Webservice<T> {
 
 
     /**
-     * This method is called by the nCoAP framework when this {@link Webservice} is removed from the
-     * {@link CoapServerApplication} instance. If any one could e.g. try to cancel scheduled tasks. There might even
-     * be no need to do anything at all, i.e. implement the method with empty body.
+     * <p>This method is called by the nCoAP framework when this
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} is removed from the
+     * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} instance. One could e.g. try to
+     * cancel scheduled tasks if any. There might even be no need to do anything at all, i.e. implement the method with
+     * empty body.</p>
      *
-     * If this {@link Webservice} uses the default {@link ScheduledExecutorService} to execute tasks one MUST NOT
-     * terminate this {@link ScheduledExecutorService} but only cancel scheduled tasks using there
-     * {@link ScheduledFuture}.
+     * <p><b>Note: </b>If this {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} uses the
+     * {@link java.util.concurrent.ScheduledExecutorService} returned by
+     * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication#getExecutor()} one MUST NOT
+     * terminate this {@link java.util.concurrent.ScheduledExecutorService} but only cancel scheduled tasks using there
+     * {@link java.util.concurrent.ScheduledFuture}.</p>
      */
     public void shutdown();
 
 
     /**
-     * Method to process an inbound {@link CoapRequest} asynchronously. The implementation of this method is dependant
-     * on the concrete webservice. Processing a message might cause a new status of the resource or even the deletion
-     * of the complete resource, i.e. this {@link Webservice} instance.
+     * <p>Method to process an inbound {@link de.uniluebeck.itm.ncoap.message.CoapRequest} asynchronously. The
+     * implementation of this method is dependant on the concrete webservice. Processing a message might cause a new
+     * status of the resource or even the deletion of the complete resource, i.e. this
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance.</p>
      *
-     * <b>Note:</b>Implementing classes MUST make sure that the given {@link SettableFuture} is eventually set with
-     * either a {@link CoapResponse} or an {@link Exception} or throw an {@link Exception}. Both, setting the
-     * {@link SettableFuture} with an {@link Exception} or throw one make the framework to send {@link CoapResponse}
-     * with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} and {@link Exception#getMessage()} as content.
+     * <p><b>Note:</b>Implementing classes MUST make sure that the given
+     * {@link com.google.common.util.concurrent.SettableFuture} is eventually set with either a
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or an {@link java.lang.Exception} or throw an
+     * {@link java.lang.Exception}. Both, setting the {@link com.google.common.util.concurrent.SettableFuture} with an
+     * {@link java.lang.Exception} or throw one make the framework to send
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} with
+     * {@link de.uniluebeck.itm.ncoap.message.MessageCode.Name#INTERNAL_SERVER_ERROR_500} and
+     * {@link java.lang.Exception#getMessage()} as content.</p>
      *
-     * @param responseFuture the {@link SettableFuture} instance to set the {@link CoapResponse} which is the result
-     *                       of the inbound {@link CoapRequest}.
-     *                       {@link SettableFuture<CoapResponse>#set(CoapResponse)} to send it to the client.
-     * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webservice} instance
-     * @param remoteEndpoint The address of the sender of the request
+     * @param responseFuture the {@link com.google.common.util.concurrent.SettableFuture} instance to be set with the
+     *                       {@link de.uniluebeck.itm.ncoap.message.CoapResponse} which is the result of the inbound
+     *                       {@link de.uniluebeck.itm.ncoap.message.CoapRequest}
      *
-     * @throws Exception if an error occurred while processing the {@link CoapRequest}.
+     * @param coapRequest The {@link de.uniluebeck.itm.ncoap.message.CoapRequest} to be processed by the
+     *                    {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
+     * @param remoteEndpoint The {@link java.net.InetSocketAddress} of the sender of the request
+     *
+     * @throws Exception if an error occurred while processing the {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                    InetSocketAddress remoteEndpoint) throws Exception;
 
 
     /**
-     * Returns a byte array that contains the serialized payload for a {@link CoapResponse} in the desired content
-     * format or <code>null</code> if the given content format is not supported.
+     * Returns a byte array that contains the serialized payload for a
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} in the desired content format or <code>null</code> if the
+     * given content format is not supported.
      *
      * @param contentFormat the number indicating the desired format of the returned content, see
-     *                      {@link ContentFormat} for some pre-defined constants.
+     *                      {@link de.uniluebeck.itm.ncoap.message.options.ContentFormat} for some pre-defined
+     *                      constants.
      *
-     * @return a byte array that contains the serialized payload for a {@link CoapResponse} in the desired content
-     * format or <code>null</code> if the given content format is not supported.
+     * @return a byte array that contains the serialized payload for a
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} in the desired content format or <code>null</code> if the
+     * given content format is not supported.
      */
     public byte[] getSerializedResourceStatus(long contentFormat);
 
+
     /**
-     * Sets the given {@link LinkAttribute} for this {@link Webservice} instance.
+     * <p>Sets the given {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute} for this
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance.</p>
      *
-     * <b>Note:</b> Implementing classes MUST ensure that attributes keys that do only allow a single
-     * value are not set multiple times
+     * <p><b>Note:</b> Implementing classes MUST ensure that attributes keys that do only allow a single
+     * value are not set multiple times</p>
      *
-     * @param attribute the {@link LinkAttribute} to be set for this {@link Webservice} instance
+     * @param attribute the {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute} to
+     *                  be set for this {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}
+     *                  instance
      */
     public void setLinkAttribute(LinkAttribute attribute);
 
+
     /**
-     * Removes all {@link LinkAttribute}s for the given key.
+     * Removes all {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute}s for the
+     * given key.
      *
      * @param attributeKey the attribute key to remove all attributes of
      *
@@ -223,43 +231,51 @@ public interface Webservice<T> {
     public boolean removeLinkAttribute(String attributeKey);
 
     /**
-     * Returns <code>true</code> if this {@link Webservice} instance has the given {@link LinkAttribute} and
-     * <code>false</code> otherwise
+     * Returns <code>true</code> if this {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}
+     * instance has the given {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute}
+     * and <code>false</code> otherwise
      *
-     * @param linkAttribute the {@link LinkAttribute} to check
+     * @param linkAttribute the {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute}
+     *                      to check for existence
      *
-     * @return code>true</code> if this {@link Webservice} instance has the given {@link LinkAttribute} and
-     * <code>false</code> otherwise
+     * @return code>true</code> if this {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}
+     * instance has the given {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute}
+     * and <code>false</code> otherwise
      */
     public boolean hasLinkAttribute(LinkAttribute linkAttribute);
 
     /**
-     * Returns a {@link Collection} containing all {@link LinkAttribute}s of this {@link Webservice} instance
-     * @return a {@link Collection} containing all {@link LinkAttribute}s of this {@link Webservice} instance
+     * Returns a {@link java.util.Collection} containing all
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute}s of this
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
+     *
+     * @return a {@link java.util.Collection} containing all
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute}s of this
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
      */
     public Collection<LinkAttribute> getLinkAttributes();
 
-    /**
-     * Implementing classes must provide this method such that it returns <code>true</code> if
-     * <ul>
-     *  <li>
-     *      the given object is a String that equals to the path of the URI representing the Webservice
-     *      instance, or
-*      </li>
-     *  <li>
-     *      the given object is a Webservice instance which path equals to this Webservice path.
-     *  </li>
-     * </ul>
-     * In all other cases the equals method must return <code>false</code>.
-     *
-     * @param object The object to compare this Webservice instance with
-     * @return <code>true</code> if the given object is a String representing the path of the URI of this Webservice or
-     * if the given object is a Webservice instance which path equals this Webservice path
-     */
-    public boolean equals(Object object);
-
-
-    @Override
-    public int hashCode();
+//    /**
+//     * Implementing classes must provide this method such that it returns <code>true</code> if
+//     * <ul>
+//     *  <li>
+//     *      the given object is a String that equals to the path of the URI representing the Webservice
+//     *      instance, or
+//*      </li>
+//     *  <li>
+//     *      the given object is a Webservice instance which path equals to this Webservice path.
+//     *  </li>
+//     * </ul>
+//     * In all other cases the equals method must return <code>false</code>.
+//     *
+//     * @param object The object to compare this Webservice instance with
+//     * @return <code>true</code> if the given object is a String representing the path of the URI of this Webservice or
+//     * if the given object is a Webservice instance which path equals this Webservice path
+//     */
+//    public boolean equals(Object object);
+//
+//
+//    @Override
+//    public int hashCode();
 
 }

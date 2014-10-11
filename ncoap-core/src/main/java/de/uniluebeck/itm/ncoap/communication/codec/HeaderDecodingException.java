@@ -28,7 +28,7 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import java.net.InetSocketAddress;
 
 /**
- * An {@link HeaderDecodingException} indicates that the Header, i.e. the first 4 bytes of an inbound serialized
+ * An {@link HeaderDecodingException} indicates that the header, i.e. the first 4 bytes of an inbound serialized
  * {@link CoapMessage} are malformed. This exception is thrown during the decoding process and causes an RST message
  * to be sent to the inbound message origin.
  *

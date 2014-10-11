@@ -59,7 +59,7 @@ import java.net.InetSocketAddress;
 *
 * @author Oliver Kleine
 */
-public class EmptyAckReceivedEvent extends MessageTransferEvent {
+public class EmptyAckReceivedEvent extends AbstractMessageTransferEvent {
 
     /**
      * @param remoteEndpoint the remote endpoint that sent the empty ACK
@@ -71,7 +71,7 @@ public class EmptyAckReceivedEvent extends MessageTransferEvent {
     }
 
     @Override
-    public boolean stopConversation() {
+    public boolean stopsMessageExchange() {
         return false;
     }
 

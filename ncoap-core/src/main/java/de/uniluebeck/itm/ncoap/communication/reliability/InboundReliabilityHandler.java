@@ -26,7 +26,6 @@
 package de.uniluebeck.itm.ncoap.communication.reliability;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.ncoap.communication.events.ApplicationShutdownEvent;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -40,16 +39,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
-* This class is the first {@link org.jboss.netty.channel.ChannelUpstreamHandler} to deal with inbound decoded {@link de.uniluebeck.itm.ncoap.message.CoapMessage}s. If the
-* inbound message is a confirmable {@link de.uniluebeck.itm.ncoap.message.CoapRequest} it schedules the sending of an empty acknowledgement to the
-* sender if there wasn't a piggy-backed response within a period of 2 seconds.
-*
-* If the inbound message is a confirmable {@link de.uniluebeck.itm.ncoap.message.CoapResponse} it immediately sends a proper acknowledgement if there
-* was an open request waiting for a seperate response or update-notification. It immediately sends an RST
-* if there was no such response expected.
-*
-* @author Oliver Kleine
-*/
+ * This class is the first {@link org.jboss.netty.channel.ChannelUpstreamHandler} to deal with inbound decoded
+ * {@link de.uniluebeck.itm.ncoap.message.CoapMessage}s at
+ * {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication}s. If the inbound message is a confirmable
+ * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} it schedules the sending of an empty acknowledgement to the
+ * sender if there wasn't a response from the addressed webservice within a period of 1.5 seconds.
+ *
+ * @author Oliver Kleine
+ */
 public class InboundReliabilityHandler extends SimpleChannelHandler {
 
     private static Logger log = LoggerFactory.getLogger(InboundReliabilityHandler.class.getName());
@@ -57,39 +54,32 @@ public class InboundReliabilityHandler extends SimpleChannelHandler {
     private HashBasedTable<InetSocketAddress, Integer, InboundMessageTransfer> conversations;
     private ReentrantReadWriteLock lock;
 
-    private ScheduledExecutorService executorService;
+    private ScheduledExecutorService executor;
     private ChannelHandlerContext ctx;
 
+
     /**
-     * @param executorService the {@link java.util.concurrent.ScheduledExecutorService} to provide the threads that execute the
-     *                        operations for reliability.
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.reliability.InboundReliabilityHandler}
+     *
+     * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to provide the threads to execute the
+     *                 tasks for reliability.
      */
-    public InboundReliabilityHandler(ScheduledExecutorService executorService){
+    public InboundReliabilityHandler(ScheduledExecutorService executor){
         this.conversations = HashBasedTable.create();
-        this.executorService = executorService;
+        this.executor = executor;
         this.lock = new ReentrantReadWriteLock();
     }
 
-
+    /**
+     * Sets the {@link org.jboss.netty.channel.ChannelHandlerContext} of this handler <b>(for internal use only)</b>
+     *
+     * @param ctx the {@link org.jboss.netty.channel.ChannelHandlerContext} of this handler
+     */
     public void setChannelHandlerContext(ChannelHandlerContext ctx){
         this.ctx = ctx;
     }
 
 
-    /**
-     * If the inbound message is a confirmable {@link de.uniluebeck.itm.ncoap.message.CoapRequest} it schedules the sending of an empty
-     * acknowledgement to the sender if there wasn't a piggy-backed response within a period of 2 seconds.
-     *
-     * If the inbound message is a confirmable {@link de.uniluebeck.itm.ncoap.message.CoapResponse} it immediately sends a proper acknowledgement if there
-     * was an open request waiting for a seperate response or update-notification. It immediately sends an RST
-     * if there was no such response expected.
-     *
-     * @param ctx The {@link org.jboss.netty.channel.ChannelHandlerContext} relating this handler (which implements the
-     * {@link org.jboss.netty.channel.ChannelUpstreamHandler} interface) to the datagramChannel that received the message.
-     * @param me the {@link org.jboss.netty.channel.MessageEvent} containing the actual message
-     *
-     * @throws Exception if an error occured
-     */
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         log.debug("Received (from {}): {}.", me.getRemoteAddress(), me.getMessage());
@@ -143,7 +133,7 @@ public class InboundReliabilityHandler extends SimpleChannelHandler {
                     //if the message reception was already confirmed, than confirm it again (after default delay)
                     if(reliableTransfer.isConfirmed()){
                         ConfirmationTask confirmationTask = new ConfirmationTask(remoteEndpoint, messageID);
-                        ScheduledFuture confirmationFuture = this.executorService.schedule(confirmationTask,
+                        ScheduledFuture confirmationFuture = this.executor.schedule(confirmationTask,
                                 InboundReliableMessageTransfer.EMPTY_ACK_DELAY, TimeUnit.MILLISECONDS);
                         reliableTransfer.setConfirmationFuture(confirmationFuture);
                         reliableTransfer.setConfirmed(false);
@@ -182,7 +172,7 @@ public class InboundReliabilityHandler extends SimpleChannelHandler {
             //this is definitely no duplicate, so add a new conversation
             else if(messageType == MessageType.Name.CON) {
                 Runnable confirmationTask = new ConfirmationTask(remoteEndpoint, messageID);
-                ScheduledFuture confirmationFuture = this.executorService.schedule(confirmationTask,
+                ScheduledFuture confirmationFuture = this.executor.schedule(confirmationTask,
                         InboundReliableMessageTransfer.EMPTY_ACK_DELAY, TimeUnit.MILLISECONDS);
                 InboundReliableMessageTransfer messageExchange = new InboundReliableMessageTransfer(remoteEndpoint,
                         messageID, confirmationFuture);
@@ -267,25 +257,9 @@ public class InboundReliabilityHandler extends SimpleChannelHandler {
         if(me.getMessage() instanceof CoapResponse){
             handleOutboundCoapResponse(ctx, me);
         }
-        else if(me.getMessage() instanceof ApplicationShutdownEvent){
-            handleApplicationShutdown(ctx, me);
-        }
         else{
             ctx.sendDownstream(me);
         }
-    }
-
-
-    private void handleApplicationShutdown(ChannelHandlerContext ctx, MessageEvent me) {
-        try{
-            lock.writeLock().lock();
-            this.conversations.clear();
-            ctx.sendDownstream(me);
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-
     }
 
 
@@ -308,7 +282,6 @@ public class InboundReliabilityHandler extends SimpleChannelHandler {
 
         ctx.sendDownstream(me);
     }
-
 
 
     private class ConfirmationTask implements Runnable{

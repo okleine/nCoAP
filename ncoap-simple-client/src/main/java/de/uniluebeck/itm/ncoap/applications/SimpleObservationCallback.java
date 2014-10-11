@@ -24,26 +24,24 @@
  */
 package de.uniluebeck.itm.ncoap.applications;
 
-import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.Override;
-import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by olli on 20.03.14.
  */
-public class SimpleUpdateNotificationProcessor extends SimpleCoapClientCallback{
+public class SimpleObservationCallback extends SimpleCallback {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private AtomicInteger responseCounter;
     private int expectedNumberOfUpdateNotifications;
 
-    public SimpleUpdateNotificationProcessor(int expectedNumberOfUpdateNotifications){
+    public SimpleObservationCallback(int expectedNumberOfUpdateNotifications){
         this.responseCounter = new AtomicInteger(0);
         this.expectedNumberOfUpdateNotifications = expectedNumberOfUpdateNotifications;
     }
@@ -58,7 +56,6 @@ public class SimpleUpdateNotificationProcessor extends SimpleCoapClientCallback{
     public void processCoapResponse(CoapResponse coapResponse) {
         int value = responseCounter.incrementAndGet();
         log.info("Received #{}: {}", value, coapResponse);
-
     }
 
 

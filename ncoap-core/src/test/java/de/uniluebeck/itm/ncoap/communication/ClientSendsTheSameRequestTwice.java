@@ -66,7 +66,7 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
     @Override
     public void setupComponents() throws Exception {
         server = new CoapServerApplication();
-        server.registerService(new NotObservableTestWebservice(PATH, "Status 1", 0, 6000));
+        server.registerService(new NotObservableTestWebservice(PATH, "Status 1", 0, 6000, server.getExecutor()));
 
         endpoint = new DummyEndpoint();
 

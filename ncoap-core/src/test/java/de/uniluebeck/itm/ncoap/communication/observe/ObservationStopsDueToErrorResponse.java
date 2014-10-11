@@ -33,6 +33,7 @@ import de.uniluebeck.itm.ncoap.endpoints.server.ObservableTestWebservice;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
+import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
@@ -61,20 +62,22 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
         client = new CoapClientApplication();
         clientCallback = new ClientTestCallback();
         server = new CoapServerApplication();
-        serverSocket = new InetSocketAddress("localhost", server.getPort());
+        service = new ObservableTestWebservice("/test", 1, 0, server.getExecutor());
+        server.registerService(service);
 
-//        service = new ObservableTestWebservice("/obs", 0, 0);
-//        server.registerService(service);
-        serviceUri = new URI("coap", null, "localhost", -1, "/does/not/exist", null, null);
+        serverSocket = new InetSocketAddress("localhost", server.getPort());
+        serviceUri = new URI("coap", null, "localhost", -1, "/test", null, null);
     }
 
     @Override
     public void createTestScenario() throws Exception {
         CoapRequest coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, serviceUri);
         coapRequest.setObserve(0);
-
+        coapRequest.setAccept(111);
         client.sendCoapRequest(coapRequest, clientCallback, serverSocket);
-        Thread.sleep(10000);
+        Thread.sleep(2000);
+        service.setResourceStatus(2, 0);
+        Thread.sleep(2000);
     }
 
     @Override
@@ -85,8 +88,13 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.client").setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.client.ClientObservationHandler")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.client")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.ClientObservationHandler")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice")
+                .setLevel(Level.INFO);
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager")
                 .setLevel(Level.INFO);
     }
 

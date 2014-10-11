@@ -66,9 +66,9 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.")
                 .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler")
+        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager")
                 .setLevel(Level.INFO);
         Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice")
                 .setLevel(Level.DEBUG);
@@ -112,7 +112,7 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
 //                  |                             |
 //                  |---- GET OBS: 0 ------------>|          Register observer
 //                  |                             |
-//                  |<------------ ACK OBS: 1 ----|          Receive first notification
+//                  |<------------ ACK OBS: 1 ----|          Receive first notification (status: 1)
 //                  |                             |
 //                  |                             |  <-----  Status update (new status: 2) (after 1000 ms)
 //                  |                             |
@@ -194,13 +194,14 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
         Thread.sleep(2000);
         service.setResourceStatus(6, 0);
         Thread.sleep(5000);
+
+        server.shutdown();
+        Thread.sleep(2000);
     }
 
 
     @Override
     public void shutdownComponents() throws Exception {
-        server.shutdown();
-        Thread.sleep(2000);
         clientEndpoint.shutdown();
     }
 

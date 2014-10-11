@@ -26,7 +26,7 @@ package de.uniluebeck.itm.ncoap.communication.observe.client;
 
 import com.google.common.collect.Lists;
 import de.uniluebeck.itm.ncoap.AbstractCoapTest;
-import de.uniluebeck.itm.ncoap.communication.observing.client.ResourceStatusAge;
+import de.uniluebeck.itm.ncoap.communication.observing.ResourceStatusAge;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;

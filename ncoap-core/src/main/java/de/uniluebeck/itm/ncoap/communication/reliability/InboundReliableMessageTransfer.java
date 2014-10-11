@@ -29,8 +29,11 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledFuture;
 
 /**
-* @author Oliver Kleine
-*/
+ * Instances of {@link de.uniluebeck.itm.ncoap.communication.reliability.InboundReliableMessageTransfer} represent
+ * an inbound confirmable message whose reception was not yet confirmed.
+ *
+ * @author Oliver Kleine
+ */
 public class InboundReliableMessageTransfer extends InboundMessageTransfer {
 
     /**

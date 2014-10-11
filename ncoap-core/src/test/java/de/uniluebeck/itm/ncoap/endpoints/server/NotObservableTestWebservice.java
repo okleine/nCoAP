@@ -40,6 +40,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.junit.Assert.fail;
 
@@ -70,9 +71,9 @@ public class NotObservableTestWebservice extends NotObservableWebservice<String>
      *                                           simulate long processing time)
      */
     public NotObservableTestWebservice(String path, String initialStatus, long lifetimeSeconds,
-                                       long pretendedProcessingTimeForRequests){
+                                       long pretendedProcessingTimeForRequests, ScheduledExecutorService executor){
 
-        super(path, initialStatus, lifetimeSeconds);
+        super(path, initialStatus, lifetimeSeconds, executor);
         this.pretendedProcessingTimeForRequests = pretendedProcessingTimeForRequests;
     }
 
@@ -110,7 +111,7 @@ public class NotObservableTestWebservice extends NotObservableWebservice<String>
                                    InetSocketAddress remoteAddress)
             throws Exception{
 
-        log.info("Incoming request for resource " + getPath());
+        log.info("Incoming request for resource " + getUriPath());
 
         //Delay the inbound requests
         if(this.pretendedProcessingTimeForRequests > 0)
@@ -163,10 +164,10 @@ public class NotObservableTestWebservice extends NotObservableWebservice<String>
     @Override
     public byte[] getSerializedResourceStatus(long contentFormat) {
         if(contentFormat == ContentFormat.TEXT_PLAIN_UTF8)
-            return getResourceStatus().getBytes(Charset.forName("UTF-8"));
+            return getStatus().getBytes(Charset.forName("UTF-8"));
 
         if(contentFormat == ContentFormat.APP_XML)
-            return ("<status>" + getResourceStatus() + "</status>").getBytes(Charset.forName("UTF-8"));
+            return ("<status>" + getStatus() + "</status>").getBytes(Charset.forName("UTF-8"));
 
         return null;
     }

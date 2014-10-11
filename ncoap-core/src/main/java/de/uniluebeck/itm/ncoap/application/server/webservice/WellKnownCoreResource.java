@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
 * The .well-known/core resource is a standard webservice to be provided by every CoAP webserver as defined in
@@ -62,8 +63,8 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
      * Creates the well-known/core resource at path /.well-known/core as defined in the CoAP draft
      * @param initialStatus the {@link java.util.Map} containing all available path
      */
-    public WellKnownCoreResource(Map<String, Webservice> initialStatus) {
-        super("/.well-known/core", initialStatus, 0);
+    public WellKnownCoreResource(Map<String, Webservice> initialStatus, ScheduledExecutorService executor) {
+        super("/.well-known/core", initialStatus, 0, executor);
     }
 
     /**
@@ -162,12 +163,12 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
     public byte[] getSerializedResourceStatus(LinkAttribute attribute){
         StringBuilder buffer = new StringBuilder();
 
-        for(Webservice webservice : getResourceStatus().values()){
+        for(Webservice webservice : getStatus().values()){
 
             if(attribute != null && !webservice.hasLinkAttribute(attribute))
                 continue;
 
-            buffer.append("<").append(webservice.getPath()).append(">");
+            buffer.append("<").append(webservice.getUriPath()).append(">");
 
             String previousKey = null;
             for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webservice.getLinkAttributes()) {
@@ -201,8 +202,8 @@ public final class WellKnownCoreResource extends NotObservableWebservice<Map<Str
     public byte[] getSerializedResourceStatus(long contentFormat){
         StringBuilder buffer = new StringBuilder();
 
-        for(Webservice webservice : getResourceStatus().values()){
-            buffer.append("<").append(webservice.getPath()).append(">");
+        for(Webservice webservice : getStatus().values()){
+            buffer.append("<").append(webservice.getUriPath()).append(">");
 
             String previousKey = null;
             for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webservice.getLinkAttributes()) {

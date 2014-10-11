@@ -30,24 +30,28 @@ import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 
 /**
-* Instances are sent upstream by the {@link de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing.ServerOutboundReliabilityHandler} whenever there was a retransmission
-* of a confirmable {@link CoapMessage}.
-*
-* @author Oliver Kleine
+ * Instances are sent upstream by the
+ * {@link de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler} whenever there was a
+ * retransmission of a confirmable {@link CoapMessage}.
+ *
+ * @author Oliver Kleine
 */
-public class MessageRetransmittedEvent extends MessageTransferEvent {
+public class MessageRetransmittedEvent extends AbstractMessageTransferEvent {
 
     /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.events.MessageRetransmittedEvent}
+     *
      * @param remoteEndpoint the desired recipient of the retransmitted message
      * @param messageID the message ID of the retransmitted message
-     * @param token the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} of the retransmitted message
+     * @param token the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} of the retransmitted
+     *              message
      */
     public MessageRetransmittedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         super(remoteEndpoint, messageID, token);
     }
 
     @Override
-    public boolean stopConversation() {
+    public boolean stopsMessageExchange() {
         return false;
     }
 

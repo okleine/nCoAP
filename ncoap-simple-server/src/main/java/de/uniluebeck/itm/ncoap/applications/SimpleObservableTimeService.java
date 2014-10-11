@@ -79,6 +79,7 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
 
         //Set the update interval, i.e. the frequency of resource updates
         this.updateInterval = updateInterval;
+        schedulePeriodicResourceUpdate();
 
         //Sets the link attributes for supported content types ('ct')
         this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
@@ -97,21 +98,14 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
 
 
     @Override
-    public void setExecutor(ScheduledExecutorService executorService){
-        super.setExecutor(executorService);
-        schedulePeriodicResourceUpdate();
-    }
-
-
-    @Override
-    public MessageType.Name getMessageTypeForUpdateNotification(InetSocketAddress remoteEndpoint, Token token) {
-        return MessageType.Name.CON;
+    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteEndpoint, Token token) {
+        return false;
     }
 
 
     @Override
     public byte[] getEtag(long contentFormat) {
-        return Longs.toByteArray(getResourceStatus() | (contentFormat << 56));
+        return Longs.toByteArray(getStatus() | (contentFormat << 56));
     }
 
 
@@ -122,19 +116,19 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
 
 
     private void schedulePeriodicResourceUpdate(){
-        this.periodicUpdateFuture = getExecutor().scheduleAtFixedRate(new Runnable(){
+        this.periodicUpdateFuture = this.getExecutor().scheduleAtFixedRate(new Runnable(){
 
             @Override
             public void run() {
                 try{
                     setResourceStatus(System.currentTimeMillis(), updateInterval / 1000);
-                    log.info("New status of resource " + getPath() + ": " + getResourceStatus());
+                    log.info("New status of resource " + getUriPath() + ": " + getStatus());
                 }
                 catch(Exception ex){
                     log.error("Exception while updating actual time...", ex);
                 }
             }
-        }, 0, updateInterval, TimeUnit.MILLISECONDS);
+        }, updateInterval, updateInterval, TimeUnit.MILLISECONDS);
     }
 
 
@@ -220,7 +214,7 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
 
     @Override
     public void shutdown() {
-        log.info("Shutdown service " + getPath() + ".");
+        log.info("Shutdown service " + getUriPath() + ".");
         boolean futureCanceled = this.periodicUpdateFuture.cancel(true);
         log.info("Future canceled: " + futureCanceled);
     }
@@ -230,7 +224,7 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
     public byte[] getSerializedResourceStatus(long contentFormat) {
         log.debug("Try to create payload (content format: " + contentFormat + ")");
 
-        long time = getResourceStatus() % 86400000;
+        long time = getStatus() % 86400000;
         long hours = time / 3600000;
         long remainder = time % 3600000;
         long minutes = remainder / 60000;

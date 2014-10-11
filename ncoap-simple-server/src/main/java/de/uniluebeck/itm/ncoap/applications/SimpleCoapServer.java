@@ -39,7 +39,8 @@ public class SimpleCoapServer extends CoapServerApplication {
 
         SimpleCoapServer server = new SimpleCoapServer();
 
-        SimpleNotObservableWebservice simpleWebservice = new SimpleNotObservableWebservice("/simple", "Oliver", 5000);
+        SimpleNotObservableWebservice simpleWebservice =
+                new SimpleNotObservableWebservice("/simple", "Some payload...", 5000, server.getExecutor());
         server.registerService(simpleWebservice);
 
         SimpleObservableTimeService timeService = new SimpleObservableTimeService("/utc-time", 5000,

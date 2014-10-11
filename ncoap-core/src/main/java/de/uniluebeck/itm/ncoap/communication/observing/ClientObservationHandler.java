@@ -22,7 +22,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.communication.observing.client;
+package de.uniluebeck.itm.ncoap.communication.observing;
 
 import com.google.common.collect.*;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
@@ -38,9 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * The {@link ClientObservationHandler} deals with
+ * The {@link de.uniluebeck.itm.ncoap.communication.observing.ClientObservationHandler} deals with
  * running observations. It e.g. ensures that inbound update notifications answered with a RST if the
  * observation was canceled by the {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication}.
  *
@@ -51,39 +52,88 @@ public class ClientObservationHandler extends SimpleChannelHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private Table<InetSocketAddress, Token, ResourceStatusAge> observations;
+    private ReentrantReadWriteLock lock;
+
 
     /**
      * Creates a new instance of
-     * {@link ClientObservationHandler}
+     * {@link de.uniluebeck.itm.ncoap.communication.observing.ClientObservationHandler}
      */
     public ClientObservationHandler(){
         this.observations = HashBasedTable.create();
+        this.lock = new ReentrantReadWriteLock();
     }
 
 
-    private synchronized void startObservation(InetSocketAddress remoteEndpoint, Token token){
-        if(this.observations.put(remoteEndpoint, token, new ResourceStatusAge(0, 0)) != null){
-            log.error("Running observation (remote endpoint: {}, token: {}) overridden!", remoteEndpoint, token);
+    private void startObservation(InetSocketAddress remoteEndpoint, Token token){
+        try{
+            this.lock.readLock().lock();
+            if(this.observations.contains(remoteEndpoint, token)){
+                log.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
+                        remoteEndpoint, token);
+                return;
+            }
         }
-        else{
-            log.info("New observation added (remote endpoint: {}, token: {})", remoteEndpoint, token);
+        finally{
+            this.lock.readLock().unlock();
+        }
+
+        try{
+            this.lock.writeLock().lock();
+            if(this.observations.contains(remoteEndpoint, token)){
+                log.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
+                        remoteEndpoint, token);
+            }
+
+            else{
+                this.observations.put(remoteEndpoint, token, new ResourceStatusAge(0, 0));
+                log.info("New observation added (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            }
+        }
+        finally{
+            this.lock.writeLock().unlock();
         }
     }
 
-    private synchronized void updateStatusAge(InetSocketAddress remoteEndpoint, Token token, ResourceStatusAge age){
-        this.observations.put(remoteEndpoint, token, age);
+
+    private void updateStatusAge(InetSocketAddress remoteEndpoint, Token token, ResourceStatusAge age){
+        try{
+            this.lock.writeLock().lock();
+            this.observations.put(remoteEndpoint, token, age);
+            log.info("Updated observation (remote endpoint: {}, token: {}): {}",
+                    new Object[]{remoteEndpoint, token, age});
+        }
+        finally {
+            this.lock.writeLock().unlock();
+        }
     }
 
-    private synchronized ResourceStatusAge stopObservation(InetSocketAddress remoteEndpoint, Token token){
-        ResourceStatusAge result = this.observations.remove(remoteEndpoint, token);
-        if(result == null){
-            log.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+    private ResourceStatusAge stopObservation(InetSocketAddress remoteEndpoint, Token token){
+        try{
+            this.lock.readLock().lock();
+            if(!this.observations.contains(remoteEndpoint, token)){
+                log.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return null;
+            }
         }
-        else{
-            log.info("Observation of {} with token {} stopped! Next update notifications (if any) will cause a RST.",
-                    remoteEndpoint, token);
+        finally{
+            this.lock.readLock().unlock();
         }
-        return result;
+
+        try{
+            this.lock.writeLock().lock();
+            ResourceStatusAge age = this.observations.remove(remoteEndpoint, token);
+            if(age == null){
+                log.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            }
+            else{
+                log.info("Observation stopped (remote endpoint: {}, token: {})!", remoteEndpoint, token);
+            }
+            return age;
+        }
+        finally{
+            this.lock.writeLock().unlock();
+        }
     }
 
 
@@ -107,6 +157,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
 
 
     private void handleObservationCancelledEvent(ObservationCancelledEvent event) {
+        log.info("{}", event);
         InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
         Token token = event.getToken();
         stopObservation(remoteEndpoint, token);

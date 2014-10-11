@@ -25,7 +25,7 @@
 
 package de.uniluebeck.itm.ncoap.communication.dispatching.client;
 
-import de.uniluebeck.itm.ncoap.communication.events.MessageTransferEvent;
+import de.uniluebeck.itm.ncoap.communication.events.AbstractMessageTransferEvent;
 import de.uniluebeck.itm.ncoap.communication.events.*;
 import de.uniluebeck.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.message.*;
@@ -67,6 +67,7 @@ public abstract class ClientCallback {
     boolean isObserving(){
         return this.observing;
     }
+
     /**
      * This method is called by the framework whenever an update notification was received, i.e. this method is
      * only called if the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} that is associated with this

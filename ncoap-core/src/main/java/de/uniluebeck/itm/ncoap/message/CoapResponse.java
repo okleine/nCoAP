@@ -24,8 +24,7 @@
  */
 package de.uniluebeck.itm.ncoap.message;
 
-import de.uniluebeck.itm.ncoap.communication.codec.OptionCodecException;
-import de.uniluebeck.itm.ncoap.communication.observing.client.ResourceStatusAge;
+import de.uniluebeck.itm.ncoap.communication.observing.ResourceStatusAge;
 import de.uniluebeck.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

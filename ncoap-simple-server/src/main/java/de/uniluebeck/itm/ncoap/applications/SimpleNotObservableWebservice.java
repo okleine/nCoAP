@@ -29,7 +29,6 @@ import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.webservice.NotObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus;
-import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
@@ -38,6 +37,7 @@ import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Created by olli on 30.03.14.
@@ -48,8 +48,9 @@ public class SimpleNotObservableWebservice extends NotObservableWebservice<Strin
 
     private int weakEtag;
 
-    protected SimpleNotObservableWebservice(String servicePath, String initialStatus, long lifetimeSeconds) {
-        super(servicePath, initialStatus, lifetimeSeconds);
+    protected SimpleNotObservableWebservice(String servicePath, String initialStatus, long lifetimeSeconds,
+                                            ScheduledExecutorService executor) {
+        super(servicePath, initialStatus, lifetimeSeconds, executor);
 
         this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
         this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.APP_XML));
@@ -131,10 +132,10 @@ public class SimpleNotObservableWebservice extends NotObservableWebservice<Strin
     public byte[] getSerializedResourceStatus(long contentFormat) {
         String result = null;
         if(contentFormat == ContentFormat.TEXT_PLAIN_UTF8)
-            result = "The resource status is " + getResourceStatus() + ".";
+            result = "The resource status is " + getStatus() + ".";
 
         else if(contentFormat == ContentFormat.APP_XML)
-            result = "<status>" + getResourceStatus() + "</status>";
+            result = "<status>" + getStatus() + "</status>";
 
 
         if(result == null)

@@ -43,13 +43,13 @@ public class ClientPingsServer extends AbstractCoapCommunicationTest{
 
     private static CoapClientApplication coapClientApplication;
     private static CoapServerApplication coapServerApplication;
-    private static ClientTestCallback resetProcessor;
+    private static ClientTestCallback callback;
 
 
     @Override
     public void setupComponents() throws Exception {
         coapClientApplication = new CoapClientApplication();
-        resetProcessor = new ClientTestCallback();
+        callback = new ClientTestCallback();
         coapServerApplication = new CoapServerApplication();
     }
 
@@ -57,7 +57,7 @@ public class ClientPingsServer extends AbstractCoapCommunicationTest{
     @Override
     public void createTestScenario() throws Exception {
         InetSocketAddress serverAddress = new InetSocketAddress("127.0.0.1", coapServerApplication.getPort());
-        coapClientApplication.sendCoapPing(resetProcessor, serverAddress);
+        coapClientApplication.sendCoapPing(callback, serverAddress);
 
 
         Thread.sleep(1000);
@@ -83,7 +83,7 @@ public class ClientPingsServer extends AbstractCoapCommunicationTest{
 
     @Test
     public void testResetReceived(){
-        assertFalse("No RST (Pong) received.", resetProcessor.getEmptyRSTs().isEmpty());
+        assertFalse("No RST (Pong) received.", callback.getEmptyRSTs().isEmpty());
     }
 
 }

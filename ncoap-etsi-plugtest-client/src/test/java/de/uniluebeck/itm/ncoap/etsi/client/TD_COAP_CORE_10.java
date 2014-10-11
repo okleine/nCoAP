@@ -31,6 +31,7 @@ import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -54,14 +55,10 @@ public class TD_COAP_CORE_10 {
 
     @BeforeClass
     public static void sendRequest() throws Exception{
+        System.out.println("*** BEGIN OF TD_COAP_CORE_10 ***");
         LoggingConfiguration.configure();
 
         CoapClientApplication client = ApplicationFactory.getClient();
-
-        //This is a dirty hack to force the client to use a non-empty token for the second request
-        wasteEmptyToken(client);
-        Thread.sleep(2);
-        //---------------------
 
         URI targetUri = new URI("coap", null, SERVER, -1, "/test", null, null);
         final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(SERVER), 5683);
@@ -78,18 +75,10 @@ public class TD_COAP_CORE_10 {
         Thread.sleep(WAITING_TIME);
     }
 
-
-    private static void wasteEmptyToken(CoapClientApplication client) throws Exception{
-        URI fakeURI = new URI("coap", null, SERVER, -1, "/test", null, null);
-        final InetSocketAddress targetAddress = new InetSocketAddress(InetAddress.getByName(fakeURI.getHost()), 5683);
-        CoapRequest fakeRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, fakeURI);
-
-        client.sendCoapRequest(fakeRequest, new ClientCallback() {
-            @Override
-            public void processCoapResponse(CoapResponse coapResponse) {
-                //Nothing to do...
-            }
-        }, targetAddress);
+    @AfterClass
+    public static void waitSomeTime() throws Exception{
+        Thread.sleep(100);
+        System.out.println("*** END OF TD_COAP_CORE_10 ***");
     }
 
 

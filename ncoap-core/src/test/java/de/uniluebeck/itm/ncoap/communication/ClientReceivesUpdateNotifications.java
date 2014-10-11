@@ -64,16 +64,17 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.ClientReceivesUpdateNotifications$SpecificClientCallback")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice")
-                .setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.client.ClientObservationHandler")
-                .setLevel(Level.INFO);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.ClientReceivesUpdateNotifications$SpecificClientCallback")
+//                .setLevel(Level.INFO);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager")
+//                .setLevel(Level.INFO);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.CoapServerApplication")
+//                .setLevel(Level.INFO);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice")
+//                .setLevel(Level.DEBUG);
+//        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.client.ClientObservationHandler")
+//                .setLevel(Level.INFO);
+        Logger.getRootLogger().setLevel(Level.DEBUG);
     }
 
     @Override

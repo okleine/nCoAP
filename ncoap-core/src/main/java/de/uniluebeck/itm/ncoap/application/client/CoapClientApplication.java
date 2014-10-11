@@ -27,7 +27,6 @@ package de.uniluebeck.itm.ncoap.application.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.TokenFactory;
-import de.uniluebeck.itm.ncoap.communication.events.ApplicationShutdownEvent;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.OutboundMessageWrapper;
 import de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
@@ -44,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 /**
  * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapMessage}s to a (remote)
@@ -64,7 +62,7 @@ public class CoapClientApplication {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private ScheduledThreadPoolExecutor scheduledExecutorService;
+    private ScheduledThreadPoolExecutor exeutor;
     private DatagramChannel channel;
 
     private String name;
@@ -78,10 +76,11 @@ public class CoapClientApplication {
      * @param numberOfThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
      *                        if the given number is smaller then 4, the application will use 4 threads.
      *                        
-     * @param maxTokenLength the maximum length of {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s to be created by the {@link TokenFactory}. The minimum
-     *                       length is <code>0</code>, the maximum length (and default value) is <code>8</code>. This
-     *                       can be used to limit the amount of parallel requests (see {@link TokenFactory} for
-     *                       details).
+     * @param maxTokenLength the maximum length of
+     *                       {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s to be created by
+     *                       the {@link TokenFactory}. The minimum length is <code>0</code>, the maximum length
+     *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
+     *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
     public CoapClientApplication(String name, int port, int numberOfThreads, int maxTokenLength){
 
@@ -102,15 +101,15 @@ public class CoapClientApplication {
             }
         });
 
-        this.scheduledExecutorService = new ScheduledThreadPoolExecutor(threads, threadFactory);
-        this.scheduledExecutorService.setRemoveOnCancelPolicy(true);
+        this.exeutor = new ScheduledThreadPoolExecutor(threads, threadFactory);
+        this.exeutor.setRemoveOnCancelPolicy(true);
 
         TokenFactory tokenFactory = new TokenFactory(maxTokenLength);
 
         //Create factories for channel and pipeline
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(scheduledExecutorService, threads/2);
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(exeutor, threads/2);
         ClientChannelPipelineFactory clientChannelPipelineFactory =
-                new ClientChannelPipelineFactory(scheduledExecutorService, tokenFactory);
+                new ClientChannelPipelineFactory(exeutor, tokenFactory);
 
         //Create and configure bootstrap
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
@@ -142,10 +141,11 @@ public class CoapClientApplication {
      * @param numberOfThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
      *                        if the given number is smaller then 4, the application will use 4 threads.
      *
-     * @param maxTokenLength the maximum length of {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s to be created by the {@link TokenFactory}. The minimum
-     *                       length is <code>0</code>, the maximum length (and default value) is <code>8</code>. This
-     *                       can be used to limit the amount of parallel requests (see {@link TokenFactory} for
-     *                       details).
+     * @param maxTokenLength the maximum length of
+     *                       {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s to be created by
+     *                       the {@link TokenFactory}. The minimum length is <code>0</code>, the maximum length
+     *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
+     *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
     public CoapClientApplication(int port, int numberOfThreads, int maxTokenLength){
         this("CoAP Client", port, numberOfThreads, maxTokenLength);
@@ -177,7 +177,16 @@ public class CoapClientApplication {
      *
      * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
      * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>, and
-     * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>
+     * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>.
+     *
+     * @param name the name of the application (used for logging purposes)
+     * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
+     *             arbitrary port)
+     * @param maxTokenLength the maximum length of
+     *                       {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s to be created by
+     *                       the {@link TokenFactory}. The minimum length is <code>0</code>, the maximum length
+     *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
+     *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
     public CoapClientApplication(String name, int port, int maxTokenLength){
         this(name, port, Runtime.getRuntime().availableProcessors() * 2, maxTokenLength);
@@ -185,23 +194,24 @@ public class CoapClientApplication {
 
 
     /**
-     * Sends a {@link CoapRequest} to the given remote endpoints, i.e. CoAP server or proxy, and registers the
-     * given {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to be called upon reception of a {@link CoapResponse}.
+     * Sends a {@link de.uniluebeck.itm.ncoap.message.CoapRequest} to the given remote endpoints, i.e. CoAP server or
+     * proxy, and registers the given {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback}
+     * to be called upon reception of a {@link de.uniluebeck.itm.ncoap.message.CoapResponse}.
      *
      * <b>Note:</b> Override {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback
-     * #continueObservation(java.net.InetSocketAddress, Token)} on the given callback for observations!
+     * #continueObservation(InetSocketAddress, Token)} on the given callback for observations!
      *
-     * @param coapRequest the {@link CoapRequest} to be sent
+     * @param coapRequest the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} to be sent
      *
      * @param clientCallback the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to process the corresponding response, resp.
      *                              update notification (which are also instances of {@link CoapResponse}.
      *
-     * @param remoteEndpoint the desired recipient of the given {@link CoapRequest}
+     * @param remoteEndpoint the desired recipient of the given {@link de.uniluebeck.itm.ncoap.message.CoapRequest}
      */
     public void sendCoapRequest(final CoapRequest coapRequest, final ClientCallback clientCallback,
                                 final InetSocketAddress remoteEndpoint){
 
-        scheduledExecutorService.schedule(new Runnable(){
+        exeutor.submit(new Runnable() {
 
             @Override
             public void run() {
@@ -211,7 +221,7 @@ public class CoapClientApplication {
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if(future.isSuccess()){
+                        if (future.isSuccess()) {
                             log.debug("Sent to {}:{}: {}",
                                     new Object[]{remoteEndpoint.getAddress().getHostAddress(),
                                             remoteEndpoint.getPort(), coapRequest});
@@ -220,58 +230,33 @@ public class CoapClientApplication {
                 });
             }
 
-        }, 0, TimeUnit.MILLISECONDS);
+        });
     }
 
 
-//    public void cancelObservation(InetSocketAddress remoteEndpoint, Token token, boolean confirmable){
-//
-//        MessageType.Name messageType = confirmable ? MessageType.Name.CON : MessageType.Name.ACK;
-//        CoapRequest coapRequest = new CoapRequest(messageType, MessageCode.Name.GET, remoteEndpoint)
-//
-//        scheduledExecutorService.schedule(new Runnable(){
-//
-//            @Override
-//            public void run() {
-//                ObservationCancelledEvent events = new ObservationCancelledEvent(remoteEndpoint, token, false);
-//                ChannelFuture future = Channels.write(channel, events);
-//
-//                if(log.isErrorEnabled())
-//                    future.addListener(new ChannelFutureListener() {
-//                        @Override
-//                        public void operationComplete(ChannelFuture future) throws Exception {
-//                            if(future.isSuccess()){
-//                                log.info("Observation of {} with token {} stopped.", remoteEndpoint, token);
-//                            }
-//                            else{
-//                                log.error("Could not stop observation!", future.getCause());
-//                            }
-//                        }
-//                    });
-//            }
-//
-//        }, 0, TimeUnit.MILLISECONDS);
-//    }
-
     /**
-     * Sends a CoAP PING, i.e. a {@link CoapMessage} with {@link MessageType.Name#CON} and
-     * {@link MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the given
-     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback}
-     * to be called upon reception of the corresponding {@link MessageType.Name#RST} message (CoAP PONG).
+     * Sends a CoAP PING, i.e. a {@link de.uniluebeck.itm.ncoap.message.CoapMessage} with
+     * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} and
+     * {@link de.uniluebeck.itm.ncoap.message.MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the
+     * given {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback}
+     * to be called upon reception of the corresponding {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#RST}
+     * message (CoAP PONG).
      *
      * Make sure to override {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback
-     * #processReset()}!
+     * #processReset()} to handle the CoAP PONG!
      *
-     * @param clientCallback the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to be called
-     *                       upon reception of the corresponding {@link MessageType.Name#RST} message.
+     * @param clientCallback the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to be
+     *                       called upon reception of the corresponding
+     *                       {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#RST} message.
+     *                       <br><br>
      *                       <b>Note:</b> To handle the CoAP PONG, i.e. the empty RST, the method
      *                       {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback
-     *                       #processReset()} should be overridden
+     *                       #processReset()} MUST be overridden
      * @param remoteEndpoint the desired recipient of the CoAP PING message
      */
     public void sendCoapPing(final ClientCallback clientCallback, final InetSocketAddress remoteEndpoint){
 
-        scheduledExecutorService.submit(new Runnable() {
+        exeutor.submit(new Runnable() {
 
             @Override
             public void run() {
@@ -283,7 +268,7 @@ public class CoapClientApplication {
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if(!future.isSuccess()) {
+                        if (!future.isSuccess()) {
                             Throwable cause = future.getCause();
                             log.error("Error with CoAP ping!", cause);
                             String description = cause == null ? "UNEXPECTED ERROR!" : cause.getMessage();
@@ -298,61 +283,40 @@ public class CoapClientApplication {
 
 
     /**
-     * Returns the local port the {@link DatagramChannel} of this {@link CoapClientApplication} is bound to.
+     * Returns the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
+     * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication} is bound to.
      *
-     * @return the local port the {@link DatagramChannel} of this {@link CoapClientApplication} is bound to.
+     * @return the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
+     * {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication} is bound to.
      */
     public int getPort() {
         return this.channel.getLocalAddress().getPort();
     }
 
     /**
-     * Shuts this {@link CoapClientApplication} down by closing its {@link DatagramChannel} which includes to unbind
-     * this {@link DatagramChannel} from the listening port and by this means free the port.
+     * Shuts this {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication} down by closing its
+     * {@link org.jboss.netty.channel.socket.DatagramChannel} which includes to unbind
+     * this {@link org.jboss.netty.channel.socket.DatagramChannel} from the listening port and by this means free the
+     * port.
      */
-    public final ChannelFuture shutdown(){
-        log.warn("Start to shutdown " + this.name + " (Port : " + this.getPort() + ")");
+    public final void shutdown(){
+        log.warn("Start to shutdown " + this.getName() + " (Port : " + this.getPort() + ")");
 
-        ApplicationShutdownEvent shutdownMessage = new ApplicationShutdownEvent();
-        ChannelFuture shutdownFuture = Channels.write(this.channel, shutdownMessage);
-
-        final ChannelFuture channelClosedFuture = this.channel.getCloseFuture();
-
-        shutdownFuture.addListener(new ChannelFutureListener() {
+        this.channel.close().awaitUninterruptibly().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                log.warn("Internal component shutdown completed... Close channel now.");
-                if(future.isSuccess()){
-                    //Close the datagram datagramChannel (includes unbind)
-                    CoapClientApplication.this.channel.close();
-
-                    //Await the closure and let the factory release its external resource to finalize the shutdown
-                    channelClosedFuture.addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) throws Exception {
-                            log.warn("Channel closed.");
-                            channel.getFactory().releaseExternalResources();
-                            //scheduledExecutorService.shutdownNow();
-                            log.warn("Shutdown of " + CoapClientApplication.this.name + " completed.");
-                        }
-                    });
-                }
-
-                else{
-                    log.error("Excpetion while shutting application down!", future.getCause());
-                }
-
+                log.warn("Channel closed ({}).", CoapClientApplication.this.getName());
+                channel.getFactory().releaseExternalResources();
+                log.warn("External resources released ({}).", CoapClientApplication.this.getName());
+                log.warn("Shutdown of " + CoapClientApplication.this.name + " completed.");
             }
         });
-
-        return channelClosedFuture.awaitUninterruptibly();
-
     }
 
     /**
-     * Returns the name of this {@link CoapClientApplication} instance
+     * Returns the name of this {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication} instance
      *
-     * @return the name of this {@link CoapClientApplication} instance
+     * @return the name of this {@link de.uniluebeck.itm.ncoap.application.client.CoapClientApplication} instance
      */
     public String getName() {
         return name;

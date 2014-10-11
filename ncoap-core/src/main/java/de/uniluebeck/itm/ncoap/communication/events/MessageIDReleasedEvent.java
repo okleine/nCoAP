@@ -22,40 +22,45 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package de.uniluebeck.itm.ncoap.communication.events;
 
-package de.uniluebeck.itm.ncoap.communication.events.server;
-
-import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
+import java.net.InetSocketAddress;
 
 /**
-* This internal message is sent downstream by the framework when a {@link Webservice} instance was removed from the
-* {@link de.uniluebeck.itm.ncoap.application.server.CoapServerApplication} instance.
-*
-* @author Oliver Kleine, Stefan Hüske
-*/
-public class ObservableWebserviceDeregistrationEvent {
+ * Instances of {@link de.uniluebeck.itm.ncoap.communication.events.MessageIDReleasedEvent} are sent upstream
+ * if a message ID was released, i.e. the ID can be used for new instances of
+ * {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageTransfer}
+ *
+ * @author Oliver Kleine
+ */
+public class MessageIDReleasedEvent {
 
-    private String servicePath;
+    private InetSocketAddress remoteEndpoint;
+    private int messageID;
 
     /**
-     * @param servicePath the path of the removed
-     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.events.MessageIDReleasedEvent}
+     * @param remoteEndpoint the communication partner the released ID was used for
+     * @param messageID the released message ID
      */
-    public ObservableWebserviceDeregistrationEvent(String servicePath) {
-        this.servicePath = servicePath;
+    public MessageIDReleasedEvent(InetSocketAddress remoteEndpoint, int messageID) {
+        this.remoteEndpoint = remoteEndpoint;
+        this.messageID = messageID;
     }
 
     /**
-     * Returns the path of the removed {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
-     * @return the path of the removed {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance
+     * Returns the released message ID
+     * @return the released message ID
      */
-    public String getServicePath() {
-        return servicePath;
+    public int getMessageID() {
+        return messageID;
     }
 
-
-    @Override
-    public String toString(){
-        return "Webservice Deregistration Event: " + servicePath;
+    /**
+     * Returns the communication partner the released ID was used for
+     * @return the communication partner the released ID was used for
+     */
+    public InetSocketAddress getRemoteEndpoint() {
+        return remoteEndpoint;
     }
 }

@@ -35,21 +35,23 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 /**
-* Instances of {@link WebserviceNotFoundHandler} are supposed to handle inbound {@link CoapRequest}s that are
-* addresses to a not (yet?) existing {@link Webservice}.
-*
-* The framework calls the method {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} for
-* inbound {@link CoapRequest}s if the addressed {@link Webservice} does NOT exist (if the addressed
-* {@link Webservice} exists the framework invokes
-* {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)}.
-*
-* @author Oliver Kleine
-*/
-public abstract class WebserviceNotFoundHandler {
+ * <p>Instances of {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler} are invoked to handle
+ * inbound {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s that targets a not (yet?) existing
+ * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}. Instances may e.g. create and
+ * register or update {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}s upon reception
+ * of a POST or PUT request.</p>
+ *
+ * <p>The framework calls the method {@link #processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} for
+ * inbound {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s if the addressed
+ * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} does NOT exist.</p>
+ *
+ * @author Oliver Kleine
+ */
+public abstract class NotFoundHandler {
 
     private WebserviceManager webserviceManager;
 
-    private static Logger log = LoggerFactory.getLogger(WebserviceNotFoundHandler.class.getName());
+    private static Logger log = LoggerFactory.getLogger(NotFoundHandler.class.getName());
 
     /**
      * This method is invoked by the framework to set the {@link WebserviceManager} that is supposed to be used to
@@ -64,9 +66,14 @@ public abstract class WebserviceNotFoundHandler {
 
 
     /**
-     * @return the {@link WebserviceManager} for this CoAP server. The
-     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager} instance can be e.g.
-     * used to register new {@link Webservice} instances using {@link WebserviceManager#registerService(Webservice)}.
+     * Returns the {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager} for this CoAP
+     * server. The {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager} instance can be
+     * e.g. used to register new {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}s
+     * using {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager
+     * #registerService(Webservice)}.
+     *
+     * @return the {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager} for this CoAP
+     * server.
      */
     protected WebserviceManager getWebserviceManager(){
         return this.webserviceManager;
@@ -88,15 +95,20 @@ public abstract class WebserviceNotFoundHandler {
 
 
     /**
-     * Returns the default implementation of {@link WebserviceNotFoundHandler}. The default
-     * {@link WebserviceNotFoundHandler} does not create new instances of {@link Webservice} but sets the given
-     * {@link SettableFuture} with a {@link CoapResponse} with {@link MessageCode.Name#NOT_FOUND_404}.
+     * Returns the default implementation of
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler}. The default
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler} does not create new instances
+     * or updates or deletes existing instances of
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} but sets the given
+     * {@link com.google.common.util.concurrent.SettableFuture} with a
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} with
+     * {@link de.uniluebeck.itm.ncoap.message.MessageCode.Name#NOT_FOUND_404}.
      *
-     * @return a new default {@link WebserviceNotFoundHandler} instance
+     * @return a new default {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler} instance
      */
-    public static WebserviceNotFoundHandler getDefault(){
+    public static NotFoundHandler getDefault(){
 
-        return new WebserviceNotFoundHandler() {
+        return new NotFoundHandler() {
 
             private String message = "Webservice \"%s\" not found.";
 

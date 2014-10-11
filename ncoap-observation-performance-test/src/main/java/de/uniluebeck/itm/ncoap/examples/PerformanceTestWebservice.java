@@ -64,8 +64,8 @@ public class PerformanceTestWebservice extends ObservableWebservice<Integer> {
             @Override
             public void run() {
                 try{
-                    setResourceStatus(getResourceStatus() + 1, 0);
-                    log.info("New status of service {}: {}", String.format("%03d", serviceNo), getResourceStatus());
+                    setResourceStatus(getStatus() + 1, 0);
+                    log.info("New status of service {}: {}", String.format("%03d", serviceNo), getStatus());
                 }
                 catch(Exception ex){
                     log.error("Unexpected Error!", ex);
@@ -77,13 +77,13 @@ public class PerformanceTestWebservice extends ObservableWebservice<Integer> {
 
 
     @Override
-    public MessageType.Name getMessageTypeForUpdateNotification(InetSocketAddress remoteEndpoint, Token token) {
-        return MessageType.Name.CON;
+    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteEndpoint, Token token) {
+        return true;
     }
 
     @Override
     public byte[] getEtag(long contentFormat) {
-        return new byte[0];
+        return new byte[]{0};
     }
 
     @Override
@@ -101,13 +101,13 @@ public class PerformanceTestWebservice extends ObservableWebservice<Integer> {
         String result = null;
 
         if(contentFormat == ContentFormat.TEXT_PLAIN_UTF8){
-            result = "Service " + String.format("%03d", serviceNo) + ": Status " + getResourceStatus();
+            result = "Service " + String.format("%03d", serviceNo) + ": Status " + getStatus();
         }
 
         else if(contentFormat == ContentFormat.APP_XML){
             result = "<service>\n" +
                      "\t<number>" + String.format("%03d", serviceNo) + "<number>\n" +
-                     "\t<status>" + getResourceStatus() + "</status>\n" +
+                     "\t<status>" + getStatus() + "</status>\n" +
                      "</service>";
         }
 

@@ -25,15 +25,11 @@
 
 package de.uniluebeck.itm.ncoap.communication.dispatching.client;
 
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-
 import com.google.common.base.Supplier;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SortedSetMultimap;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.TreeSet;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * The TokenFactory generates tokens to match inbound responses with open requests and enable the
@@ -63,18 +60,24 @@ public class TokenFactory {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private int maxTokenLength;
-
     private SortedSetMultimap<InetSocketAddress, Token> activeTokens;
+    private ReentrantReadWriteLock lock;
+
 
     /**
-     * Creates a new instance of {@link TokenFactory} producing {@link Token}s where the length of
-     * {@link Token#getBytes()} is not longer than the given maximum length.
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.TokenFactory}
+     * producing {@link Token}s where the length of
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token#getBytes()} is not longer than the given
+     * maximum length.
      *
-     * @param maxTokenLength the maximum length of {@link Token#getBytes()} for {@link Token}s produced by this
+     * @param maxTokenLength the maximum length of
+     *                       {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token#getBytes()} for
+     *                       {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s produced by this
      *                       factory.
      */
     public TokenFactory(int maxTokenLength){
         this.maxTokenLength = maxTokenLength;
+        this.lock = new ReentrantReadWriteLock();
 
         Supplier<TreeSet<Token>> factory = new Supplier<TreeSet<Token>>() {
             @Override
@@ -88,44 +91,52 @@ public class TokenFactory {
 
 
     /**
-     * Returns a {@link Token} to be used with an outgoing {@link CoapRequest} to relate inbound
-     * {@link CoapResponse}(s) with that request. This {@link Token} is ensured to be unique in combination with the
-     * given {@link InetSocketAddress}, i.e. as long as there are any other ongoing communications with the same
-     * CoAP server, the returned {@link ListenableFuture<Token>} will be set with a {@link Token} that is different
-     * from all other {@link Token}s in use with the given remote CoAP endpoints.
+     * Returns a {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} to be used with an outbound
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} to relate inbound
+     * {@link de.uniluebeck.itm.ncoap.message.CoapResponse}(s) with that request. This
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} is ensured to be unique in combination
+     * with the given {@link java.net.InetSocketAddress}, i.e. as long as there are any other ongoing communications
+     * with the same CoAP server, the returned {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}
+     * will be different from all other {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}s in use
+     * with the given remote CoAP endpoints.
      *
-     * @param remoteEndpoint the {@link InetSocketAddress} of the CoAP server this token is supposed to be used
+     * @param remoteEndpoint the {@link java.net.InetSocketAddress} of the CoAP server this token is supposed to be used
      *                            to communicate with.
      *
-     * @return a {@link ListenableFuture<Token>} that will be set with a {@link Token} that is not already in use to
-     * for ongoing communications with the given {@link InetSocketAddress}.
+     * @return a {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} that is not already in use
+     * for ongoing communications with the given {@link java.net.InetSocketAddress} or <code>null</code> if there is
+     * no {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} available
      */
-    public synchronized Token getNextToken(InetSocketAddress remoteEndpoint) {
+    public Token getNextToken(InetSocketAddress remoteEndpoint) {
+        try{
+            this.lock.writeLock().lock();
 
-        Token nextToken = getNextTokenInOrder(remoteEndpoint);
-
-        if(nextToken != null){
-            activeTokens.put(remoteEndpoint, nextToken);
+            if(!this.activeTokens.containsKey(remoteEndpoint)){
+                Token nextToken = new Token(new byte[1]);
+                this.activeTokens.put(remoteEndpoint, nextToken);
+                return nextToken;
+            }
+            else{
+                Token nextToken = getSuccessor(this.activeTokens.get(remoteEndpoint).last(), this.maxTokenLength);
+                if(this.activeTokens.containsEntry(remoteEndpoint, nextToken)){
+                    log.warn("No more tokens available for remote endpoint {}.", remoteEndpoint);
+                    return null;
+                }
+                else{
+                    this.activeTokens.put(remoteEndpoint, nextToken);
+                    return nextToken;
+                }
+            }
         }
-
-        return nextToken;
-    }
-
-
-    private Token getNextTokenInOrder(InetSocketAddress remoteEndpoint){
-
-        if(!activeTokens.containsKey(remoteEndpoint)){
-            return  new Token(new byte[1]);
-        }
-
-        else{
-            return this.getSuccessor(activeTokens.get(remoteEndpoint).last());
+        finally {
+            this.lock.writeLock().unlock();
         }
     }
 
 
     /**
-     * This method is invoked by the framework to pass back a {@link Token} for the given
+     * This method is invoked by the framework to pass back a
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} for the given
      * {@link InetSocketAddress} to make it re-usable for upcoming communication with the same CoAP endpoints.
      *
      * @param token the {@link Token} that is not used anymore
@@ -133,26 +144,35 @@ public class TokenFactory {
      *                            communicate with
      */
     public synchronized boolean passBackToken(InetSocketAddress remoteEndpoint, Token token){
-
-        if(activeTokens.remove(remoteEndpoint, token)){
-            log.debug("Passed back token {} (length: {}) from {}. (Now {} tokens in use.)",
-                    new Object[]{token, token.getBytes().length, remoteEndpoint,
-                            activeTokens.get(remoteEndpoint).size()});
-
-            return true;
+        try{
+            this.lock.readLock().lock();
+            if(!this.activeTokens.containsEntry(remoteEndpoint, token)){
+                log.error("Could not pass pack token (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return false;
+            }
+        }
+        finally {
+            this.lock.readLock().unlock();
         }
 
-        else{
-            log.error("Could not pass back token {} (length: {}) from {}. (Still {} tokens in use.)",
-                    new Object[]{token, token.getBytes().length, remoteEndpoint,
-                            activeTokens.get(remoteEndpoint).size()});
-
-            return false;
+        try{
+            this.lock.writeLock().lock();
+            if(this.activeTokens.remove(remoteEndpoint, token)){
+                log.info("Passed back token (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return true;
+            }
+            else{
+                log.error("Could not pass pack token (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return false;
+            }
+        }
+        finally {
+            this.lock.writeLock().unlock();
         }
     }
 
 
-    private Token getSuccessor(Token token){
+    private static Token getSuccessor(Token token, int maxTokenLength){
 
         boolean allBitsSet = true;
 
@@ -176,11 +196,8 @@ public class TokenFactory {
             }
         }
 
-
-
         long tmp = Longs.fromByteArray(Bytes.concat(new byte[8-token.getBytes().length], token.getBytes())) + 1;
         byte[] result = Longs.toByteArray(tmp);
         return new Token(Arrays.copyOfRange(result, 8 - token.getBytes().length, 8));
     }
-
 }

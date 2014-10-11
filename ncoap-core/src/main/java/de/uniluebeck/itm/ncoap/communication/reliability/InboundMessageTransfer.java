@@ -28,12 +28,12 @@ package de.uniluebeck.itm.ncoap.communication.reliability;
 import java.net.InetSocketAddress;
 
 /**
-* Instances of {@link InboundMessageTransfer} represent
+* Instances of {@link de.uniluebeck.itm.ncoap.communication.reliability.InboundMessageTransfer} represent
 * a message exchange that was started by a remote endpoint with a non-confirmable
 * {@link de.uniluebeck.itm.ncoap.message.CoapMessage}.
 *
 * The actions required upon creation of an
-* {@link InboundMessageTransfer} depend on the type of
+* {@link de.uniluebeck.itm.ncoap.communication.reliability.InboundMessageTransfer} depend on the type of
 * the receiving endpoint (client or server), e.g. for a server it is used for duplicate detection to not let the
 * addressed service process the same request twice.
 *
@@ -43,7 +43,7 @@ public class InboundMessageTransfer extends MessageTransfer {
 
     /**
      * Creates a new instance of
-     * {@link InboundMessageTransfer}
+     * {@link de.uniluebeck.itm.ncoap.communication.reliability.InboundMessageTransfer}
      *
      * @param remoteEndpoint the sender of the received non-confirmable
      *                       {@link de.uniluebeck.itm.ncoap.message.CoapMessage}

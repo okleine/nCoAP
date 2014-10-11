@@ -26,8 +26,8 @@
 package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 /**
- * Instances of {@link de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus} wrap a
- * representation of the actual status with meta data on that representations.
+ * Instances of {@link de.uniluebeck.itm.ncoap.application.server.webservice.WrappedResourceStatus} wrap a particular
+ * representation of the actual status with meta data.
  *
  * @author Oliver Kleine
  */
@@ -53,25 +53,25 @@ public class WrappedResourceStatus {
     }
 
     /**
-     * Returns the serialized representation, i.e. the resource status
-     * @return the serialized representation, i.e. the resource status
+     * Returns the serialized resource status, i.e. a particular representation
+     * @return the serialized resource status, i.e. a particular representation
      */
     public byte[] getContent() {
         return content;
     }
 
     /**
-     * Returns the number referring to the format of the serialized representation returned by {@link #getContent()}.
+     * Returns the number referring to the format of the serialized resource status returned by {@link #getContent()}.
      *
-     * @return the number referring to the format of the serialized representation
+     * @return the number referring to the format of the serialized resource status
      */
     public long getContentFormat() {
         return contentFormat;
     }
 
     /**
-     * Returns the ETAG value of the serialized representation returned by {@link #getContent()}.
-     * @return the ETAG value of the serialized representation
+     * Returns the ETAG value of the serialized resource status returned by {@link #getContent()}.
+     * @return the ETAG value of the serialized resource status
      */
     public byte[] getEtag() {
         return etag;

@@ -36,13 +36,20 @@ import java.net.InetSocketAddress;
  */
 public class ObservationCancelledEvent {
 
+    /**
+     * A collection of possible reasons for an observation to be cancelled
+     */
     public static enum Reason{
+        /**
+         * The client lazily stopped the observation, i.e. awaits the next update notification and answers with a RST.
+         */
         LAZY_CANCELLATION_BY_CLIENT("Lazily cancellation by Client (RST)!"),
-        ACTIVE_CANCELLATION_BY_CLIENT("Active cancellation by Client (GET)!");
-//        ERROR_RESPONSE("Received Response with Error Code!"),
-//        SEQUENCE_NO_MISSING("Received Reponse without Observation Sequence Number!"),
-//        RST_FROM_SERVER("Received RST from server!");
 
+        /**
+         * The client actively stopped the observation, i.e. sent a GET request with
+         * {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} set to <code>1</code>.
+         */
+        ACTIVE_CANCELLATION_BY_CLIENT("Active cancellation by Client (GET)!");
 
         private String reason;
 
@@ -50,19 +57,21 @@ public class ObservationCancelledEvent {
             this.reason = reason;
         }
 
+        /**
+         * Returns a human readable description of the reason for this observation to be stopped
+         * @return a human readable description of the reason for this observation to be stopped
+         */
         public String getReason() {
             return reason;
         }
     }
-
 
     private InetSocketAddress remoteEndpoint;
     private Token token;
     private Reason reason;
 
     /**
-     * Creates a new instance of
-     * {@link ObservationCancelledEvent}
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.events.client.ObservationCancelledEvent}
      *
      * @param remoteEndpoint the {@link java.net.InetSocketAddress} of the remote endpoint providing the observed
      *                       service
@@ -86,14 +95,26 @@ public class ObservationCancelledEvent {
 
 
     /**
-     * Returns the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} to identify the observation to be stopped
-     * @return the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} to identify the observation to be stopped
+     * Returns the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} to identify the observation
+     * to be stopped
+     * @return the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} to identify the observation
+     * to be stopped
      */
     public Token getToken() {
         return token;
     }
 
+    /**
+     * Returns a human readable description of the reason that caused this event
+     * @return a human readable description of the reason that caused this event
+     */
     public String getReason() {
         return reason.getReason();
+    }
+
+    @Override
+    public String toString(){
+        return "OBSERVATION CANCELLED (remote endpoint: " + this.getRemoteEndpoint() + ", token: " +
+                this.getToken() + ", reason: " + this.getReason() + ")";
     }
 }

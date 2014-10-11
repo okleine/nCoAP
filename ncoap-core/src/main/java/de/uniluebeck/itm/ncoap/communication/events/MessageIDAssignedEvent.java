@@ -29,17 +29,36 @@ import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 24.09.14.
+ * Instances of {@link de.uniluebeck.itm.ncoap.communication.events.MessageIDAssignedEvent} are sent upstream if a
+ * message ID was assigned to a {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageTransfer}.
+ *
+ * @author Oliver Kleine
  */
-public class MessageIDAssignedEvent extends MessageTransferEvent {
+public class MessageIDAssignedEvent extends AbstractMessageTransferEvent {
 
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.events.MessageIDAssignedEvent}
+     * @param remoteEndpoint the remote endpoint of the
+     *                       {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageTransfer} that was
+     *                       assigned a message ID
+     * @param messageID the message ID that was assigned to a new
+     *                  {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageTransfer}
+     * @param token the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token} of the
+     *              {@link de.uniluebeck.itm.ncoap.communication.reliability.MessageTransfer} that was assigned an ID
+     */
     public MessageIDAssignedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         super(remoteEndpoint, messageID, token);
     }
 
 
     @Override
-    public boolean stopConversation() {
+    public boolean stopsMessageExchange() {
         return false;
+    }
+
+    @Override
+    public String toString(){
+        return "MESSAGE ID " + this.getMessageID() + " ASSIGNED (remote endpoint: " + this.getRemoteEndpoint() +
+                ", token: " + this.getToken() + ")";
     }
 }

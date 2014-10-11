@@ -25,50 +25,30 @@
 package de.uniluebeck.itm.ncoap.communication.events;
 
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
-
 import java.net.InetSocketAddress;
 
 /**
- * Abstract base class for internal events that are caused within an ongoing or aspired message exchange
- *
- * @author Oliver Kleine
+ * Created by olli on 07.10.14.
  */
-public abstract class MessageTransferEvent {
-
-    private int messageID;
-    private Token token;
-    private InetSocketAddress remoteEndpoint;
-
-
-    protected MessageTransferEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-        this.messageID = messageID;
-        this.token = token;
-        this.remoteEndpoint = remoteEndpoint;
-    }
+public interface MessageTransferEvent {
 
     /**
-     * Returns the remote endpoint of the message exchange (i.e. communication) that caused this events
-     * @return the remote endpoint of the message exchange (i.e. communication) that caused this events
+     * Returns the remote endpoint of the message exchange (i.e. communication) that caused this event
+     * @return the remote endpoint of the message exchange (i.e. communication) that caused this event
      */
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
-    }
+    public InetSocketAddress getRemoteEndpoint();
 
     /**
-     * Returns the token of the message exchange (i.e. communication) that caused this events
-     * @return the token of the message exchange (i.e. communication) that caused this events
+     * Returns the token of the message that caused this event
+     * @return the token of the message that caused this event
      */
-    public Token getToken() {
-        return token;
-    }
+    public Token getToken();
 
     /**
-     * Returns the message ID of the message that caused this events
-     * @return the message ID of the message that caused this events
+     * Returns the message ID of the message that caused this event
+     * @return the message ID of the message that caused this event
      */
-    public int getMessageID() {
-        return messageID;
-    }
+    public int getMessageID();
 
     /**
      * Returns <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
@@ -76,5 +56,6 @@ public abstract class MessageTransferEvent {
      * @return <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
      * otherwise
      */
-    public abstract boolean stopConversation();
+    public boolean stopsMessageExchange();
+    
 }

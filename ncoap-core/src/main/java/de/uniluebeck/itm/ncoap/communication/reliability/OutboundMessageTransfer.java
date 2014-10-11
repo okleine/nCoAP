@@ -29,7 +29,8 @@ import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 29.09.14.
+ * Instances of {@link de.uniluebeck.itm.ncoap.communication.reliability.OutboundMessageTransfer} represent an
+ * outbound
  */
 public class OutboundMessageTransfer extends MessageTransfer {
 

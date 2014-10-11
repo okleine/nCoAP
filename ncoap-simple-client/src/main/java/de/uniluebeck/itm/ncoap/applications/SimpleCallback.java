@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by olli on 20.03.14.
  */
-public class SimpleCoapClientCallback extends ClientCallback {
+public class SimpleCallback extends ClientCallback {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -47,7 +47,7 @@ public class SimpleCoapClientCallback extends ClientCallback {
     private AtomicBoolean timedOut;
 
 
-    public SimpleCoapClientCallback(){
+    public SimpleCallback(){
         this.responseReceived = new AtomicBoolean(false);
         this.transmissionCounter = new AtomicInteger(0);
         this.timedOut = new AtomicBoolean(false);

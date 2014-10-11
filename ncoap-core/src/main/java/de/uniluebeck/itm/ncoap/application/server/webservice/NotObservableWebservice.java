@@ -64,13 +64,15 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     private T resourceStatus;
     private long resourceStatusExpiryDate;
 
-    private ScheduledExecutorService scheduledExecutorService;
+    private ScheduledExecutorService executor;
 
-    protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds){
+    protected NotObservableWebservice(String servicePath, T initialStatus, long lifetimeSeconds,
+                                      ScheduledExecutorService executor){
         this.path = servicePath;
         this.linkAttributes = LinkedHashMultimap.create();
 
         this.readWriteLock = new ReentrantReadWriteLock(false);
+        this.executor = executor;
         setResourceStatus(initialStatus, lifetimeSeconds);
     }
 
@@ -115,20 +117,20 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
 
     @Override
-    public final String getPath() {
+    public final String getUriPath() {
         return this.path;
     }
 
 
-    @Override
-    public final void setExecutor(ScheduledExecutorService executorService){
-        this.scheduledExecutorService = executorService;
-    }
+//    @Override
+//    public final void setExecutor(ScheduledExecutorService executorService){
+//        this.scheduledExecutorService = executorService;
+//    }
 
 
     @Override
     public ScheduledExecutorService getExecutor(){
-        return this.scheduledExecutorService;
+        return this.executor;
     }
 
 
@@ -243,7 +245,7 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
 
 
     @Override
-    public final T getResourceStatus(){
+    public final T getStatus(){
         return this.resourceStatus;
     }
 
@@ -251,7 +253,8 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     /**
      * Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies
      * or clients. The returned number is calculated using the parameter <code>lifetimeSeconds</code> on
-     * invocation of {@link #setResourceStatus(Object, long)} or {@link #NotObservableWebservice(String, Object, long)}
+     * invocation of {@link #setResourceStatus(Object, long)} or
+     * {@link #NotObservableWebservice(String, Object, long, java.util.concurrent.ScheduledExecutorService)}
      * (which internally invokes {@link #setResourceStatus(Object, long)}).
      *
      * If the number of seconds passed after the last invocation of {@link #setResourceStatus(Object, long)} is larger
@@ -265,23 +268,23 @@ public abstract class NotObservableWebservice<T> implements Webservice<T> {
     }
 
 
-    @Override
-    public int hashCode(){
-        return this.getPath().hashCode();
-    }
-
-
-    @Override
-    public boolean equals(Object object){
-        if(object == null)
-            return false;
-
-        if(!(object instanceof String || object instanceof Webservice))
-            return false;
-
-        if(object instanceof String)
-            return (this.getPath().equals(object));
-
-        return (this.getPath().equals(((Webservice) object).getPath()));
-    }
+//    @Override
+//    public int hashCode(){
+//        return this.getUriPath().hashCode();
+//    }
+//
+//
+//    @Override
+//    public boolean equals(Object object){
+//        if(object == null)
+//            return false;
+//
+//        if(!(object instanceof String || object instanceof Webservice))
+//            return false;
+//
+//        if(object instanceof String)
+//            return (this.getUriPath().equals(object));
+//
+//        return (this.getUriPath().equals(((Webservice) object).getUriPath()));
+//    }
 }

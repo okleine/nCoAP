@@ -29,6 +29,7 @@ import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import org.apache.log4j.Logger;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -56,6 +57,7 @@ public class TD_COAP_CORE_08 {
 
     @BeforeClass
     public static void sendRequest() throws Exception{
+        System.out.println("*** BEGIN OF TD_COAP_CORE_08 ***");
         LoggingConfiguration.configure();
 
         CoapClientApplication client = ApplicationFactory.getClient();
@@ -74,6 +76,12 @@ public class TD_COAP_CORE_08 {
         }, targetAddress);
 
         Thread.sleep(WAITING_TIME);
+    }
+
+    @AfterClass
+    public static void waitSomeTime() throws Exception{
+        Thread.sleep(100);
+        System.out.println("*** END OF TD_COAP_CORE_08 ***");
     }
 
 

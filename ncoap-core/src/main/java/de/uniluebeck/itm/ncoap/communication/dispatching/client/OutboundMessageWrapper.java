@@ -28,8 +28,9 @@ import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 
 /**
- * The {@link OutboundMessageWrapper} is an internal wrapper class for outgoing CoAP messages sent by a client,
- * i.e. either outgoing requests or ping messages.
+ * The {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.OutboundMessageWrapper} is an internal wrapper
+ * class for outbound CoAP messages sent by a client, i.e. either outbound
+ * {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s or CoAP PING messages (empty CON).
  *
  * @author Oliver Kleine
  */
@@ -41,36 +42,39 @@ public class OutboundMessageWrapper {
     /**
      * Creates a new {@link OutboundMessageWrapper}
      *
-     * <b>Note:</b> Override {@link ClientCallback
-     * #continueObservation(java.net.InetSocketAddress, Token)} on the given callback to keep observations running!
+     * <b>Note:</b> Override
+     * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback#continueObservation()} on the
+     * given callback to keep observations running!
      *
      * @param coapMessage the {@link de.uniluebeck.itm.ncoap.message.CoapMessage} to be sent
-     * @param responseProcessor the {@link ClientCallback} to be
-     *                          called by the framework for inbound responses and other events
+     * @param callback the {@link ClientCallback} to be called by the framework for inbound responses and other events
      */
-    public OutboundMessageWrapper(CoapMessage coapMessage, ClientCallback responseProcessor){
+    public OutboundMessageWrapper(CoapMessage coapMessage, ClientCallback callback){
 
-        if(coapMessage instanceof CoapRequest && ((CoapRequest) coapMessage).getObserve() == 0){
-            responseProcessor.setObserving();
+        if(coapMessage instanceof CoapRequest && coapMessage.getObserve() == 0){
+            callback.setObserving();
         }
 
         this.coapMessage = coapMessage;
-        this.clientCallback = responseProcessor;
-
-
+        this.clientCallback = callback;
     }
 
     /**
-     * Returns the {@link CoapMessage} to be sent
-     * @return the {@link CoapMessage} to be sent
+     * Returns the {@link de.uniluebeck.itm.ncoap.message.CoapMessage} to be sent
+     * @return the {@link de.uniluebeck.itm.ncoap.message.CoapMessage} to be sent
      */
     public CoapMessage getCoapMessage() {
         return coapMessage;
     }
 
     /**
-     * Returns the {@link ClientCallback} to process the awaited {@link CoapMessage} and other events
-     * @return the {@link ClientCallback} to process the awaited {@link CoapMessage} and other events
+     * Returns the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to process the
+     * awaited {@link de.uniluebeck.itm.ncoap.message.CoapMessage}(s) and
+     * {@link de.uniluebeck.itm.ncoap.communication.events.MessageTransferEvent}(s).
+     *
+     * @return the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to process the
+     * awaited {@link de.uniluebeck.itm.ncoap.message.CoapMessage}(s) and
+     * {@link de.uniluebeck.itm.ncoap.communication.events.MessageTransferEvent}(s).
      */
     public ClientCallback getClientCallback() {
         return clientCallback;

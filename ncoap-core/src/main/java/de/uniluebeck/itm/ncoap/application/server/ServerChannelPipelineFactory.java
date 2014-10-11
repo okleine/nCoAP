@@ -28,9 +28,8 @@ package de.uniluebeck.itm.ncoap.application.server;
 import de.uniluebeck.itm.ncoap.application.CoapChannelPipelineFactory;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
+import de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
-import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceNotFoundHandler;
-import de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import de.uniluebeck.itm.ncoap.communication.reliability.InboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -46,27 +45,38 @@ import java.util.concurrent.ScheduledExecutorService;
 */
 public class ServerChannelPipelineFactory extends CoapChannelPipelineFactory {
 
-    public static final String SERVER_OBSERVATION_HANDLER = "ServerObservationHandler";
-    public static final String SERVER_OUTBOUND_RELIABILITY_HANDLER = "ServerOutboundReliabilityHandler";
-    public static final String SERVER_INBOUND_RELIABILITY_HANDLER = "InboundReliabilityHandler";
-    public static final String WEBSERVICE_MANAGER = "WebserviceManager";
+    /**
+     * The name of the {@link de.uniluebeck.itm.ncoap.communication.reliability.InboundReliabilityHandler}
+     * instance of a CoAP server
+     */
+    public static final String INBOUND_RELIABILITY_HANDLER = "IRH";
+
 
     /**
-     * @param executor The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     * The name of the {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager}
+     * instance of a CoAP server
      */
-    public ServerChannelPipelineFactory(ScheduledExecutorService executor,
-                                        WebserviceNotFoundHandler webserviceNotFoundHandler){
+    public static final String WEBSERVICE_MANAGER = "WM";
+
+
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.application.server.ServerChannelPipelineFactory}.
+     *
+     * @param executor The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
+     * @param notFoundHandler the {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler}
+     *                        to handle inbound {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s targeting
+     *                        unknown {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice}s.
+     */
+    public ServerChannelPipelineFactory(ScheduledExecutorService executor, NotFoundHandler notFoundHandler){
 
         addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(executor));
 
         addChannelHandler(ENCODER, new CoapMessageEncoder());
         addChannelHandler(DECODER, new CoapMessageDecoder());
 
-        addChannelHandler(SERVER_OUTBOUND_RELIABILITY_HANDLER, new OutboundReliabilityHandler(executor));
-        addChannelHandler(SERVER_INBOUND_RELIABILITY_HANDLER, new InboundReliabilityHandler(executor));
+        addChannelHandler(OUTBOUND_RELIABILITY_HANDLER, new OutboundReliabilityHandler(executor));
+        addChannelHandler(INBOUND_RELIABILITY_HANDLER, new InboundReliabilityHandler(executor));
 
-        addChannelHandler(SERVER_OBSERVATION_HANDLER, new ServerObservationHandler(executor));
-
-        addChannelHandler(WEBSERVICE_MANAGER, new WebserviceManager(webserviceNotFoundHandler, executor));
+        addChannelHandler(WEBSERVICE_MANAGER, new WebserviceManager(notFoundHandler, executor));
     }
 }

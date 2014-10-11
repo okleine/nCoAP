@@ -25,8 +25,7 @@
 package de.uniluebeck.itm.ncoap.communication.dispatching.client;
 
 import com.google.common.collect.HashBasedTable;
-import de.uniluebeck.itm.ncoap.communication.events.ApplicationShutdownEvent;
-import de.uniluebeck.itm.ncoap.communication.events.MessageTransferEvent;
+import de.uniluebeck.itm.ncoap.communication.events.AbstractMessageTransferEvent;
 import de.uniluebeck.itm.ncoap.communication.events.client.ObservationCancelledEvent;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
@@ -36,10 +35,19 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * The {@link ClientCallbackManager} is responsible for processing inbound {@link CoapResponse}s. Each
- * {@link CoapRequest} needs an associated instance of {@link ClientCallback}
+ * <p>The {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallbackManager} is responsible for
+ * processing inbound {@link de.uniluebeck.itm.ncoap.message.CoapResponse}s. That is why each
+ * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} needs an associated instance of
+ * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback} to be called upon reception
+ * of a related {@link de.uniluebeck.itm.ncoap.message.CoapResponse}.</p>
+ *
+ * <p>Besides the response dispatching the
+ * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallbackManager} also deals with
+ * the reliability of inbound {@link de.uniluebeck.itm.ncoap.message.CoapResponse}s, i.e. sends RST or ACK
+ * messages if necessary.</p>
  *
  * @author Oliver Kleine
  */
@@ -50,12 +58,24 @@ public class ClientCallbackManager extends SimpleChannelHandler{
     private TokenFactory tokenFactory;
 
     private HashBasedTable<InetSocketAddress, Token, ClientCallback> clientCallbacks;
+    private ReentrantReadWriteLock lock;
 
-    ScheduledExecutorService executorService;
+    private ScheduledExecutorService executor;
 
-    public ClientCallbackManager(ScheduledExecutorService executorService, TokenFactory tokenFactory){
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallbackManager}
+     *
+     * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to execute the tasks, e.g. send,
+     *                 receive and process {@link de.uniluebeck.itm.ncoap.message.CoapMessage}s.
+     *
+     * @param tokenFactory the {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.TokenFactory} to
+     *                     provide {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.Token}
+     *                     instances for outbound {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s
+     */
+    public ClientCallbackManager(ScheduledExecutorService executor, TokenFactory tokenFactory){
         this.clientCallbacks = HashBasedTable.create();
-        this.executorService = executorService;
+        this.lock = new ReentrantReadWriteLock();
+        this.executor = executor;
         this.tokenFactory = tokenFactory;
     }
 
@@ -82,7 +102,7 @@ public class ClientCallbackManager extends SimpleChannelHandler{
                         clientCallback.processMiscellaneousError(description);
                     }
 
-                    executorService.schedule(new Runnable(){
+                    executor.schedule(new Runnable() {
                         @Override
                         public void run() {
                             Token token = coapMessage.getToken();
@@ -138,9 +158,9 @@ public class ClientCallbackManager extends SimpleChannelHandler{
         }
 
 
-        else if (me.getMessage() instanceof ApplicationShutdownEvent){
-            this.clientCallbacks.clear();
-        }
+//        else if (me.getMessage() instanceof ApplicationShutdownEvent){
+//            this.clientCallbacks.clear();
+//        }
 
 
         else if(me.getMessage() instanceof ObservationCancelledEvent){
@@ -176,28 +196,62 @@ public class ClientCallbackManager extends SimpleChannelHandler{
     }
 
 
-    private synchronized void addResponseCallback(InetSocketAddress remoteEndpoint, Token token,
+    private void addResponseCallback(InetSocketAddress remoteEndpoint, Token token,
                                                   ClientCallback clientCallback){
+        try{
+            this.lock.readLock().lock();
+            if(this.clientCallbacks.contains(remoteEndpoint, token)){
+                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return;
+            }
+        }
+        finally {
+            this.lock.readLock().unlock();
+        }
 
-        if(!(clientCallbacks.put(remoteEndpoint, token, clientCallback) == null))
-            log.error("Tried to use token {} for {} twice!", token, remoteEndpoint);
-        else
-            log.debug("Added response processor for token {} from {}.", token,
-                    remoteEndpoint);
+        try{
+            this.lock.writeLock().lock();
+            if(this.clientCallbacks.contains(remoteEndpoint, token)){
+                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            }
+            else{
+                clientCallbacks.put(remoteEndpoint, token, clientCallback);
+                log.debug("Added callback (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            }
+        }
+        finally {
+            this.lock.writeLock().unlock();
+        }
     }
 
 
-    private synchronized ClientCallback removeClientCallback(InetSocketAddress remoteEndpoint,
-                                                             Token token){
+    private ClientCallback removeClientCallback(InetSocketAddress remoteEndpoint, Token token){
+        try{
+            this.lock.readLock().lock();
+            if(!this.clientCallbacks.contains(remoteEndpoint, token)){
+                log.warn("No callback found to be removed (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return null;
+            }
+        }
+        finally {
+            this.lock.readLock().unlock();
+        }
 
-        ClientCallback result = clientCallbacks.remove(remoteEndpoint, token);
-
-        if(result != null)
-            log.debug("Removed response processor for token {} from {}.", token,
-                    remoteEndpoint);
-
-        log.debug("Number of clients waiting for response: {}. ", clientCallbacks.size());
-        return result;
+        try{
+            this.lock.writeLock().lock();
+            ClientCallback callback = clientCallbacks.remove(remoteEndpoint, token);
+            if(callback == null){
+                log.warn("No callback found to be removed (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            }
+            else{
+                log.info("Removed callback (remote endpoint: {}, token: {}). Remaining: {}",
+                        new Object[]{remoteEndpoint, token, this.clientCallbacks.size()});
+            }
+            return callback;
+        }
+        finally {
+            this.lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -220,8 +274,8 @@ public class ClientCallbackManager extends SimpleChannelHandler{
         }
 
         //some internal event related to a message exchange
-        else if(me.getMessage() instanceof MessageTransferEvent){
-            handleMessageExchangeEvent(ctx, (MessageTransferEvent) me.getMessage());
+        else if(me.getMessage() instanceof AbstractMessageTransferEvent){
+            handleMessageExchangeEvent((AbstractMessageTransferEvent) me.getMessage());
         }
 
         else if(me.getMessage() instanceof CoapMessage){
@@ -248,11 +302,11 @@ public class ClientCallbackManager extends SimpleChannelHandler{
     }
 
 
-    private void handleMessageExchangeEvent(ChannelHandlerContext ctx, MessageTransferEvent event) {
+    private void handleMessageExchangeEvent(AbstractMessageTransferEvent event) {
        ClientCallback clientCallback;
 
        //find the response processor for the inbound events
-       if(event.stopConversation())
+       if(event.stopsMessageExchange())
            clientCallback = clientCallbacks.remove(event.getRemoteEndpoint(), event.getToken());
        else
            clientCallback = clientCallbacks.get(event.getRemoteEndpoint(), event.getToken());

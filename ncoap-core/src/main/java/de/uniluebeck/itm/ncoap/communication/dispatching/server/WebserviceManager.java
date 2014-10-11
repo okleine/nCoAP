@@ -25,22 +25,26 @@
 
 package de.uniluebeck.itm.ncoap.communication.dispatching.server;
 
+import com.google.common.collect.HashBasedTable;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.application.server.webservice.WellKnownCoreResource;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
 import de.uniluebeck.itm.ncoap.communication.events.MessageTransferEvent;
-import de.uniluebeck.itm.ncoap.communication.events.server.ObservableWebserviceDeregistrationEvent;
-import de.uniluebeck.itm.ncoap.communication.events.server.ObservableWebserviceRegistrationEvent;
 import de.uniluebeck.itm.ncoap.message.*;
 import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
+import de.uniluebeck.itm.ncoap.message.options.OptionValue;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
 * The {@link WebserviceManager} is the topmost {@link ChannelHandler} of the {@link ChannelPipeline} returned
@@ -50,7 +54,7 @@ import java.util.concurrent.ScheduledExecutorService;
 *     <li>invoke the method {@link Webservice#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} of
 *     the addressed {@link Webservice} instance (if it exists) or</li>
 *     <li>invoke the method
-*     {@link WebserviceNotFoundHandler#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} if the
+*     {@link NotFoundHandler#processCoapRequest(SettableFuture, CoapRequest, InetSocketAddress)} if the
 *     inbound {@link CoapRequest} addresses a service that does not (yet) exist.
 *     </li>
 * </ul>
@@ -74,28 +78,33 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     //This map holds all registered webservices (key: URI path, value: Webservice instance)
-    private HashMap<String, Webservice> registeredServices;
+    private Map<String, Webservice> registeredServices;
 
+    private HashBasedTable<InetSocketAddress, Token, ObservableWebservice> observations;
+    private ReentrantReadWriteLock observationsLock;
 
-    private ScheduledExecutorService executorService;
-    private WebserviceNotFoundHandler webServiceNotFoundHandler;
+    private ScheduledExecutorService executor;
+    private NotFoundHandler webServiceNotFoundHandler;
     private Channel channel;
     private boolean shutdown;
 
     /**
-     * @param webServiceNotFoundHandler Instance of {@link WebserviceNotFoundHandler} to deal with inbound {@link CoapRequest}s with
+     * @param webServiceNotFoundHandler Instance of {@link NotFoundHandler} to deal with inbound {@link CoapRequest}s with
      *                          {@link MessageCode.Name#PUT} if the addresses {@link Webservice} does not exist.
      *
-     * @param executorService the {@link ScheduledExecutorService} to process the task to send a {@link CoapResponse}
+     * @param executor the {@link ScheduledExecutorService} to process the task to send a {@link CoapResponse}
      *                        and
      */
-    public WebserviceManager(WebserviceNotFoundHandler webServiceNotFoundHandler, ScheduledExecutorService executorService){
+    public WebserviceManager(NotFoundHandler webServiceNotFoundHandler, ScheduledExecutorService executor){
 
-        this.registeredServices = new HashMap<>();
-        this.executorService = executorService;
+        this.registeredServices = Collections.synchronizedMap(new HashMap<String, Webservice>());
+        this.executor = executor;
         this.webServiceNotFoundHandler = webServiceNotFoundHandler;
         this.shutdown = false;
-        registerService(new WellKnownCoreResource(registeredServices));
+        this.observations = HashBasedTable.create();
+        this.observationsLock = new ReentrantReadWriteLock();
+
+        registerService(new WellKnownCoreResource(registeredServices, executor));
     }
 
 
@@ -124,13 +133,13 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      */
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
-        log.debug("Incoming (from {}): {}.", me.getRemoteAddress(), me.getMessage());
+        log.debug("Inbound (from {}): {}.", me.getRemoteAddress(), me.getMessage());
 
         if(me.getMessage() instanceof CoapRequest)
-            messageReceived(ctx, (CoapRequest) me.getMessage(), (InetSocketAddress) me.getRemoteAddress());
+            handleCoapRequest(ctx, (CoapRequest) me.getMessage(), (InetSocketAddress) me.getRemoteAddress());
 
         else if(me.getMessage() instanceof MessageTransferEvent){
-            log.debug("IGNORE EVENT: {}", me.getMessage());
+            handleMessageTransferEvent((MessageTransferEvent) me.getMessage());
         }
 
         else{
@@ -141,12 +150,71 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
         me.getFuture().setSuccess();
     }
 
+    private void handleMessageTransferEvent(MessageTransferEvent event) {
+        log.debug("Inbound: {}", event);
+        InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
+        Token token = event.getToken();
 
-    private void messageReceived(final ChannelHandlerContext ctx, final CoapRequest coapRequest,
-                                final InetSocketAddress remoteEndpoint){
+        try{
+            observationsLock.readLock().lock();
+            if(!this.observations.contains(remoteEndpoint, token)){
+                return;
+            }
+        }
+        finally {
+            observationsLock.readLock().unlock();
+        }
+
+        if(event.stopsMessageExchange()){
+            try{
+                observationsLock.writeLock().lock();
+                ObservableWebservice webservice = this.observations.remove(remoteEndpoint, token);
+                if(webservice != null){
+                    log.info("Stopped observation of \"{}\" (remote endpoint: {}, token: {}) due to: {}",
+                            new Object[]{webservice.getUriPath(), remoteEndpoint, token, event});
+                    webservice.handleMessageTransferEvent(event);
+                }
+            }
+            finally {
+                observationsLock.writeLock().unlock();
+            }
+        }
+
+        else{
+            try{
+                observationsLock.readLock().lock();
+                ObservableWebservice webservice = this.observations.get(remoteEndpoint, token);
+                if(webservice != null){
+                    webservice.handleMessageTransferEvent(event);
+                }
+            }
+            finally {
+                observationsLock.readLock().unlock();
+            }
+        }
+    }
+
+
+    private void handleCoapRequest(final ChannelHandlerContext ctx, final CoapRequest coapRequest,
+                                   final InetSocketAddress remoteEndpoint){
 
         //Create settable future to wait for response
         final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
+
+        //Look up web service instance to handle the request
+        final Webservice webservice = registeredServices.get(coapRequest.getUriPath());
+
+        if(coapRequest.getObserve() == 1 && webservice instanceof ObservableWebservice){
+            Token token = coapRequest.getToken();
+            if(((ObservableWebservice) webservice).removeObservation(remoteEndpoint, token)){
+                log.info("Stopped observation due to GET request with observe = 1 (remote endpoint: {}, token: {})",
+                        remoteEndpoint, token);
+            }
+            else{
+                log.warn("No observation found to be stopped due to GET request with observe = 1 (remote endpoint:" +
+                        "{}, token: {}", remoteEndpoint, token);
+            }
+        }
 
         responseFuture.addListener(new Runnable() {
             @Override
@@ -156,7 +224,22 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
                     coapResponse.setMessageID(coapRequest.getMessageID());
                     coapResponse.setToken(coapRequest.getToken());
 
-                    sendCoapResponse(ctx, remoteEndpoint, coapResponse);
+                    if(coapResponse.isUpdateNotification()){
+                        if(webservice instanceof ObservableWebservice && coapRequest.getObserve() == 0){
+                            ObservableWebservice observableWebservice = (ObservableWebservice) webservice;
+                            observableWebservice.addObservation(remoteEndpoint, coapResponse.getToken(),
+                                    coapResponse.getContentFormat());
+                            sendUpdateNotification(ctx, remoteEndpoint, coapResponse, observableWebservice);
+                        }
+                        else{
+                            coapResponse.removeOptions(OptionValue.Name.OBSERVE);
+                            log.warn("Removed observe option from response!");
+                            sendCoapResponse(ctx, remoteEndpoint, coapResponse);
+                        }
+                    }
+                    else{
+                        sendCoapResponse(ctx, remoteEndpoint, coapResponse);
+                    }
                 }
                 catch (Exception e) {
                     log.error("Exception while processing inbound request", e);
@@ -169,11 +252,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
                     sendCoapResponse(ctx, remoteEndpoint, errorResponse);
                 }
             }
-        }, executorService);
-
-
-        //Look up web service instance to handle the request
-        final Webservice webservice = registeredServices.get(coapRequest.getUriPath());
+        }, executor);
 
         try{
             //The requested Webservice does not exist
@@ -199,15 +278,32 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
     private void sendCoapResponse(final ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,
                                   final CoapResponse coapResponse){
+
         //Write response
         log.info("Write response to {}: {}", remoteAddress, coapResponse);
         Channels.write(ctx.getChannel(), coapResponse, remoteAddress);
     }
 
 
+    private void sendUpdateNotification(ChannelHandlerContext ctx, InetSocketAddress remoteAddress,
+                                        CoapResponse updateNotification, ObservableWebservice webservice){
+
+        try{
+            this.observationsLock.writeLock().lock();
+            this.observations.put(remoteAddress, updateNotification.getToken(), webservice);
+            log.info("Added new observation of \"{}\" (remote endpoint: {}, token: {})",
+                    new Object[]{webservice.getUriPath(), remoteAddress, updateNotification.getToken()});
+        }
+        finally{
+            this.observationsLock.writeLock().unlock();
+        }
+
+        sendCoapResponse(ctx, remoteAddress, updateNotification);
+    }
+
+
     private void sendPreconditionFailed(MessageType.Name messageType, String servicePath,
-                                        SettableFuture<CoapResponse> responseFuture)
-            throws Exception{
+                                        SettableFuture<CoapResponse> responseFuture) throws Exception{
 
         CoapResponse coapResponse = new CoapResponse(messageType, MessageCode.Name.PRECONDITION_FAILED_412);
         String message = "IF-NONE-MATCH option was set but service \"" + servicePath + "\" exists.";
@@ -255,7 +351,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
         //some time to send possible update notifications (404_NOT_FOUND) to observers
         try{
-            Thread.sleep(3000);
+            Thread.sleep(5000);
         }
         catch (InterruptedException e) {
             log.error("Interrupted while shutting down CoapServerApplication!", e);
@@ -275,14 +371,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
         if(removedService != null){
             log.info("Service {} removed from server.", uriPath);
-
-//            if(removedService instanceof ObservableWebservice)
-//                ((ObservableWebservice) removedService).prepareShutdown();
-
             removedService.shutdown();
-
-            if(removedService instanceof ObservableWebservice)
-                Channels.write(this.channel, new ObservableWebserviceDeregistrationEvent(uriPath));
         }
 
         else{
@@ -298,7 +387,7 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
 
     /**
      * Registers a Webservice instance at the server. After registration the service will be available at the path
-     * given as <code>service.getPath()</code>.
+     * given as <code>service.getUriPath()</code>.
      *
      * It is not possible to register multiple webServices at a single path. If a new service is registered at the
      * server with a path from another already registered service, then the new service replaces the old one.
@@ -307,21 +396,24 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      */
     public final void registerService(final Webservice webservice) {
         webservice.setWebserviceManager(this);
-        registeredServices.put(webservice.getPath(), webservice);
-        log.info("Registered new service at " + webservice.getPath());
+        registeredServices.put(webservice.getUriPath(), webservice);
+        log.info("Registered new service at " + webservice.getUriPath());
 
-        if(webservice instanceof ObservableWebservice){
-            ObservableWebserviceRegistrationEvent registrationEvent =
-                    new ObservableWebserviceRegistrationEvent((ObservableWebservice) webservice);
-
-            ChannelFuture future = Channels.write(channel, registrationEvent);
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    log.info("Registered {} at observable resource handler.", webservice.getPath());
-                }
-            });
-        }
+//        if(webservice instanceof ObservableWebservice){
+//            ObservableWebserviceRegistrationEvent registrationEvent =
+//                    new ObservableWebserviceRegistrationEvent((ObservableWebservice) webservice);
+//
+//            ChannelFuture future = Channels.write(channel, registrationEvent);
+//            future.addListener(new ChannelFutureListener() {
+//                @Override
+//                public void operationComplete(ChannelFuture future) throws Exception {
+//                    log.info("Registered {} at observable resource handler.", webservice.getUriPath());
+//                }
+//            });
+//        }
     }
 
+    public Channel getChannel(){
+        return this.channel;
+    }
 }
