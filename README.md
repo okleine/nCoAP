@@ -41,7 +41,7 @@ To use the latest protocol implementation release add the following to your pom.
     <dependency>
         <groupId>de.uniluebeck.itm</groupId>
         <artifactId>ncoap-core</artifactId>
-        <version>1.8.1</version>
+        <version>1.8.2</version>
     </dependency>
 ...
 </dependencies>
