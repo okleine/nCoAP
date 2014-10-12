@@ -50,14 +50,14 @@ To use the latest protocol implementation release add the following to your pom.
 The other models, i.e.,
 
 ```xml
-<groupId>de.uniluebeck.itm.ncoap</groupId>
+<groupId>de.uniluebeck.itm</groupId>
 <artifactId>ncoap-simple-client</artifactId>
 ```
 
 and
 
 ```xml
-<groupId>de.uniluebeck.itm.ncoap</groupId>
+<groupId>de.uniluebeck.itm</groupId>
 <artifactId>ncoap-simple-server</artifactId>
 ```
 
@@ -67,4 +67,4 @@ write such applications using ncoap.
 
 ### Documentation
 
-The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.1
+The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.2
