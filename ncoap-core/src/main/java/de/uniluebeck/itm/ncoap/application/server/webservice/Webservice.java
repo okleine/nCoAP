@@ -27,8 +27,8 @@ package de.uniluebeck.itm.ncoap.application.server.webservice;
 
 import com.google.common.util.concurrent.SettableFuture;
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
+import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
@@ -37,7 +37,6 @@ import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 
 /**
 * This is the interface to be implemented to realize a CoAP webservice. The generic type T means, that the object
@@ -67,9 +66,12 @@ public interface Webservice<T> {
 
 
     /**
-     * Returns the {@link WebserviceManager} this {@link Webservice} instance is registered at. This is useful, e.g.
-     * to create and register or modify {@link Webservice} instances upon reception of a {@link CoapRequest} with
-     * {@link MessageCode.Name#POST}.
+     * Returns the {@link de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager} this
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance is registered at. This is
+     * useful, e.g. to create and register or modify
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instances upon reception of a
+     * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} with
+     * {@link de.uniluebeck.itm.ncoap.message.MessageCode.Name#POST}.
      *
      * @return the {@link CoapServerApplication} this {@link Webservice} instance is registered at.
      */
@@ -83,7 +85,7 @@ public interface Webservice<T> {
      *
      * <p>Example: Assume this webservice represents a switch that has two states "on" and "off". The payload of the
      * previously mentioned {@link CoapResponse} could then be either "on" or "off". But since there are only
-     * two possible states {@link T} could be of type {@link Boolean}.</p>
+     * two possible states the generic <code>T</code> could be of type {@link java.lang.Boolean}.</p>
      *
      * @return the object of type T that holds the actual resourceStatus of the resource
      */
@@ -95,9 +97,9 @@ public interface Webservice<T> {
      *
      * Example: Assume this webservice represents a switch that has two states "on" and "off". The payload of the
      * previously mentioned {@link CoapResponse} could then be either "on" or "off". But since there are only
-     * two possible states {@link T} could be of type {@link Boolean}.
+     * two possible states <code>T</code> could be of type {@link Boolean}.
      *
-     * @param newStatus the object of type {@link T} representing the new status
+     * @param newStatus the object of type <code>T</code> representing the new status
      * @param lifetimeSeconds the number of seconds this status is valid, i.e. cachable by clients or proxies.
      */
     public void setResourceStatus(T newStatus, long lifetimeSeconds);

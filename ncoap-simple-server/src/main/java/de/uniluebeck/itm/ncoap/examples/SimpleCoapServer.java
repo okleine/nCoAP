@@ -22,55 +22,31 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uniluebeck.itm.ncoap.applications;
+package de.uniluebeck.itm.ncoap.examples;
 
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.Override;
-import java.util.concurrent.atomic.AtomicInteger;
+import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute;
+import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 
 /**
- * Created by olli on 20.03.14.
+ * Created by olli on 30.03.14.
  */
-public class SimpleObservationCallback extends SimpleCallback {
+public class SimpleCoapServer extends CoapServerApplication {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    public static void main(String[] args) throws Exception {
+        LoggingConfiguration.configureDefaultLogging();
 
-    private AtomicInteger responseCounter;
-    private int expectedNumberOfUpdateNotifications;
+        SimpleCoapServer server = new SimpleCoapServer();
 
-    public SimpleObservationCallback(int expectedNumberOfUpdateNotifications){
-        this.responseCounter = new AtomicInteger(0);
-        this.expectedNumberOfUpdateNotifications = expectedNumberOfUpdateNotifications;
+        SimpleNotObservableWebservice simpleWebservice =
+                new SimpleNotObservableWebservice("/simple", "Some payload...", 5000, server.getExecutor());
+        server.registerService(simpleWebservice);
+
+        SimpleObservableTimeService timeService = new SimpleObservableTimeService("/utc-time", 5000,
+                server.getExecutor());
+
+        server.registerService(timeService);
     }
 
-    /**
-     * Increases the reponse counter by 1, i.e. {@link #getResponseCount()} will return a higher value after
-     * invocation of this method.
-     *
-     * @param coapResponse the response message
-     */
-    @Override
-    public void processCoapResponse(CoapResponse coapResponse) {
-        int value = responseCounter.incrementAndGet();
-        log.info("Received #{}: {}", value, coapResponse);
-    }
-
-
-    @Override
-    public int getResponseCount(){
-        return responseCounter.intValue();
-    }
-
-    @Override
-    public boolean continueObservation() {
-        boolean result = getResponseCount() < expectedNumberOfUpdateNotifications;
-
-        log.info("No. of awaited responses: {} (Continue observation: {})",
-                expectedNumberOfUpdateNotifications, result);
-
-        return result;
-    }
 }

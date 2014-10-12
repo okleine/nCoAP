@@ -10,18 +10,19 @@
 
     <artifactId>ncoap-complete</artifactId>
     <packaging>pom</packaging>
-    <version>1.8.2-SNAPSHOT</version>
+    <version>1.8.2</version>
 
-    <name>ncoap-complete</name>
-
-    <url>http://media.itm.uni-luebeck.de/people/kleine/maven/${project.artifactId}/${project.version}</url>
+    <name>nCoAP Complete</name>
+    <description>
+      This is the wrapper module to include the protocol implementation (ncoap-core) and simple examples
+      on how to build clients (ncoap-simple-client) and servers (ncoap-simple-server)
+    </description>
+    <url>https://github.com/okleine/nCoAP</url>
 
     <modules>
-        <module>ncoap-core</module>
-        <module>ncoap-simple-client</module>
-        <module>ncoap-simple-server</module>
-      <module>ncoap-etsi-plugtest-client</module>
-      <module>ncoap-observation-performance-test</module>
+      <module>ncoap-core</module>
+      <module>ncoap-simple-client</module>
+      <module>ncoap-simple-server</module>
     </modules>
 
     <distributionManagement>
@@ -43,11 +44,18 @@
 
     <reporting>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
-            </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>2.9.1</version>
+            <reportSets>
+              <reportSet>
+                <reports>
+                  <report>javadoc</report>
+                </reports>
+              </reportSet>
+            </reportSets>
+          </plugin>
         </plugins>
     </reporting>
 

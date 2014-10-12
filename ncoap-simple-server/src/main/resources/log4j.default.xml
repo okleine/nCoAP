@@ -13,12 +13,12 @@
         <appender-ref ref="console"/>
     </appender>
 
-    <logger name="de.uniluebeck.itm.ncoap">
-        <level value="debug"/>
+    <logger name="de.uniluebeck.itm.ncoap.examples">
+        <level value="info"/>
     </logger>
 
     <root>
-        <priority value="error"/>
+        <priority value="warn"/>
         <appender-ref ref="async"/>
     </root>
 </log4j:configuration>

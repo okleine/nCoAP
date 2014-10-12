@@ -8,11 +8,16 @@
     <parent>
         <groupId>de.uniluebeck.itm</groupId>
         <artifactId>ncoap-complete</artifactId>
-        <version>1.8.2-SNAPSHOT</version>
+        <version>1.8.2</version>
     </parent>
 
-    <groupId>de.uniluebeck.itm.ncoap</groupId>
     <artifactId>ncoap-simple-server</artifactId>
+    <name>Simple nCoAP-Server</name>
+    <description>
+      Example module on how to build a simple CoAP server application hosting observable and not observable
+      webservices using nCoAP.
+    </description>
+
     <packaging>jar</packaging>
 
     <dependencies>
