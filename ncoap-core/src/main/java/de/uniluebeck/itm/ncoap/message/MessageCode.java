@@ -50,16 +50,19 @@ package de.uniluebeck.itm.ncoap.message;
 import java.util.HashMap;
 
 /**
- * This enumeration contains all defined message codes (i.e. methods for requests and status for responses)
- * in CoAPs draft v7
+ * The {@link de.uniluebeck.itm.ncoap.message.MessageCode} class provides some useful helper functions to deal with
+ * the several message codes defined in CoAP.
  *
  * @author Oliver Kleine
 */
 
 public abstract class MessageCode {
 
-    private static final HashMap<Integer, Name> validNumbers = new HashMap<Integer, Name>();
+    private static final HashMap<Integer, Name> validNumbers = new HashMap<>();
 
+    /**
+     * This enumeration provides constants for all message codes defined in CoAP
+     */
     public static enum Name{
         UNKNOWN(-1),
 

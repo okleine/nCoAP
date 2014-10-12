@@ -42,7 +42,7 @@ import java.util.*;
 
 
 /**
- * This class is the base class for inheriting subtypes, i.e. requests and responses. This abstract class provides the
+ * This class is the base class for inheriting subtypes, e.g. requests and responses. This abstract class provides the
  * cut-set in terms of functionality of {@link CoapRequest} and {@link CoapResponse}.
  *
  * @author Oliver Kleine

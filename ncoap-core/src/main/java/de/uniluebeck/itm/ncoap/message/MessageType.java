@@ -57,8 +57,11 @@ import java.util.HashMap;
  */
 public abstract class MessageType {
 
-    private static final HashMap<Integer, Name> validNumbers = new HashMap<Integer, Name>();
+    private static final HashMap<Integer, Name> validNumbers = new HashMap<>();
 
+    /**
+     *  This enumeration provides constants for all message types defined in CoAP
+     */
     public static enum Name{
 
         UNKNOWN(-1),

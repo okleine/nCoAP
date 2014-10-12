@@ -37,10 +37,10 @@ import java.util.Iterator;
 
 
 /**
- * Instances of {@link de.uniluebeck.itm.ncoap.message.CoapResponse} are created by an instance of
- * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} to answer requests.
+ * <p>Instances of {@link de.uniluebeck.itm.ncoap.message.CoapResponse} are created by an instance of
+ * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} to answer requests.</p>
  *
- * <b>Note:</b> The given {@link MessageType.Name} (one of
+ * <p><b>Note:</b> The given {@link MessageType.Name} (one of
  * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} or
  * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#NON}) may be changed
  * by the framework before it is sent to the other CoAP endpoints. Such a change might e.g. happen if this
@@ -51,29 +51,29 @@ import java.util.Iterator;
  * {@link de.uniluebeck.itm.ncoap.message.CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will
  * ensure the {@link de.uniluebeck.itm.ncoap.message.MessageType} of this
  * {@link de.uniluebeck.itm.ncoap.message.CoapResponse} to be set to
- * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#ACK} to make it a piggy-backed response.
+ * {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#ACK} to make it a piggy-backed response.</p>
  *
  * @author Oliver Kleine
  */
 public class CoapResponse extends CoapMessage {
 
-    private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
+    private static Logger log = LoggerFactory.getLogger(CoapResponse.class.getName());
 
     private static final String NO_ERRROR_CODE = "Code no. %s is no error code!";
 
     /**
      * Creates a new instance of {@link de.uniluebeck.itm.ncoap.message.CoapResponse}
      *
-     * @param messageType the {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
+     * @param messageType <p>the {@link de.uniluebeck.itm.ncoap.message.MessageType.Name}
      *                    (one of {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#CON} or
-     *                    {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#NON}).
+     *                    {@link de.uniluebeck.itm.ncoap.message.MessageType.Name#NON}).</p>
      *
-     *                    <b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
-     *                    framework (see class description).
+     *                    <p><b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by
+     *                    the framework (see class description).</p>
      *
      * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
      *
-     * @throws java.lang.IllegalArgumentException
+     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
     public CoapResponse(MessageType.Name messageType, MessageCode.Name messageCode) throws IllegalArgumentException {
         this(messageType.getNumber(), messageCode.getNumber());
@@ -83,15 +83,15 @@ public class CoapResponse extends CoapMessage {
     /**
      * Creates a new instance of {@link CoapResponse}.
      *
-     * @param messageType the number representing the {@link de.uniluebeck.itm.ncoap.message.MessageType}
+     * @param messageType <p>the number representing the {@link de.uniluebeck.itm.ncoap.message.MessageType}</p>
      *
-     *                    <b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
-     *                    framework (see class description).
+     *                    <p><b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by
+     *                    the framework (see class description).</p>
      *
      * @param messageCode the {@link de.uniluebeck.itm.ncoap.message.MessageCode.Name} for this
      * {@link de.uniluebeck.itm.ncoap.message.CoapResponse}
      *
-     * @throws java.lang.IllegalArgumentException
+     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
     public CoapResponse(int messageType, int messageCode) throws IllegalArgumentException {
         super(messageType, messageCode);
@@ -106,22 +106,23 @@ public class CoapResponse extends CoapMessage {
      * the stacktrace of the given {@link Throwable} as payload (this is particularly useful for debugging). Basically,
      * this can be considered a shortcut to create error responses.
      *
-     * @param messageType the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     *                    {@link MessageType.Name#NON}).
+     * @param messageType <p>the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
+     *                    {@link MessageType.Name#NON}).</p>
      *
-     *                    <b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
-     *                    framework (see class description).
+     *                    <p><b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by
+     *                    the framework (see class description).</p>
      * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
      *
      * @return a new instance of {@link CoapResponse} with the {@link Throwable#getMessage} as content (payload).
      *
-     * @throws java.lang.IllegalArgumentException if the given message code does not refer to an error
+     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
     public static CoapResponse createErrorResponse(MessageType.Name messageType, MessageCode.Name messageCode,
                                                    String content) throws IllegalArgumentException{
 
-        if(!MessageCode.isErrorMessage(messageCode.getNumber()))
+        if(!MessageCode.isErrorMessage(messageCode.getNumber())){
             throw new IllegalArgumentException(String.format(NO_ERRROR_CODE, messageCode.toString()));
+        }
 
         CoapResponse errorResponse = new CoapResponse(messageType, messageCode);
         errorResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
@@ -134,11 +135,11 @@ public class CoapResponse extends CoapMessage {
      * the stacktrace of the given {@link Throwable} as payload (this is particularly useful for debugging). Basically,
      * this can be considered a shortcut to create error responses.
      *
-     * @param messageType the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     *                    {@link MessageType.Name#NON}).
+     * @param messageType <p>the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
+     *                    {@link MessageType.Name#NON}).</p>
      *
-     *                    <b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
-     *                    framework (see class description).
+     *                    <p><b>Note:</b> the {@link de.uniluebeck.itm.ncoap.message.MessageType} might be changed by the
+     *                    framework (see class description).</p>
      * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
      *
      * @return a new instance of {@link CoapResponse} with the {@link Throwable#getMessage} as content (payload).
@@ -186,58 +187,6 @@ public class CoapResponse extends CoapMessage {
     public void setObserve(){
         this.setObserve(System.currentTimeMillis() % ResourceStatusAge.MODULUS);
     }
-
-//    /**
-//     * Adds an {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option with the given sequence
-//     * number. The value of the option will correspond to the 3 least significant bytes of a (big endian) byte
-//     * representation of the given sequence number, i.e. a given sequence number of <code>2^24 + 1</code> leads to a
-//     * value of <code>1</code>.
-//     *
-//     * <b>Note:</b>
-//     * <ul>
-//     *     <li>This method must to be invoked once by the
-//     *     {@link de.uniluebeck.itm.ncoap.application.server.webservice.ObservableWebservice} that created this
-//     *     instance of {@link de.uniluebeck.itm.ncoap.message.CoapResponse} to accept the observation request of the
-//     *     remote endpoint an observer. Otherwise, the remote endpoint is not added to the list of observers.
-//     *     However, for internal reasons the first update notification will contain the given sequence number + 1, so
-//     *     it is recommended to invoke this method with parameter <code>0</code>.
-//     *     </li>
-//     *     <li>
-//     *       Invocation of this method will override a possibly previously contained
-//     *       {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} option without any warning.
-//     *     </li>
-//     * </ul>
-//     * <b>Note:</b>
-//     *
-//     * @param sequenceNumber the sequence number for the {@link OptionValue.Name#OBSERVE} to be set.
-//     */
-//    public void setObserveOption(long sequenceNumber){
-//        try {
-//            this.removeOptions(OptionValue.Name.OBSERVE);
-//            sequenceNumber = sequenceNumber & 0xFFFFFF;
-//            this.addUintOption(OptionValue.Name.OBSERVE, sequenceNumber);
-//        }
-//        catch (IllegalArgumentException e){
-//            this.removeOptions(OptionValue.Name.OBSERVE);
-//            log.error("This should never happen.", e);
-//        }
-//    }
-
-//    /**
-//     * Returns the decoded value of {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} if such
-//     * an option is contained in this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or <code>null</code> if
-//     * there is no such option.
-//     *
-//     * @return the decoded value of {@link de.uniluebeck.itm.ncoap.message.options.OptionValue.Name#OBSERVE} if such
-//     * an option is contained in this {@link de.uniluebeck.itm.ncoap.message.CoapResponse} or <code>null</code> if
-//     * there is no such option.
-//     */
-//    public Long getObservationSequenceNumber(){
-//        if(!options.containsKey(OptionValue.Name.OBSERVE))
-//            return null;
-//        else
-//            return (Long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
-//    }
 
 
     /**
@@ -332,56 +281,4 @@ public class CoapResponse extends CoapMessage {
         return new URI(null, null, null, (int) UintOptionValue.UNDEFINED, locationPath.toString(),
                 locationQuery.toString(), null);
     }
-
-//    /**
-//     * Set the observing option. This causes eventually already contained observing options to be removed from
-//     * the list even in case of an exception.
-//     *
-//     * @param sequenceNumber the sequence number for the observing option
-//     *
-//     * @throws ToManyOptionsException if adding an observing options would exceed the maximum number of
-//     * options per message.
-//     */
-//    public void setObserveOptionValue(long sequenceNumber) throws ToManyOptionsException {
-//        options.removeAllOptions(OptionRegistry.Option.Name.OBSERVE_RESPONSE);
-//        try{
-//            Option option = Option.createUintOption(OptionRegistry.Option.Name.OBSERVE_RESPONSE, sequenceNumber);
-//            options.addOption(header.getMessageCode(), OptionRegistry.Option.Name.OBSERVE_RESPONSE, option);
-//        } catch (OptionCodecException e) {
-//            options.removeAllOptions(OptionRegistry.Option.Name.OBSERVE_RESPONSE);
-//            log.error("This should never happen!", e);
-//        } catch (ToManyOptionsException e) {
-//            options.removeAllOptions(OptionRegistry.Option.Name.OBSERVE_RESPONSE);
-//            log.debug("Critical option (" + OptionRegistry.Option.Name.OBSERVE_RESPONSE + ") could not be added.", e);
-//            throw e;
-//        }
-//    }
-
-//    /**
-//     * Returns <code>true</code> if the {@link Name#OBSERVE_RESPONSE} option is set and <code>false</code>
-//     * otherwise
-//     * @return <code>true</code> if the {@link Name#OBSERVE_RESPONSE} option is set and <code>false</code>
-//     * otherwise
-//     */
-//    public boolean isUpdateNotification(){
-//        return !(this.getOption(OptionRegistry.Option.Name.OBSERVE_RESPONSE).isEmpty());
-//    }
-//
-//    /**
-//     * Returns the value of the {@link Name#OBSERVE_RESPONSE} option
-//     * @return the value of the {@link Name#OBSERVE_RESPONSE} option
-//     * @throws NullPointerException if this response does not contain an {@link Name#OBSERVE_RESPONSE} option
-//     */
-//    public long getObserveOptionValue() throws NullPointerException{
-//       return (Long) this.getOption(OptionRegistry.Option.Name.OBSERVE_RESPONSE).get(0).getDecodedValue();
-//    }
-
-//    public String getServicePath() {
-//        return servicePath;
-//    }
-//
-//    public void setServicePath(String servicePath) {
-//        this.servicePath = servicePath;
-//    }
-
 }

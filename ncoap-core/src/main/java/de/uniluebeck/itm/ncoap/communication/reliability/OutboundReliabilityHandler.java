@@ -63,7 +63,11 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
     private final MessageIDFactory messageIDFactory;
     private ScheduledExecutorService executor;
 
-
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.reliability.OutboundReliabilityHandler}
+     * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
+     *                 reliable message transfer
+     */
     public OutboundReliabilityHandler(ScheduledExecutorService executor){
         this.executor = executor;
         this.transfers = HashBasedTable.create();
@@ -71,7 +75,10 @@ public class OutboundReliabilityHandler extends SimpleChannelHandler{
         this.lock = new ReentrantReadWriteLock();
     }
 
-
+    /**
+     * Sets the {@link org.jboss.netty.channel.ChannelHandlerContext} of this handler
+     * @param ctx the {@link org.jboss.netty.channel.ChannelHandlerContext} of this handler
+     */
     public void setChannelHandlerContext(ChannelHandlerContext ctx){
         this.ctx = ctx;
         this.messageIDFactory.setChannel(ctx.getChannel());

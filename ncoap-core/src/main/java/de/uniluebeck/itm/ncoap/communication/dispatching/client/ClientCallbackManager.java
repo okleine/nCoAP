@@ -26,6 +26,7 @@ package de.uniluebeck.itm.ncoap.communication.dispatching.client;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.communication.events.AbstractMessageTransferEvent;
+import de.uniluebeck.itm.ncoap.communication.events.MessageTransferEvent;
 import de.uniluebeck.itm.ncoap.communication.events.client.ObservationCancelledEvent;
 import de.uniluebeck.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
@@ -274,8 +275,8 @@ public class ClientCallbackManager extends SimpleChannelHandler{
         }
 
         //some internal event related to a message exchange
-        else if(me.getMessage() instanceof AbstractMessageTransferEvent){
-            handleMessageExchangeEvent((AbstractMessageTransferEvent) me.getMessage());
+        else if(me.getMessage() instanceof MessageTransferEvent){
+            handleMessageExchangeEvent((MessageTransferEvent) me.getMessage());
         }
 
         else if(me.getMessage() instanceof CoapMessage){
@@ -302,7 +303,7 @@ public class ClientCallbackManager extends SimpleChannelHandler{
     }
 
 
-    private void handleMessageExchangeEvent(AbstractMessageTransferEvent event) {
+    private void handleMessageExchangeEvent(MessageTransferEvent event) {
        ClientCallback clientCallback;
 
        //find the response processor for the inbound events
