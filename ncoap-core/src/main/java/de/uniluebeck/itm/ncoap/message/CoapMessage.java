@@ -724,9 +724,7 @@ public abstract class CoapMessage {
     /**
      * Returns <code>true</code> if there are more blocks and block2 option is defined else <code>false</code>.
      *
-     * @return the sequence number of the block2 option or
-     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
-     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     * @return <code>true</code> if there are more blocks and block2 option is defined else <code>false</code>.
      */
     public boolean isLastBlock(){
         if(!options.containsKey(OptionValue.Name.BLOCK2))

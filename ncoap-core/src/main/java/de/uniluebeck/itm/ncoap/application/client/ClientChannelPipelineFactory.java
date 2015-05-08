@@ -26,6 +26,7 @@
 package de.uniluebeck.itm.ncoap.application.client;
 
 import de.uniluebeck.itm.ncoap.application.CoapChannelPipelineFactory;
+import de.uniluebeck.itm.ncoap.communication.blockwise.Block2OptionHandler;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uniluebeck.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
@@ -59,6 +60,12 @@ public class ClientChannelPipelineFactory extends CoapChannelPipelineFactory {
     public static String CLIENT_CALLBACK_MANAGER = "CCM";
 
     /**
+     * The name of the {@link de.uniluebeck.itm.ncoap.communication.blockwise.Block2OptionHandler}
+     * instance of a CoAP client
+     */
+    public static String BLOCK2_HANDLER = "BLOCK2";
+
+    /**
      * Creates a new instance of {@link ClientChannelPipelineFactory}.
      *
      * @param executor The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
@@ -75,6 +82,7 @@ public class ClientChannelPipelineFactory extends CoapChannelPipelineFactory {
         addChannelHandler(DECODER, new CoapMessageDecoder());
 
         addChannelHandler(OUTBOUND_RELIABILITY_HANDLER, new OutboundReliabilityHandler(executor));
+        addChannelHandler(BLOCK2_HANDLER, new Block2OptionHandler());
         addChannelHandler(CLIENT_OBSERVATION_HANDLER, new ClientObservationHandler());
         addChannelHandler(CLIENT_CALLBACK_MANAGER, new ClientCallbackManager(executor, tokenFactory));
     }

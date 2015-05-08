@@ -26,10 +26,7 @@ package de.uniluebeck.itm.ncoap.examples;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
-import de.uniluebeck.itm.ncoap.message.CoapRequest;
-import de.uniluebeck.itm.ncoap.message.CoapResponse;
-import de.uniluebeck.itm.ncoap.message.MessageCode;
-import de.uniluebeck.itm.ncoap.message.MessageType;
+import de.uniluebeck.itm.ncoap.message.*;
 
 import java.net.*;
 
@@ -206,10 +203,12 @@ public class SimpleCoapClient extends CoapClientApplication{
         client.sendCoapRequest(request, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
-                System.out.println(coapResponse.getContent().readableBytes());
-                client.shutdown();
+                System.out.println(coapResponse.getContent().toString(CoapMessage.CHARSET));
             }
         }, new InetSocketAddress("coap.me", 5683));
+
+        Thread.sleep(5000);
+        client.shutdown();
 
 
     }
