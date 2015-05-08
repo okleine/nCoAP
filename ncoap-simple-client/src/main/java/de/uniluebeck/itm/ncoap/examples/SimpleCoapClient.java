@@ -25,7 +25,9 @@
 package de.uniluebeck.itm.ncoap.examples;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
+import de.uniluebeck.itm.ncoap.message.CoapResponse;
 import de.uniluebeck.itm.ncoap.message.MessageCode;
 import de.uniluebeck.itm.ncoap.message.MessageType;
 
@@ -161,16 +163,54 @@ public class SimpleCoapClient extends CoapClientApplication{
             LoggingConfiguration.configureLogging(log4jConfigPath);
 
         //Start the client
-        SimpleCoapClient client = new SimpleCoapClient(arguments);
+        final SimpleCoapClient client = new SimpleCoapClient(arguments);
 
-        //Send the request, await the response (or timeout) and shut the client down
-        try{
-            client.sendRequest();
-            client.waitAndShutdown();
-        }
-        catch (Exception ex){
-            client.shutdown();
-            throw ex;
-        }
+
+//        for(int i = 0; i < 10; i++) {
+//            final int finalI = i;
+//            client.sendCoapPing(new ClientCallback() {
+//                @Override
+//                public void processCoapResponse(CoapResponse coapResponse) {
+//                    System.out.println("Response " + finalI + "!");
+//                }
+//
+//                @Override
+//                public void processReset() {
+//                    System.out.println("PONG " + finalI + "!");
+//                }
+//
+//                @Override
+//                public void processMiscellaneousError(String description){
+//                    System.out.println(description);
+//                }
+//
+//            }, new InetSocketAddress("134.102.218.16", 5683));
+//        }
+
+//        Thread.sleep(2000);
+//        client.shutdown();
+
+       //Send the request, await the response (or timeout) and shut the client down
+//        try{
+//            client.sendRequest();
+//            client.waitAndShutdown();
+//        }
+//        catch (Exception ex){
+//            client.shutdown();
+//            throw ex;
+//        }
+
+        URI uri = new URI("coap", null, "coap.me", 5683, "/.well-known/core", null, null);
+        CoapRequest request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, uri);
+
+        client.sendCoapRequest(request, new ClientCallback() {
+            @Override
+            public void processCoapResponse(CoapResponse coapResponse) {
+                System.out.println(coapResponse.getContent().readableBytes());
+                client.shutdown();
+            }
+        }, new InetSocketAddress("coap.me", 5683));
+
+
     }
 }

@@ -70,8 +70,8 @@ public class SimpleObservableTimeService extends ObservableWebservice<Long> {
     private int updateInterval;
 
     /**
-     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.applications.SimpleObservableTimeService}
-     * @param path the path of the URI of this service
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.examples.SimpleObservableTimeService}
+     * @param path the path of the URI of this servicenew
      * @param updateInterval the interval (in millis) for resource status updates (e.g. 5000 for every 5 seconds).
      */
     public SimpleObservableTimeService(String path, int updateInterval, ScheduledExecutorService executor) {

@@ -238,7 +238,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
             }
         }
 
-        else if(coapResponse.isUpdateNotification()){
+        else{
             //current response is update notification but there is no suitable observation
             if(!observations.contains(remoteEndpoint, token)){
                 log.warn("No observation found for update notification (remote endpoint: {}, token: {}).",

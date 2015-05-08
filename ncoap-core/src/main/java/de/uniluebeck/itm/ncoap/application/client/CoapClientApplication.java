@@ -62,7 +62,7 @@ public class CoapClientApplication {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private ScheduledThreadPoolExecutor exeutor;
+    private ScheduledThreadPoolExecutor executor;
     private DatagramChannel channel;
 
     private String name;
@@ -101,15 +101,20 @@ public class CoapClientApplication {
             }
         });
 
-        this.exeutor = new ScheduledThreadPoolExecutor(threads, threadFactory);
-        this.exeutor.setRemoveOnCancelPolicy(true);
+        this.executor = new ScheduledThreadPoolExecutor(threads, threadFactory);
+        try {
+            this.executor.setRemoveOnCancelPolicy(true);
+        }
+        catch(NoSuchMethodError e){
+            log.error("Method \"setRemoveOnCancelPolicy\" not supported!");
+        }
 
         TokenFactory tokenFactory = new TokenFactory(maxTokenLength);
 
         //Create factories for channel and pipeline
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(exeutor, threads/2);
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, threads/2);
         ClientChannelPipelineFactory clientChannelPipelineFactory =
-                new ClientChannelPipelineFactory(exeutor, tokenFactory);
+                new ClientChannelPipelineFactory(executor, tokenFactory);
 
         //Create and configure bootstrap
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
@@ -211,7 +216,7 @@ public class CoapClientApplication {
     public void sendCoapRequest(final CoapRequest coapRequest, final ClientCallback clientCallback,
                                 final InetSocketAddress remoteEndpoint){
 
-        exeutor.submit(new Runnable() {
+        executor.submit(new Runnable() {
 
             @Override
             public void run() {
@@ -256,7 +261,7 @@ public class CoapClientApplication {
      */
     public void sendCoapPing(final ClientCallback clientCallback, final InetSocketAddress remoteEndpoint){
 
-        exeutor.submit(new Runnable() {
+        executor.submit(new Runnable() {
 
             @Override
             public void run() {
