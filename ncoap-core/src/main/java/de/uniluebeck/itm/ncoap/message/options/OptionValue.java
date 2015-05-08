@@ -145,6 +145,11 @@ public abstract class OptionValue<T>{
         public static final int LOCATION_QUERY  = 20;
 
         /**
+         * Corresponds to option number 23
+         */
+        public static final int BLOCK2          = 23;
+
+        /**
          * Corresponds to option number 35
          */
         public static final int PROXY_URI       = 35;
@@ -205,6 +210,7 @@ public abstract class OptionValue<T>{
         characteristics.put(    Name.URI_QUERY,      new Integer[]{Type.STRING,       0,      255     });
         characteristics.put(    Name.ACCEPT,         new Integer[]{Type.UINT,         0,      2       });
         characteristics.put(    Name.LOCATION_QUERY, new Integer[]{Type.STRING,       0,      255     });
+        characteristics.put(    Name.BLOCK2,         new Integer[]{Type.UINT,         0,      3       });
         characteristics.put(    Name.PROXY_URI,      new Integer[]{Type.STRING,       1,      1034    });
         characteristics.put(    Name.PROXY_SCHEME,   new Integer[]{Type.STRING,       1,      255     });
         characteristics.put(    Name.SIZE_1,         new Integer[]{Type.UINT,         0,      4       });

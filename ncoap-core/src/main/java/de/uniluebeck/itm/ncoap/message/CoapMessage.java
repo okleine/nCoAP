@@ -84,7 +84,7 @@ public abstract class CoapMessage {
 
     private static final int ONCE       = 1;
     private static final int MULTIPLE   = 2;
-    
+
     private static HashBasedTable<Integer, Integer, Integer> optionOccurenceConstraints = HashBasedTable.create();
     static{
         //Requests
@@ -97,6 +97,7 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.ACCEPT,             MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.ETAG,               MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.OBSERVE,            ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.BLOCK2,             ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.URI_HOST,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.URI_PORT,           ONCE);
@@ -105,6 +106,7 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.PROXY_URI,          ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.PROXY_SCHEME,       ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.BLOCK2,             ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.URI_HOST,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.URI_PORT,           ONCE);
@@ -115,6 +117,7 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.IF_MATCH,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.IF_NONE_MATCH,      ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.BLOCK2,             ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_HOST,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_PORT,           ONCE);
@@ -129,8 +132,10 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.LOCATION_PATH,      MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.LOCATION_QUERY,     MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.BLOCK2,             ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.DELETED_202.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETED_202.getNumber(),  OptionValue.Name.BLOCK2,             ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.ETAG,               ONCE);
@@ -138,11 +143,13 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.CONTENT_FORMAT,     ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.CHANGED_204.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CHANGED_204.getNumber(),  OptionValue.Name.BLOCK2,             ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.MAX_AGE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.ETAG,               ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.BLOCK2,             ONCE);
 
         //Client errors (4.x)
         optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),                  OptionValue.Name.MAX_AGE,    ONCE);
@@ -236,6 +243,7 @@ public abstract class CoapMessage {
 
         log.debug("Created CoAP message: {}", this);
     }
+
 
     /**
      * Creates a new instance of {@link CoapMessage}. Invocation of this constructor has the same effect as
@@ -353,6 +361,7 @@ public abstract class CoapMessage {
 
     }
 
+
     /**
      * Adds an string option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
      * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
@@ -373,6 +382,7 @@ public abstract class CoapMessage {
         StringOptionValue option = new StringOptionValue(optionNumber, value);
         addOption(optionNumber, option);
     }
+
 
     /**
      * Adds an uint option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
@@ -400,6 +410,7 @@ public abstract class CoapMessage {
 
     }
 
+
     /**
      * Adds an opaque option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
      * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
@@ -421,6 +432,7 @@ public abstract class CoapMessage {
 
     }
 
+
     /**
      * Adds an empty option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
      * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
@@ -441,6 +453,7 @@ public abstract class CoapMessage {
 
         log.debug("Added empty option (number: {})", optionNumber);
     }
+
 
     /**
      * Removes all options with the given option number from this {@link CoapMessage} instance.
@@ -468,6 +481,13 @@ public abstract class CoapMessage {
         }
     }
 
+    private long extractBits(final long l, final int nrBits, final int offset){
+        final long rightShifted = l >>> offset;
+        final long mask = (1L << nrBits) - 1L;
+        return rightShifted & mask;
+    }
+
+
     /**
      * Returns the CoAP protocol version used for this {@link CoapMessage}
      *
@@ -492,6 +512,7 @@ public abstract class CoapMessage {
         this.messageID = messageID;
     }
 
+
     /**
      * Returns the message ID (or {@link CoapMessage#UNDEFINED_MESSAGE_ID} if not set)
      *
@@ -511,6 +532,7 @@ public abstract class CoapMessage {
         return this.messageType;
     }
 
+
     /**
      * Returns the {@link MessageType.Name} of this {@link CoapMessage}. Invocation of
      * {@link MessageType.Name#getNumber()} on the returned value returns the same value as {@link #getMessageType()}.
@@ -521,6 +543,7 @@ public abstract class CoapMessage {
         return MessageType.Name.getName(this.messageType);
     }
 
+
     /**
      * Returns the number representing the {@link MessageCode} of this {@link CoapMessage}
      *
@@ -529,6 +552,7 @@ public abstract class CoapMessage {
     public int getMessageCode() {
         return this.messageCode;
     }
+
 
     /**
      * Returns the {@link MessageCode.Name} of this {@link CoapMessage}. Invocation of
@@ -539,6 +563,7 @@ public abstract class CoapMessage {
     public MessageCode.Name getMessageCodeName(){
         return MessageCode.Name.getName(this.messageCode);
     }
+
 
     /**
      * Sets a {@link Token} to this {@link CoapMessage}. However, there is no need to set the {@link Token} manually,
@@ -595,6 +620,7 @@ public abstract class CoapMessage {
         }
     }
 
+
     /**
      * Returns the value of the Max-Age option of this {@link CoapMessage}. If no such option exists, this method
      * returns {@link de.uniluebeck.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
@@ -649,6 +675,98 @@ public abstract class CoapMessage {
         return (long) options.get(OptionValue.Name.OBSERVE).iterator().next().getDecodedValue();
     }
 
+
+    /**
+     * Sets the block2 option in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} and returns
+     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
+     * method invocation) or <code>false</code> if the option is not set, e.g. because that option has no meaning with
+     * the message code of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     *
+     * @param num The relative number of the block sent or requested
+     * @param m Whether more blocks are following;
+     * @param szx The block size; Can assume value between 0 and 6, the actual block size is then 2**(szx + 4).
+     */
+    public void setBlock2(long num, boolean m, long szx) throws IllegalArgumentException{
+        try {
+            this.removeOptions(OptionValue.Name.BLOCK2);
+            num = (num & 0xFFFFF) << 4;
+            long more = ((m) ? 1 : 0) << 3;
+            szx = szx & 07;
+            if (szx >= 7) {
+                throw new IllegalArgumentException("szx can only assume values between 0 and 6");
+            }
+            this.addUintOption(OptionValue.Name.BLOCK2, num + more + szx);
+        }
+        catch (IllegalArgumentException e){
+            this.removeOptions(OptionValue.Name.BLOCK2);
+            log.error("This should never happen.", e);
+        }
+    }
+
+
+    /**
+     * Returns the sequence number of the block2 option or
+     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     *
+     * @return the sequence number of the block2 option or
+     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     */
+    public long getBlockNumber(){
+        if(!options.containsKey(OptionValue.Name.BLOCK2))
+            return UintOptionValue.UNDEFINED;
+
+        return (long) options.get(OptionValue.Name.BLOCK2).iterator().next().getDecodedValue() >> 4;
+    }
+
+
+    /**
+     * Returns <code>true</code> if there are more blocks and block2 option is defined else <code>false</code>.
+     *
+     * @return the sequence number of the block2 option or
+     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     */
+    public boolean isLastBlock(){
+        if(!options.containsKey(OptionValue.Name.BLOCK2))
+            return true;
+
+        long m = (long) options.get(OptionValue.Name.BLOCK2).iterator().next().getDecodedValue();
+        return (extractBits(m, 1, 3) == 0) ? true : false;
+    }
+
+
+    /**
+     * Returns the block size of the block2 option or
+     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     *
+     * @return the block size of the block2 option or
+     * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     */
+    public long getBlockSzx(){
+        if(!options.containsKey(OptionValue.Name.BLOCK2))
+            return UintOptionValue.UNDEFINED;
+
+        long value = (long) options.get(OptionValue.Name.BLOCK2).iterator().next().getDecodedValue();
+
+        // return (block2 & (1 << 3) - 1);
+        return extractBits(value, 3, 0);
+    }
+
+
+    public int szxToSize(int szx) { return (int)Math.pow(2, 4+szx); }
+
+
+    public int sizeToSzx(int size) {
+        if (size < 16) return 0;
+        if (size > 1024) return 6;
+        return (int)(Math.log(size) / Math.log(2)) - 4;
+    }
+
+
     /**
      * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
      * method, the previous content is removed.
@@ -665,6 +783,7 @@ public abstract class CoapMessage {
 
         this.content = content;
     }
+
 
     /**
      * Sets the content (payload) of this {@link CoapMessage}.
@@ -720,6 +839,7 @@ public abstract class CoapMessage {
         setContent(ChannelBuffers.wrappedBuffer(content), contentFormat);
 
     }
+
 
     /**
      * Returns the messages content. If the message does not contain any content, this method returns an empty
