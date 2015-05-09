@@ -524,6 +524,33 @@ public class CoapRequest extends CoapMessage {
     }
 
     /**
+     * Sets the BLOCK2 option in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} and returns
+     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
+     * method invocation) or <code>false</code> if the option is not set, e.g. because that option has no meaning with
+     * the message code of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     *
+     * @param num The relative number of the block sent or requested
+     * @param m Whether more blocks are following;
+     * @param szx The block size (can assume values between 0 and 6, the actual block size is then 2**(szx + 4)).
+     */
+    public void setBlock2(long num, boolean m, long szx) throws IllegalArgumentException{
+        try {
+            this.removeOptions(OptionValue.Name.BLOCK2);
+            num = (num & 0xFFFFF) << 4;
+            long more = ((m) ? 1 : 0) << 3;
+            szx = szx & 7;
+            if (szx >= 7) {
+                throw new IllegalArgumentException("SZX can only assume values between 0 and 6!");
+            }
+            this.addUintOption(OptionValue.Name.BLOCK2, num + more + szx);
+        }
+        catch (IllegalArgumentException e){
+            this.removeOptions(OptionValue.Name.BLOCK2);
+            log.error("This should never happen.", e);
+        }
+    }
+
+    /**
      * Returns <code>true</code> if the observing option is set on this
      * {@link de.uniluebeck.itm.ncoap.message.CoapRequest} or <code>false</code> otherwise.
      *

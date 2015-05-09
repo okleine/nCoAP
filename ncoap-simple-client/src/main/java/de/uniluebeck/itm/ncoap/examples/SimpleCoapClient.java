@@ -25,10 +25,14 @@
 package de.uniluebeck.itm.ncoap.examples;
 
 import de.uniluebeck.itm.ncoap.application.client.CoapClientApplication;
+import de.uniluebeck.itm.ncoap.application.client.linkformat.LinkFormatDecoder;
+import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.*;
 
 import java.net.*;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -203,12 +207,23 @@ public class SimpleCoapClient extends CoapClientApplication{
         client.sendCoapRequest(request, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
-                System.out.println(coapResponse.getContent().toString(CoapMessage.CHARSET));
+                String result = coapResponse.getContent().toString(CoapMessage.CHARSET);
+                System.out.println(result);
+
+                Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(result);
+
+                for(String service : attributes.keySet()){
+                    System.out.println(service);
+                    for(LinkAttribute attribute : attributes.get(service)){
+                        System.out.println("   " + attribute);
+                    }
+                }
             }
         }, new InetSocketAddress("coap.me", 5683));
 
         Thread.sleep(5000);
         client.shutdown();
+
 
 
     }

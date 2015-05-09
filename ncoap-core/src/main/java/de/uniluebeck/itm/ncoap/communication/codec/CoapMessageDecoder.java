@@ -173,7 +173,6 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         coapMessage.setMessageID(messageID);
         coapMessage.setToken(new Token(token));
 
-        log.warn("Message: " + coapMessage);
         //Decode and set the options
         if(buffer.readableBytes() > 0){
             try {

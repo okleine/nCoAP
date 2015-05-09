@@ -96,7 +96,7 @@ public class Block2OptionHandler extends SimpleChannelHandler{
 
         log.info("Received response from {}: {}", remoteEndpoint, coapResponse);
 
-        if(coapResponse.getBlockNumber() == UintOptionValue.UNDEFINED){
+        if(coapResponse.getBlock2Number() == UintOptionValue.UNDEFINED){
             removeCoapRequest(remoteEndpoint, token);
             ctx.sendUpstream(me);
         }
@@ -110,7 +110,7 @@ public class Block2OptionHandler extends SimpleChannelHandler{
             else{
                 CoapRequest coapRequest = this.getCoapRequest(remoteEndpoint, token);
                 coapRequest.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
-                coapRequest.setBlock2(coapResponse.getBlockNumber() + 1, false, coapResponse.getBlockSzx());
+                coapRequest.setBlock2(coapResponse.getBlock2Number() + 1, false, coapResponse.getBlock2Szx());
 
                 ChannelFuture future = Channels.future(ctx.getChannel());
                 future.addListener(new ChannelFutureListener() {

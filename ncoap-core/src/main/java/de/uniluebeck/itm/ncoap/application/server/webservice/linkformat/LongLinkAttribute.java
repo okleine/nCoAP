@@ -48,6 +48,13 @@ public class LongLinkAttribute extends LinkAttribute<Long> {
     }
 
     /**
+     * This is method is just for internal use withiin the nCoAP framework
+     */
+    public static void initialize(){
+        //nothing to do...
+    }
+
+    /**
      * Creates a new instance of
      * {@link de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute}
      *

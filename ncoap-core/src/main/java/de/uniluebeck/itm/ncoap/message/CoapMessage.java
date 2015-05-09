@@ -481,7 +481,7 @@ public abstract class CoapMessage {
         }
     }
 
-    private long extractBits(final long l, final int nrBits, final int offset){
+    private static long extractBits(final long l, final int nrBits, final int offset){
         final long rightShifted = l >>> offset;
         final long mask = (1L << nrBits) - 1L;
         return rightShifted & mask;
@@ -607,10 +607,8 @@ public abstract class CoapMessage {
      * invocation of this method, the previous value is overwritten.
      *
      * @param maxAge the value for the Max-Age option to be set
-     *
-     * @throws de.uniluebeck.itm.ncoap.communication.codec.OptionCodecException
      */
-    public void setMaxAge(long maxAge)  {
+    public void setMaxAge(long maxAge){
         try{
             this.options.removeAll(OptionValue.Name.MAX_AGE);
             this.addUintOption(OptionValue.Name.MAX_AGE, maxAge);
@@ -676,33 +674,6 @@ public abstract class CoapMessage {
     }
 
 
-    /**
-     * Sets the block2 option in this {@link de.uniluebeck.itm.ncoap.message.CoapRequest} and returns
-     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
-     * method invocation) or <code>false</code> if the option is not set, e.g. because that option has no meaning with
-     * the message code of this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
-     *
-     * @param num The relative number of the block sent or requested
-     * @param m Whether more blocks are following;
-     * @param szx The block size; Can assume value between 0 and 6, the actual block size is then 2**(szx + 4).
-     */
-    public void setBlock2(long num, boolean m, long szx) throws IllegalArgumentException{
-        try {
-            this.removeOptions(OptionValue.Name.BLOCK2);
-            num = (num & 0xFFFFF) << 4;
-            long more = ((m) ? 1 : 0) << 3;
-            szx = szx & 07;
-            if (szx >= 7) {
-                throw new IllegalArgumentException("szx can only assume values between 0 and 6");
-            }
-            this.addUintOption(OptionValue.Name.BLOCK2, num + more + szx);
-        }
-        catch (IllegalArgumentException e){
-            this.removeOptions(OptionValue.Name.BLOCK2);
-            log.error("This should never happen.", e);
-        }
-    }
-
 
     /**
      * Returns the sequence number of the block2 option or
@@ -713,7 +684,7 @@ public abstract class CoapMessage {
      * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
      * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
-    public long getBlockNumber(){
+    public long getBlock2Number(){
         if(!options.containsKey(OptionValue.Name.BLOCK2))
             return UintOptionValue.UNDEFINED;
 
@@ -722,16 +693,22 @@ public abstract class CoapMessage {
 
 
     /**
-     * Returns <code>true</code> if there are more blocks and block2 option is defined else <code>false</code>.
+     * Returns <code>true</code> if
+     * <ul>
+     *  <li>the BLOCK2 option is present and its value indicates that there are no more blocks to come (should be
+     *  always <code>false</code> for {@link de.uniluebeck.itm.ncoap.message.CoapRequest}s or
+     *  </li>
+     *  <li>if there is no BLOCK2 option present.</li>
+     * </ul>
      *
-     * @return <code>true</code> if there are more blocks and block2 option is defined else <code>false</code>.
+     * @return <code>true</code> if there are no more blocks expected.
      */
     public boolean isLastBlock(){
         if(!options.containsKey(OptionValue.Name.BLOCK2))
             return true;
 
         long m = (long) options.get(OptionValue.Name.BLOCK2).iterator().next().getDecodedValue();
-        return (extractBits(m, 1, 3) == 0) ? true : false;
+        return (extractBits(m, 1, 3) == 0);
     }
 
 
@@ -744,7 +721,7 @@ public abstract class CoapMessage {
      * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
      * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
-    public long getBlockSzx(){
+    public long getBlock2Szx(){
         if(!options.containsKey(OptionValue.Name.BLOCK2))
             return UintOptionValue.UNDEFINED;
 
@@ -755,7 +732,9 @@ public abstract class CoapMessage {
     }
 
 
-    public int szxToSize(int szx) { return (int)Math.pow(2, 4+szx); }
+    public static int szxToSize(int szx) {
+        return (int)Math.pow(2, 4+szx);
+    }
 
 
     public int sizeToSzx(int size) {
