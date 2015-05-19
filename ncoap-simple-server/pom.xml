@@ -46,7 +46,7 @@
                     <execution>
                         <configuration>
                             <mainClass>
-                                de.uniluebeck.itm.ncoap.applications.SimpleCoapServer
+                                de.uniluebeck.itm.ncoap.examples.SimpleCoapServer
                             </mainClass>
                             <!-- Optional -->
                             <onejarVersion>0.97</onejarVersion>

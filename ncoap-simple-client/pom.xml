@@ -50,7 +50,7 @@
                     <execution>
                         <configuration>
                             <mainClass>
-                                de.uniluebeck.itm.ncoap.applications.SimpleCoapClient
+                                de.uniluebeck.itm.ncoap.examples.SimpleCoapClient
                             </mainClass>
                             <!-- Optional -->
                             <onejarVersion>0.97</onejarVersion>
