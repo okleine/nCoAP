@@ -40,7 +40,7 @@ import java.net.*;
  * 1. To send a single request to <code>coap://example.org:5683/test</code> one can start the {@link SimpleCoapClient}
  * using e.g. the following command line parameters:<br>
  * <br>
- * <code>--host example.org --port 5683 --path /test -non --duration 20</code>
+ * <code>--host example.org --port 5683 --path /test --non --duration 20</code>
  * <br>
  * <br>
  * This will cause a non-confirmable {@link CoapRequest} to be sent to the Webservice and either await a single
