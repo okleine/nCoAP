@@ -84,7 +84,7 @@ public class CoapServerApplication{
             }
         });
 
-        int numberOfThreads = Math.max(Runtime.getRuntime().availableProcessors() * 2, 4);
+        int numberOfThreads = Math.max(Runtime.getRuntime().availableProcessors() * 2, 8);
         log.info("No. of I/O Threads: {}", numberOfThreads);
 
         ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(numberOfThreads, threadFactory);

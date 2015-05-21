@@ -65,7 +65,7 @@ public class LinkFormatDecoder {
         String[] services = linkFormat.split(",");
 
         for(String service : services){
-            String serviceName = service.substring(1, service.indexOf(">"));
+            String serviceName = service.substring(service.indexOf("<") + 1, service.indexOf(">"));
             log.info("Found service {}", serviceName);
 
             String[] attributes = service.substring(service.indexOf(";") + 1).split(";");

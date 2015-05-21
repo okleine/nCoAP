@@ -26,6 +26,8 @@ package de.uniluebeck.itm.ncoap.communication.blockwise;
 
 import com.google.common.collect.HashBasedTable;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.Token;
+import de.uniluebeck.itm.ncoap.communication.events.MiscellaneousErrorEvent;
+import de.uniluebeck.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uniluebeck.itm.ncoap.message.CoapMessage;
 import de.uniluebeck.itm.ncoap.message.CoapRequest;
 import de.uniluebeck.itm.ncoap.message.CoapResponse;
@@ -40,7 +42,17 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Created by olli on 08.05.15.
+ * This handler is only used on the client side and deals with blockwise transfers in a rather simple manner.
+ * If a response contains the BLOCK2 option (i.e. just a portion of the complete payload) the client accepts the
+ * blocksize (as given in the SZX part of the option) and requests the next blocks with the same size until the full
+ * payload was received (as indicated by the M part of the option).
+ *
+ * The full payload (the cumulative blocks) are then set as the payload of the latest response. Only this response
+ * (with full payload) is sent further upstream. Thus, from the
+ * {@link de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback}s perspective there is virtually no
+ * difference between a blockwise transfer and a large payload in a single response.
+ *
+ * @author Oliver Kleine
  */
 public class Block2OptionHandler extends SimpleChannelHandler{
 
@@ -51,6 +63,9 @@ public class Block2OptionHandler extends SimpleChannelHandler{
 
     private ReentrantReadWriteLock lock;
 
+    /**
+     * Creates a new instance of {@link de.uniluebeck.itm.ncoap.communication.blockwise.Block2OptionHandler}.
+     */
     public Block2OptionHandler(){
         this.openRequests = HashBasedTable.create();
         this.partialResponses = HashBasedTable.create();
@@ -75,7 +90,13 @@ public class Block2OptionHandler extends SimpleChannelHandler{
             ctx.sendDownstream(me);
         }
         else{
-            //TODO: failed!
+            log.error("This should never happen!");
+            MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(
+                    remoteEndpoint, coapRequest.getMessageID(), coapRequest.getToken(), "Error in Block2OptionHandler"
+            );
+            Channels.fireMessageReceived(ctx, event);
+
+            me.getFuture().setFailure(new Exception("Error in Block2OptionHandler"));
         }
     }
 
@@ -84,9 +105,19 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         if(me.getMessage() instanceof CoapResponse){
             handleIncomingCoapResponse(ctx, me);
         }
+        else if(me.getMessage() instanceof TransmissionTimeoutEvent){
+            handleTransmissionTimeout(ctx, me);
+        }
         else {
             ctx.sendUpstream(me);
         }
+    }
+
+    private void handleTransmissionTimeout(ChannelHandlerContext ctx, MessageEvent me) {
+        TransmissionTimeoutEvent timeoutEvent = (TransmissionTimeoutEvent) me.getMessage();
+        removeCoapRequest(timeoutEvent.getRemoteEndpoint(), timeoutEvent.getToken());
+
+        ctx.sendUpstream(me);
     }
 
     private void handleIncomingCoapResponse(ChannelHandlerContext ctx, MessageEvent me) {
@@ -97,6 +128,7 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         log.info("Received response from {}: {}", remoteEndpoint, coapResponse);
 
         if(coapResponse.getBlock2Number() == UintOptionValue.UNDEFINED){
+            removePartialPayload(remoteEndpoint, token);
             removeCoapRequest(remoteEndpoint, token);
             ctx.sendUpstream(me);
         }
@@ -105,6 +137,8 @@ public class Block2OptionHandler extends SimpleChannelHandler{
 
             if(coapResponse.isLastBlock()){
                 coapResponse.setContent(getPayload(remoteEndpoint, token));
+                removePartialPayload(remoteEndpoint, token);
+                removeCoapRequest(remoteEndpoint, token);
                 ctx.sendUpstream(me);
             }
             else{
@@ -117,10 +151,10 @@ public class Block2OptionHandler extends SimpleChannelHandler{
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
                         if(future.isSuccess()){
-                            log.info("Succesfully sent request for next block.");
+                            log.info("Successfully sent request for next block.");
                         }
                         else{
-                            log.error("Error: {}", future.getCause().getMessage());
+                            log.error("Error: {}", future.getCause());
                         }
                     }
                 });
@@ -130,6 +164,25 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         }
     }
 
+    private void removePartialPayload(InetSocketAddress remoteEndpoint, Token token){
+        try{
+            this.lock.writeLock().lock();
+            this.partialResponses.remove(remoteEndpoint, token);
+        }
+        finally {
+            this.lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Returns the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} used to initiate this conversation. This request
+     * is modified (the BLOCK2 option) and used to request the next block
+     *
+     * @param remoteEndpoint the server socket
+     * @param token the token used for this transfer
+     *
+     * @return the {@link de.uniluebeck.itm.ncoap.message.CoapRequest} used to initiate this conversation
+     */
     private CoapRequest getCoapRequest(InetSocketAddress remoteEndpoint, Token token){
         try{
             this.lock.readLock().lock();
@@ -148,6 +201,14 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         }
     }
 
+    /**
+     * Returns the cumulative payload received so far in previous blocks
+     *
+     * @param remoteEndpoint the server socket
+     * @param token the token used for this transfer
+     *
+     * @return the cumulative payload received so far in previous blocks
+     */
     private ChannelBuffer getPayload(InetSocketAddress remoteEndpoint, Token token){
         try{
             this.lock.writeLock().lock();
@@ -165,6 +226,7 @@ public class Block2OptionHandler extends SimpleChannelHandler{
             this.lock.writeLock().unlock();
         }
     }
+
 
     private void addPayloadBlock(InetSocketAddress remoteEndpoint, Token token, ChannelBuffer payloadBlock){
         try{
@@ -185,17 +247,19 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         }
     }
 
-    private void removeCoapRequest(InetSocketAddress remoteEndpoint, Token token){
+    private CoapRequest removeCoapRequest(InetSocketAddress remoteEndpoint, Token token){
         try{
             this.lock.writeLock().lock();
             if(!this.openRequests.contains(remoteEndpoint, token)){
                 log.error("No open request found (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
+                return null;
             }
 
             else{
-                this.openRequests.remove(remoteEndpoint, token);
+                CoapRequest result = this.openRequests.remove(remoteEndpoint, token);
                 log.info("Removed open request (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return result;
             }
         }
         finally{
@@ -205,18 +269,6 @@ public class Block2OptionHandler extends SimpleChannelHandler{
 
     private boolean addCoapRequest(InetSocketAddress remoteEndpoint, CoapRequest coapRequest){
         Token token = coapRequest.getToken();
-
-        try{
-            this.lock.readLock().lock();
-            if(this.openRequests.contains(remoteEndpoint, token)){
-                log.error("Tried to override existing conversation (remote endpoint: {}, token: {}).",
-                        remoteEndpoint, token);
-                return false;
-            }
-        }
-        finally{
-            this.lock.readLock().unlock();
-        }
 
         try{
             this.lock.writeLock().lock();
@@ -236,5 +288,4 @@ public class Block2OptionHandler extends SimpleChannelHandler{
             this.lock.writeLock().unlock();
         }
     }
-
 }

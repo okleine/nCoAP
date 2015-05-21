@@ -29,6 +29,7 @@ import de.uniluebeck.itm.ncoap.application.client.linkformat.LinkFormatDecoder;
 import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
 import de.uniluebeck.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uniluebeck.itm.ncoap.message.*;
+import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 
 import java.net.*;
 import java.util.Map;
@@ -210,16 +211,48 @@ public class SimpleCoapClient extends CoapClientApplication{
                 String result = coapResponse.getContent().toString(CoapMessage.CHARSET);
                 System.out.println(result);
 
-                Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(result);
+                if(coapResponse.getContentFormat() == ContentFormat.APP_LINK_FORMAT) {
+                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(result);
 
-                for(String service : attributes.keySet()){
-                    System.out.println(service);
-                    for(LinkAttribute attribute : attributes.get(service)){
-                        System.out.println("   " + attribute);
+                    for (String service : attributes.keySet()) {
+                        System.out.println(service);
+                        for (LinkAttribute attribute : attributes.get(service)) {
+                            System.out.println("   " + attribute);
+                        }
                     }
                 }
             }
         }, new InetSocketAddress("coap.me", 5683));
+
+        Thread.sleep(1000);
+
+        URI uri2 = new URI("coap", null, "coap.me", 5683, "/hello", null, null);
+        CoapRequest request2 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, uri2);
+
+        client.sendCoapRequest(request2, new ClientCallback() {
+            @Override
+            public void processCoapResponse(CoapResponse coapResponse) {
+                String result = coapResponse.getContent().toString(CoapMessage.CHARSET);
+                System.out.println(result);
+
+                if(coapResponse.getContentFormat() == ContentFormat.APP_LINK_FORMAT) {
+                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(result);
+
+                    for (String service : attributes.keySet()) {
+                        System.out.println(service);
+                        for (LinkAttribute attribute : attributes.get(service)) {
+                            System.out.println("   " + attribute);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void processMiscellaneousError(final String description) {
+                System.out.println("ERROR: " + description);
+            }
+        }, new InetSocketAddress("coap.me", 5683));
+
 
         Thread.sleep(5000);
         client.shutdown();
