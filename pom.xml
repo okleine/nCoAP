@@ -10,7 +10,7 @@
 
     <artifactId>ncoap-complete</artifactId>
     <packaging>pom</packaging>
-    <version>1.8.2</version>
+    <version>1.8.3-SNAPSHOT</version>
 
     <name>nCoAP Complete</name>
     <description>
