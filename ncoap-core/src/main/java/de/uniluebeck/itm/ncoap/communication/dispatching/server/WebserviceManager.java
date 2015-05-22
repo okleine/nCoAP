@@ -396,6 +396,12 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      */
     public final void registerService(final Webservice webservice) {
         webservice.setWebserviceManager(this);
+
+        if(registeredServices.containsKey(webservice.getUriPath())) {
+            log.warn("Service {} is already registered!", webservice.getUriPath());
+        	return;
+        }
+
         registeredServices.put(webservice.getUriPath(), webservice);
         log.info("Registered new service at " + webservice.getUriPath());
 
