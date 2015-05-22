@@ -63,7 +63,6 @@ public class SimpleCallback extends ClientCallback {
     public void processCoapResponse(CoapResponse coapResponse) {
         responseReceived.set(true);
         log.info("Received: {}", coapResponse);
-
     }
 
     /**

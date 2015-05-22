@@ -25,9 +25,6 @@
 package de.uniluebeck.itm.ncoap.examples;
 
 import de.uniluebeck.itm.ncoap.application.server.CoapServerApplication;
-import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LinkAttribute;
-import de.uniluebeck.itm.ncoap.application.server.webservice.linkformat.LongLinkAttribute;
-import de.uniluebeck.itm.ncoap.message.options.ContentFormat;
 
 /**
  * Created by olli on 30.03.14.
