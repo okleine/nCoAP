@@ -703,7 +703,7 @@ public abstract class CoapMessage {
      *
      * @return <code>true</code> if there are no more blocks expected.
      */
-    public boolean isLastBlock(){
+    public boolean isLastBlock2(){
         if(!options.containsKey(OptionValue.Name.BLOCK2))
             return true;
 
@@ -713,15 +713,17 @@ public abstract class CoapMessage {
 
 
     /**
-     * Returns the block size of the block2 option or
+     * Returns encoded block size of the block2 option (i.e. the 'szx' portion) or
      * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
      * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
+     *
+     * With szx as the returned value the actual blocksize is <code>2^(szx + 4)</code> bytes.
      *
      * @return the block size of the block2 option or
      * {@link de.uniluebeck.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
      * this {@link de.uniluebeck.itm.ncoap.message.CoapRequest}.
      */
-    public long getBlock2Szx(){
+    public long getBlock2EncodedSize(){
         if(!options.containsKey(OptionValue.Name.BLOCK2))
             return UintOptionValue.UNDEFINED;
 

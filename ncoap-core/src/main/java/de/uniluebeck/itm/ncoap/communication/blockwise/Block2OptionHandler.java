@@ -135,7 +135,7 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         else{
             addPayloadBlock(remoteEndpoint, token, coapResponse.getContent());
 
-            if(coapResponse.isLastBlock()){
+            if(coapResponse.isLastBlock2()){
                 coapResponse.setContent(getPayload(remoteEndpoint, token));
                 removePartialPayload(remoteEndpoint, token);
                 removeCoapRequest(remoteEndpoint, token);
@@ -144,7 +144,7 @@ public class Block2OptionHandler extends SimpleChannelHandler{
             else{
                 CoapRequest coapRequest = this.getCoapRequest(remoteEndpoint, token);
                 coapRequest.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
-                coapRequest.setBlock2(coapResponse.getBlock2Number() + 1, false, coapResponse.getBlock2Szx());
+                coapRequest.setBlock2(coapResponse.getBlock2Number() + 1, false, coapResponse.getBlock2EncodedSize());
 
                 ChannelFuture future = Channels.future(ctx.getChannel());
                 future.addListener(new ChannelFutureListener() {

@@ -531,7 +531,7 @@ public class CoapRequest extends CoapMessage {
      *
      * @param num The relative number of the block sent or requested
      * @param m Whether more blocks are following;
-     * @param szx The block size (can assume values between 0 and 6, the actual block size is then 2**(szx + 4)).
+     * @param szx The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
      */
     public void setBlock2(long num, boolean m, long szx) throws IllegalArgumentException{
         try {
