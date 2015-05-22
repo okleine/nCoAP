@@ -44,8 +44,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * This handler is only used on the client side and deals with blockwise transfers in a rather simple manner.
  * If a response contains the BLOCK2 option (i.e. just a portion of the complete payload) the client accepts the
- * blocksize (as given in the SZX part of the option) and requests the next blocks with the same size until the full
- * payload was received (as indicated by the M part of the option).
+ * block size (as given in the SZX part of the response option) and requests the next blocks with the same size until
+ * the full payload was received (as indicated by the M part of the (final) response option).
  *
  * The full payload (the cumulative blocks) are then set as the payload of the latest response. Only this response
  * (with full payload) is sent further upstream. Thus, from the
