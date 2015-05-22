@@ -88,7 +88,7 @@ public class CoapServerApplication{
         log.info("No. of I/O Threads: {}", numberOfThreads);
 
         ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(numberOfThreads, threadFactory);
-        executor.setRemoveOnCancelPolicy(true);
+        //executor.setRemoveOnCancelPolicy(true);
         this.executor = executor;
 
         //Create bootstrap
