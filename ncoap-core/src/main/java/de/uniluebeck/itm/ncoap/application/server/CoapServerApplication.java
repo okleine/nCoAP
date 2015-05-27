@@ -26,6 +26,7 @@
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
@@ -190,8 +191,11 @@ public class CoapServerApplication{
      *
      * @param webservice the {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} instance to
      *                   be registered
+     *                  
+     * @throws java.lang.IllegalArgumentException if there was already a
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} registered with the same path
      */
-    public void registerService(Webservice webservice){
+    public void registerService(Webservice webservice) throws IllegalArgumentException{
         WebserviceManager manager =
                 (WebserviceManager)this.channel.getPipeline().get(ServerChannelPipelineFactory.WEBSERVICE_MANAGER);
 

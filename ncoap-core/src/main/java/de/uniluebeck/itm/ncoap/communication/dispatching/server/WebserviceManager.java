@@ -393,8 +393,15 @@ public class WebserviceManager extends SimpleChannelUpstreamHandler {
      * server with a path from another already registered service, then the new service replaces the old one.
      *
      * @param webservice A {@link Webservice} instance to be registered at the server
+     *
+     * @throws java.lang.IllegalArgumentException if there was already a
+     * {@link de.uniluebeck.itm.ncoap.application.server.webservice.Webservice} registered with the same path
      */
-    public final void registerService(final Webservice webservice) {
+    public final void registerService(final Webservice webservice) throws IllegalArgumentException{
+        if(registeredServices.containsKey(webservice.getUriPath())){
+            throw new IllegalArgumentException("Service " + webservice.getUriPath() + " is already registered");
+        }
+
         webservice.setWebserviceManager(this);
         registeredServices.put(webservice.getUriPath(), webservice);
         log.info("Registered new service at " + webservice.getUriPath());

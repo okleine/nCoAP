@@ -102,12 +102,12 @@ public class CoapClientApplication {
         });
 
         this.executor = new ScheduledThreadPoolExecutor(threads, threadFactory);
-        try {
-            this.executor.setRemoveOnCancelPolicy(true);
-        }
-        catch(NoSuchMethodError e){
-            log.error("Method \"setRemoveOnCancelPolicy\" not supported!");
-        }
+//        try {
+//            this.executor.setRemoveOnCancelPolicy(true);
+//        }
+//        catch(NoSuchMethodError e){
+//            log.error("Method \"setRemoveOnCancelPolicy\" not supported!");
+//        }
 
         TokenFactory tokenFactory = new TokenFactory(maxTokenLength);
 
