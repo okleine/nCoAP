@@ -26,7 +26,6 @@
 package de.uniluebeck.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.sun.javaws.exceptions.InvalidArgumentException;
 import de.uniluebeck.itm.ncoap.application.server.webservice.Webservice;
 import de.uniluebeck.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uniluebeck.itm.ncoap.communication.dispatching.server.WebserviceManager;
