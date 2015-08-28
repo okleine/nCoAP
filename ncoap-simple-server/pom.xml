@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>de.uniluebeck.itm</groupId>
+        <groupId>de.uzl.itm</groupId>
         <artifactId>ncoap-complete</artifactId>
         <version>1.8.3-SNAPSHOT</version>
     </parent>
@@ -46,7 +46,7 @@
                     <execution>
                         <configuration>
                             <mainClass>
-                                de.uniluebeck.itm.ncoap.examples.SimpleCoapServer
+                                de.uzl.itm.ncoap.examples.SimpleCoapServer
                             </mainClass>
                             <!-- Optional -->
                             <onejarVersion>0.97</onejarVersion>

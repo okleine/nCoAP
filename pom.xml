@@ -6,7 +6,7 @@
     </properties>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>de.uniluebeck.itm</groupId>
+    <groupId>de.uzl.itm</groupId>
 
     <artifactId>ncoap-complete</artifactId>
     <packaging>pom</packaging>
@@ -23,6 +23,7 @@
       <module>ncoap-core</module>
       <module>ncoap-simple-client</module>
       <module>ncoap-simple-server</module>
+      <module>ncoap-simple-peer</module>
     </modules>
 
     <distributionManagement>

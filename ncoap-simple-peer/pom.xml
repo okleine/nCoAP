@@ -2,29 +2,28 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
-        <groupId>de.uniluebeck.itm</groupId>
         <artifactId>ncoap-complete</artifactId>
+        <groupId>de.uniluebeck.itm</groupId>
         <version>1.8.3-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>ncoap-simple-client</artifactId>
+    <artifactId>ncoap-simple-peer</artifactId>
     <packaging>jar</packaging>
 
-    <name>Simple nCoAP-Client</name>
+    <name>Simple nCoAP-Peer</name>
     <description>
-      Example module on how to build a simple CoAP client application using nCoAP.
+        Example module on how to build a simple CoAP peer (i.e. both, client and server) application using nCoAP.
     </description>
 
     <dependencies>
 
-		<dependency>
-        	<groupId>de.uzl.itm</groupId>
-        	<artifactId>ncoap-core</artifactId>
-        	<version>${project.parent.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>de.uzl.itm</groupId>
+            <artifactId>ncoap-core</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>args4j</groupId>
@@ -37,7 +36,7 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.6.6</version>
         </dependency>
-		
+
     </dependencies>
 
     <build>
@@ -50,7 +49,7 @@
                     <execution>
                         <configuration>
                             <mainClass>
-                                de.uzl.itm.ncoap.examples.SimpleCoapClient
+                                SimpleCoapClient
                             </mainClass>
                             <!-- Optional -->
                             <onejarVersion>0.97</onejarVersion>
@@ -67,7 +66,4 @@
             </plugin>
         </plugins>
     </build>
-
-
-
 </project>
