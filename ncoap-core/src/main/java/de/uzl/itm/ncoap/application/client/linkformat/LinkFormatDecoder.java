@@ -43,12 +43,10 @@ import java.util.Set;
  */
 public class LinkFormatDecoder {
 
-    private static Logger log = LoggerFactory.getLogger(LinkFormatDecoder.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(LinkFormatDecoder.class.getName());
 
-    static{
-        EmptyLinkAttribute.initialize();
-        LongLinkAttribute.initialize();
-        StringLinkAttribute.initialize();
+    public static void initialize(){
+        LinkAttribute.initialize();
     }
 
     /**
@@ -62,20 +60,28 @@ public class LinkFormatDecoder {
     public static Map<String, Set<LinkAttribute>> decode(String linkFormat) throws IllegalArgumentException{
         Map<String, Set<LinkAttribute>> result = new HashMap<>();
 
+        LOG.debug("Link Format String:\n{}", linkFormat);
+        linkFormat = linkFormat.replaceAll("[^a-zA-Z0-9<>;,/=]", "");
+
         String[] services = linkFormat.split(",");
 
         for(String service : services){
             String serviceName = service.substring(service.indexOf("<") + 1, service.indexOf(">"));
-            log.info("Found service {}", serviceName);
+            LOG.info("Found service {}", serviceName);
 
-            String[] attributes = service.substring(service.indexOf(";") + 1).split(";");
+            int attributesIndex = service.indexOf(";");
+            if(attributesIndex == -1){
+                LOG.debug("No attributes found for resource {}.", service);
+                continue;
+            }
+
+            String[] attributes = service.substring(attributesIndex + 1).split(";");
 
             Set<LinkAttribute> attributesSet = new HashSet<>();
 
             for(String attribute : attributes){
-                log.info("Service {} has attribute {}.", serviceName, attribute);
+                LOG.info("Service {} has attribute {}.", serviceName, attribute);
                 String key = !attribute.contains("=") ? attribute : attribute.substring(0, attribute.indexOf("="));
-
                 int attributeType = LinkAttribute.getAttributeType(key);
 
                 if(attributeType == LinkAttribute.EMPTY_ATTRIBUTE){
@@ -83,7 +89,7 @@ public class LinkFormatDecoder {
                 }
                 else{
                     if(attribute.length() == attribute.indexOf("=") + 1){
-                        log.warn("Service {} has attribute {} without any value (IGNORE!)", serviceName, key);
+                        LOG.warn("Service {} has attribute {} without any value (IGNORE!)", serviceName, key);
                         continue;
                     }
 
@@ -112,12 +118,12 @@ public class LinkFormatDecoder {
                                 attributesSet.add(new LongLinkAttribute(key, Long.valueOf(value)));
                             }
                             catch(NumberFormatException ex){
-                                log.warn("Value ({}) of link attribute \"{}\" is no number (IGNORE!)", value, key);
+                                LOG.warn("Value ({}) of link attribute \"{}\" is no number (IGNORE!)", value, key);
                             }
                         }
                     }
                     else{
-                        log.warn("Found attribute of unknown type ({}) for service {}. IGNORE!", key, serviceName);
+                        LOG.warn("Found attribute of unknown type ({}) for service {}. IGNORE!", key, serviceName);
                     }
                 }
             }

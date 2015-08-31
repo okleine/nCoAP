@@ -56,16 +56,30 @@ public abstract class LinkAttribute<T> {
     private String key;
     private T value;
 
-    private static Map<String, AttributeProperties> properties = new HashMap<>();
+    private static Map<String, AttributeProperties> ATTRIBUTES = new HashMap<>();
 
-    static void registerAttribute(String key, AttributeProperties attributeProperties){
-        properties.put(key, attributeProperties);
+    private static boolean initialized = false;
+
+    public static void initialize(){
+        EmptyLinkAttribute.initialize();
+        ATTRIBUTES.putAll(EmptyLinkAttribute.getAttributes());
+        LongLinkAttribute.initialize();
+        ATTRIBUTES.putAll(LongLinkAttribute.getAttributes());
+        StringLinkAttribute.initialize();
+        ATTRIBUTES.putAll(StringLinkAttribute.getAttributes());
+
+        initialized = true;
     }
 
+
     protected LinkAttribute(String attributeKey, T value) throws IllegalArgumentException{
+        if(!initialized){
+            initialize();
+        }
+
         this.key = attributeKey;
 
-        if(!properties.containsKey(attributeKey))
+        if(!ATTRIBUTES.containsKey(attributeKey))
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
 
         this.value = value;
@@ -98,10 +112,10 @@ public abstract class LinkAttribute<T> {
 
 
     public static boolean allowsMultipleValues(String attributeKey){
-        if(!properties.containsKey(attributeKey))
+        if(!ATTRIBUTES.containsKey(attributeKey))
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
 
-        return properties.get(attributeKey).isMultipleValues();
+        return ATTRIBUTES.get(attributeKey).isMultipleValues();
     }
 
     /**
@@ -114,8 +128,8 @@ public abstract class LinkAttribute<T> {
      * -1 for unknown attributes.
      */
     public static int getAttributeType(String attributeKey) throws IllegalArgumentException{
-        if(properties.containsKey(attributeKey))
-            return properties.get(attributeKey).getAttributeType();
+        if(ATTRIBUTES.containsKey(attributeKey))
+            return ATTRIBUTES.get(attributeKey).getAttributeType();
 
         return -1;
     }

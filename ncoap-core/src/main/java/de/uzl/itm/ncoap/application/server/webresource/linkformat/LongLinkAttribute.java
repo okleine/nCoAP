@@ -24,6 +24,9 @@
  */
 package de.uzl.itm.ncoap.application.server.webresource.linkformat;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A {@link LongLinkAttribute} is a {@link LinkAttribute} with values of type 'Long'
  * ({@link LinkAttribute#LONG_ATTRIBUTE}).
@@ -42,16 +45,19 @@ public class LongLinkAttribute extends LinkAttribute<Long> {
      */
     public static final String MAX_SIZE_ESTIMATE = "sz";
 
-    static{
-        LinkAttribute.registerAttribute(CONTENT_TYPE, new AttributeProperties(true, LONG_ATTRIBUTE));
-        LinkAttribute.registerAttribute(MAX_SIZE_ESTIMATE, new AttributeProperties(false, LONG_ATTRIBUTE));
+    private static Map<String, AttributeProperties> ATTRIBUTES = new HashMap<>();
+
+    public static Map<String, AttributeProperties> getAttributes(){
+        return LongLinkAttribute.ATTRIBUTES;
     }
+
 
     /**
      * This is method is just for internal use withiin the nCoAP framework
      */
     public static void initialize(){
-        //nothing to do...
+        ATTRIBUTES.put(CONTENT_TYPE, new AttributeProperties(true, LONG_ATTRIBUTE));
+        ATTRIBUTES.put(MAX_SIZE_ESTIMATE, new AttributeProperties(false, LONG_ATTRIBUTE));
     }
 
     /**

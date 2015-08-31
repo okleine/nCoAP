@@ -24,6 +24,9 @@
  */
 package de.uzl.itm.ncoap.application.server.webresource.linkformat;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A {@link StringLinkAttribute} is a {@link LinkAttribute} with no value
  * ({@link LinkAttribute#EMPTY_ATTRIBUTE}).
@@ -37,15 +40,17 @@ public class EmptyLinkAttribute extends LinkAttribute<Void> {
      */
     public static final String OBSERVABLE = "obs";
 
-    static{
-        LinkAttribute.registerAttribute(OBSERVABLE, new AttributeProperties(false, EMPTY_ATTRIBUTE));
+    private static Map<String, AttributeProperties> ATTRIBUTES = new HashMap<>();
+
+    public static Map<String, AttributeProperties> getAttributes(){
+        return EmptyLinkAttribute.ATTRIBUTES;
     }
 
     /**
      * This is method is just for internal use withiin the nCoAP framework
      */
     public static void initialize(){
-        //nothing to do...
+        ATTRIBUTES.put(OBSERVABLE, new AttributeProperties(false, EMPTY_ATTRIBUTE));
     }
 
     /**

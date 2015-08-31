@@ -24,6 +24,9 @@
  */
 package de.uzl.itm.ncoap.application.server.webresource.linkformat;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A {@link StringLinkAttribute} is a {@link LinkAttribute} with values of type string
  * ({@link LinkAttribute#STRING_ATTRIBUTE}).
@@ -42,16 +45,19 @@ public class StringLinkAttribute extends LinkAttribute<String> {
      */
     public static final String INTERFACE = "if";
 
-    static{
-        LinkAttribute.registerAttribute(RESOURCE_TYPE, new AttributeProperties(true, STRING_ATTRIBUTE));
-        LinkAttribute.registerAttribute(INTERFACE, new AttributeProperties(false, STRING_ATTRIBUTE));
+    private static Map<String, AttributeProperties> ATTRIBUTES = new HashMap<>();
+
+    public static Map<String, AttributeProperties> getAttributes(){
+        return StringLinkAttribute.ATTRIBUTES;
     }
+
 
     /**
      * This is method is just for internal use withiin the nCoAP framework
      */
     public static void initialize(){
-        //nothing to do...
+        ATTRIBUTES.put(RESOURCE_TYPE, new AttributeProperties(true, STRING_ATTRIBUTE));
+        ATTRIBUTES.put(INTERFACE, new AttributeProperties(false, STRING_ATTRIBUTE));
     }
 
     /**
