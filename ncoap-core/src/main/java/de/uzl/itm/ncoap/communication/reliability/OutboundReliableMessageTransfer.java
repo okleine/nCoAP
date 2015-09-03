@@ -56,6 +56,7 @@ public class OutboundReliableMessageTransfer extends OutboundMessageTransfer {
     public static final double ACK_RANDOM_FACTOR = 1.5;
 
     private ScheduledFuture retransmissionFuture;
+    private OutboundReliabilityHandler.RetransmissionTask retransmissionTask;
     private int retransmissions;
 
     private static final Random RANDOM = new Random(System.currentTimeMillis());
@@ -80,12 +81,18 @@ public class OutboundReliableMessageTransfer extends OutboundMessageTransfer {
      *                             retransmission.
      */
     public OutboundReliableMessageTransfer(InetSocketAddress remoteEndpoint, int messageID, Token token,
-                                           ScheduledFuture retransmissionFuture) {
+            ScheduledFuture retransmissionFuture, OutboundReliabilityHandler.RetransmissionTask retransmissionTask) {
         super(remoteEndpoint, messageID, token);
         this.retransmissionFuture = retransmissionFuture;
+        this.retransmissionTask = retransmissionTask;
         this.retransmissions = 0;
     }
 
+    @Override
+    public void setRemoteEndpoint(InetSocketAddress remoteSocket){
+        super.setRemoteEndpoint(remoteSocket);
+        this.retransmissionTask.setRemoteEndpoint(remoteSocket);
+    }
 
 
     /**
@@ -104,6 +111,9 @@ public class OutboundReliableMessageTransfer extends OutboundMessageTransfer {
         this.retransmissionFuture = retransmissionFuture;
     }
 
+    public void setRetransmissionTask(OutboundReliabilityHandler.RetransmissionTask retransmissionTask){
+        this.retransmissionTask = retransmissionTask;
+    }
 
     public ScheduledFuture getRetransmissionFuture(){
         return this.retransmissionFuture;

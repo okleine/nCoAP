@@ -49,7 +49,7 @@ public abstract class AbstractMessageTransferEvent implements MessageTransferEve
      * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
      *              {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this event
      */
-    protected AbstractMessageTransferEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+    public AbstractMessageTransferEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         this.messageID = messageID;
         this.token = token;
         this.remoteEndpoint = remoteEndpoint;

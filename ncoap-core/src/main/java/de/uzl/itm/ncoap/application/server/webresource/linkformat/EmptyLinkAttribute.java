@@ -47,7 +47,7 @@ public class EmptyLinkAttribute extends LinkAttribute<Void> {
     }
 
     /**
-     * This is method is just for internal use withiin the nCoAP framework
+     * This is method is just for internal use within the nCoAP framework
      */
     public static void initialize(){
         ATTRIBUTES.put(OBSERVABLE, new AttributeProperties(false, EMPTY_ATTRIBUTE));

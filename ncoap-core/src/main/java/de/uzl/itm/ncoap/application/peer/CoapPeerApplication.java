@@ -59,33 +59,26 @@ public class CoapPeerApplication extends CoapApplication {
     
     private static Logger LOG = LoggerFactory.getLogger(CoapPeerApplication.class.getName());
 
+    public static final String VERSION = "1.8.3-SNAPSHOT-2";
 
     private WebresourceManager webresourceManager;
 
-    /**
-     * Creates a new instance of {@link de.uzl.itm.ncoap.application.peer.CoapPeerApplication}.
-     *
-     * @param resourceNotFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler}
-     * to deal with incoming requests for unknown {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s.
-     *
-     * @param localSocket the socket for both, listening for incoming requests and send requests
-     */
-    public CoapPeerApplication(NotFoundHandler resourceNotFoundHandler, InetSocketAddress localSocket) {
+    public CoapPeerApplication(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket){
 
-        super("CoAP Peer", Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
+        super(applicationName, Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
 
         PeerChannelPipelineFactory pipelineFactory = new PeerChannelPipelineFactory(
-            this.getExecutor(), new TokenFactory(8), resourceNotFoundHandler
+                this.getExecutor(), new TokenFactory(8), notFoundHandler
         );
 
         startApplication(pipelineFactory, localSocket);
 
         this.webresourceManager =
-                (WebresourceManager) pipelineFactory.getChannelHandler(ServerChannelPipelineFactory.WEBSERVICE_MANAGER);
+                (WebresourceManager) pipelineFactory.getChannelHandler(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER);
 
         this.webresourceManager.setChannel(this.getChannel());
 
-        resourceNotFoundHandler.setWebresourceManager(webresourceManager);
+        notFoundHandler.setWebresourceManager(webresourceManager);
 
         //Set the ChannelHandlerContext for the inbound reliability handler
         InboundReliabilityHandler inboundReliabilityHandler =
@@ -96,6 +89,18 @@ public class CoapPeerApplication extends CoapApplication {
                 this.getChannel().getPipeline()
                         .getContext(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER)
         );
+    }
+
+    /**
+     * Creates a new instance of {@link de.uzl.itm.ncoap.application.peer.CoapPeerApplication}.
+     *
+     * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler}
+     * to deal with incoming requests for unknown {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s.
+     *
+     * @param localSocket the socket for both, listening for incoming requests and send requests
+     */
+    public CoapPeerApplication(NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
+        this("CoAP Peer", notFoundHandler, localSocket);
     }
 
 
@@ -128,14 +133,13 @@ public class CoapPeerApplication extends CoapApplication {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
                         if (future.isSuccess()) {
-                            LOG.debug("Sent to {}:{}: {}",
+                            LOG.info("Sent to {}:{}: {}",
                                     new Object[]{remoteEndpoint.getAddress().getHostAddress(),
                                             remoteEndpoint.getPort(), coapRequest});
                         }
                     }
                 });
             }
-
         });
     }
 
@@ -199,9 +203,9 @@ public class CoapPeerApplication extends CoapApplication {
      */
     public void registerResource(Webresource webresource) throws IllegalArgumentException{
         WebresourceManager manager =
-                (WebresourceManager) this.getChannel().getPipeline().get(ServerChannelPipelineFactory.WEBSERVICE_MANAGER);
+                (WebresourceManager) this.getChannel().getPipeline().get(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER);
 
-        manager.registerService(webresource);
+        manager.registerWebresource(webresource);
     }
 
     /**

@@ -26,7 +26,9 @@ package de.uzl.itm.ncoap.communication.dispatching.client;
 
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.events.MessageTransferEvent;
+import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.ObservationCancelledEvent;
+import de.uzl.itm.ncoap.communication.events.ConversationFinishedEvent;
 import de.uzl.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -84,9 +86,9 @@ public class ClientCallbackManager extends SimpleChannelHandler{
     public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent me){
 
         if(me.getMessage() instanceof OutboundMessageWrapper){
-
             //Extract parameters for message transmission
             final CoapMessage coapMessage = ((OutboundMessageWrapper) me.getMessage()).getCoapMessage();
+            log.debug("WRITE: {}", coapMessage);
             final ClientCallback clientCallback = ((OutboundMessageWrapper) me.getMessage()).getClientCallback();
 
             final InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
@@ -131,7 +133,7 @@ public class ClientCallbackManager extends SimpleChannelHandler{
 
                 else{
                     //Prepare CoAP request, the response reception and then send the CoAP request
-                    Token token = tokenFactory.getNextToken(remoteEndpoint);
+                    Token token = tokenFactory.getNextToken();
 
                     if(token == null){
                         String description = "No token available for remote endpoint " + remoteEndpoint + ".";
@@ -225,6 +227,23 @@ public class ClientCallbackManager extends SimpleChannelHandler{
     }
 
 
+//    private void replaceRemoteSocket(InetSocketAddress oldRemoteSocket, InetSocketAddress newRemoteSocket){
+//        try{
+//            this.lock.writeLock().lock();
+//            Map<Token, ClientCallback> callbacks = new HashMap<>(this.clientCallbacks.row(oldRemoteSocket));
+//            for(Map.Entry<Token, ClientCallback> entry : callbacks.entrySet()){
+//                removeClientCallback(oldRemoteSocket, entry.getKey());
+//                addResponseCallback(newRemoteSocket, entry.getKey(), entry.getValue());
+//
+//                entry.getValue().processRemoteSocketChanged(oldRemoteSocket, newRemoteSocket);
+//            }
+//        }
+//        finally {
+//            this.lock.writeLock().unlock();
+//        }
+//    }
+
+
     private ClientCallback removeClientCallback(InetSocketAddress remoteEndpoint, Token token){
         try{
             this.lock.readLock().lock();
@@ -309,20 +328,41 @@ public class ClientCallbackManager extends SimpleChannelHandler{
     }
 
 
+    private void handleRemoteSocketChangedEvent(RemoteSocketChangedEvent event){
+        try {
+            this.lock.writeLock().lock();
+            ClientCallback callback = this.removeClientCallback(event.getOldRemoteSocket(), event.getToken());
+            this.addResponseCallback(event.getRemoteEndpoint(), event.getToken(), callback);
+        }
+        finally {
+            this.lock.writeLock().unlock();
+        }
+    }
+
+
     private void handleMessageExchangeEvent(MessageTransferEvent event) {
-       ClientCallback clientCallback;
+        log.debug("EVENT: : {}", event);
 
-       //find the response processor for the inbound events
-       if(event.stopsMessageExchange())
-           clientCallback = clientCallbacks.remove(event.getRemoteEndpoint(), event.getToken());
-       else
-           clientCallback = clientCallbacks.get(event.getRemoteEndpoint(), event.getToken());
+        // this event needs some special extra handling...
+        if(event instanceof RemoteSocketChangedEvent){
+            handleRemoteSocketChangedEvent((RemoteSocketChangedEvent) event);
+        }
 
-       //process the events
-       if(clientCallback != null)
-           clientCallback.processMessageExchangeEvent(event);
-       else
-           log.warn("No callback found for event: {}!", event);
+        // all other events are of interest only for the callback
+        ClientCallback clientCallback;
+
+        //find the response processor for the inbound events
+        if (event.stopsMessageExchange())
+            clientCallback = removeClientCallback(event.getRemoteEndpoint(), event.getToken());
+        else
+            clientCallback = clientCallbacks.get(event.getRemoteEndpoint(), event.getToken());
+
+        //process the events
+        if (clientCallback != null)
+            clientCallback.processMessageExchangeEvent(event);
+        else
+            log.warn("No callback found for event: {}!", event);
+
    }
 
 
@@ -365,7 +405,7 @@ public class ClientCallbackManager extends SimpleChannelHandler{
                 }
 
                 removeClientCallback(remoteEndpoint, token);
-                tokenFactory.passBackToken(remoteEndpoint, token);
+                finishConversation(ctx, remoteEndpoint, token, coapResponse.getMessageID(), coapResponse.getEndpointID2());
             }
 
             //ask the callback if the observation is to be continued
@@ -381,7 +421,7 @@ public class ClientCallbackManager extends SimpleChannelHandler{
         //non-observation callback found
         else{
             removeClientCallback(remoteEndpoint, token);
-            tokenFactory.passBackToken(remoteEndpoint, token);
+            finishConversation(ctx, remoteEndpoint, token, coapResponse.getMessageID(), coapResponse.getEndpointID2());
         }
 
 
@@ -394,6 +434,17 @@ public class ClientCallbackManager extends SimpleChannelHandler{
             log.warn("No callback found for CoAP response (from {}): {}", remoteEndpoint , coapResponse);
         }
     }
+
+    private void finishConversation(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint, Token token,
+            int messageID, byte[] endpointID){
+
+        if(this.tokenFactory.passBackToken(token)){
+            ConversationFinishedEvent event =
+                new ConversationFinishedEvent(remoteEndpoint, messageID, token, endpointID);
+            Channels.write(ctx.getChannel(), event);
+        }
+    }
+
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ee){

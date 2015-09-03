@@ -45,14 +45,14 @@ public class ServerChannelPipelineFactory extends CoapChannelPipelineFactory {
      * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
      * instance of a CoAP server
      */
-    public static final String INBOUND_RELIABILITY_HANDLER = "IRH";
+    public static final String INBOUND_RELIABILITY_HANDLER = "INBOUND-RELIABILITY";
 
 
     /**
      * The name of the {@link de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager}
      * instance of a CoAP server
      */
-    public static final String WEBSERVICE_MANAGER = "WM";
+    public static final String WEBRESOURCE_MANAGER = "WEBRESOURCE-MANAGER";
 
 
     /**
@@ -68,6 +68,6 @@ public class ServerChannelPipelineFactory extends CoapChannelPipelineFactory {
         super(executor);
 
         addChannelHandler(INBOUND_RELIABILITY_HANDLER, new InboundReliabilityHandler(executor));
-        addChannelHandler(WEBSERVICE_MANAGER, new WebresourceManager(notFoundHandler, executor));
+        addChannelHandler(WEBRESOURCE_MANAGER, new WebresourceManager(notFoundHandler, executor));
     }
 }

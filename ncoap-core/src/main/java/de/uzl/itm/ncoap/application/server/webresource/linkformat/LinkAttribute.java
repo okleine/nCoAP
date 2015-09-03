@@ -61,6 +61,7 @@ public abstract class LinkAttribute<T> {
     private static boolean initialized = false;
 
     public static void initialize(){
+
         EmptyLinkAttribute.initialize();
         ATTRIBUTES.putAll(EmptyLinkAttribute.getAttributes());
         LongLinkAttribute.initialize();

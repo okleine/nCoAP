@@ -163,6 +163,16 @@ public abstract class OptionValue<T>{
          * Corresponds to option number 60
          */
         public static final int SIZE_1          = 60;
+
+        /**
+         * Corresponds to option number 124
+         */
+        public static final int ENDPOINT_ID_1   = 124;
+
+        /**
+         * Corresponds to option number 189
+         */
+        public static final int ENDPOINT_ID_2   = 189;
     }
 
     /**
@@ -214,6 +224,8 @@ public abstract class OptionValue<T>{
         characteristics.put(    Name.PROXY_URI,      new Integer[]{Type.STRING,       1,      1034    });
         characteristics.put(    Name.PROXY_SCHEME,   new Integer[]{Type.STRING,       1,      255     });
         characteristics.put(    Name.SIZE_1,         new Integer[]{Type.UINT,         0,      4       });
+        characteristics.put(    Name.ENDPOINT_ID_1,  new Integer[]{Type.OPAQUE,       0,      8       });
+        characteristics.put(    Name.ENDPOINT_ID_2,  new Integer[]{Type.OPAQUE,       0,      8       });
     }
 
     private static HashMultimap<Integer, Integer> mutualExclusions = HashMultimap.create();

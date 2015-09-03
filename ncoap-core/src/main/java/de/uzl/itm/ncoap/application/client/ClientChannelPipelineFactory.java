@@ -48,13 +48,13 @@ public class ClientChannelPipelineFactory extends CoapChannelPipelineFactory {
      * The name of the {@link de.uzl.itm.ncoap.communication.observing.ClientObservationHandler}
      * instance of a CoAP client
      */
-    public static String CLIENT_OBSERVATION_HANDLER = "COH";
+    public static String CLIENT_OBSERVATION_HANDLER = "OBSERVATION";
 
     /**
      * The name of the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager}
      * instance of a CoAP client
      */
-    public static String CLIENT_CALLBACK_MANAGER = "CCM";
+    public static String CLIENT_CALLBACK_MANAGER = "CLIENT-CALLBACK";
 
     /**
      * The name of the {@link de.uzl.itm.ncoap.communication.blockwise.Block2OptionHandler}

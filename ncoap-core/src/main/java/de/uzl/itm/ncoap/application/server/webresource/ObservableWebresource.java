@@ -31,16 +31,14 @@ import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.EmptyLinkAttribute;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
-import de.uzl.itm.ncoap.communication.events.EmptyAckReceivedEvent;
-import de.uzl.itm.ncoap.communication.events.MessageIDAssignedEvent;
-import de.uzl.itm.ncoap.communication.events.MessageTransferEvent;
-import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.MessageType;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.OptionValue;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.Channels;
@@ -119,10 +117,10 @@ public abstract class ObservableWebresource<T> implements Webresource<T> {
      *              observation
      * @param contentFormat the number representing the format of the update notifications payload
      */
-    public void addObservation(InetSocketAddress remoteEndpoint, Token token, long contentFormat){
+    public void addObservation(InetSocketAddress remoteEndpoint, Token token, long contentFormat, byte[] endpointID){
         try{
             this.observationsLock.writeLock().lock();
-            Observation observation = new Observation(remoteEndpoint, token, contentFormat);
+            Observation observation = new Observation(remoteEndpoint, token, contentFormat, endpointID);
             NotifySingleObserverTask heartbeatTask = new NotifySingleObserverTask(observation, true);
             observation.setHeartbeatFuture(this.executor.schedule(heartbeatTask, 24, TimeUnit.HOURS));
             this.observations.put(remoteEndpoint, token, observation);
@@ -478,42 +476,14 @@ public abstract class ObservableWebresource<T> implements Webresource<T> {
     }
 
 
-//    /**
-//     * The hash code of is {@link ObservableWebservice} instance is produced as {@code this.getUriPath().hashCode()}.
-//     * @return the hash code of this {@link ObservableWebservice} instance
-//     */
-//    @Override
-//    public int hashCode(){
-//        return this.getUriPath().hashCode();
-//    }
-//
-//
-//    @Override
-//    public final boolean equals(Object object){
-//
-//        if(object == null){
-//            return false;
-//        }
-//
-//        if(!(object instanceof String || object instanceof Webservice)){
-//            return false;
-//        }
-//
-//        if(object instanceof String){
-//            return this.getUriPath().equals(object);
-//        }
-//        else{
-//            return this.getUriPath().equals(((Webservice) object).getUriPath());
-//        }
-//    }
-
-
     @Override
     public void shutdown(){
         log.warn("Shutdown service \"{}\"!", this.uriPath);
         try{
             this.observationsLock.writeLock().lock();
             String message = "Webservice \"" + this.uriPath + "\" no longer available!";
+
+            Channel channel = this.webresourceManager.getChannel();
 
             for(Observation observation : this.observations.values()){
                 final InetSocketAddress remoteEndpoint = observation.getRemoteEndpoint();
@@ -523,8 +493,7 @@ public abstract class ObservableWebresource<T> implements Webresource<T> {
                         MessageCode.Name.NOT_FOUND_404, message);
                 coapResponse.setToken(token);
 
-                ChannelFuture future =
-                        Channels.write(this.webresourceManager.getChannel(), coapResponse, remoteEndpoint);
+                ChannelFuture future =  Channels.write(channel, coapResponse, remoteEndpoint);
 
                 future.addListener(new ChannelFutureListener() {
                     @Override
@@ -539,11 +508,18 @@ public abstract class ObservableWebresource<T> implements Webresource<T> {
                         }
                     }
                 });
+
+                ConversationFinishedEvent event = new ConversationFinishedEvent(
+                        remoteEndpoint, -1, token, observation.getRemotelyAssignedEndpointID()
+                );
+                Channels.write(channel, event);
             }
         }
         finally {
+            this.webresourceManager.unregisterWebresource(this);
             //Do NOT unlock the "write lock" to avoid new registrations!
             log.warn("Keep WRITE LOCK for service \"{}\" to avoid new registrations for observation!", this.uriPath);
+
         }
     }
 

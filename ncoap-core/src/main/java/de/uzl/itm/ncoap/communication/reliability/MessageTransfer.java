@@ -34,7 +34,7 @@ import java.net.InetSocketAddress;
 */
 public abstract class MessageTransfer {
 
-    private final InetSocketAddress remoteEndpoint;
+    private InetSocketAddress remoteEndpoint;
     private final int messageID;
 
 
@@ -49,12 +49,15 @@ public abstract class MessageTransfer {
         this.messageID = messageID;
     }
 
+    public void setRemoteEndpoint(InetSocketAddress remoteEndpoint){
+        this.remoteEndpoint = remoteEndpoint;
+    }
 
     /**
      * Returns the sender address of the received {@link de.uzl.itm.ncoap.message.CoapMessage}
      * @return the sender address of the received {@link de.uzl.itm.ncoap.message.CoapMessage}
      */
-    public final InetSocketAddress getRemoteEndpoint(){
+    public InetSocketAddress getRemoteEndpoint(){
         return this.remoteEndpoint;
     }
 

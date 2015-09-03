@@ -27,6 +27,7 @@ package de.uzl.itm.ncoap.communication.blockwise;
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
+import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -108,8 +109,46 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         else if(me.getMessage() instanceof TransmissionTimeoutEvent){
             handleTransmissionTimeout(ctx, me);
         }
+        else if(me.getMessage() instanceof RemoteSocketChangedEvent){
+            handleRemoteSocketChangedEvent(ctx, me);
+        }
         else {
             ctx.sendUpstream(me);
+        }
+    }
+
+
+    private void handleRemoteSocketChangedEvent(ChannelHandlerContext ctx, MessageEvent me){
+        RemoteSocketChangedEvent event = (RemoteSocketChangedEvent) me.getMessage();
+        InetSocketAddress previousRemoteSocket = event.getOldRemoteSocket();
+        Token token = event.getToken();
+
+        try{
+            this.lock.readLock().lock();
+            if(!this.openRequests.contains(previousRemoteSocket, token)){
+                ctx.sendUpstream(me);
+                return;
+            }
+        }
+        finally {
+            this.lock.readLock().unlock();
+        }
+
+        try{
+            this.lock.writeLock().lock();
+            CoapRequest coapRequest = this.openRequests.remove(previousRemoteSocket, token);
+            if(coapRequest == null){
+                ctx.sendUpstream(me);
+                return;
+            }
+
+            InetSocketAddress remoteSocket = event.getRemoteEndpoint();
+            this.openRequests.put(remoteSocket, token, coapRequest);
+            ChannelBuffer partialContent = this.partialResponses.remove(previousRemoteSocket, token);
+            this.partialResponses.put(remoteSocket, token, partialContent);
+        }
+        finally {
+            this.lock.writeLock().unlock();
         }
     }
 
@@ -248,6 +287,16 @@ public class Block2OptionHandler extends SimpleChannelHandler{
     }
 
     private CoapRequest removeCoapRequest(InetSocketAddress remoteEndpoint, Token token){
+        try{
+            this.lock.readLock().lock();
+            if(!this.openRequests.contains(remoteEndpoint, token)){
+                return null;
+            }
+        }
+        finally {
+            this.lock.readLock().unlock();
+        }
+
         try{
             this.lock.writeLock().lock();
             if(!this.openRequests.contains(remoteEndpoint, token)){

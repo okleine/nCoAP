@@ -165,54 +165,23 @@ public class SimpleCoapClient extends CoapClientApplication{
             LoggingConfiguration.configureLogging(log4jConfigPath);
 
         //Start the client
-        final SimpleCoapClient client = new SimpleCoapClient(arguments);
+        //final SimpleCoapClient client = new SimpleCoapClient(arguments);
 
-
-//        for(int i = 0; i < 10; i++) {
-//            final int finalI = i;
-//            client.sendCoapPing(new ClientCallback() {
-//                @Override
-//                public void processCoapResponse(CoapResponse coapResponse) {
-//                    System.out.println("Response " + finalI + "!");
-//                }
-//
-//                @Override
-//                public void processReset() {
-//                    System.out.println("PONG " + finalI + "!");
-//                }
-//
-//                @Override
-//                public void processMiscellaneousError(String description){
-//                    System.out.println(description);
-//                }
-//
-//            }, new InetSocketAddress("134.102.218.16", 5683));
-//        }
-
-//        Thread.sleep(2000);
-//        client.shutdown();
-
-       //Send the request, await the response (or timeout) and shut the client down
-//        try{
-//            client.sendRequest();
-//            client.waitAndShutdown();
-//        }
-//        catch (Exception ex){
-//            client.shutdown();
-//            throw ex;
-//        }
+        CoapClientApplication client = new CoapClientApplication(6000, 8, 8);
 
         URI uri = new URI("coap", null, "coap.me", 5683, "/.well-known/core", null, null);
         CoapRequest request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, uri);
+        request.setObserve(0);
+        request.setEndpointID1();
 
         client.sendCoapRequest(request, new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
-                String result = coapResponse.getContent().toString(CoapMessage.CHARSET);
-                System.out.println(result);
+                String content = coapResponse.getContent().toString(CoapMessage.CHARSET);
+                System.out.println("RECEIVED: " + content);
 
                 if(coapResponse.getContentFormat() == ContentFormat.APP_LINK_FORMAT) {
-                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(result);
+                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(content);
 
                     for (String service : attributes.keySet()) {
                         System.out.println(service);
@@ -222,29 +191,10 @@ public class SimpleCoapClient extends CoapClientApplication{
                     }
                 }
             }
-        }, new InetSocketAddress("coap.me", 5683));
 
-        Thread.sleep(1000);
-
-        URI uri2 = new URI("coap", null, "coap.me", 5683, "/hello", null, null);
-        CoapRequest request2 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, uri2);
-
-        client.sendCoapRequest(request2, new ClientCallback() {
             @Override
-            public void processCoapResponse(CoapResponse coapResponse) {
-                String result = coapResponse.getContent().toString(CoapMessage.CHARSET);
-                System.out.println(result);
-
-                if(coapResponse.getContentFormat() == ContentFormat.APP_LINK_FORMAT) {
-                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(result);
-
-                    for (String service : attributes.keySet()) {
-                        System.out.println(service);
-                        for (LinkAttribute attribute : attributes.get(service)) {
-                            System.out.println("   " + attribute);
-                        }
-                    }
-                }
+            public boolean continueObservation(){
+                return true;
             }
 
             @Override
@@ -254,7 +204,7 @@ public class SimpleCoapClient extends CoapClientApplication{
         }, new InetSocketAddress("coap.me", 5683));
 
 
-        Thread.sleep(5000);
+        Thread.sleep(90000);
         client.shutdown();
 
 

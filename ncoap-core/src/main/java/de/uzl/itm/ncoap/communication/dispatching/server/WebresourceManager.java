@@ -32,6 +32,8 @@ import de.uzl.itm.ncoap.application.server.webresource.Webresource;
 import de.uzl.itm.ncoap.application.server.webresource.WellKnownCoreResource;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.events.MessageTransferEvent;
+import de.uzl.itm.ncoap.communication.events.ConversationFinishedEvent;
+import de.uzl.itm.ncoap.communication.identification.EndpointID;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.OptionValue;
@@ -104,7 +106,7 @@ public class WebresourceManager extends SimpleChannelUpstreamHandler {
         this.observations = HashBasedTable.create();
         this.observationsLock = new ReentrantReadWriteLock();
 
-        registerService(new WellKnownCoreResource(registeredServices, executor));
+        registerWebresource(new WellKnownCoreResource(registeredServices, executor));
     }
 
 
@@ -228,13 +230,15 @@ public class WebresourceManager extends SimpleChannelUpstreamHandler {
                         if(webresource instanceof ObservableWebresource && coapRequest.getObserve() == 0){
                             ObservableWebresource observableWebservice = (ObservableWebresource) webresource;
                             observableWebservice.addObservation(remoteEndpoint, coapResponse.getToken(),
-                                    coapResponse.getContentFormat());
+                                    coapResponse.getContentFormat(), coapRequest.getEndpointID1());
                             sendUpdateNotification(ctx, remoteEndpoint, coapResponse, observableWebservice);
                         }
                         else{
                             coapResponse.removeOptions(OptionValue.Name.OBSERVE);
                             log.warn("Removed observe option from response!");
                             sendCoapResponse(ctx, remoteEndpoint, coapResponse);
+                            sendConversationFinished(ctx.getChannel(), remoteEndpoint, coapResponse.getToken(),
+                                coapResponse.getMessageID(), coapRequest.getEndpointID2());
                         }
                     }
                     else{
@@ -250,23 +254,32 @@ public class WebresourceManager extends SimpleChannelUpstreamHandler {
                     errorResponse.setToken(coapRequest.getToken());
 
                     sendCoapResponse(ctx, remoteEndpoint, errorResponse);
+
+                    sendConversationFinished(ctx.getChannel(), remoteEndpoint, errorResponse.getToken(),
+                            errorResponse.getMessageID(), coapRequest.getEndpointID2());
                 }
             }
         }, executor);
 
         try{
             //The requested Webservice does not exist
-            if(webresource == null)
+            if(webresource == null) {
                 webServiceNotFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteEndpoint);
+            }
 
             //The IF-NON-MATCH option indicates that the request is only to be processed if the webresource does not
             //(yet) exist. But it does. So send an error response
-            else if(coapRequest.isIfNonMatchSet())
+            else if(coapRequest.isIfNonMatchSet()) {
                 sendPreconditionFailed(coapRequest.getMessageTypeName(), coapRequest.getUriPath(), responseFuture);
 
+                sendConversationFinished(ctx.getChannel(), remoteEndpoint, coapRequest.getToken(),
+                    coapRequest.getMessageID(), coapRequest.getEndpointID2());
+            }
+
             //The inbound request is to be handled by the addressed service
-            else
+            else {
                 webresource.processCoapRequest(responseFuture, coapRequest, remoteEndpoint);
+            }
 
         }
         catch (Exception e) {
@@ -274,6 +287,15 @@ public class WebresourceManager extends SimpleChannelUpstreamHandler {
             responseFuture.setException(e);
         }
     }
+
+    // requests, update notifications and any (blockwise) messages not containing a last block are final messages
+    private void sendConversationFinished(Channel channel, InetSocketAddress remoteSocket, Token token,
+            int messageID, byte[] endpointID) {
+
+        ConversationFinishedEvent event = new ConversationFinishedEvent(remoteSocket, messageID, token, endpointID);
+        Channels.write(channel, event);
+    }
+
 
 
     private void sendCoapResponse(final ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,
@@ -346,7 +368,7 @@ public class WebresourceManager extends SimpleChannelUpstreamHandler {
         String[] webservices = registeredServices.keySet().toArray(new String[registeredServices.size()]);
 
         for(String servicePath : webservices){
-            shutdownService(servicePath);
+            shutdownWebresource(servicePath);
         }
 
         //some time to send possible update notifications (404_NOT_FOUND) to observers
@@ -366,7 +388,7 @@ public class WebresourceManager extends SimpleChannelUpstreamHandler {
      *
      * @return <code>true</code> if the service was removed succesfully, <code>false</code> otherwise.
      */
-    public synchronized boolean shutdownService(String uriPath) {
+    public synchronized boolean shutdownWebresource(String uriPath) {
         Webresource removedService = registeredServices.remove(uriPath);
 
         if(removedService != null){
@@ -397,7 +419,7 @@ public class WebresourceManager extends SimpleChannelUpstreamHandler {
      * @throws java.lang.IllegalArgumentException if there was already a
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered with the same path
      */
-    public final void registerService(final Webresource webresource) throws IllegalArgumentException{
+    public final void registerWebresource(final Webresource webresource) throws IllegalArgumentException{
         if(registeredServices.containsKey(webresource.getUriPath())){
             throw new IllegalArgumentException("Service " + webresource.getUriPath() + " is already registered");
         }
@@ -405,19 +427,16 @@ public class WebresourceManager extends SimpleChannelUpstreamHandler {
         webresource.setWebresourceManager(this);
         registeredServices.put(webresource.getUriPath(), webresource);
         log.info("Registered new service at " + webresource.getUriPath());
+    }
 
-//        if(webresource instanceof ObservableWebservice){
-//            ObservableWebserviceRegistrationEvent registrationEvent =
-//                    new ObservableWebserviceRegistrationEvent((ObservableWebservice) webresource);
-//
-//            ChannelFuture future = Channels.write(channel, registrationEvent);
-//            future.addListener(new ChannelFutureListener() {
-//                @Override
-//                public void operationComplete(ChannelFuture future) throws Exception {
-//                    log.info("Registered {} at observable resource handler.", webresource.getUriPath());
-//                }
-//            });
-//        }
+    /**
+     * Removes the resource from the list of registered resources but DOES NOT invoke
+     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource#shutdown()}
+     *
+     * @param webresource the {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} to be unregistered.
+     */
+    public final void unregisterWebresource(Webresource webresource){
+        registeredServices.remove(webresource.getUriPath());
     }
 
     public Channel getChannel(){

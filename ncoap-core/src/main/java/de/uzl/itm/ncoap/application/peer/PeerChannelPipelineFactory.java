@@ -71,7 +71,7 @@ public class PeerChannelPipelineFactory extends CoapChannelPipelineFactory {
         // server specific handlers
         addChannelHandler(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER,
                 new InboundReliabilityHandler(executor));
-        addChannelHandler(ServerChannelPipelineFactory.WEBSERVICE_MANAGER,
+        addChannelHandler(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER,
                 new WebresourceManager(notFoundHandler, executor));
     }
 

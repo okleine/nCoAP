@@ -28,6 +28,8 @@ package de.uzl.itm.ncoap.communication.dispatching.client;
 import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.message.CoapResponse;
 
+import java.net.InetSocketAddress;
+
 
 /**
  * Classes extending {@link ClientCallback} process the
@@ -103,9 +105,26 @@ public abstract class ClientCallback {
             processMessageIDAssignment(event.getMessageID());
         }
 
+        else if(event instanceof RemoteSocketChangedEvent){
+            RemoteSocketChangedEvent event1 = (RemoteSocketChangedEvent) event;
+            InetSocketAddress newSocketAddress = event1.getRemoteEndpoint();
+            InetSocketAddress oldSocketAddress = event1.getOldRemoteSocket();
+            processRemoteSocketChanged(oldSocketAddress, newSocketAddress);
+        }
+
         else if(event instanceof MiscellaneousErrorEvent){
             processMiscellaneousError(((MiscellaneousErrorEvent) event).getDescription());
         }
+    }
+
+    /**
+     * This method is called by the framework if the socket address of the remote endpoint changed during an
+     * ongoing conversation (e.g. an observation)
+     *
+     * <b>Note:</b>to somehow handle the change this method is to be overridden.
+     */
+    public void processRemoteSocketChanged(InetSocketAddress oldRemoteSocket, InetSocketAddress newRemoteSocket) {
+        // to be overridden by extending classes
     }
 
 

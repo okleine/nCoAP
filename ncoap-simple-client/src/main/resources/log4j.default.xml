@@ -13,7 +13,7 @@
         <appender-ref ref="console"/>
     </appender>
 
-    <logger name="de.uniluebeck.itm.ncoap.examples">
+    <logger name="de.uzl.itm.ncoap">
         <level value="info"/>
     </logger>
 

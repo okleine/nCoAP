@@ -40,18 +40,24 @@ public class Observation {
     private InetSocketAddress remoteEndpoint;
     private ScheduledFuture heartbeatFuture;
     private Token token;
+    private byte[] remotelyAssignedEndpointID;
     private long contentFormat;
     private int messageID;
     private Set<byte[]> etags;
 
-    public Observation(InetSocketAddress remoteEndpoint, Token token, long contentFormat) {
-        this(remoteEndpoint, token, contentFormat, new HashSet<byte[]>(0));
+    public Observation(InetSocketAddress remoteEndpoint, Token token, long contentFormat,
+            byte[] remotelyAssignedEndpointID) {
+
+        this(remoteEndpoint, token, contentFormat, new HashSet<byte[]>(0), remotelyAssignedEndpointID);
     }
 
-    public Observation(InetSocketAddress remoteEndpoint, Token token, long contentFormat, Set<byte[]> etags){
+    public Observation(InetSocketAddress remoteEndpoint, Token token, long contentFormat, Set<byte[]> etags,
+            byte[] remotelyAssignedEndpointID){
+
         this.remoteEndpoint = remoteEndpoint;
         this.token = token;
         this.contentFormat = contentFormat;
+        this.remotelyAssignedEndpointID = remotelyAssignedEndpointID;
         this.messageID = CoapMessage.UNDEFINED_MESSAGE_ID;
         this.etags = etags;
     }
@@ -108,5 +114,9 @@ public class Observation {
 
     public void setHeartbeatFuture(ScheduledFuture heartbeatFuture) {
         this.heartbeatFuture = heartbeatFuture;
+    }
+
+    public byte[] getRemotelyAssignedEndpointID() {
+        return remotelyAssignedEndpointID;
     }
 }

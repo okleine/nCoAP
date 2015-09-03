@@ -43,11 +43,12 @@ import java.util.Set;
  */
 public class LinkFormatDecoder {
 
-    private static Logger LOG = LoggerFactory.getLogger(LinkFormatDecoder.class.getName());
-
-    public static void initialize(){
+    static{
         LinkAttribute.initialize();
     }
+
+    private static Logger LOG = LoggerFactory.getLogger(LinkFormatDecoder.class.getName());
+
 
     /**
      * Decodes the given String (e.g. the content of response from a <code>/.well-known/core</code> service) into a
@@ -58,6 +59,8 @@ public class LinkFormatDecoder {
      * @return a {@link java.util.Map} with the services as keys and a set of their respective attributes as value.
      */
     public static Map<String, Set<LinkAttribute>> decode(String linkFormat) throws IllegalArgumentException{
+
+
         Map<String, Set<LinkAttribute>> result = new HashMap<>();
 
         LOG.debug("Link Format String:\n{}", linkFormat);

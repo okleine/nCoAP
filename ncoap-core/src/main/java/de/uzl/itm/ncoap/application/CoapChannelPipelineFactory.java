@@ -26,6 +26,7 @@ package de.uzl.itm.ncoap.application;
 
 import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder;
+import de.uzl.itm.ncoap.communication.identification.IdentificationHandler;
 import de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -46,30 +47,35 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public abstract class CoapChannelPipelineFactory implements ChannelPipelineFactory {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private static Logger LOG = LoggerFactory.getLogger(CoapChannelPipelineFactory.class.getName());
 
     /**
      * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
      */
-    public static final String EXECUTION_HANDLER = "EH";
+    public static final String EXECUTION_HANDLER = "EXECUTION";
+
+    /**
+     * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
+     */
+    public static final String IDENTIFICATION_HANDLER = "IDENTIFICATION";
 
     /**
      * The name of the {@link de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder} instance
      * of a CoAP application
      */
-    public static final String ENCODER = "ENC";
+    public static final String ENCODER = "ENCODER";
 
     /**
      * The name of the {@link de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder} instance
      * of a CoAP application
      */
-    public static final String DECODER = "DEC";
+    public static final String DECODER = "DECODER";
 
     /**
      * The name of the {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler} instance
      * of a CoAP application
      */
-    public static String OUTBOUND_RELIABILITY_HANDLER = "OutboundReliabilityHandler";
+    public static String OUTBOUND_RELIABILITY_HANDLER = "OUTBOUND-RELIABILITY";
 
     private Map<String, ChannelHandler> handler;
 
@@ -82,6 +88,7 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
         addChannelHandler(ENCODER, new CoapMessageEncoder());
         addChannelHandler(DECODER, new CoapMessageDecoder());
 
+        addChannelHandler(IDENTIFICATION_HANDLER, new IdentificationHandler());
         addChannelHandler(OUTBOUND_RELIABILITY_HANDLER, new OutboundReliabilityHandler(executor));
      }
 
@@ -97,7 +104,7 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
 
         for(String handlerName : handler.keySet()){
             pipeline.addLast(handlerName, handler.get(handlerName));
-            log.debug("Added Handler to Pipeline: {}.", handlerName);
+            LOG.debug("Added Handler to Pipeline: {}.", handlerName);
         }
 
         return pipeline;

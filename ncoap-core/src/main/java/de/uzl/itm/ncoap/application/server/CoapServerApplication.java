@@ -105,7 +105,7 @@ public class CoapServerApplication extends CoapApplication {
 //        log.debug("Bound to local address: {}", this.channel.getLocalAddress());
 
         this.webresourceManager =
-                (WebresourceManager) pipelineFactory.getChannelHandler(ServerChannelPipelineFactory.WEBSERVICE_MANAGER);
+                (WebresourceManager) pipelineFactory.getChannelHandler(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER);
 
         this.webresourceManager.setChannel(this.getChannel());
 
@@ -206,9 +206,9 @@ public class CoapServerApplication extends CoapApplication {
      */
     public void registerService(Webresource webresource) throws IllegalArgumentException{
         WebresourceManager manager =
-                (WebresourceManager) this.getChannel().getPipeline().get(ServerChannelPipelineFactory.WEBSERVICE_MANAGER);
+                (WebresourceManager) this.getChannel().getPipeline().get(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER);
 
-        manager.registerService(webresource);
+        manager.registerWebresource(webresource);
     }
 
 

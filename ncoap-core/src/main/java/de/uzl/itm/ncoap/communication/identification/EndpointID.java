@@ -22,44 +22,37 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.communication.dispatching.client;
+package de.uzl.itm.ncoap.communication.identification;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLongs;
+import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 
 import java.util.Arrays;
 
 /**
- * A {@link Token} is the identifier to relate {@link de.uzl.itm.ncoap.message.CoapRequest}s with {@link de.uzl.itm.ncoap.message.CoapResponse}s. It consists of a byte
- * array with a size between 0 and 8 (both inclusive). So, {@link Token} basically is a wrapper class for a byte array.
- *
- * The byte array content has no semantic meaning and thus, e.g. a {@link Token} instance backed by a byte
- * array containing a single zero byte (all bits set to 0) is different from a byte array backed by a byte array
- * containing two zero bytes.
- *
- * @author Oliver Kleine
+ * Created by olli on 31.08.15.
  */
-public class Token implements Comparable<Token>{
+public class EndpointID implements Comparable<EndpointID>{
 
-    public static int MAX_LENGTH = 8;
+    public static final int MAX_LENGTH = 4;
 
-    private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
-
-    private byte[] token;
+    private byte[] bytes;
 
     /**
-     * Creates a new {@link Token} instance.
+     * Creates a new {@link de.uzl.itm.ncoap.communication.identification.EndpointID} instance.
      *
-     * @param token the byte array this {@link Token} is supposed to consist of
-     *
-     * @throws java.lang.IllegalArgumentException if the length of the given byte array is larger than 8
+     * @param bytes the byte array this {@link de.uzl.itm.ncoap.communication.identification.EndpointID} is
+     * supposed to consist of
+     * @throws IllegalArgumentException if the length of the given byte array is larger than 8
      */
-    public Token(byte[] token){
-        if(token.length > 8)
-            throw new IllegalArgumentException("Maximum token length is 8 (but given length was " + token.length + ")");
-
-        this.token = token;
+    public EndpointID(byte[] bytes) {
+        if(bytes.length > MAX_LENGTH){
+            throw new IllegalArgumentException("Maximum endpoint ID length is 4 (but given length was " +
+                    bytes.length + ")");
+        }
+       this.bytes = bytes;
     }
 
     /**
@@ -67,9 +60,8 @@ public class Token implements Comparable<Token>{
      * @return the byte array this {@link Token} instance wraps
      */
     public byte[] getBytes(){
-        return this.token;
+        return this.bytes;
     }
-
 
     /**
      * Returns a representation of the token in form of a HEX string or "<EMPTY>" for tokens of length 0
@@ -77,7 +69,7 @@ public class Token implements Comparable<Token>{
      */
     @Override
     public String toString(){
-        String tmp = bytesToHex(getBytes());
+        String tmp = Token.bytesToHex(getBytes());
 
         if(tmp.length() == 0)
             return "<EMPTY>";
@@ -85,35 +77,22 @@ public class Token implements Comparable<Token>{
             return "0x" + tmp;
     }
 
-
-    public static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
-        for ( int j = 0; j < bytes.length; j++ ) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-        return new String(hexChars);
+    @Override
+    public int hashCode(){
+        return Arrays.hashCode(bytes);
     }
 
     @Override
     public boolean equals(Object object){
-        if(object == null || (!(object instanceof Token)))
+        if(object == null || (!(object instanceof EndpointID)))
             return false;
 
-        Token other = (Token) object;
+        EndpointID other = (EndpointID) object;
         return Arrays.equals(this.getBytes(), other.getBytes());
     }
 
-
     @Override
-    public int hashCode(){
-        return Arrays.hashCode(token);
-    }
-
-
-    @Override
-    public int compareTo(Token other) {
+    public int compareTo(EndpointID other) {
 
         if(other.equals(this))
             return 0;
@@ -125,6 +104,6 @@ public class Token implements Comparable<Token>{
             return 1;
 
         return UnsignedLongs.compare(Longs.fromByteArray(Bytes.concat(this.getBytes(), new byte[8])),
-                                     Longs.fromByteArray(Bytes.concat(other.getBytes(), new byte[8])));
+                Longs.fromByteArray(Bytes.concat(other.getBytes(), new byte[8])));
     }
 }

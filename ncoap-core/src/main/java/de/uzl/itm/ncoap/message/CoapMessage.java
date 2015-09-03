@@ -31,6 +31,7 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Longs;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.identification.EndpointID;
 import de.uzl.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -79,8 +80,8 @@ public abstract class CoapMessage {
 
     private static final String DOES_NOT_ALLOW_CONTENT = "CoAP messages with code %s do not allow payload.";
     private static final String EXCLUDES = "Already contained option no. %d excludes option no. %d";
-    private static final String OUT_OF_ALLOWED_RANGE = "Given value length (%d) is out of allowed range " +
-            "for option no. %d (min: %d, max; %d).";
+//    private static final String OUT_OF_ALLOWED_RANGE = "Given value length (%d) is out of allowed range " +
+//            "for option no. %d (min: %d, max; %d).";
 
     private static final int ONCE       = 1;
     private static final int MULTIPLE   = 2;
@@ -98,6 +99,7 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.ETAG,               MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.BLOCK2,             ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GET.getNumber(),      OptionValue.Name.ENDPOINT_ID_1,      ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.URI_HOST,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.URI_PORT,           ONCE);
@@ -107,6 +109,7 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.PROXY_SCHEME,       ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.BLOCK2,             ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.POST.getNumber(),     OptionValue.Name.ENDPOINT_ID_1,      ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.URI_HOST,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.URI_PORT,           ONCE);
@@ -118,6 +121,7 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.IF_MATCH,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.IF_NONE_MATCH,      ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.BLOCK2,             ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PUT.getNumber(),      OptionValue.Name.ENDPOINT_ID_1,      ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_HOST,           ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_PORT,           ONCE);
@@ -125,6 +129,7 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.URI_QUERY,          MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.PROXY_URI,          ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.PROXY_SCHEME,       ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETE.getNumber(),   OptionValue.Name.ENDPOINT_ID_1,      ONCE);
 
         //Response success (2.x)
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.ETAG,               ONCE);
@@ -133,71 +138,93 @@ public abstract class CoapMessage {
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.LOCATION_QUERY,     MULTIPLE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.BLOCK2,             ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CREATED_201.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,      ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.DELETED_202.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.DELETED_202.getNumber(),  OptionValue.Name.BLOCK2,             ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.DELETED_202.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,      ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.ETAG,               ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.MAX_AGE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.ENDPOINT_ID_1,      ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.VALID_203.getNumber(),    OptionValue.Name.ENDPOINT_ID_2,      ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.CHANGED_204.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CHANGED_204.getNumber(),  OptionValue.Name.BLOCK2,             ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CHANGED_204.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,      ONCE);
 
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.OBSERVE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.MAX_AGE,            ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.ETAG,               ONCE);
         optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.BLOCK2,             ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.ENDPOINT_ID_1,      ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.CONTENT_205.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,      ONCE);
 
         //Client errors (4.x)
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),                  OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),  OptionValue.Name.MAX_AGE,        ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),  OptionValue.Name.CONTENT_FORMAT, ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_REQUEST_400.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,  ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(),                 OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(), OptionValue.Name.MAX_AGE,        ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(), OptionValue.Name.CONTENT_FORMAT, ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNAUTHORIZED_401.getNumber(), OptionValue.Name.ENDPOINT_ID_2,  ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),                   OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),  OptionValue.Name.MAX_AGE,         ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),  OptionValue.Name.CONTENT_FORMAT,  ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_OPTION_402.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,   ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),                    OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),  OptionValue.Name.MAX_AGE,          ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),  OptionValue.Name.CONTENT_FORMAT,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.FORBIDDEN_403.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,    ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),                    OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),  OptionValue.Name.MAX_AGE,          ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),  OptionValue.Name.CONTENT_FORMAT,   ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_FOUND_404.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,    ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),           OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),  OptionValue.Name.MAX_AGE,        ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),  OptionValue.Name.CONTENT_FORMAT, ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.METHOD_NOT_ALLOWED_405.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,  ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),               OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),  OptionValue.Name.MAX_AGE,        ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),  OptionValue.Name.CONTENT_FORMAT, ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_ACCEPTABLE_406.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,  ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),          OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),  OptionValue.Name.MAX_AGE,        ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),  OptionValue.Name.CONTENT_FORMAT, ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PRECONDITION_FAILED_412.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,  ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),     OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),     OptionValue.Name.SIZE_1,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),  OptionValue.Name.MAX_AGE,         ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),  OptionValue.Name.CONTENT_FORMAT,  ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),  OptionValue.Name.SIZE_1,          ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.REQUEST_ENTITY_TOO_LARGE_413.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,   ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),   OptionValue.Name.MAX_AGE,    ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),  OptionValue.Name.MAX_AGE,         ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),  OptionValue.Name.CONTENT_FORMAT,  ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.UNSUPPORTED_CONTENT_FORMAT_415.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,   ONCE);
 
         //Server errors (5.x)
-        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),    OptionValue.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),  OptionValue.Name.MAX_AGE,         ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),  OptionValue.Name.CONTENT_FORMAT,  ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.INTERNAL_SERVER_ERROR_500.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,   ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),          OptionValue.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),  OptionValue.Name.MAX_AGE,         ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),  OptionValue.Name.CONTENT_FORMAT,  ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.NOT_IMPLEMENTED_501.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,   ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),              OptionValue.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),  OptionValue.Name.MAX_AGE,         ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),  OptionValue.Name.CONTENT_FORMAT,  ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.BAD_GATEWAY_502.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,   ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),          OptionValue.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),  OptionValue.Name.MAX_AGE,         ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),  OptionValue.Name.CONTENT_FORMAT,  ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.GATEWAY_TIMEOUT_504.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,   ONCE);
 
-        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),   OptionValue.Name.MAX_AGE,   ONCE);
-        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),  OptionValue.Name.CONTENT_FORMAT,     ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),  OptionValue.Name.MAX_AGE,        ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),  OptionValue.Name.CONTENT_FORMAT, ONCE);
+        optionOccurenceConstraints.put(MessageCode.Name.PROXYING_NOT_SUPPORTED_505.getNumber(),  OptionValue.Name.ENDPOINT_ID_2,  ONCE);
     }
 
 
@@ -734,17 +761,101 @@ public abstract class CoapMessage {
     }
 
 
-    public static int szxToSize(int szx) {
-        return (int)Math.pow(2, 4+szx);
+//    public static int szxToSize(int szx) {
+//        return (int)Math.pow(2, 4+szx);
+//    }
+//
+//
+//    public int sizeToSzx(int size) {
+//        if (size < 16) return 0;
+//        if (size > 1024) return 6;
+//        return (int)(Math.log(size) / Math.log(2)) - 4;
+//    }
+
+
+    /**
+     * Returns the {@link de.uzl.itm.ncoap.communication.identification.EndpointID} contained in this message as
+     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_1} or <code>null</code> if no such
+     * option is present
+     *
+     * @return the {@link de.uzl.itm.ncoap.communication.identification.EndpointID} contained in this message as
+     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_1} or <code>null</code> if no such
+     * option is present
+     */
+    public byte[] getEndpointID1(){
+        Set<OptionValue> values = getOptions(OptionValue.Name.ENDPOINT_ID_1);
+        if(values.isEmpty()){
+            return null;
+        }
+
+        return values.iterator().next().getValue();
+    }
+
+    /**
+     * Sets the {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_1} with an empty byte array.
+     * This value is replaces with a valid ID by the framework during outbound message processing
+     */
+    public void setEndpointID1(){
+        this.setEndpointID1(new byte[0]);
+    }
+
+    /**
+     * Sets the {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_1} with the given byte array.
+     *
+     * <b>Note:</b> This method is intended for internal use. The given value is likely to be replaced by the
+     * framework during outbound message processing! Use {@link #setEndpointID1} instead!
+     *
+     * @param value the {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_1} option value
+     */
+    public void setEndpointID1(byte[] value){
+        try {
+            this.removeOptions(OptionValue.Name.ENDPOINT_ID_1);
+            this.addOpaqueOption(OptionValue.Name.ENDPOINT_ID_1, value);
+        }
+        catch (IllegalArgumentException e){
+            this.removeOptions(OptionValue.Name.ENDPOINT_ID_1);
+            log.error("This should never happen.", e);
+        }
     }
 
 
-    public int sizeToSzx(int size) {
-        if (size < 16) return 0;
-        if (size > 1024) return 6;
-        return (int)(Math.log(size) / Math.log(2)) - 4;
+    /**
+     * Returns the {@link de.uzl.itm.ncoap.communication.identification.EndpointID} contained in this message as
+     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_2} or <code>null</code> if no such
+     * option is present
+     *
+     * @return the {@link de.uzl.itm.ncoap.communication.identification.EndpointID} contained in this message as
+     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_2} or <code>null</code> if no such
+     * option is present
+     */
+    public byte[] getEndpointID2(){
+        Set<OptionValue> values = getOptions(OptionValue.Name.ENDPOINT_ID_2);
+        if(values.isEmpty()){
+            return null;
+        }
+
+        return values.iterator().next().getValue();
     }
 
+
+    /**
+     * Sets the {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_2} with the given byte array.
+     *
+     * <b>Note:</b> This method is intended for internal use. The given value is likely to be replaced or removed by the
+     * framework during outbound message processing!
+     *
+     * @param value the {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ENDPOINT_ID_1} option value
+     */
+    public void setEndpointID2(byte[] value){
+        try {
+            this.removeOptions(OptionValue.Name.ENDPOINT_ID_2);
+            this.addOpaqueOption(OptionValue.Name.ENDPOINT_ID_2, value);
+        }
+        catch (IllegalArgumentException e){
+            this.removeOptions(OptionValue.Name.ENDPOINT_ID_2);
+            log.error("This should never happen.", e);
+        }
+    }
 
     /**
      * Adds the content to the message. If this {@link CoapMessage} contained any content prior to the invocation of
@@ -843,18 +954,30 @@ public abstract class CoapMessage {
 
 
     /**
-     * Returns a {@link Set<  de.uzl.itm.ncoap.message.options.OptionValue  >} containing the options that are explicitly set in this {@link CoapMessage}. The
+     * Returns a {@link Set<de.uzl.itm.ncoap.message.options.OptionValue>} containing the options that are explicitly set in this {@link CoapMessage}. The
      * returned set does not contain options with default values. If this {@link CoapMessage} does not contain any
      * options of the given option number, then the returned set is empty.
      *
      * @param optionNumber the option number
      *
-     * @return a {@link Set<  de.uzl.itm.ncoap.message.options.OptionValue  >} containing the options that are explicitly set in this {@link CoapMessage}.
+     * @return a {@link Set<de.uzl.itm.ncoap.message.options.OptionValue>} containing the options that are explicitly set in this {@link CoapMessage}.
      */
     public Set<OptionValue> getOptions(int optionNumber){
         return this.options.get(optionNumber);
     }
 
+    /**
+     * Returns <code>true</code> if an option with the given number is contained in this
+     * {@link de.uzl.itm.ncoap.message.CoapMessage} and <code>false</code> otherwise.
+     *
+     * @param optionNumber the option number
+     *
+     * @return <code>true</code> if an option with the given number is contained in this
+     * {@link de.uzl.itm.ncoap.message.CoapMessage} and <code>false</code> otherwise.
+     */
+    public boolean containsOption(int optionNumber){
+        return !getOptions(optionNumber).isEmpty();
+    }
 
     @Override
     public int hashCode(){

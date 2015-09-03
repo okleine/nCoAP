@@ -60,19 +60,20 @@ public class CoapClientApplication extends CoapApplication{
 
     /**
      * Creates a new instance of {@link CoapClientApplication}.
-     * 
+     *
      * @param name the name of the application (used for logging purposes)
      * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
      *             arbitrary port)
      * @param ioThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
      *                        if the given number is smaller then 4, the application will use 4 threads.
-     *                        
+     *
      * @param maxTokenLength the maximum length of
      *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s to be created by
      *                       the {@link TokenFactory}. The minimum length is <code>0</code>, the maximum length
      *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
      *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
+    @Deprecated
     public CoapClientApplication(String name, int port, int ioThreads, int maxTokenLength) {
 
         super(name, ioThreads);
@@ -84,39 +85,9 @@ public class CoapClientApplication extends CoapApplication{
     }
 
 
-
-
-
-//    private void initializeFactories(int maxTokenLength, int threads, int port){
-//        TokenFactory tokenFactory = new TokenFactory(maxTokenLength);
-//
-//        //Create factories for channel and pipeline
-//        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, threads/2);
-//        ClientChannelPipelineFactory clientChannelPipelineFactory =
-//                new ClientChannelPipelineFactory(executor, tokenFactory);
-//
-//        //Create and configure bootstrap
-//        ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-//        bootstrap.setPipelineFactory(clientChannelPipelineFactory);
-//        bootstrap.setOption("receiveBufferSizePredictor",
-//                new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE));
-//
-//        //Create datagram channel
-//        this.channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(port));
-//
-//        //set the outbound reliability handler with its channel handler context
-//        ChannelPipeline pipeline = this.channel.getPipeline();
-//        String handlerName = ClientChannelPipelineFactory.OUTBOUND_RELIABILITY_HANDLER;
-//        ChannelHandlerContext ctx = pipeline.getContext(handlerName);
-//        ((OutboundReliabilityHandler) pipeline.get(handlerName)).setChannelHandlerContext(ctx);
-//
-//
-//        LOG.info("New client channel created for address {}", this.channel.getLocalAddress());
-//    }
-
     /**
      * Creates a new instance.
-     * 
+     *
      * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
      * <code>"CoAP Client"</code> as parameter name.
      *
@@ -131,6 +102,7 @@ public class CoapClientApplication extends CoapApplication{
      *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
      *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
+    @Deprecated
     public CoapClientApplication(int port, int numberOfThreads, int maxTokenLength){
         this("CoAP Client", port, numberOfThreads, maxTokenLength);
     }
@@ -166,12 +138,28 @@ public class CoapClientApplication extends CoapApplication{
      * @param name the name of the application (used for logging purposes)
      * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
      *             arbitrary port)
+     */
+    public CoapClientApplication(String name, int port){
+        this(name, port, Runtime.getRuntime().availableProcessors() * 2, 8);
+    }
+
+    /**
+     * Creates a new instance of {@link CoapClientApplication}.
+     *
+     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
+     * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>, and
+     * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>.
+     *
+     * @param name the name of the application (used for logging purposes)
+     * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
+     *             arbitrary port)
      * @param maxTokenLength the maximum length of
      *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s to be created by
      *                       the {@link TokenFactory}. The minimum length is <code>0</code>, the maximum length
      *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
      *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
+    @Deprecated
     public CoapClientApplication(String name, int port, int maxTokenLength){
         this(name, port, Runtime.getRuntime().availableProcessors() * 2, maxTokenLength);
     }

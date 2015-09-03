@@ -26,6 +26,7 @@ package de.uzl.itm.ncoap.communication.observing;
 
 import com.google.common.collect.*;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.ObservationCancelledEvent;
 import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -49,7 +50,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class ClientObservationHandler extends SimpleChannelHandler {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private static Logger LOG = LoggerFactory.getLogger(ClientObservationHandler.class.getName());
 
     private Table<InetSocketAddress, Token, ResourceStatusAge> observations;
     private ReentrantReadWriteLock lock;
@@ -69,7 +70,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         try{
             this.lock.readLock().lock();
             if(this.observations.contains(remoteEndpoint, token)){
-                log.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
+                LOG.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
                 return;
             }
@@ -81,13 +82,13 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         try{
             this.lock.writeLock().lock();
             if(this.observations.contains(remoteEndpoint, token)){
-                log.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
+                LOG.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
             }
 
             else{
                 this.observations.put(remoteEndpoint, token, new ResourceStatusAge(0, 0));
-                log.info("New observation added (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.info("New observation added (remote endpoint: {}, token: {})", remoteEndpoint, token);
             }
         }
         finally{
@@ -100,7 +101,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         try{
             this.lock.writeLock().lock();
             this.observations.put(remoteEndpoint, token, age);
-            log.info("Updated observation (remote endpoint: {}, token: {}): {}",
+            LOG.info("Updated observation (remote endpoint: {}, token: {}): {}",
                     new Object[]{remoteEndpoint, token, age});
         }
         finally {
@@ -112,7 +113,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         try{
             this.lock.readLock().lock();
             if(!this.observations.contains(remoteEndpoint, token)){
-                log.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
                 return null;
             }
         }
@@ -124,10 +125,10 @@ public class ClientObservationHandler extends SimpleChannelHandler {
             this.lock.writeLock().lock();
             ResourceStatusAge age = this.observations.remove(remoteEndpoint, token);
             if(age == null){
-                log.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
             }
             else{
-                log.info("Observation stopped (remote endpoint: {}, token: {})!", remoteEndpoint, token);
+                LOG.info("Observation stopped (remote endpoint: {}, token: {})!", remoteEndpoint, token);
             }
             return age;
         }
@@ -150,14 +151,13 @@ public class ClientObservationHandler extends SimpleChannelHandler {
             ctx.sendDownstream(me);
         }
         else{
-            log.warn("Event: {}", me.getMessage());
-            me.getFuture().setSuccess();
+            ctx.sendDownstream(me);
         }
     }
 
 
     private void handleObservationCancelledEvent(ObservationCancelledEvent event) {
-        log.info("{}", event);
+        LOG.info("EVENT received: {}", event);
         InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
         Token token = event.getToken();
         stopObservation(remoteEndpoint, token);
@@ -173,12 +173,12 @@ public class ClientObservationHandler extends SimpleChannelHandler {
             Token token = coapRequest.getToken();
 
             if(observe == 0){
-                log.debug("Add observation (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.debug("Add observation (remote endpoint: {}, token: {})", remoteEndpoint, token);
                 startObservation(remoteEndpoint, token);
             }
 
             else{
-                log.debug("Stop observation due to \"observe != 0\" (remote endpoint: {}, token: {})",
+                LOG.debug("Stop observation due to \"observe != 0\" (remote endpoint: {}, token: {})",
                         remoteEndpoint, token);
                 stopObservation(remoteEndpoint, token);
             }
@@ -201,12 +201,59 @@ public class ClientObservationHandler extends SimpleChannelHandler {
             handleResetReceivedEvent(ctx, me);
         }
 
+        // new socket of remote endpoint
+        else if(me.getMessage() instanceof RemoteSocketChangedEvent){
+            handleRemoteSocketChangedEvent(ctx, me);
+        }
+
         //something else...
         else{
             ctx.sendUpstream(me);
         }
     }
 
+
+    private void handleRemoteSocketChangedEvent(ChannelHandlerContext ctx, MessageEvent me){
+        RemoteSocketChangedEvent event = (RemoteSocketChangedEvent) me.getMessage();
+        LOG.debug("Received: {}", event);
+
+        InetSocketAddress oldRemoteSocket = event.getOldRemoteSocket();
+        Token token = event.getToken();
+
+        try{
+            lock.readLock().lock();
+            ResourceStatusAge statusAge = this.observations.get(oldRemoteSocket, token);
+            if(statusAge == null){
+                LOG.info("No observation found for updated socket (token: {}, old socket: {}).",
+                        token, oldRemoteSocket);
+                ctx.sendUpstream(me);
+                return;
+            }
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+
+        InetSocketAddress newRemoteSocket = event.getRemoteEndpoint();
+
+        try{
+            lock.writeLock().lock();
+            ResourceStatusAge statusAge = this.observations.remove(oldRemoteSocket, token);
+            if(statusAge == null){
+                LOG.info("No observation found with token {} for updated socket (old: {}, new: {}).",
+                        new Object[]{token, oldRemoteSocket, newRemoteSocket});
+            }
+            else{
+                this.observations.put(newRemoteSocket, token, statusAge);
+                LOG.info("Observation (Token: {}) updated with new remote socket (old: {}, new: {})!",
+                        new Object[]{token, oldRemoteSocket, newRemoteSocket});
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+            ctx.sendUpstream(me);
+        }
+    }
 
     private void handleResetReceivedEvent(ChannelHandlerContext ctx, MessageEvent me) {
         ResetReceivedEvent event = (ResetReceivedEvent) me.getMessage();
@@ -231,7 +278,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         //Current response is NO update notification or is an error response (which SHOULD implicate the first)
         if(!coapResponse.isUpdateNotification() || MessageCode.isErrorMessage(coapResponse.getMessageCode())){
             if(observations.contains(remoteEndpoint, token)){
-                log.info("Stop observation (remote address: {}, token: {}) due to received response: {}",
+                LOG.info("Stop observation (remote address: {}, token: {}) due to received response: {}",
                         new Object[]{remoteEndpoint, token, coapResponse});
 
                 stopObservation(remoteEndpoint, token);
@@ -241,7 +288,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         else{
             //current response is update notification but there is no suitable observation
             if(!observations.contains(remoteEndpoint, token)){
-                log.warn("No observation found for update notification (remote endpoint: {}, token: {}).",
+                LOG.warn("No observation found for update notification (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
             }
 
@@ -259,7 +306,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
                 }
 
                 else{
-                    log.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
+                    LOG.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
                             receivedStatusAge, latestStatusAge);
                     return;
                 }
