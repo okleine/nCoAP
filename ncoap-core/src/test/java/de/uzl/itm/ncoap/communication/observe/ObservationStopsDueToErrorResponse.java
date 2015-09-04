@@ -62,7 +62,7 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
         clientCallback = new ClientTestCallback();
         server = new CoapServerApplication();
         service = new ObservableTestWebresource("/test", 1, 0, server.getExecutor());
-        server.registerService(service);
+        server.registerWebresource(service);
 
         serverSocket = new InetSocketAddress("localhost", server.getPort());
         serviceUri = new URI("coap", null, "localhost", -1, "/test", null, null);

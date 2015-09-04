@@ -25,6 +25,8 @@
 package de.uzl.itm.ncoap.communication.reliability;
 
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +39,7 @@ import java.util.concurrent.ScheduledFuture;
  */
 public class OutboundReliableMessageTransfer extends OutboundMessageTransfer {
 
-    private static Logger log = LoggerFactory.getLogger(OutboundReliableMessageTransfer.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(OutboundReliableMessageTransfer.class.getName());
 
     public static final int MAX_RETRANSMISSIONS = 4;
 
@@ -57,7 +59,9 @@ public class OutboundReliableMessageTransfer extends OutboundMessageTransfer {
 
     private ScheduledFuture retransmissionFuture;
     private OutboundReliabilityHandler.RetransmissionTask retransmissionTask;
+    private CoapMessage coapMessage;
     private int retransmissions;
+    private boolean confirmed;
 
     private static final Random RANDOM = new Random(System.currentTimeMillis());
 
@@ -80,43 +84,55 @@ public class OutboundReliableMessageTransfer extends OutboundMessageTransfer {
      * @param retransmissionFuture the {@link java.util.concurrent.ScheduledFuture} of the next scheduled
      *                             retransmission.
      */
-    public OutboundReliableMessageTransfer(InetSocketAddress remoteEndpoint, int messageID, Token token,
-            ScheduledFuture retransmissionFuture, OutboundReliabilityHandler.RetransmissionTask retransmissionTask) {
-        super(remoteEndpoint, messageID, token);
-        this.retransmissionFuture = retransmissionFuture;
-        this.retransmissionTask = retransmissionTask;
+    public OutboundReliableMessageTransfer(InetSocketAddress remoteEndpoint, CoapMessage coapMessage) {
+        super(remoteEndpoint, coapMessage.getMessageID(), coapMessage.getToken());
+        this.coapMessage = coapMessage;
         this.retransmissions = 0;
+        this.confirmed = false;
     }
 
     @Override
-    public void setRemoteEndpoint(InetSocketAddress remoteSocket){
-        super.setRemoteEndpoint(remoteSocket);
-        this.retransmissionTask.setRemoteEndpoint(remoteSocket);
+    public void updateRemoteSocket(InetSocketAddress remoteSocket){
+        super.updateRemoteSocket(remoteSocket);
+        //this.retransmissionTask.updateRemoteEndpoint(remoteSocket);
     }
 
 
     /**
-     * @return the actual number of retransmission (after increasing)
+     * Increases the number of retransmissions by one and returns the the actual number of retransmissions
+     * @return the actual number of retransmissions (after increasing)
      */
     public int increaseRetransmissions(){
         return ++this.retransmissions;
     }
 
-
+    /**
+     * Returns the delay for the next retransmission
+     * @return the delay for the next retransmission
+     */
     public long getNextRetransmissionDelay(){
         return provideRetransmissionDelay(retransmissions + 1);
     }
 
+    /**
+     * Sets the {@link java.util.concurrent.ScheduledFuture} of the next retransmission
+     * @param retransmissionFuture the {@link java.util.concurrent.ScheduledFuture} of the next retransmission
+     */
     public void setRetransmissionFuture(ScheduledFuture retransmissionFuture){
         this.retransmissionFuture = retransmissionFuture;
     }
 
-    public void setRetransmissionTask(OutboundReliabilityHandler.RetransmissionTask retransmissionTask){
-        this.retransmissionTask = retransmissionTask;
+    /**
+     * Sets the {@link de.uzl.itm.ncoap.message.CoapResponse} to be sent with the next retransmission
+     * @param coapResponse the {@link de.uzl.itm.ncoap.message.CoapResponse} to be sent with the next retransmission
+     */
+    public void updateCoapMessage(CoapResponse coapResponse){
+        this.coapMessage = coapResponse;
+        LOG.info("Updated CoAP message for retransmission #{}: {}", (this.retransmissions + 1), coapResponse);
     }
 
-    public ScheduledFuture getRetransmissionFuture(){
-        return this.retransmissionFuture;
+    public CoapMessage getCoapMessage(){
+        return this.coapMessage;
     }
 
     /**
@@ -124,12 +140,18 @@ public class OutboundReliableMessageTransfer extends OutboundMessageTransfer {
      */
     public void setConfirmed(){
         if(this.retransmissionFuture.cancel(true)){
-            log.info("Retransmission stopped (remote endpoint: {}, message ID: {})", this.getRemoteEndpoint(),
+            LOG.info("Retransmission stopped (remote endpoint: {}, message ID: {})", this.getRemoteEndpoint(),
                     this.getMessageID());
         }
         else{
-            log.error("Could not stop retransmission (remote endpoint: {}, message ID: {})", this.getRemoteEndpoint(),
+            LOG.error("Could not stop retransmission (remote endpoint: {}, message ID: {})", this.getRemoteEndpoint(),
                     this.getMessageID());
         }
+
+        this.confirmed = true;
+    }
+
+    public boolean isConfirmed(){
+        return this.confirmed;
     }
 }

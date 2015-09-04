@@ -135,7 +135,7 @@ public abstract class CoapApplication {
 
 
     public DatagramChannel getChannel() {
-        return channel;
+        return this.channel;
     }
 
     public String getApplicationName() {

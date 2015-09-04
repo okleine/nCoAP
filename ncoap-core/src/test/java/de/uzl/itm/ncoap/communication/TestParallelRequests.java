@@ -82,8 +82,8 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
         //Add different webservices to server
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            server.registerService(new NotObservableTestWebresource("/service" + (i+1),
-                    "This is the status of service " + (i+1), 0, 0, server.getExecutor()));
+            server.registerWebresource(new NotObservableTestWebresource("/service" + (i + 1),
+                    "This is the status of service " + (i + 1), 0, 0, server.getExecutor()));
         }
 
         //Create client, callbacks and requests

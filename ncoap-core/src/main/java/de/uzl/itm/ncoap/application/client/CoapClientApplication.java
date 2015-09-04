@@ -273,13 +273,4 @@ public class CoapClientApplication extends CoapApplication{
             }
         });
     }
-
-//    /**
-//     * Returns the name of this {@link CoapClientApplication} instance
-//     *
-//     * @return the name of this {@link CoapClientApplication} instance
-//     */
-//    public String getApplicationName() {
-//        return name;
-//    }
 }

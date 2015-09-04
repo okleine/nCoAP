@@ -63,4 +63,9 @@ public class MessageIDReleasedEvent {
     public InetSocketAddress getRemoteEndpoint() {
         return remoteEndpoint;
     }
+
+
+    public interface Handler {
+        public void handleMessageIDReleasedEvent(MessageIDReleasedEvent event);
+    }
 }

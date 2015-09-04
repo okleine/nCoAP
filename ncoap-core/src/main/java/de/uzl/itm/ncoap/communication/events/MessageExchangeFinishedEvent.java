@@ -32,7 +32,7 @@ import java.net.InetSocketAddress;
 /**
  * Created by olli on 03.09.15.
  */
-public class ConversationFinishedEvent extends AbstractMessageTransferEvent{
+public class MessageExchangeFinishedEvent extends AbstractMessageTransferEvent{
 
     private EndpointID endpointID;
 
@@ -47,14 +47,14 @@ public class ConversationFinishedEvent extends AbstractMessageTransferEvent{
      * @param token          the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
      *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this event
      */
-    public ConversationFinishedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token,
-            EndpointID endpointID) {
+    public MessageExchangeFinishedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token,
+                                        EndpointID endpointID) {
         super(remoteEndpoint, messageID, token);
         this.endpointID = endpointID;
     }
 
-    public ConversationFinishedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token,
-                                     byte[] endpointID) {
+    public MessageExchangeFinishedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token,
+                                        byte[] endpointID) {
         this(remoteEndpoint, messageID, token, endpointID == null ? null : new EndpointID(endpointID));
     }
 

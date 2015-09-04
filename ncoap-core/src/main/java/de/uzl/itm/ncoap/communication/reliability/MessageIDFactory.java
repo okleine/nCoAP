@@ -82,6 +82,7 @@ public class MessageIDFactory{
     public void setChannel(Channel channel){
         this.channel = channel;
     }
+
     /**
      * Returns a message ID to be used for outgoing {@link de.uzl.itm.ncoap.message.CoapMessage}s and
      * allocates this message ID for {@link #EXCHANGE_LIFETIME} seconds, i.e. the returned message ID will not

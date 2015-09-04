@@ -28,7 +28,7 @@ import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.events.MessageTransferEvent;
 import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.ObservationCancelledEvent;
-import de.uzl.itm.ncoap.communication.events.ConversationFinishedEvent;
+import de.uzl.itm.ncoap.communication.events.MessageExchangeFinishedEvent;
 import de.uzl.itm.ncoap.message.*;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -439,8 +439,8 @@ public class ClientCallbackManager extends SimpleChannelHandler{
             int messageID, byte[] endpointID){
 
         if(this.tokenFactory.passBackToken(token)){
-            ConversationFinishedEvent event =
-                new ConversationFinishedEvent(remoteEndpoint, messageID, token, endpointID);
+            MessageExchangeFinishedEvent event =
+                new MessageExchangeFinishedEvent(remoteEndpoint, messageID, token, endpointID);
             Channels.write(ctx.getChannel(), event);
         }
     }

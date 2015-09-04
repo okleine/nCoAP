@@ -82,7 +82,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
         server = new CoapServerApplication();
 
         service = new ObservableTestWebresource(PATH_TO_SERVICE, 1, 0, server.getExecutor());
-        server.registerService(service);
+        server.registerWebresource(service);
 
         client = new CoapClientApplication();
         clientCallback = new SpecificClientCallback();

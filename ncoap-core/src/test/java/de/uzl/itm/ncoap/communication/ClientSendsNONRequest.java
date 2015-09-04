@@ -67,7 +67,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
     public void setupComponents() throws Exception {
         server = new CoapServerApplication(0);
         service = new NotObservableTestWebresource(PATH_TO_SERVICE, PAYLOAD, 0, 0, server.getExecutor());
-        server.registerService(service);
+        server.registerWebresource(service);
 
         endpoint = new DummyEndpoint();
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);

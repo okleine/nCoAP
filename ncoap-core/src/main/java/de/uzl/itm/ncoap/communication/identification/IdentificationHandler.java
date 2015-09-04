@@ -26,7 +26,7 @@ package de.uzl.itm.ncoap.communication.identification;
 
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.ConversationFinishedEvent;
+import de.uzl.itm.ncoap.communication.events.MessageExchangeFinishedEvent;
 import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -40,7 +40,13 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Created by olli on 31.08.15.
+ * The {@link de.uzl.itm.ncoap.communication.identification.IdentificationHandler} realizes a non-RFC extension to
+ * the CoAP protocol ({@see http://tools.ietf.org/html/draft-kleine-core-coap-endpoint-id-01}.
+ *
+ * This extension to the raw protocol deals with the issue if one of the endpoints (client or server) changes its
+ * socket (i.e. IP address, port number, or both) during an ongoing conversation (e.g. an observation).
+ *
+ * @author Oliver Kleine
  */
 public class IdentificationHandler extends SimpleChannelHandler{
 
@@ -74,8 +80,8 @@ public class IdentificationHandler extends SimpleChannelHandler{
             handleOutboundCoapMessage(ctx, me);
         }
 
-        else if(me.getMessage() instanceof ConversationFinishedEvent){
-            ConversationFinishedEvent event = (ConversationFinishedEvent) me.getMessage();
+        else if(me.getMessage() instanceof MessageExchangeFinishedEvent){
+            MessageExchangeFinishedEvent event = (MessageExchangeFinishedEvent) me.getMessage();
             EndpointID endpointID = event.getEndpointID();
             if(endpointID != null) {
                 removeFromAssignedByMe(endpointID, event.getToken(), true);
@@ -291,6 +297,7 @@ public class IdentificationHandler extends SimpleChannelHandler{
             this.lock.writeLock().lock();
             this.assignedByMe1.put(endpointID, token, remoteSocket);
             this.assignedByMe2.put(remoteSocket, token, endpointID);
+            LOG.info("Added ID to identify remote host {}: {}", remoteSocket, endpointID);
         }
         finally {
             this.lock.writeLock().unlock();

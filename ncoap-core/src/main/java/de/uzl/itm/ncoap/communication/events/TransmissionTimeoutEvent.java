@@ -35,9 +35,7 @@ import java.net.InetSocketAddress;
  * outbound reliable message transfer (CON message) which was neither acknowledged nor resetted by the remote endpoint
  * within {@link de.uzl.itm.ncoap.communication.reliability.MessageIDFactory#EXCHANGE_LIFETIME} seconds.
  */
-public class TransmissionTimeoutEvent extends MessageIDReleasedEvent implements MessageTransferEvent {
-
-    private final Token token;
+public class TransmissionTimeoutEvent extends AbstractMessageTransferEvent {
 
     /**
      * Creates a new instance of {@link TransmissionTimeoutEvent}
@@ -49,14 +47,9 @@ public class TransmissionTimeoutEvent extends MessageIDReleasedEvent implements 
      *              {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliableMessageTransfer}
      */
     public TransmissionTimeoutEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-        super(remoteEndpoint, messageID);
-        this.token = token;
+        super(remoteEndpoint, messageID, token);
     }
 
-    @Override
-    public Token getToken() {
-        return this.token;
-    }
 
     @Override
     public boolean stopsMessageExchange() {

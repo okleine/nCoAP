@@ -57,7 +57,7 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
     public void setupComponents() throws Exception {
         server = new CoapServerApplication();
         service = new ObservableTestWebresource("/observable", 1, 0, server.getExecutor());
-        server.registerService(service);
+        server.registerWebresource(service);
 
         clientEndpoint = new DummyEndpoint();
 
@@ -129,14 +129,15 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.server.ServerObservationHandler")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webresource.ObservableWebservice")
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler")
                 .setLevel(Level.DEBUG);
-        Logger.getLogger("DummyEndpoint")
-                .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliableMessageTransfer")
+                .setLevel(Level.DEBUG);
+        Logger.getLogger("de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource")
+                .setLevel(Level.DEBUG);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.observing.ServerObservationHandler")
+                .setLevel(Level.DEBUG);
+
     }
 
     @Test

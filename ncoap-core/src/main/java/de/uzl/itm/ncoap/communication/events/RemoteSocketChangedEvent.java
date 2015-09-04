@@ -75,4 +75,10 @@ public class RemoteSocketChangedEvent extends AbstractMessageTransferEvent{
         return "REMOTE SOCKET CHANGED (old: " + this.getOldRemoteSocket() + ", new: " + this.getRemoteEndpoint() +
                 ", Token: " + this.getToken() + ")";
     }
+
+    public interface Handler {
+
+        public void handleRemoteSocketChangedEvent(RemoteSocketChangedEvent event);
+
+    }
 }

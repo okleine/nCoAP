@@ -83,4 +83,8 @@ public class ResetReceivedEvent extends AbstractMessageTransferEvent {
         return "EMPTY RST (from  " + this.getRemoteEndpoint() + " for message ID " + this.getMessageID() + " with token "
                 + this.getToken() + ")";
     }
+
+    public interface Handler {
+        public void handleResetReceivedEvent(ResetReceivedEvent event);
+    }
 }

@@ -202,10 +202,17 @@ public class CoapPeerApplication extends CoapApplication {
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered with the same path
      */
     public void registerResource(Webresource webresource) throws IllegalArgumentException{
-        WebresourceManager manager =
-                (WebresourceManager) this.getChannel().getPipeline().get(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER);
+        this.getWebresourceManager().registerWebresource(webresource);
+    }
 
-        manager.registerWebresource(webresource);
+    private WebresourceManager getWebresourceManager(){
+        return (WebresourceManager) this.getChannel().getPipeline().get(
+                ServerChannelPipelineFactory.WEBRESOURCE_MANAGER
+        );
+    }
+
+    public void shutdownWebresource(Webresource webresource){
+        this.getWebresourceManager().shutdownWebresource(webresource.getUriPath());
     }
 
     /**
@@ -216,7 +223,7 @@ public class CoapPeerApplication extends CoapApplication {
     public void shutdown(){
         LOG.warn("Shutdown server...");
 
-        this.webresourceManager.shutdownAllServices();
+        this.webresourceManager.shutdown();
 
         ChannelFuture channelClosedFuture = this.getChannel().close();
 

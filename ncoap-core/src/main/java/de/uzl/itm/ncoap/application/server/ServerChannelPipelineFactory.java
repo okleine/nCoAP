@@ -28,6 +28,7 @@ package de.uzl.itm.ncoap.application.server;
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
+import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
@@ -40,6 +41,12 @@ import java.util.concurrent.ScheduledExecutorService;
 * @author Oliver Kleine
 */
 public class ServerChannelPipelineFactory extends CoapChannelPipelineFactory {
+
+    /**
+     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
+     * instance of a CoAP server
+     */
+    public static final String SERVER_OBSERVATION_HANDLER = "SERVER-OBSERVATION";
 
     /**
      * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
@@ -68,6 +75,7 @@ public class ServerChannelPipelineFactory extends CoapChannelPipelineFactory {
         super(executor);
 
         addChannelHandler(INBOUND_RELIABILITY_HANDLER, new InboundReliabilityHandler(executor));
+        addChannelHandler(SERVER_OBSERVATION_HANDLER, new ServerObservationHandler(executor));
         addChannelHandler(WEBRESOURCE_MANAGER, new WebresourceManager(notFoundHandler, executor));
     }
 }

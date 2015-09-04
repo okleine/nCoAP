@@ -78,7 +78,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
     public void setupComponents() throws Exception {
         server = new CoapServerApplication();
         service = new NotObservableTestWebresource(PATH_TO_SERVICE, PAYLOAD, 0, 3000, server.getExecutor());
-        server.registerService(service);
+        server.registerWebresource(service);
 
         endpoint = new DummyEndpoint();
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);

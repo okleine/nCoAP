@@ -52,7 +52,6 @@ import static org.junit.Assert.*;
 *
 * @author Oliver Kleine, Stefan Hüske
 */
-@Ignore
 public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationTest {
 
     private static Logger log = Logger.getLogger(ClientGetsNoAckForConRequestTest.class.getName());

@@ -49,7 +49,7 @@ public abstract class MessageTransfer {
         this.messageID = messageID;
     }
 
-    public void setRemoteEndpoint(InetSocketAddress remoteEndpoint){
+    public void updateRemoteSocket(InetSocketAddress remoteEndpoint){
         this.remoteEndpoint = remoteEndpoint;
     }
 
