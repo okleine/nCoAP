@@ -23,7 +23,7 @@
     <dependencies>
 
         <dependency>
-            <groupId>de.uniluebeck.itm</groupId>
+            <groupId>de.uzl.itm</groupId>
             <artifactId>ncoap-core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

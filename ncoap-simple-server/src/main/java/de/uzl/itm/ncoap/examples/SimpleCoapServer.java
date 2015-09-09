@@ -24,26 +24,25 @@
  */
 package de.uzl.itm.ncoap.examples;
 
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+
+import de.uzl.itm.ncoap.application.server.CoapServer;
 
 /**
  * Created by olli on 30.03.14.
  */
-public class SimpleCoapServer extends CoapServerApplication {
+public class SimpleCoapServer extends CoapServer {
 
     public static void main(String[] args) throws Exception {
         LoggingConfiguration.configureDefaultLogging();
 
         SimpleCoapServer server = new SimpleCoapServer();
 
-        SimpleNotObservableWebresource simpleWebservice =
+        SimpleNotObservableWebresource simpleWebresource =
                 new SimpleNotObservableWebresource("/simple", "Some payload...", 5000, server.getExecutor());
-        server.registerService(simpleWebservice);
+        server.registerWebresource(simpleWebresource);
 
-        SimpleObservableTimeService timeService = new SimpleObservableTimeService("/utc-time", 5000,
+        SimpleObservableTimeService timeResource = new SimpleObservableTimeService("/utc-time", 5000,
                 server.getExecutor());
-
-        server.registerService(timeService);
+        server.registerWebresource(timeResource);
     }
-
 }
