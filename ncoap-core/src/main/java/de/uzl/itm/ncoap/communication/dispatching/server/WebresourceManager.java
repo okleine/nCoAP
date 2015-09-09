@@ -33,9 +33,9 @@ import de.uzl.itm.ncoap.application.server.webresource.Webresource;
 import de.uzl.itm.ncoap.application.server.webresource.WellKnownCoreResource;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.MessageExchangeFinishedEvent;
-import de.uzl.itm.ncoap.communication.events.ObservableWebresourceRegistrationEvent;
-import de.uzl.itm.ncoap.communication.events.ObserverAcceptedEvent;
+import de.uzl.itm.ncoap.communication.events.LastResponseSentEvent;
+import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
+import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.OptionValue;
@@ -51,7 +51,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
 * The {@link WebresourceManager} is the topmost {@link ChannelHandler} of the {@link ChannelPipeline} returned
-* by {@link de.uzl.itm.ncoap.application.server.ServerChannelPipelineFactory}. It is responsible to dispatch inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s, i.e.
+* by {@link de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory}. It is responsible to dispatch inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s, i.e.
 *
 * <ul>
 *     <li>invoke the method {@link de.uzl.itm.ncoap.application.server.webresource.Webresource#processCoapRequest(SettableFuture, de.uzl.itm.ncoap.message.CoapRequest, InetSocketAddress)} of
@@ -83,26 +83,25 @@ public class WebresourceManager extends AbstractCoapChannelHandler {
     //This map holds all registered webresources (key: URI path, value: Webservice instance)
     private Map<String, Webresource> registeredServices;
 
-    private ScheduledExecutorService executor;
-    private NotFoundHandler webServiceNotFoundHandler;
+    private NotFoundHandler notFoundHandler;
     private Channel channel;
     private boolean shutdown;
 
     /**
-     * @param webServiceNotFoundHandler Instance of {@link NotFoundHandler} to deal with inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s with
+     * @param notFoundHandler Instance of {@link NotFoundHandler} to deal with inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s with
      *                          {@link de.uzl.itm.ncoap.message.MessageCode.Name#PUT} if the addresses {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} does not exist.
      *
      * @param executor the {@link ScheduledExecutorService} to process the task to send a {@link de.uzl.itm.ncoap.message.CoapResponse}
      *                        and
      */
-    public WebresourceManager(NotFoundHandler webServiceNotFoundHandler, ScheduledExecutorService executor){
-
+    public WebresourceManager(NotFoundHandler notFoundHandler, ScheduledExecutorService executor){
+        super(executor);
         this.registeredServices = Collections.synchronizedMap(new HashMap<String, Webresource>());
-        this.executor = executor;
-        this.webServiceNotFoundHandler = webServiceNotFoundHandler;
+        this.notFoundHandler = notFoundHandler;
         this.shutdown = false;
         registerWebresource(new WellKnownCoreResource(registeredServices, executor));
     }
+
 
     @Override
     public boolean handleInboundCoapMessage(final ChannelHandlerContext ctx, CoapMessage coapMessage,
@@ -119,11 +118,9 @@ public class WebresourceManager extends AbstractCoapChannelHandler {
 
         //Look up web service instance to handle the request
         final Webresource webresource = registeredServices.get(coapRequest.getUriPath());
-
-
         if(webresource == null) {
             // the requested Webservice DOES NOT exist
-            webServiceNotFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocket);
+            notFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocket);
         } else if (coapRequest.isIfNonMatchSet()) {
                 createPreconditionFailed(coapRequest.getMessageTypeName(), coapRequest.getUriPath(), responseFuture);
         } else {
@@ -135,58 +132,20 @@ public class WebresourceManager extends AbstractCoapChannelHandler {
             }
         }
 
-        Futures.addCallback(responseFuture, new FutureCallback<CoapResponse>() {
-            @Override
-            public void onSuccess(CoapResponse coapResponse) {
-                coapResponse.setMessageID(coapRequest.getMessageID());
-                coapResponse.setToken(coapRequest.getToken());
+        Futures.addCallback(responseFuture, new ResponseCallback(
+                ctx.getChannel(), coapRequest, webresource, remoteSocket
+        ), getExecutor());
 
-                if (coapResponse.isUpdateNotification()) {
-                    if (webresource instanceof ObservableWebresource && coapRequest.getObserve() == 0) {
-                        // send new observer accepted event
-                        ObserverAcceptedEvent event = new ObserverAcceptedEvent(
-                                remoteSocket, coapResponse.getMessageID(), coapResponse.getToken(),
-                                (ObservableWebresource) webresource, coapResponse.getContentFormat()
-                        );
-                        Channels.write(ctx.getChannel(), event);
-                    } else {
-                        // the observe option is useless here (remove it)...
-                        coapResponse.removeOptions(OptionValue.Name.OBSERVE);
-                        log.warn("Removed observe option from response!");
-                    }
-                }
 
-                sendCoapResponse(ctx, remoteSocket, coapResponse);
-
-                if (!coapResponse.isUpdateNotification()) {
-                    sendConversationFinished(
-                            ctx.getChannel(), remoteSocket, coapResponse.getToken(), coapResponse.getMessageID(),
-                            coapRequest.getEndpointID2()
-                    );
-                }
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                log.error("Exception while processing inbound request", throwable);
-                CoapResponse errorResponse = CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
-                        MessageCode.Name.INTERNAL_SERVER_ERROR_500, throwable.getMessage());
-
-                errorResponse.setMessageID(coapRequest.getMessageID());
-                errorResponse.setToken(coapRequest.getToken());
-
-                sendCoapResponse(ctx, remoteSocket, errorResponse);
-
-                sendConversationFinished(ctx.getChannel(), remoteSocket, errorResponse.getToken(),
-                        errorResponse.getMessageID(), coapRequest.getEndpointID2());
-            }
-        }, this.executor);
 
         return true;
     }
 
+
     @Override
-    public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress remoteSocket) {
+    public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
+        InetSocketAddress remoteSocket) {
+        // nothing to do ...
         return true;
     }
 
@@ -200,26 +159,6 @@ public class WebresourceManager extends AbstractCoapChannelHandler {
     public void setChannel(Channel channel){
         this.channel = channel;
     }
-
-
-    // requests, update notifications and any (blockwise) messages not containing a last block are final messages
-    private void sendConversationFinished(Channel channel, InetSocketAddress remoteSocket, Token token,
-            int messageID, byte[] endpointID) {
-
-        MessageExchangeFinishedEvent event = new MessageExchangeFinishedEvent(remoteSocket, messageID, token, endpointID);
-        Channels.write(channel, event);
-    }
-
-
-
-    private void sendCoapResponse(final ChannelHandlerContext ctx, final InetSocketAddress remoteAddress,
-                                  final CoapResponse coapResponse){
-
-        //Write response
-        log.error("Write response to {}: {}", remoteAddress, coapResponse);
-        Channels.write(ctx.getChannel(), coapResponse, remoteAddress);
-    }
-
 
     private void createPreconditionFailed(MessageType.Name messageType, String servicePath,
             SettableFuture<CoapResponse> responseFuture) {
@@ -235,11 +174,11 @@ public class WebresourceManager extends AbstractCoapChannelHandler {
      * This method is invoked by the framework if an exception occured during the reception or sending of a
      * {@link CoapMessage}.
      *
-     * Classes extending {@link de.uzl.itm.ncoap.application.server.CoapServerApplication} may override this method to, e.g. deal with different
+     * Classes extending {@link de.uzl.itm.ncoap.application.server.CoapServer} may override this method to, e.g. deal with different
      * types of exceptions differently. This implementation only logs an the error message (if logging is
      * enabled).
      *
-     * @param ctx the {@link ChannelHandlerContext} relating the {@link de.uzl.itm.ncoap.application.server.CoapServerApplication} and the
+     * @param ctx the {@link ChannelHandlerContext} relating the {@link de.uzl.itm.ncoap.application.server.CoapServer} and the
      * {@link org.jboss.netty.channel.socket.DatagramChannel} on which the exception occured
      *
      * @param exceptionEvent the {@link ExceptionEvent} containing, e.g. the exception
@@ -327,15 +266,77 @@ public class WebresourceManager extends AbstractCoapChannelHandler {
         log.info("Registered new service at " + webresource.getUriPath());
 
         if(webresource instanceof ObservableWebresource){
-            Channels.write(
-                this.channel, new ObservableWebresourceRegistrationEvent((ObservableWebresource) webresource)
-            );
+            ServerObservationHandler handler = this.channel.getPipeline().get(ServerObservationHandler.class);
+            handler.registerWebresource((ObservableWebresource) webresource);
         }
     }
 
-    public Channel getChannel(){
-        return this.channel;
+//    public Channel getChannel(){
+//        return this.channel;
+//    }
+
+
+    private class ResponseCallback implements FutureCallback<CoapResponse> {
+
+        private final Channel channel;
+        private final CoapRequest coapRequest;
+        private final Webresource webresource;
+        private final InetSocketAddress remoteSocket;
+
+        public ResponseCallback(Channel channel, CoapRequest coapRequest, Webresource webresource,
+                                InetSocketAddress remoteSocket) {
+            this.channel = channel;
+            this.coapRequest = coapRequest;
+            this.webresource = webresource;
+            this.remoteSocket = remoteSocket;
+        }
+
+        @Override
+        public void onSuccess(final CoapResponse coapResponse) {
+            coapResponse.setMessageID(coapRequest.getMessageID());
+            coapResponse.setToken(coapRequest.getToken());
+
+            if (coapResponse.isUpdateNotification()) {
+                if (webresource instanceof ObservableWebresource && coapRequest.getObserve() == 0) {
+                    // trigger new observer accepted event
+                    int messageID = coapResponse.getMessageID();
+                    Token token = coapResponse.getToken();
+                    long contentFormat = coapResponse.getContentFormat();
+                    triggerEvent(channel, new ObserverAcceptedEvent(
+                            remoteSocket, messageID, token, (ObservableWebresource) webresource, contentFormat
+                    ));
+                } else {
+                    // the observe option is useless here (remove it)...
+                    coapResponse.removeOptions(OptionValue.Name.OBSERVE);
+                    log.warn("Removed observe option from response!");
+                }
+            }
+            sendResponse(coapResponse);
+        }
+
+        @Override
+        public void onFailure(Throwable throwable) {
+            log.error("Exception while processing inbound request", throwable);
+            CoapResponse coapResponse = CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
+                    MessageCode.Name.INTERNAL_SERVER_ERROR_500, throwable.getMessage());
+
+            coapResponse.setMessageID(coapRequest.getMessageID());
+            coapResponse.setToken(coapRequest.getToken());
+
+            sendResponse(coapResponse);
+        }
+
+
+        private void sendResponse(final CoapResponse coapResponse) {
+            ChannelFuture future = Channels.write(this.channel, coapResponse, this.remoteSocket);
+            if (!coapResponse.isUpdateNotification()) {
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        triggerEvent(channel, new LastResponseSentEvent(remoteSocket, coapResponse.getToken()));
+                    }
+                });
+            }
+        }
     }
-
-
 }

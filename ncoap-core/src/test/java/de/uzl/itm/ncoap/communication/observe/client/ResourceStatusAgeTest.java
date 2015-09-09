@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class ResourceStatusAgeTest extends AbstractCoapTest {
 
-    private static Logger log = Logger.getLogger(ResourceStatusAgeTest.class.getName());
+    private static Logger LOG = Logger.getLogger(ResourceStatusAgeTest.class.getName());
 
     public static long THRESHOLD = (long) Math.pow(2, 23);
 
@@ -102,8 +102,8 @@ public class ResourceStatusAgeTest extends AbstractCoapTest {
 
         long sequenceNo1 = coapResponse1.getObserve();
         long sequenceNo2 = coapResponse2.getObserve();
-        log.info("Observe Option Values: V1 =  " + sequenceNo1 + ", V2 = " + sequenceNo2);
-        log.info("Timestamps: T1 = " + t1 + ", T2 = " + t1 + ", (T2 > T1 + 128 sec [" + (t2 > t1 + 128000) + "])");
+        LOG.info("Observe Option Values: V1 =  " + sequenceNo1 + ", V2 = " + sequenceNo2);
+        LOG.info("Timestamps: T1 = " + t1 + ", T2 = " + t1 + ", (T2 > T1 + 128 sec [" + (t2 > t1 + 128000) + "])");
 
         this.params1 = new ResourceStatusAge(sequenceNo1, t1);
         this.params2 = new ResourceStatusAge(sequenceNo2, t2);
@@ -112,7 +112,8 @@ public class ResourceStatusAgeTest extends AbstractCoapTest {
 
     @Override
     public void setupLogging() throws Exception {
-        log.setLevel(Level.INFO);
+        LOG.setLevel(Level.DEBUG);
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
     @Test

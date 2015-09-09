@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
@@ -54,7 +54,7 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
 
     private static final String PATH = "/path";
 
-    private static CoapServerApplication server;
+    private static CoapServer server;
     private InetSocketAddress serverSocket;
     private static DummyEndpoint endpoint;
 
@@ -65,8 +65,8 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServerApplication();
-        server.registerWebresource(new NotObservableTestWebresource(PATH, "Status 1", 0, 6000, server.getExecutor()));
+        server = new CoapServer();
+        server.registerWebresource(new NotObservableTestWebresource(PATH, "Status #1", 0, 6000, server.getExecutor()));
 
         endpoint = new DummyEndpoint();
 
@@ -107,10 +107,16 @@ public class ClientSendsTheSameRequestTwice extends AbstractCoapCommunicationTes
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability")
-                .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource")
+              .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
+                .setLevel(Level.DEBUG);
+
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
     @Test

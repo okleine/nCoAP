@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.examples;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.client.linkformat.LinkFormatDecoder;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
 import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
@@ -61,7 +61,7 @@ import java.util.Set;
  *
  * @author Oliver Kleine
  */
-public class SimpleCoapClient extends CoapClientApplication{
+public class SimpleCoapClient extends CoapClient {
 
     private ClientCmdLineArgumentsWrapper arguments;
 
@@ -167,7 +167,7 @@ public class SimpleCoapClient extends CoapClientApplication{
         //Start the client
         //final SimpleCoapClient client = new SimpleCoapClient(arguments);
 
-        CoapClientApplication client = new CoapClientApplication(6000, 8, 8);
+        CoapClient client = new CoapClient(6000, 8, 8);
 
         URI uri = new URI("coap", null, "coap.me", 5683, "/.well-known/core", null, null);
         CoapRequest request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, uri);

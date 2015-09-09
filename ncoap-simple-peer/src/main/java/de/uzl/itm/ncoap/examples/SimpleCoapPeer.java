@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.examples;
 
-import de.uzl.itm.ncoap.application.peer.CoapPeerApplication;
+import de.uzl.itm.ncoap.application.endpoint.CoapEndpoint;
 import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -38,7 +38,7 @@ import java.net.URI;
 /**
  * Created by olli on 27.08.15.
  */
-public class SimpleCoapPeer extends CoapPeerApplication{
+public class SimpleCoapPeer extends CoapEndpoint {
 
     public SimpleCoapPeer(NotFoundHandler resourceNotFoundHandler, InetSocketAddress localSocket) {
         super(resourceNotFoundHandler, localSocket);

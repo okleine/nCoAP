@@ -63,14 +63,18 @@ public class MiscellaneousErrorEvent extends AbstractMessageTransferEvent {
         return this.description;
     }
 
-    @Override
-    public boolean stopsMessageExchange() {
-        return true;
-    }
+//    @Override
+//    public boolean stopsMessageExchange() {
+//        return true;
+//    }
 
     @Override
     public String toString(){
-        return "MISCELLANEOUS MESSAGE EXCHANGE ERROR (remote endpoint: " + this.getRemoteEndpoint() +
+        return "MISCELLANEOUS MESSAGE EXCHANGE ERROR (remote endpoint: " + this.getRemoteSocket() +
                 ", message ID: " + this.getMessageID() + ", token: " + this.getToken() + ")";
+    }
+
+    public interface Handler {
+        public void handleEvent(MiscellaneousErrorEvent event);
     }
 }

@@ -75,16 +75,14 @@ public class ClientTestCallback extends ClientCallback {
 
     @Override
     public void processTransmissionTimeout() {
-
         long actualTime = System.currentTimeMillis();
         transmissionTimeouts.add(actualTime);
-        log.info("Conversation Timout!");
+        log.info("Transmission Timout!");
     }
 
 
     @Override
     public void processEmptyAcknowledgement() {
-
         long actualTime = System.currentTimeMillis();
         emptyACKs.add(actualTime);
         log.info("Received empty ACK!");
@@ -92,10 +90,8 @@ public class ClientTestCallback extends ClientCallback {
 
     @Override
     public void processReset() {
-
         long actualTime = System.currentTimeMillis();
         emptyRSTs.add(actualTime);
-
         log.info("Received RST!");
     }
 

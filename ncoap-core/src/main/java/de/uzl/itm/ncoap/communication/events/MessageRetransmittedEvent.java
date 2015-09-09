@@ -49,14 +49,18 @@ public class MessageRetransmittedEvent extends AbstractMessageTransferEvent {
         super(remoteEndpoint, messageID, token);
     }
 
-    @Override
-    public boolean stopsMessageExchange() {
-        return false;
-    }
+//    @Override
+//    public boolean stopsMessageExchange() {
+//        return false;
+//    }
 
     @Override
     public String toString(){
-        return "MESSAGE RETRANSMITTED (to  " + this.getRemoteEndpoint() + " with message ID " + this.getMessageID()
+        return "MESSAGE RETRANSMITTED (to  " + this.getRemoteSocket() + " with message ID " + this.getMessageID()
                 + " and token " + this.getToken() + ")";
+    }
+
+    public interface Handler {
+        public void handleEvent(MessageRetransmittedEvent event);
     }
 }

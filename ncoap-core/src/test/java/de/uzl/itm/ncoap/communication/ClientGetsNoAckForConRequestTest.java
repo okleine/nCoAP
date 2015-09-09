@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -59,7 +59,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     private static long timeRequestSent;
     private static CoapRequest coapRequest;
 
-    private static CoapClientApplication client;
+    private static CoapClient client;
     private static ClientTestCallback callback;
 
     private static DummyEndpoint testEndpoint;
@@ -67,14 +67,16 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("ClientGetsNoAckForConRequestTest")
-              .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
+                .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints")
-              .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler")
+                .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability")
-                .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.ClientGetsNoAckForConRequestTest")
+              .setLevel(Level.DEBUG);
+
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
 
@@ -82,7 +84,7 @@ public class ClientGetsNoAckForConRequestTest extends AbstractCoapCommunicationT
     public void setupComponents() throws Exception {
         testEndpoint = new DummyEndpoint();
 
-        client = new CoapClientApplication("CoAP Testclient");
+        client = new CoapClient();
         callback = new ClientTestCallback();
 
         URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");

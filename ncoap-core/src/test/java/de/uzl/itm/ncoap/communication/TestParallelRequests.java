@@ -25,8 +25,8 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -52,32 +52,36 @@ import static org.junit.Assert.assertEquals;
 */
 public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
-    private static CoapClientApplication client;
+    private static CoapClient client;
 
-    private static final int NUMBER_OF_PARALLEL_REQUESTS = 100;
+    private static final int NUMBER_OF_PARALLEL_REQUESTS = 200;
 
     private static ClientTestCallback[] clientCallbacks =
             new ClientTestCallback[NUMBER_OF_PARALLEL_REQUESTS];
 
     private static CoapRequest[] requests = new CoapRequest[NUMBER_OF_PARALLEL_REQUESTS];
 
-    private static CoapServerApplication server;
+    private static CoapServer server;
     private static InetSocketAddress serverSocket;
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.server.NotObservableTestWebservice")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability")
-                .setLevel(Level.INFO);
-        Logger.getLogger("ClientTestCallback")
-                .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.client.ClientTestCallback")
+                .setLevel(Level.DEBUG);
+
+//        Logger.getLogger("de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource")
+//                .setLevel(Level.DEBUG);
+//
+//        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
+//                .setLevel(Level.DEBUG);
+
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
     @Override
     public void setupComponents() throws Exception {
 
-        server = new CoapServerApplication();
+        server = new CoapServer();
         serverSocket = new InetSocketAddress("localhost", server.getPort());
 
         //Add different webservices to server
@@ -87,7 +91,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         }
 
         //Create client, callbacks and requests
-        client = new CoapClientApplication();
+        client = new CoapClient();
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
             clientCallbacks[i] = new ClientTestCallback();

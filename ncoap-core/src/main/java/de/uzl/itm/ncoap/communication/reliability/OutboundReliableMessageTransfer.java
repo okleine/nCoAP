@@ -58,7 +58,6 @@ public class OutboundReliableMessageTransfer extends OutboundMessageTransfer {
     public static final double ACK_RANDOM_FACTOR = 1.5;
 
     private ScheduledFuture retransmissionFuture;
-    private OutboundReliabilityHandler.RetransmissionTask retransmissionTask;
     private CoapMessage coapMessage;
     private int retransmissions;
     private boolean confirmed;

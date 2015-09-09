@@ -25,18 +25,19 @@
 package de.uzl.itm.ncoap.communication.dispatching.client;
 
 import com.google.common.collect.HashBasedTable;
-import de.uzl.itm.ncoap.communication.events.MessageTransferEvent;
-import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
-import de.uzl.itm.ncoap.communication.events.client.ObservationCancelledEvent;
-import de.uzl.itm.ncoap.communication.events.MessageExchangeFinishedEvent;
-import de.uzl.itm.ncoap.message.*;
+import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
+import de.uzl.itm.ncoap.communication.events.*;
+import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -45,7 +46,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * {@link de.uzl.itm.ncoap.message.CoapRequest} needs an associated instance of
  * {@link ClientCallback} to be called upon reception
  * of a related {@link de.uzl.itm.ncoap.message.CoapResponse}.</p>
- *
+ * <p/>
  * <p>Besides the response dispatching the
  * {@link ClientCallbackManager} also deals with
  * the reliability of inbound {@link de.uzl.itm.ncoap.message.CoapResponse}s, i.e. sends RST or ACK
@@ -53,7 +54,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Oliver Kleine
  */
-public class ClientCallbackManager extends SimpleChannelHandler{
+public class ClientCallbackManager extends AbstractCoapChannelHandler implements RemoteSocketChangedEvent.Handler,
+        EmptyAckReceivedEvent.Handler, ResetReceivedEvent.Handler, PartialContentReceivedEvent.Handler,
+        MessageIDAssignedEvent.Handler, MessageRetransmittedEvent.Handler, TransmissionTimeoutEvent.Handler,
+        MiscellaneousErrorEvent.Handler{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -62,393 +66,356 @@ public class ClientCallbackManager extends SimpleChannelHandler{
     private HashBasedTable<InetSocketAddress, Token, ClientCallback> clientCallbacks;
     private ReentrantReadWriteLock lock;
 
-    private ScheduledExecutorService executor;
 
     /**
      * Creates a new instance of {@link ClientCallbackManager}
      *
-     * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to execute the tasks, e.g. send,
-     *                 receive and process {@link de.uzl.itm.ncoap.message.CoapMessage}s.
-     *
+     * @param executor     the {@link java.util.concurrent.ScheduledExecutorService} to execute the tasks, e.g. send,
+     *                     receive and process {@link de.uzl.itm.ncoap.message.CoapMessage}s.
      * @param tokenFactory the {@link TokenFactory} to
      *                     provide {@link Token}
      *                     instances for outbound {@link de.uzl.itm.ncoap.message.CoapRequest}s
      */
-    public ClientCallbackManager(ScheduledExecutorService executor, TokenFactory tokenFactory){
+    public ClientCallbackManager(ScheduledExecutorService executor, TokenFactory tokenFactory) {
+        super(executor);
         this.clientCallbacks = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
-        this.executor = executor;
         this.tokenFactory = tokenFactory;
     }
 
 
     @Override
-    public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent me){
-
-        if(me.getMessage() instanceof OutboundMessageWrapper){
-            //Extract parameters for message transmission
-            final CoapMessage coapMessage = ((OutboundMessageWrapper) me.getMessage()).getCoapMessage();
-            log.debug("WRITE: {}", coapMessage);
-            final ClientCallback clientCallback = ((OutboundMessageWrapper) me.getMessage()).getClientCallback();
-
-            final InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
-
-            try {
-                //request to stop an ongoing observation
-                if(coapMessage instanceof CoapRequest && coapMessage.getObserve() == 1){
-                    Token token = coapMessage.getToken();
-
-                    if(!clientCallbacks.contains(remoteEndpoint, token)){
-                        String description = "No ongoing observation on remote endpoint " + remoteEndpoint
-                                + " and token " + token + "!";
-                        clientCallback.processMiscellaneousError(description);
-                    }
-
-                    executor.schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            Token token = coapMessage.getToken();
-                            ObservationCancelledEvent event = new ObservationCancelledEvent(remoteEndpoint, token,
-                                    ObservationCancelledEvent.Reason.ACTIVE_CANCELLATION_BY_CLIENT);
-                            Channels.write(ctx.getChannel(), event);
-                        }
-                    }, 0, TimeUnit.SECONDS);
-                }
-
-                //CoAP ping
-                else if(coapMessage.getMessageTypeName() == MessageType.Name.CON &&
-                        coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
-
-                    Token emptyToken = new Token(new byte[0]);
-                    if(this.clientCallbacks.contains(remoteEndpoint, emptyToken)){
-                        String description = "Empty token for remote endpoint " + remoteEndpoint + " not available.";
-                        clientCallback.processMiscellaneousError(description);
-                        return;
-                    }
-
-                    else{
-                        coapMessage.setToken(emptyToken);
-                    }
-                }
-
-                else{
-                    //Prepare CoAP request, the response reception and then send the CoAP request
-                    Token token = tokenFactory.getNextToken();
-
-                    if(token == null){
-                        String description = "No token available for remote endpoint " + remoteEndpoint + ".";
-                        clientCallback.processMiscellaneousError(description);
-                        return;
-                    }
-
-                    else{
-                        coapMessage.setToken(token);
-                    }
-                }
-
-                //Add the response callback to wait for the inbound response
-                addResponseCallback(remoteEndpoint, coapMessage.getToken(), clientCallback);
-
-                //Send the request
-                sendCoapMessage(ctx, me.getFuture(), coapMessage, remoteEndpoint);
-                return;
-            }
-            catch (Exception ex) {
-                log.error("This should never happen!", ex);
-                removeClientCallback(remoteEndpoint, coapMessage.getToken());
-            }
-        }
-
-
-//        else if (me.getMessage() instanceof ApplicationShutdownEvent){
-//            this.clientCallbacks.clear();
-//        }
-
-
-        else if(me.getMessage() instanceof ObservationCancelledEvent){
-            ObservationCancelledEvent message = (ObservationCancelledEvent) me.getMessage();
-
-            if(removeClientCallback(message.getRemoteEndpoint(), message.getToken()) == null){
-                log.error("Could not stop observation (remote endpoints: {}, token: {})! No callback found!",
-                        message.getRemoteEndpoint(), message.getToken());
-            }
-        }
-
-        ctx.sendDownstream(me);
-
-    }
-
-
-    private void sendCoapMessage(ChannelHandlerContext ctx, ChannelFuture future, final CoapMessage coapMessage,
-                                 final InetSocketAddress remoteEndpoint){
-
-        log.debug("Write CoAP request: {}", coapMessage);
-
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if(!future.isSuccess()){
-                    removeClientCallback(remoteEndpoint, coapMessage.getToken());
-                    log.error("Could not write CoAP Request!", future.getCause());
-                }
-            }
-        });
-
-        Channels.write(ctx, future, coapMessage, remoteEndpoint);
-    }
-
-
-    private void addResponseCallback(InetSocketAddress remoteEndpoint, Token token,
-                                                  ClientCallback clientCallback){
-        try{
-            this.lock.readLock().lock();
-            if(this.clientCallbacks.contains(remoteEndpoint, token)){
-                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteEndpoint, token);
-                return;
-            }
-        }
-        finally {
-            this.lock.readLock().unlock();
-        }
-
-        try{
-            this.lock.writeLock().lock();
-            if(this.clientCallbacks.contains(remoteEndpoint, token)){
-                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteEndpoint, token);
-            }
-            else{
-                clientCallbacks.put(remoteEndpoint, token, clientCallback);
-                log.debug("Added callback (remote endpoint: {}, token: {})", remoteEndpoint, token);
-            }
-        }
-        finally {
-            this.lock.writeLock().unlock();
+    public boolean handleInboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress remoteSocket) {
+        if(coapMessage instanceof CoapResponse) {
+            handleInboundCoapResponse(ctx, (CoapResponse) coapMessage, remoteSocket);
+            return false;
+        } else {
+            return true;
         }
     }
 
 
-//    private void replaceRemoteSocket(InetSocketAddress oldRemoteSocket, InetSocketAddress newRemoteSocket){
-//        try{
-//            this.lock.writeLock().lock();
-//            Map<Token, ClientCallback> callbacks = new HashMap<>(this.clientCallbacks.row(oldRemoteSocket));
-//            for(Map.Entry<Token, ClientCallback> entry : callbacks.entrySet()){
-//                removeClientCallback(oldRemoteSocket, entry.getKey());
-//                addResponseCallback(newRemoteSocket, entry.getKey(), entry.getValue());
-//
-//                entry.getValue().processRemoteSocketChanged(oldRemoteSocket, newRemoteSocket);
-//            }
-//        }
-//        finally {
-//            this.lock.writeLock().unlock();
-//        }
-//    }
+    @Override
+    public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress remoteSocket) {
+        return true;
+    }
 
 
-    private ClientCallback removeClientCallback(InetSocketAddress remoteEndpoint, Token token){
-        try{
-            this.lock.readLock().lock();
-            if(!this.clientCallbacks.contains(remoteEndpoint, token)){
-                log.warn("No callback found to be removed (remote endpoint: {}, token: {})", remoteEndpoint, token);
-                return null;
-            }
+    @Override
+    public void handleEvent(RemoteSocketChangedEvent event) {
+        InetSocketAddress previousSocket = event.getPreviousRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = updateCallback(event.getRemoteSocket(), previousSocket, token);
+        if(callback != null) {
+            callback.processRemoteSocketChanged(event.getRemoteSocket(), previousSocket);
+        } else {
+            log.warn("No callback found for socket change (previous: \"{}\", token: {}", previousSocket, token);
         }
-        finally {
-            this.lock.readLock().unlock();
-        }
+    }
 
-        try{
-            this.lock.writeLock().lock();
-            ClientCallback callback = clientCallbacks.remove(remoteEndpoint, token);
-            if(callback == null){
-                log.warn("No callback found to be removed (remote endpoint: {}, token: {})", remoteEndpoint, token);
-            }
-            else{
-                log.info("Removed callback (remote endpoint: {}, token: {}). Remaining: {}",
-                        new Object[]{remoteEndpoint, token, this.clientCallbacks.size()});
-            }
-            return callback;
+
+    @Override
+    public void handleEvent(EmptyAckReceivedEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = getCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processEmptyAcknowledgement();
+        } else {
+            log.warn("No callback found for empty ACK (remote socket: \"{}\", token: {}", remoteSocket, token);
         }
-        finally {
-            this.lock.writeLock().unlock();
+    }
+
+
+    @Override
+    public void handleEvent(ResetReceivedEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = getCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processReset();
+        } else {
+            log.warn("No callback found for RESET (remote socket: \"{}\", token: {}", remoteSocket, token);
+        }
+    }
+
+
+    @Override
+    public void handleEvent(PartialContentReceivedEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = getCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processReset();
+        } else {
+            log.warn("No callback found for RESET (remote socket: \"{}\", token: {}", remoteSocket, token);
+        }
+    }
+
+
+    @Override
+    public void handleEvent(MessageIDAssignedEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = getCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processMessageIDAssignment(event.getMessageID());
+        } else {
+            log.warn("No callback found for MsgID assignment (remote socket: \"{}\", token: {}", remoteSocket, token);
+        }
+    }
+
+
+    @Override
+    public void handleEvent(MessageRetransmittedEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = getCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processRetransmission();
+        } else {
+            log.warn("No callback found for retransmission (remote socket: \"{}\", token: {}", remoteSocket, token);
+        }
+    }
+
+
+    @Override
+    public void handleEvent(TransmissionTimeoutEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = removeCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processTransmissionTimeout();
+        } else {
+            log.warn("No callback found for timeout (remote socket: \"{}\", token: {}", remoteSocket, token);
+        }
+    }
+
+    @Override
+    public void handleEvent(MiscellaneousErrorEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = removeCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processMiscellaneousError(event.getDescription());
+        } else {
+            log.warn("No callback found for misc. error (remote socket: \"{}\", token: {}", remoteSocket, token);
         }
     }
 
     /**
-     * This method is automatically invoked by the framework and relates inbound responses to open requests and invokes
-     * the appropriate method of the {@link ClientCallback} instance given with the {@link CoapRequest}.
+     * This method is called by the {@link de.uzl.itm.ncoap.application.client.CoapClient} or by the
+     * {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint} to send a request to a remote endpoint (server).
      *
-     * The invoked method depends on the message contained in the {@link org.jboss.netty.channel.MessageEvent}. See
-     * {@link ClientCallback} for more details on possible status updates.
-     *
-     * @param ctx The {@link org.jboss.netty.channel.ChannelHandlerContext} to relate this handler to the {@link org.jboss.netty.channel.Channel}
-     * @param me The {@link org.jboss.netty.channel.MessageEvent} containing the {@link de.uzl.itm.ncoap.message.CoapMessage}
+     * @param channel the {@link org.jboss.netty.channel.Channel} to send the message
+     * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be sent
+     * @param remoteSocket the {@link java.net.InetSocketAddress} of the recipient
+     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to be
+     * called upon reception of a response or any kind of
+     * {@link de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent}.
      */
-    @Override
-    public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me){
-        log.debug("Received: {}.", me.getMessage());
-
-        //regular response
-        if(me.getMessage() instanceof CoapResponse){
-            handleCoapResponse(ctx, (CoapResponse) me.getMessage(), (InetSocketAddress) me.getRemoteAddress());
-            return;
-        }
-
-        //some internal event related to a message exchange
-        if(me.getMessage() instanceof MessageTransferEvent){
-            handleMessageExchangeEvent((MessageTransferEvent) me.getMessage());
-            return;
-        }
-
-        if(me.getMessage() instanceof CoapMessage){
-            CoapMessage coapMessage = ((CoapMessage) me.getMessage());
-
-            //CoAP ping
-            if(coapMessage.getMessageTypeName() == MessageType.Name.CON
-                    && coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
-
-                InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
-                int messageID = coapMessage.getMessageID();
-                log.info("CoAP PING received (remote endpoint: {}, message ID: {}", remoteEndpoint, messageID);
-                CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
-                Channels.write(ctx.getChannel(), resetMessage, remoteEndpoint);
-                me.getFuture().setSuccess();
-                return;
-            }
-
-//            else{
-////                log.warn("Don't know what to do with received CoAP message: {}", coapMessage);
-//                ctx.sendUpstream(me);
-//            }
-//        }
-//
-//        else {
-//            log.warn("Could not deal with message: {}", me.getMessage());
-            ctx.sendUpstream(me);
-        }
+    public void sendCoapRequest(Channel channel, CoapRequest coapRequest, InetSocketAddress remoteSocket,
+                                ClientCallback callback) {
+        getExecutor().submit(new WriteCoapMessageTask(channel, coapRequest, remoteSocket, callback));
     }
 
 
-    private void handleRemoteSocketChangedEvent(RemoteSocketChangedEvent event){
+    public void sendCoapPing(Channel channel, InetSocketAddress remoteSocket, ClientCallback callback) {
+        final CoapMessage coapPing = CoapMessage.createPing(CoapMessage.UNDEFINED_MESSAGE_ID);
+        getExecutor().submit(new WriteCoapMessageTask(channel, coapPing, remoteSocket, callback));
+    }
+
+
+    private ClientCallback updateCallback(InetSocketAddress remoteSocket, InetSocketAddress previousRemoteSocket, Token token) {
+        try {
+            this.lock.readLock().lock();
+            if(getCallback(previousRemoteSocket, token) == null) {
+                return null;
+            }
+        } finally {
+            this.lock.readLock().unlock();
+        }
+
         try {
             this.lock.writeLock().lock();
-            ClientCallback callback = this.removeClientCallback(event.getOldRemoteSocket(), event.getToken());
-            this.addResponseCallback(event.getRemoteEndpoint(), event.getToken(), callback);
-        }
-        finally {
+            ClientCallback callback = this.clientCallbacks.remove(remoteSocket, token);
+            if(callback != null) {
+                this.clientCallbacks.put(remoteSocket, token, callback);
+                log.info("Updated remote socket (old: \"{}\", new: \"{}\")", previousRemoteSocket, remoteSocket);
+            }
+            return callback;
+        } finally {
             this.lock.writeLock().unlock();
         }
     }
 
 
-    private void handleMessageExchangeEvent(MessageTransferEvent event) {
-        log.debug("EVENT: : {}", event);
-
-        // this event needs some special extra handling...
-        if(event instanceof RemoteSocketChangedEvent){
-            handleRemoteSocketChangedEvent((RemoteSocketChangedEvent) event);
-        }
-
-        // all other events are of interest only for the callback
-        ClientCallback clientCallback;
-
-        //find the response processor for the inbound events
-        if (event.stopsMessageExchange())
-            clientCallback = removeClientCallback(event.getRemoteEndpoint(), event.getToken());
-        else
-            clientCallback = clientCallbacks.get(event.getRemoteEndpoint(), event.getToken());
-
-        //process the events
-        if (clientCallback != null)
-            clientCallback.processMessageExchangeEvent(event);
-        else
-            log.warn("No callback found for event: {}!", event);
-
-   }
-
-
-    private void handleCoapResponse(ChannelHandlerContext ctx, CoapResponse coapResponse,
-                                    InetSocketAddress remoteEndpoint){
-
-        log.debug("CoAP response received: {}.", coapResponse);
-        Token token = coapResponse.getToken();
-
-        //send RST if the received response could not be related to an open request
-        if(!clientCallbacks.contains(remoteEndpoint, token)){
-            log.info("No callback found for CoAP response (from {}): {}", remoteEndpoint, coapResponse);
-
-            //Send RST message
-            CoapMessage resetMessage = CoapMessage.createEmptyReset(coapResponse.getMessageID());
-            Channels.write(ctx.getChannel(), resetMessage, remoteEndpoint);
-            return;
-        }
-
-        //send empty ACK if the response was confirmable and an appropriate callback was found
-        else if(coapResponse.getMessageTypeName() == MessageType.Name.CON){
-            //Send empty ACK
-            CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(coapResponse.getMessageID());
-            Channels.write(ctx.getChannel(), emptyACK, remoteEndpoint);
-        }
-
-        final ClientCallback clientCallback = clientCallbacks.get(remoteEndpoint, token);
-
-        //observation callback found
-        if(clientCallback != null && clientCallback.isObserving()){
-
-            if(MessageCode.isErrorMessage(coapResponse.getMessageCode()) || !coapResponse.isUpdateNotification()){
-                if(log.isInfoEnabled()){
-                    if(MessageCode.isErrorMessage(coapResponse.getMessageCode())){
-                        log.info("Observation callback removed because of error response!");
-                    }
-                    else{
-                        log.info("Observation callback removed because inbound response was no update notification!");
-                    }
-                }
-
-                removeClientCallback(remoteEndpoint, token);
-                finishConversation(ctx, remoteEndpoint, token, coapResponse.getMessageID(), coapResponse.getEndpointID2());
+    private void addCallback(InetSocketAddress remoteEndpoint, Token token, ClientCallback clientCallback) {
+        try {
+            this.lock.readLock().lock();
+            if (this.clientCallbacks.contains(remoteEndpoint, token)) {
+                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return;
             }
+        } finally {
+            this.lock.readLock().unlock();
+        }
 
-            //ask the callback if the observation is to be continued
-            else if(!clientCallback.continueObservation()){
-                //Send internal message to stop the observation
-                ObservationCancelledEvent event = new ObservationCancelledEvent(remoteEndpoint, token,
-                        ObservationCancelledEvent.Reason.LAZY_CANCELLATION_BY_CLIENT);
-                log.debug("Send observation cancelation event!");
-                Channels.write(ctx.getChannel(), event);
+        try {
+            this.lock.writeLock().lock();
+            if (this.clientCallbacks.contains(remoteEndpoint, token)) {
+                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            } else {
+                clientCallbacks.put(remoteEndpoint, token, clientCallback);
+                log.debug("Added callback (remote endpoint: {}, token: {})", remoteEndpoint, token);
             }
-        }
-
-        //non-observation callback found
-        else{
-            removeClientCallback(remoteEndpoint, token);
-            finishConversation(ctx, remoteEndpoint, token, coapResponse.getMessageID(), coapResponse.getEndpointID2());
-        }
-
-
-        if(clientCallback != null){
-            //Process the CoAP response
-            log.debug("Callback found for token {} from {}.", token, remoteEndpoint);
-            clientCallback.processCoapResponse(coapResponse);
-        }
-        else{
-            log.warn("No callback found for CoAP response (from {}): {}", remoteEndpoint , coapResponse);
+        } finally {
+            this.lock.writeLock().unlock();
         }
     }
 
-    private void finishConversation(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint, Token token,
-            int messageID, byte[] endpointID){
 
-        if(this.tokenFactory.passBackToken(token)){
-            MessageExchangeFinishedEvent event =
-                new MessageExchangeFinishedEvent(remoteEndpoint, messageID, token, endpointID);
-            Channels.write(ctx.getChannel(), event);
+    private ClientCallback removeCallback(InetSocketAddress remoteEndpoint, Token token) {
+        try {
+            this.lock.readLock().lock();
+            if (!this.clientCallbacks.contains(remoteEndpoint, token)) {
+                log.warn("No callback found to be removed (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                return null;
+            }
+        } finally {
+            this.lock.readLock().unlock();
+        }
+
+        try {
+            this.lock.writeLock().lock();
+            ClientCallback callback = clientCallbacks.remove(remoteEndpoint, token);
+            if (callback == null) {
+                log.warn("No callback found to be removed (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            } else {
+                log.info("Removed callback (remote endpoint: {}, token: {}). Remaining: {}",
+                        new Object[]{remoteEndpoint, token, this.clientCallbacks.size()});
+                this.tokenFactory.passBackToken(token);
+            }
+            return callback;
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+    }
+
+    private ClientCallback getCallback(InetSocketAddress remoteAddress, Token token) {
+        try {
+            this.lock.readLock().lock();
+            return this.clientCallbacks.get(remoteAddress, token);
+        } finally {
+            this.lock.readLock().unlock();
+        }
+    }
+
+    private void handleInboundCoapResponse(ChannelHandlerContext ctx, CoapResponse coapResponse, InetSocketAddress remoteSocket) {
+        Token token = coapResponse.getToken();
+        ClientCallback callback = getCallback(remoteSocket, token);
+
+        if (callback != null) {
+            // observation callback found
+            if (coapResponse.isErrorResponse() || !coapResponse.isUpdateNotification()) {
+                if (log.isInfoEnabled()) {
+                    if (MessageCode.isErrorMessage(coapResponse.getMessageCode())) {
+                        log.info("Observation callback removed because of error response!");
+                    } else {
+                        log.info("Observation callback removed because inbound response was no update notification!");
+                    }
+                }
+                removeCallback(remoteSocket, token);
+            } else if (!callback.continueObservation()) {
+                // send internal message to stop the observation
+                triggerEvent(ctx.getChannel(), new LazyObservationTerminationEvent(remoteSocket, token));
+            }
+
+            //Process the CoAP response
+            log.debug("Callback found for token {} from {}.", token, remoteSocket);
+            callback.processCoapResponse(coapResponse);
+        } else {
+            log.warn("No callback found for CoAP response (from {}): {}", remoteSocket, coapResponse);
         }
     }
 
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ee){
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ee) {
         log.error("Exception: ", ee.getCause());
     }
 
+
+    private class WriteCoapMessageTask implements Runnable {
+
+        private final Channel channel;
+        private final CoapMessage coapMessage;
+        private final InetSocketAddress remoteSocket;
+        private final ClientCallback callback;
+
+        public WriteCoapMessageTask(Channel channel, CoapMessage coapMessage, InetSocketAddress remoteSocket,
+                                    ClientCallback callback) {
+
+            this.channel = channel;
+            this.coapMessage = coapMessage;
+            this.remoteSocket = remoteSocket;
+            this.callback = callback;
+        }
+
+        @Override
+        public void run() {
+            if (this.coapMessage.isPingMessage()) {
+                //CoAP ping
+                Token emptyToken = new Token(new byte[0]);
+                if (getCallback(remoteSocket, emptyToken) != null) {
+                    String description = "There is another ongoing PING for \"" + remoteSocket + "\".";
+                    callback.processMiscellaneousError(description);
+                    return;
+                } else {
+                    // no other PING for the same remote socket...
+                    this.coapMessage.setToken(emptyToken);
+                }
+            } else if (this.coapMessage.isRequest() && this.coapMessage.getObserve() == 1) {
+                // request to stop an ongoing observation
+                Token token = this.coapMessage.getToken();
+                if (getCallback(this.remoteSocket, token) == null) {
+                    String description = "No ongoing observation on remote endpoint " + remoteSocket
+                            + " and token " + token + "!";
+                    this.callback.processMiscellaneousError(description);
+                    return;
+                }
+            } else {
+                //Prepare CoAP request, the response reception and then send the CoAP request
+                Token token = tokenFactory.getNextToken();
+                if (token == null) {
+                    String description = "No token available for remote endpoint " + remoteSocket + ".";
+                    this.callback.processMiscellaneousError(description);
+                    return;
+                } else {
+                    this.coapMessage.setToken(token);
+                }
+            }
+
+            //Add the response callback to wait for the inbound response
+            addCallback(this.remoteSocket, this.coapMessage.getToken(), this.callback);
+            sendRequest();
+        }
+
+        private void sendRequest() {
+            ChannelFuture future = Channels.write(this.channel, this.coapMessage, this.remoteSocket);
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        ClientCallback callback = removeCallback(remoteSocket, coapMessage.getToken());
+                        log.error("Could not write CoAP Request!", future.getCause());
+                        if(callback != null) {
+                            callback.processMiscellaneousError("Message could not be sent (Reason: \"" +
+                                    future.getCause().getMessage() + ")\"");
+                        }
+                    }
+                }
+            });
+        }
+    }
 }

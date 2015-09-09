@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
@@ -53,7 +53,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
 
     private static final String PAYLOAD = "Some arbitrary content!";
 
-    private static CoapClientApplication client;
+    private static CoapClient client;
     private static ClientTestCallback callback;
     private static CoapRequest coapRequest;
 
@@ -68,7 +68,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         endpointSocket = new InetSocketAddress("localhost", endpoint.getPort());
 
         //Create client and callback
-        client = new CoapClientApplication();
+        client = new CoapClient();
         callback = new ClientTestCallback();
 
         URI targetUri =  new URI("coap://localhost:" + endpoint.getPort() + "/");
@@ -83,12 +83,15 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("ClientTestCallback")
-                .setLevel(Level.INFO);
-        Logger.getLogger("DummyEndpoint")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.client")
-                .setLevel(Level.INFO);
+
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.client.ClientTestCallback")
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
+                .setLevel(Level.DEBUG);
     }
 
     @Override
@@ -124,13 +127,13 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
 
         //Wait some time
-        Thread.sleep(300);
+        Thread.sleep(1000);
 
         //write response #2 (should be ignored by the client!)
         endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
 
         //Wait some time
-        Thread.sleep(300);
+        Thread.sleep(500);
     }
 
 

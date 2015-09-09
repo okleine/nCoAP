@@ -28,9 +28,7 @@ package de.uzl.itm.ncoap.application.server.webresource;
 import com.google.common.collect.LinkedHashMultimap;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.EmptyLinkAttribute;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
-import de.uzl.itm.ncoap.message.MessageType;
 import de.uzl.itm.ncoap.message.options.OptionValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +37,6 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Observable;
 import java.util.Set;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -64,15 +61,11 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
     private String uriPath;
     private LinkedHashMultimap<String, LinkAttribute> linkAttributes;
 
-//    private HashBasedTable<InetSocketAddress, Token, Observation> observations;
-//    private ReentrantReadWriteLock observationsLock;
-
     private T status;
     private long statusExpiryDate;
     private ReentrantReadWriteLock statusLock;
 
     private ScheduledExecutorService executor;
-    //private Future notifyAllObserversFuture;
 
 
     /**
@@ -99,45 +92,10 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
         this.uriPath = uriPath;
         this.linkAttributes = LinkedHashMultimap.create();
         this.statusLock = new ReentrantReadWriteLock();
-//        this.observations = HashBasedTable.create();
-//        this.observationsLock = new ReentrantReadWriteLock();
         this.executor = executor;
         setResourceStatus(initialStatus, lifetime);
     }
 
-
-//    /**
-//     * Adds a new observer to observe this observable Webresource
-//     * @param remoteEndpoint the remote endpoint (i.e. the observers socket)
-//     * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} identifying this
-//     *              observation
-//     * @param contentFormat the number representing the format of the update notifications payload
-//     */
-//    public void addObservation(InetSocketAddress remoteEndpoint, Token token, long contentFormat, byte[] endpointID){
-//        try{
-//            this.observationsLock.writeLock().lock();
-//            Observation observation = new Observation(remoteEndpoint, token, contentFormat, endpointID);
-//            NotifySingleObserverTask heartbeatTask = new NotifySingleObserverTask(observation, true);
-//            observation.setHeartbeatFuture(this.executor.schedule(heartbeatTask, 24, TimeUnit.HOURS));
-//            this.observations.put(remoteEndpoint, token, observation);
-//            log.info("Added new observation (remote endpoint: {}, token: {}, content format: {})",
-//                    new Object[]{remoteEndpoint, token, contentFormat});
-//        }
-//        finally{
-//            this.observationsLock.writeLock().unlock();
-//        }
-//    }
-//
-//
-//    public boolean removeObservation(InetSocketAddress remoteEndpoint, Token token){
-//        try{
-//            this.observationsLock.writeLock().lock();
-//            return this.observations.remove(remoteEndpoint, token) != null;
-//        }
-//        finally{
-//            this.observationsLock.writeLock().unlock();
-//        }
-//    }
 
     @Override
     public void setLinkAttribute(LinkAttribute linkAttribute){
@@ -214,10 +172,6 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
                 try{
                     statusLock.writeLock().lock();
 
-//                    if(ObservableWebresource.this.notifyAllObserversFuture != null){
-//                        ObservableWebresource.this.notifyAllObserversFuture.cancel(true);
-//                    }
-
                     ObservableWebresource.this.status = status;
                     ObservableWebresource.this.statusExpiryDate = System.currentTimeMillis() + (lifetime * 1000);
                     ObservableWebresource.this.updateEtag(status);
@@ -227,9 +181,6 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
                     setChanged();
                     notifyObservers(UPDATE);
-
-//                    ObservableWebresource.this.notifyAllObserversFuture =
-//                            ObservableWebresource.this.executor.submit(new NotifyAllObserversTask());
                 }
                 catch(Exception ex){
                     log.error("Exception while setting new resource status for \"{}\"!",
@@ -243,121 +194,6 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
         });
     }
 
-
-//    public void handleMessageTransferEvent(MessageTransferEvent event){
-//        if(event instanceof MessageIDAssignedEvent){
-//            this.handleMessageIDAssignedEvent(event.getRemoteEndpoint(), event.getToken(), event.getMessageID());
-//        }
-//
-//        else if(event instanceof EmptyAckReceivedEvent){
-//            this.handleEmptyAckReceived(event.getRemoteEndpoint(), event.getToken(), event.getMessageID());
-//        }
-//
-//        else if(event instanceof ResetReceivedEvent){
-//            this.handleResetReceived(event.getRemoteEndpoint(), event.getToken(), event.getMessageID());
-//        }
-//
-//        else{
-//            log.info("Unsupported event: {}", event);
-//        }
-//    }
-//
-//
-//    private void handleMessageIDAssignedEvent(InetSocketAddress remoteEndpoint, Token token, int messageID){
-//
-//        try{
-//            this.observationsLock.readLock().lock();
-//            if(!this.observations.contains(remoteEndpoint, token)){
-//                return;
-//            }
-//        }
-//        finally {
-//            this.observationsLock.readLock().unlock();
-//        }
-//
-//        try{
-//            this.observationsLock.writeLock().lock();
-//            if(!this.observations.contains(remoteEndpoint, token)){
-//                return;
-//            }
-//
-//            Observation observation = this.observations.get(remoteEndpoint, token);
-//            observation.setMessageID(messageID);
-//            log.info("Observation of \"{}\" (remote endpoint: {}, token: {}) can now be canceled with RST and message " +
-//                    "ID {}", new Object[]{this.uriPath, remoteEndpoint, token, messageID});
-//        }
-//        finally {
-//            this.observationsLock.writeLock().unlock();
-//        }
-//    }
-//
-//
-//    private void handleEmptyAckReceived(InetSocketAddress remoteEndpoint, Token token, int messageID){
-//
-//        try{
-//            this.observationsLock.readLock().lock();
-//            if(!this.observations.contains(remoteEndpoint, token)){
-//                return;
-//            }
-//        }
-//        finally {
-//            this.observationsLock.readLock().unlock();
-//        }
-//
-//        try{
-//            this.observationsLock.writeLock().lock();
-//            if(!this.observations.contains(remoteEndpoint, token)){
-//                return;
-//            }
-//
-//            Observation observation = this.observations.get(remoteEndpoint, token);
-//            if(observation.getMessageID() == messageID){
-//                observation.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
-//            }
-//        }
-//        finally {
-//            this.observationsLock.writeLock().unlock();
-//        }
-//    }
-//
-//
-//    private void handleResetReceived(InetSocketAddress remoteEndpoint, Token token, int messageID){
-//        try{
-//            this.observationsLock.readLock().lock();
-//            if(!this.observations.contains(remoteEndpoint, token)){
-//                log.debug("No observation of \"{}\" found to be cancelled with RST (remote endpoint: {}, token: {})",
-//                        new Object[]{this.uriPath, remoteEndpoint, token});
-//                return;
-//            }
-//        }
-//        finally {
-//            this.observationsLock.readLock().unlock();
-//        }
-//
-//        try{
-//            this.observationsLock.writeLock().lock();
-//            Observation observation = this.observations.get(remoteEndpoint, token);
-//            if(observation == null){
-//                log.debug("No observation of \"{}\" found to be cancelled with RST (remote endpoint: {}, token: {})",
-//                        new Object[]{this.uriPath, remoteEndpoint, token});
-//            }
-//
-//            else if(observation.getMessageID() == messageID){
-//                this.observations.remove(remoteEndpoint, token);
-//                log.info("Stopped observation of \"{}\" (remote endpoint: {}, token: {}) due to RST.",
-//                        new Object[]{this.uriPath, remoteEndpoint, token});
-//            }
-//
-//            else{
-//                log.warn("Could not cancel observation (remote endpoint: {}, token: {}) with RST due to wrong message" +
-//                        "ID (expected: {}, actual: {})", new Object[]{remoteEndpoint, token, observation.getMessageID(),
-//                        messageID});
-//            }
-//        }
-//        finally {
-//            this.observationsLock.writeLock().unlock();
-//        }
-//    }
 
     /**
      * This method and {@link #getWrappedResourceStatus(java.util.Set)} are the only recommended way to retrieve
@@ -478,187 +314,19 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * {@link de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource} instance.
      *
      * Note: Do NOT INVOKE this method directly! Use
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication#
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer#
      *  shutdownWebresource(de.uzl.itm.ncoap.application.server.webresource.Webresource)
      * } or
-     * {@link de.uzl.itm.ncoap.application.peer.CoapPeerApplication#
+     * {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint#
      *  shutdownWebresource(de.uzl.itm.ncoap.application.server.webresource.Webresource)
      * }
      * to shutdown a resource!
      */
     @Override
-    public void shutdown(){
+    public void shutdown() {
         log.warn("Shutdown service \"{}\"!", this.getUriPath());
         this.statusLock.writeLock().lock();
         setChanged();
         notifyObservers(SHUTDOWN);
-//        try{
-//            this.observationsLock.writeLock().lock();
-//            String message = "Webservice \"" + this.getUriPath() + "\" no longer available!";
-//
-//            Channel channel = this.webresourceManager.getChannel();
-//
-//            for(Observation observation : this.observations.values()){
-//                final InetSocketAddress remoteEndpoint = observation.getRemoteEndpoint();
-//                final Token token = observation.getToken();
-//
-//                CoapResponse coapResponse = CoapResponse.createErrorResponse(MessageType.Name.NON,
-//                        MessageCode.Name.NOT_FOUND_404, message);
-//                coapResponse.setToken(token);
-//
-//                ChannelFuture future =  Channels.write(channel, coapResponse, remoteEndpoint);
-//
-//                future.addListener(new ChannelFutureListener() {
-//                    @Override
-//                    public void operationComplete(ChannelFuture future) throws Exception {
-//                        if(future.isSuccess()){
-//                            log.info("NOT FOUND notification sent (remote endpoint: {}, token: {})",
-//                                    remoteEndpoint, token);
-//                        }
-//                        else{
-//                             log.error("Could not sent NOT FOUND notification (remote endpoint: {}, token: {})",
-//                                    new Object[]{remoteEndpoint, token, future.getCause()});
-//                        }
-//                    }
-//                });
-//
-//                MessageExchangeFinishedEvent event = new MessageExchangeFinishedEvent(
-//                        remoteEndpoint, -1, token, observation.getEndpointID2ForUpdateNotifications()
-//                );
-//                Channels.write(channel, event);
-//            }
-//        }
-//        finally {
-//            //Do NOT unlock the "write lock" to avoid new registrations!
-//            log.warn("Keep WRITE LOCK for service \"{}\" to avoid new registrations for observation!", this.uriPath);
-//
-//        }
     }
-
-//    private class NotifySingleObserverTask implements Runnable {
-//
-//        private Observation observation;
-//        private WrappedResourceStatus wrappedStatus;
-//        private MessageType.Name messageType;
-//
-//
-//        private NotifySingleObserverTask(Observation observation, boolean confirmable) {
-//            this(observation, getWrappedResourceStatus(observation.getContentFormat()));
-//            this.messageType = confirmable ? MessageType.Name.CON : MessageType.Name.NON;
-//        }
-//
-//
-//        private NotifySingleObserverTask(Observation observation, WrappedResourceStatus wrappedStatus){
-//            this.observation = observation;
-//            this.wrappedStatus = wrappedStatus;
-//            boolean confirmable = ObservableWebresource.this.isUpdateNotificationConfirmable(
-//                    observation.getRemoteEndpoint(), observation.getToken());
-//            this.messageType = confirmable ? MessageType.Name.CON : MessageType.Name.NON;
-//        }
-//
-//
-//        @Override
-//        public void run(){
-//            InetSocketAddress remoteEndpoint = this.observation.getRemoteEndpoint();
-//            Token token = this.observation.getToken();
-//            int messageID = this.observation.getMessageID();
-//
-//            try{
-//                ObservableWebresource.this.observationsLock.writeLock().lock();
-//
-//                if(wrappedStatus == null){
-//                    MessageCode.Name messageCode = MessageCode.Name.BAD_REQUEST_400;
-//                    CoapResponse updateNotification = new CoapResponse(messageType, messageCode);
-//
-//                    updateNotification.setToken(token);
-//                    updateNotification.setMessageID(messageID);
-//
-//                    String message = "Format (" + observation.getContentFormat() + ") is not anymore supported!";
-//                    updateNotification.setContent(message.getBytes(CoapMessage.CHARSET),
-//                            ContentFormat.TEXT_PLAIN_UTF8);
-//
-//                    Channels.write(getWebresourceManager().getChannel(), updateNotification, remoteEndpoint);
-//
-//                    removeObservation(remoteEndpoint, token);
-//                }
-//
-//                else{
-//                    MessageCode.Name messageCode = observation.getEtags().contains(wrappedStatus.getEtag()) ?
-//                            MessageCode.Name.VALID_203 : MessageCode.Name.CONTENT_205;
-//
-//                    CoapResponse updateNotification = new CoapResponse(messageType, messageCode);
-//
-//                    updateNotification.setToken(token);
-//                    updateNotification.setMessageID(messageID);
-//                    updateNotification.setEtag(wrappedStatus.getEtag());
-//
-//                    if(messageCode == MessageCode.Name.CONTENT_205){
-//                        updateNotification.setContent(wrappedStatus.getContent(), wrappedStatus.getContentFormat());
-//                    }
-//
-//                    updateNotification.setObserve();
-//
-//                    Channels.write(getWebresourceManager().getChannel(), updateNotification, remoteEndpoint);
-//
-//                    if(messageType == MessageType.Name.CON){
-//                        if(observation.getHeartbeatFuture().cancel(false)){
-//                            log.info("Cancelled heartbeat notification (remote endpoint: {}, token: {})",
-//                                    remoteEndpoint, token);
-//                        }
-//                        NotifySingleObserverTask heartbeat = new NotifySingleObserverTask(observation, true);
-//                        ScheduledFuture heartbeatFuture = ObservableWebresource.this.executor.schedule(heartbeat,
-//                                24, TimeUnit.HOURS);
-//                        observation.setHeartbeatFuture(heartbeatFuture);
-//                        log.info("Scheduled new heartbeat (remote endpoint: {}, token: {})", remoteEndpoint, token);
-//                    }
-//                }
-//
-//            }
-//            catch(Exception ex){
-//                MessageCode.Name messageCode = MessageCode.Name.INTERNAL_SERVER_ERROR_500;
-//                CoapResponse updateNotification = CoapResponse.createErrorResponse(messageType, messageCode, ex);
-//                log.error("Exception while processing notification task!", ex);
-//                Channels.write(getWebresourceManager().getChannel(), updateNotification, remoteEndpoint);
-//
-//                removeObservation(remoteEndpoint, token);
-//            }
-//            finally{
-//                ObservableWebresource.this.observationsLock.writeLock().unlock();
-//            }
-//        }
-//    }
-//
-//
-//    private class NotifyAllObserversTask implements Runnable{
-//
-//        @Override
-//        public void run() {
-//
-//            List<NotifySingleObserverTask> notificationTasks = new ArrayList<>();
-//
-//            try{
-//                ObservableWebresource.this.observationsLock.readLock().lock();
-//
-//                Map<Long, WrappedResourceStatus> serializedStates = new HashMap<>();
-//
-//                for (Observation observation : ObservableWebresource.this.observations.values()) {
-//                    long contentFormat = observation.getContentFormat();
-//
-//                    if (!serializedStates.containsKey(contentFormat)) {
-//                        serializedStates.put(contentFormat, getWrappedResourceStatus(contentFormat));
-//                    }
-//
-//                    WrappedResourceStatus wrappedStatus = serializedStates.get(contentFormat);
-//                    notificationTasks.add(new NotifySingleObserverTask(observation, wrappedStatus));
-//                }
-//            }
-//            finally {
-//                ObservableWebresource.this.observationsLock.readLock().unlock();
-//            }
-//
-//            for(NotifySingleObserverTask notificationTask : notificationTasks){
-//                notificationTask.run();
-//            }
-//        }
-//    }
 }

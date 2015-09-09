@@ -25,8 +25,10 @@
 package de.uzl.itm.ncoap.communication.identification;
 
 import com.google.common.collect.HashBasedTable;
+import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.MessageExchangeFinishedEvent;
+import de.uzl.itm.ncoap.communication.events.LastResponseSentEvent;
+import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -37,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -48,7 +51,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Oliver Kleine
  */
-public class IdentificationHandler extends SimpleChannelHandler{
+public class IdentificationHandler extends AbstractCoapChannelHandler implements TokenReleasedEvent.Handler,
+        LastResponseSentEvent.Handler{
 
     private static Logger LOG = LoggerFactory.getLogger(IdentificationHandler.class.getName());
 
@@ -63,7 +67,8 @@ public class IdentificationHandler extends SimpleChannelHandler{
     private ReentrantReadWriteLock lock;
 
 
-    public IdentificationHandler(){
+    public IdentificationHandler(ScheduledExecutorService executor){
+        super(executor);
         this.assignedByMe1 = HashBasedTable.create();
         this.assignedByMe2 = HashBasedTable.create();
 
@@ -75,99 +80,70 @@ public class IdentificationHandler extends SimpleChannelHandler{
 
 
     @Override
-    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me){
-        if(me.getMessage() instanceof CoapMessage){
-            handleOutboundCoapMessage(ctx, me);
-        }
+    public boolean handleInboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
+            InetSocketAddress remoteSocket) {
 
-        else if(me.getMessage() instanceof MessageExchangeFinishedEvent){
-            MessageExchangeFinishedEvent event = (MessageExchangeFinishedEvent) me.getMessage();
-            EndpointID endpointID = event.getEndpointID();
-            if(endpointID != null) {
-                removeFromAssignedByMe(endpointID, event.getToken(), true);
-            }
-            removeFromAssignedToMe(event.getRemoteEndpoint(), event.getToken());
-        }
-
-        else {
-            LOG.warn("Downstream Message: {}", me.getMessage());
-            me.getFuture().setSuccess();
-        }
-    }
-
-
-    private void handleOutboundCoapMessage(ChannelHandlerContext ctx, MessageEvent me){
-        CoapMessage coapMessage = (CoapMessage) me.getMessage();
-
-        // set the endpoint ID 2 value (if there was one assigned by the remote endpoint)
-        InetSocketAddress remoteSocket = (InetSocketAddress) me.getRemoteAddress();
-        byte[] endpointID2 = getFromAssignedToMe(remoteSocket, coapMessage.getToken());
-        if(endpointID2 != null){
-            coapMessage.setEndpointID2(endpointID2);
-        }
-
-
-        // continue with endpoint ID 1 (if necessary)
-        EndpointID endpointID1 = coapMessage.getEndpointID1() == null ? null :
-                    new EndpointID(coapMessage.getEndpointID1());
-
-        // nothing to do if no EID1 option present...
-        if(endpointID1 == null){
-            ctx.sendDownstream(me);
-            return;
-        }
-
-        // set the endpoint ID 1 option with a valid value
-        endpointID1 = getFromAssignedByMe(remoteSocket, coapMessage.getToken());
-        if(endpointID1 == null) {
-            endpointID1 = factory.getNextEndpointID();
-            addToAssignedByMe(remoteSocket, coapMessage.getToken(), endpointID1);
-        }
-
-        coapMessage.setEndpointID1(endpointID1.getBytes());
-        ctx.sendDownstream(me);
-    }
-
-
-    @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
-
-        if(me.getMessage() instanceof CoapMessage) {
-            handleInboundCoapMessage(ctx, me);
-        }
-        else {
-            ctx.sendUpstream(me);
-        }
-    }
-
-
-    private void handleInboundCoapMessage(ChannelHandlerContext ctx, MessageEvent me){
-        CoapMessage coapMessage = (CoapMessage) me.getMessage();
-        InetSocketAddress remoteSocket = (InetSocketAddress) me.getRemoteAddress();
         Token token = coapMessage.getToken();
 
         // handle endpoint ID 2 if any (assigned by me)
         byte[] value = coapMessage.getEndpointID2();
         if(value != null){
-            EndpointID endpointID = new EndpointID(value);
-            InetSocketAddress previousRemoteSocket = getFromAssignedByMe(endpointID, token);
+            EndpointID endpointID2 = new EndpointID(value);
+            InetSocketAddress previousSocket = getFromAssignedByMe(endpointID2, token);
 
-            if(updateAssignedByMe(endpointID, token, remoteSocket)){
-                RemoteSocketChangedEvent event = new RemoteSocketChangedEvent(remoteSocket, previousRemoteSocket,
-                        coapMessage.getMessageID(), coapMessage.getToken(), endpointID);
-
+            if(updateAssignedByMe(endpointID2, token, remoteSocket)){
+                RemoteSocketChangedEvent event = new RemoteSocketChangedEvent(
+                    remoteSocket, previousSocket, coapMessage.getMessageID(), coapMessage.getToken(), endpointID2
+                );
                 Channels.fireMessageReceived(ctx, event);
             }
         }
 
-
+        // handle endpoint ID 1 if present in message (assigned to me)
         byte[] endpointID1 = coapMessage.getEndpointID1();
         if(endpointID1 != null){
-            // update "assignedToMe"
             addToAssignedToMe(remoteSocket, token, endpointID1);
         }
 
-        ctx.sendUpstream(me);
+        return true;
+    }
+
+    @Override
+    public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
+            InetSocketAddress remoteSocket) {
+        byte[] endpointID2 = getFromAssignedToMe(remoteSocket, coapMessage.getToken());
+        if(endpointID2 != null){
+            coapMessage.setEndpointID2(endpointID2);
+        }
+
+        // continue with endpoint ID 1 (if necessary)
+        EndpointID endpointID1 = coapMessage.getEndpointID1() == null ? null :
+                new EndpointID(coapMessage.getEndpointID1());
+
+        if(!(endpointID1 == null)){
+            // set the endpoint ID 1 option with a valid value
+            endpointID1 = getFromAssignedByMe(remoteSocket, coapMessage.getToken());
+            if(endpointID1 == null) {
+                endpointID1 = factory.getNextEndpointID();
+                addToAssignedByMe(remoteSocket, coapMessage.getToken(), endpointID1);
+            }
+            coapMessage.setEndpointID1(endpointID1.getBytes());
+        }
+
+        return true;
+    }
+
+
+    @Override
+    public void handleEvent(TokenReleasedEvent event) {
+        removeFromAssignedByMe(event.getRemoteSocket(), event.getToken(), true);
+        removeFromAssignedToMe(event.getRemoteSocket(), event.getToken());
+    }
+
+    @Override
+    public void handleEvent(LastResponseSentEvent event) {
+        removeFromAssignedByMe(event.getRemoteSocket(), event.getToken(), true);
+        removeFromAssignedToMe(event.getRemoteSocket(), event.getToken());
     }
 
 
@@ -264,10 +240,10 @@ public class IdentificationHandler extends SimpleChannelHandler{
 //        }
 //    }
 
-    private void removeFromAssignedByMe(EndpointID endpointID, Token token, boolean releaseEndpointID){
+    private void removeFromAssignedByMe(InetSocketAddress remoteSocket, Token token, boolean releaseEndpointID){
         try {
             lock.readLock().lock();
-            if(!this.assignedByMe1.contains(endpointID, token)){
+            if(!this.assignedByMe2.contains(remoteSocket, token)){
                 return;
             }
         }
@@ -277,15 +253,16 @@ public class IdentificationHandler extends SimpleChannelHandler{
         }
         try{
             lock.writeLock().lock();
-            if(!this.assignedByMe1.contains(endpointID, token)){
+            EndpointID endpointID = this.assignedByMe2.remove(remoteSocket, token);
+            if(endpointID == null){
                 return;
+            } else {
+                this.assignedByMe1.remove(endpointID, token);
+                if (releaseEndpointID) {
+                    this.factory.passBackEndpointID(endpointID);
+                }
+                LOG.info("Removed ID to identify remote host {}: {}", remoteSocket, endpointID);
             }
-            InetSocketAddress remoteSocket = this.assignedByMe1.remove(endpointID, token);
-            this.assignedByMe2.remove(remoteSocket, token);
-            if(releaseEndpointID) {
-                this.factory.passBackEndpointID(endpointID);
-            }
-            LOG.info("Removed ID to identify remote host {}: {}", remoteSocket, endpointID);
         }
         finally {
             lock.writeLock().unlock();
@@ -324,7 +301,7 @@ public class IdentificationHandler extends SimpleChannelHandler{
                 return false;
             }
 
-            removeFromAssignedByMe(endpointID, token, false);
+            removeFromAssignedByMe(previousRemoteSocket, token, false);
             addToAssignedByMe(remoteSocket, token, endpointID);
 
             LOG.info("Updated Socket for remote Endpoint (ID: {}): {}", endpointID, remoteSocket);

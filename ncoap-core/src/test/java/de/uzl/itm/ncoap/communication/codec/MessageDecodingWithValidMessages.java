@@ -70,7 +70,8 @@ public class MessageDecodingWithValidMessages extends AbstractCoapTest {
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.codec").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.codec").setLevel(Level.DEBUG);
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
 

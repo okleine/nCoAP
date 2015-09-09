@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.*;
@@ -48,7 +48,7 @@ import static junit.framework.Assert.assertTrue;
 */
 public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
 
-    private static CoapServerApplication server;
+    private static CoapServer server;
     private static NotObservableTestWebresource service;
     private static String PATH_TO_SERVICE = "/could/be/any/path";
     private static String PAYLOAD = "some arbitrary payload";
@@ -59,13 +59,13 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("DummyEndpoint")
-                .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
+                .setLevel(Level.DEBUG);
     }
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServerApplication(0);
+        server = new CoapServer(0);
         service = new NotObservableTestWebresource(PATH_TO_SERVICE, PAYLOAD, 0, 0, server.getExecutor());
         server.registerWebresource(service);
 

@@ -46,13 +46,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
   *
   * @author Oliver Kleine
  */
-public class OutboundReliabilityHandler extends AbstractCoapChannelHandler implements RemoteSocketChangedEvent.Handler,
-        MessageIDReleasedEvent.Handler{
+public class OutboundReliabilityHandler extends AbstractCoapChannelHandler implements TransmissionTimeoutEvent.Handler {
 
     private static Logger LOG = LoggerFactory.getLogger(OutboundReliabilityHandler.class.getName());
     private static final TimeUnit MILLIS = TimeUnit.MILLISECONDS;
 
-    private ChannelHandlerContext ctx;
+    //private ChannelHandlerContext ctx;
 
     //remote socket mapped to message ID and token
     private HashBasedTable<InetSocketAddress, Integer, OutboundMessageTransfer> outboundTransfers1;
@@ -60,35 +59,27 @@ public class OutboundReliabilityHandler extends AbstractCoapChannelHandler imple
     private ReentrantReadWriteLock lock;
 
     private final MessageIDFactory messageIDFactory;
-    private ScheduledExecutorService ioExecutor;
 
     /**
      * Creates a new instance of {@link OutboundReliabilityHandler}
-     * @param ioExecutor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
+     * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
      *                 reliable message transfer
      */
-    public OutboundReliabilityHandler(ScheduledExecutorService ioExecutor){
-        this.ioExecutor = ioExecutor;
+    public OutboundReliabilityHandler(ScheduledExecutorService executor){
+        super(executor);
         this.outboundTransfers1 = HashBasedTable.create();
         this.outboundTransfers2 = HashBasedTable.create();
 
-        this.messageIDFactory = new MessageIDFactory(ioExecutor);
+        this.messageIDFactory = new MessageIDFactory(executor);
         this.lock = new ReentrantReadWriteLock();
     }
-
-    /**
-     * Sets the {@link org.jboss.netty.channel.ChannelHandlerContext} of this handler
-     * @param ctx the {@link org.jboss.netty.channel.ChannelHandlerContext} of this handler
-     */
-    public void setChannelHandlerContext(ChannelHandlerContext ctx){
-        this.ctx = ctx;
-        this.messageIDFactory.setChannel(ctx.getChannel());
-     }
 
 
     @Override
     public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
                                           InetSocketAddress remoteEndpoint){
+
+        LOG.info("HANDLE OUTBOUND MESSAGE: {}", coapMessage);
 
         // update update notifications (i.e. send as next retransmission)
         if(coapMessage instanceof CoapResponse && ((CoapResponse) coapMessage).isUpdateNotification()
@@ -107,92 +98,93 @@ public class OutboundReliabilityHandler extends AbstractCoapChannelHandler imple
 
         // set a new message ID if necessary
         if(messageID == CoapMessage.UNDEFINED_MESSAGE_ID){
-            messageID = assignMessageID(coapMessage, remoteEndpoint);
+            messageID = assignMessageID(ctx, coapMessage, remoteEndpoint);
             if(messageID == CoapMessage.UNDEFINED_MESSAGE_ID){
                 return false;
             }
         }
 
-        this.addMessageTransfer(remoteEndpoint, coapMessage);
+        this.addMessageTransfer(ctx, remoteEndpoint, coapMessage);
         return true;
     }
+
+
+
+    @Override
+    public boolean handleInboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
+                                         InetSocketAddress remoteSocket){
+
+        LOG.debug("HANDLE INBOUND MESSAGE: {}", coapMessage);
+
+        int messageID = coapMessage.getMessageID();
+        MessageCode.Name messageCode = coapMessage.getMessageCodeName();
+        MessageType.Name messageType = coapMessage.getMessageTypeName();
+
+        if(messageType == MessageType.Name.ACK || messageType == MessageType.Name.RST) {
+
+            OutboundMessageTransfer messageTransfer = terminateMessageTransfer(remoteSocket, messageID);
+            if(messageTransfer == null){
+                LOG.warn("No open CON found for ACK or RST from \"{}\" with message ID {}!", remoteSocket, messageID);
+                return false;
+            }
+
+            if (messageCode == MessageCode.Name.EMPTY) {
+                Token token = messageTransfer.getToken();
+                if (messageType == MessageType.Name.ACK) {
+                    // handle empty ACK
+                    LOG.info("Received empty ACK from \"{}\" with message ID {}.", remoteSocket, messageID);
+                    triggerEvent(ctx.getChannel(), new EmptyAckReceivedEvent(remoteSocket, messageID, token));
+                } else {
+                    // handle empty RST (RST is always empty...)
+                    LOG.info("Received RST from \"{}\" with message ID {}.", remoteSocket, messageID);
+                    triggerEvent(ctx.getChannel(), new ResetReceivedEvent(remoteSocket, messageID, token));
+                }
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    @Override
+    public void handleEvent(TransmissionTimeoutEvent event) {
+        terminateMessageTransfer(event.getRemoteSocket(), event.getMessageID());
+    }
+
 
 
     /**
      * Assigns the given {@link de.uzl.itm.ncoap.message.CoapMessage} a message ID
      *
      * @param coapMessage the {@link de.uzl.itm.ncoap.message.CoapMessage} to be assigned a message ID
-     * @param remoteEndpoint the {@link java.net.InetSocketAddress} of the remote endpoint (i.e. the recipient of this
+     * @param remoteSocket the {@link java.net.InetSocketAddress} of the remote endpoint (i.e. the recipient of this
      * {@link de.uzl.itm.ncoap.message.CoapMessage}
      *
      * @return the message ID that was assigned to this message (or
      * {@link de.uzl.itm.ncoap.message.CoapMessage#UNDEFINED_MESSAGE_ID} if no ID could be assigned.
      */
-    private int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteEndpoint){
+    private int assignMessageID(ChannelHandlerContext ctx, CoapMessage coapMessage, InetSocketAddress remoteSocket){
 
-        int messageID = this.messageIDFactory.getNextMessageID(remoteEndpoint);
+        int messageID = this.messageIDFactory.getNextMessageID(ctx.getChannel(), remoteSocket, coapMessage.getToken());
 
         if(messageID == CoapMessage.UNDEFINED_MESSAGE_ID){
-            MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteEndpoint, messageID,
-                    coapMessage.getToken(), "No message ID available for remote endpoint: " + remoteEndpoint);
-            Channels.fireMessageReceived(this.ctx.getChannel(), event);
+            Token token = coapMessage.getToken();
+            String description = "No message ID available for \"" + remoteSocket + "\"";
+            triggerEvent(ctx.getChannel(), new MiscellaneousErrorEvent(remoteSocket, messageID, token, description));
             return CoapMessage.UNDEFINED_MESSAGE_ID;
         } else {
             coapMessage.setMessageID(messageID);
-            MessageIDAssignedEvent event = new MessageIDAssignedEvent(remoteEndpoint, messageID, coapMessage.getToken());
-            Channels.fireMessageReceived(this.ctx.getChannel(), event);
+            LOG.debug("Message ID set to {}.", messageID);
+            Token token = coapMessage.getToken();
+            triggerEvent(ctx.getChannel(), new MessageIDAssignedEvent(remoteSocket, messageID, token));
             return messageID;
         }
     }
 
+    private void addMessageTransfer(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint,
+            CoapMessage coapMessage){
 
-    @Override
-    public boolean handleInboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
-                                         InetSocketAddress remoteEndpoint){
-
-        int messageID = coapMessage.getMessageID();
-        MessageCode.Name messageCode = coapMessage.getMessageCodeName();
-        MessageType.Name messageType = coapMessage.getMessageTypeName();
-
-        LOG.info("Received {} from \"{}\" with message ID {}.", new Object[]{messageType, remoteEndpoint, messageID});
-
-        if(messageCode == MessageCode.Name.EMPTY || messageType == MessageType.Name.ACK) {
-
-            // CoAP ping
-            if(messageType == MessageType.Name.CON){
-                CoapMessage pongMessage = CoapMessage.createEmptyReset(coapMessage.getMessageID());
-                Channels.write(this.ctx.getChannel(), pongMessage, remoteEndpoint);
-                return false;
-            }
-
-            OutboundMessageTransfer messageTransfer = terminateMessageTransfer(remoteEndpoint, messageID);
-
-            if(messageTransfer == null){
-                LOG.warn("No open CON found for ACK or RST from \"{}\" with message ID {}!", remoteEndpoint, messageID);
-                return false;
-            }
-
-            if (messageCode == MessageCode.Name.EMPTY) {
-                Token token = messageTransfer.getToken();
-                // handle empty ACK
-                if (messageType == MessageType.Name.ACK) {
-                    LOG.info("ACK from \"{}\" with message ID {} was empty.", remoteEndpoint, messageID);
-                    Channels.fireMessageReceived(ctx, new EmptyAckReceivedEvent(remoteEndpoint, messageID, token));
-                }
-
-                // handle empty RST (RST is always empty...)
-                else {
-                    Channels.fireMessageReceived(ctx, new ResetReceivedEvent(remoteEndpoint, messageID, token));
-                }
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
-    private void addMessageTransfer(InetSocketAddress remoteEndpoint, CoapMessage coapMessage){
         Token token = coapMessage.getToken();
         int messageID = coapMessage.getMessageID();
 
@@ -205,8 +197,8 @@ public class OutboundReliabilityHandler extends AbstractCoapChannelHandler imple
                 OutboundReliableMessageTransfer transfer =
                         new OutboundReliableMessageTransfer(remoteEndpoint, coapMessage);
 
-                RetransmissionTask retransmissionTask = new RetransmissionTask(transfer);
-                ScheduledFuture retransmissionFuture = this.ioExecutor.schedule(retransmissionTask, delay, MILLIS);
+                RetransmissionTask retransmissionTask = new RetransmissionTask(ctx, transfer);
+                ScheduledFuture retransmissionFuture = getExecutor().schedule(retransmissionTask, delay, MILLIS);
 
                 transfer.setRetransmissionFuture(retransmissionFuture);
 
@@ -235,6 +227,7 @@ public class OutboundReliabilityHandler extends AbstractCoapChannelHandler imple
             if(messageTransfer != null && messageTransfer instanceof OutboundReliableMessageTransfer){
                 this.outboundTransfers2.remove(remoteEndpoint, messageTransfer.getToken());
                 ((OutboundReliableMessageTransfer) messageTransfer).setConfirmed();
+                LOG.debug("Confirmed reliable transfer");
             }
             return messageTransfer;
          }
@@ -242,64 +235,6 @@ public class OutboundReliabilityHandler extends AbstractCoapChannelHandler imple
              lock.writeLock().unlock();
          }
      }
-
-
-    @Override
-    public void handleRemoteSocketChangedEvent(RemoteSocketChangedEvent event){
-        LOG.debug("Received: {}", event);
-        InetSocketAddress oldRemoteSocket = event.getOldRemoteSocket();
-        int messageID = event.getMessageID();
-
-        try{
-            lock.readLock().lock();
-            OutboundMessageTransfer transfer = this.outboundTransfers1.get(oldRemoteSocket, messageID);
-            if(transfer == null){
-                LOG.debug("No message transfer found to be updated.");
-                return;
-            }
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-
-        try{
-            lock.writeLock().lock();
-            OutboundMessageTransfer ongoingTransfer = this.outboundTransfers1.remove(oldRemoteSocket, messageID);
-            if(ongoingTransfer == null){
-                LOG.debug("No message transfer found to be updated.");
-                return;
-            }
-            Token token = ongoingTransfer.getToken();
-            this.outboundTransfers2.remove(oldRemoteSocket, token);
-
-            InetSocketAddress newRemoteSocket = event.getRemoteEndpoint();
-            ongoingTransfer.updateRemoteSocket(newRemoteSocket);
-            this.outboundTransfers1.put(newRemoteSocket, messageID, ongoingTransfer);
-            this.outboundTransfers2.put(newRemoteSocket, token, messageID);
-
-            LOG.debug("Socket updated for ongoing transfer (old: {}, new: {})", oldRemoteSocket, newRemoteSocket);
-
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-
-    }
-
-    @Override
-    public void handleMessageIDReleasedEvent(MessageIDReleasedEvent event) {
-        InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
-        int messageID = event.getMessageID();
-
-        if(this.outboundTransfers1.contains(remoteEndpoint, messageID)){
-            OutboundMessageTransfer messageTransfer = terminateMessageTransfer(remoteEndpoint, messageID);
-            if(messageTransfer != null){
-                Token token = messageTransfer.getToken();
-                TransmissionTimeoutEvent event2 = new TransmissionTimeoutEvent(remoteEndpoint, messageID, token);
-                Channels.fireMessageReceived(this.ctx.getChannel(), event2);
-            }
-        }
-    }
 
 
     private boolean updateRetransmission(InetSocketAddress remoteEndpoint, CoapResponse coapResponse){
@@ -310,8 +245,7 @@ public class OutboundReliabilityHandler extends AbstractCoapChannelHandler imple
             if(this.outboundTransfers2.get(remoteEndpoint, token) == null){
                 return false;
             }
-        }
-        finally{
+        } finally {
             lock.readLock().unlock();
         }
 
@@ -323,31 +257,34 @@ public class OutboundReliabilityHandler extends AbstractCoapChannelHandler imple
                 return false;
             }
             OutboundMessageTransfer messageTransfer = this.outboundTransfers1.get(remoteEndpoint, messageID);
+            coapResponse.setMessageID(messageID);
             if(messageTransfer instanceof OutboundReliableMessageTransfer){
                 ((OutboundReliableMessageTransfer) messageTransfer).updateCoapMessage(coapResponse);
                 return true;
-            }
-
-            else{
+            } else {
                 return false;
             }
-        }
-        finally{
+        } finally {
             lock.writeLock().unlock();
         }
     }
 
+
+
+
     class RetransmissionTask implements Runnable{
 
+        private ChannelHandlerContext ctx;
         private OutboundReliableMessageTransfer messageTransfer;
 
-        private RetransmissionTask(OutboundReliableMessageTransfer messageTransfer) {
+        private RetransmissionTask(ChannelHandlerContext ctx, OutboundReliableMessageTransfer messageTransfer) {
+            this.ctx = ctx;
             this.messageTransfer = messageTransfer;
         }
 
         @Override
         public synchronized void run() {
-            InetSocketAddress remoteSocket = this.messageTransfer.getRemoteEndpoint();
+            final InetSocketAddress remoteSocket = this.messageTransfer.getRemoteEndpoint();
             final CoapMessage coapMessage = this.messageTransfer.getCoapMessage();
 
             // set the observe value for update notifications
@@ -356,42 +293,35 @@ public class OutboundReliabilityHandler extends AbstractCoapChannelHandler imple
             }
 
             // retransmit message
-            ChannelFuture retransmissionFuture = Channels.future(ctx.getChannel());
-            Channels.write(ctx, retransmissionFuture, coapMessage, remoteSocket);
+            ChannelFuture future = Channels.future(ctx.getChannel());
+            Channels.write(ctx, future, coapMessage, remoteSocket);
+            scheduleNextRetransmission(ctx, messageTransfer);
 
-            // fire internal retransmission event
-            MessageRetransmittedEvent event = new MessageRetransmittedEvent(
-                remoteSocket, coapMessage.getMessageID(), coapMessage.getToken()
-            );
-            Channels.fireMessageReceived(ctx.getChannel(), event);
-
-            // schedule next retransmission upon successful transmission
-            retransmissionFuture.addListener(new ChannelFutureListener() {
-
+            future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        LOG.error("Could not sent retransmission!", future.getCause());
+                    int messageID = coapMessage.getMessageID();
+                    Token token = coapMessage.getToken();
+                    Channel channel = ctx.getChannel();
+                    if(future.isSuccess()) {
+                        triggerEvent(channel, new MessageRetransmittedEvent(remoteSocket, messageID, token));
                     } else {
-                        LOG.debug("Retransmitted: {}", coapMessage);
+                        String desc = "Could not sent retransmission (\"" + future.getCause().getMessage() + "\"";
+                        triggerEvent(channel, new MiscellaneousErrorEvent(remoteSocket, messageID, token, desc));
                     }
-
-                    scheduleNextRetransmission(messageTransfer);
                 }
             });
         }
 
-        private void scheduleNextRetransmission(OutboundReliableMessageTransfer messageTransfer){
+        private void scheduleNextRetransmission(ChannelHandlerContext ctx, OutboundReliableMessageTransfer messageTransfer){
             if(!messageTransfer.isConfirmed()){
-                InetSocketAddress remoteSocket = messageTransfer.getRemoteEndpoint();
-
                 int count = messageTransfer.increaseRetransmissions();
-
                 if (count < OutboundReliableMessageTransfer.MAX_RETRANSMISSIONS) {
                     long delay = messageTransfer.getNextRetransmissionDelay();
-                    RetransmissionTask retransmissionTask = new RetransmissionTask(messageTransfer);
-                    ScheduledFuture retransmissionFuture = ioExecutor.schedule(retransmissionTask, delay, MILLIS);
-                    LOG.debug("Next Update Notification: {}", messageTransfer.getCoapMessage());
+                    RetransmissionTask retransmissionTask = new RetransmissionTask(ctx, messageTransfer);
+                    ScheduledFuture retransmissionFuture = getExecutor().schedule(retransmissionTask, delay, MILLIS);
+                    LOG.debug("Scheduled next retransmission to \"{}\" (Message ID: {})",
+                            messageTransfer.getRemoteEndpoint(), messageTransfer.getCoapMessage().getMessageID());
                     messageTransfer.setRetransmissionFuture(retransmissionFuture);
                 } else {
                     LOG.warn("No more retransmissions (remote endpoint: {}, message ID: {})!",

@@ -25,7 +25,8 @@
 
 package de.uzl.itm.ncoap.application.server;
 
-import de.uzl.itm.ncoap.application.CoapApplication;
+import com.sun.corba.se.spi.activation.Server;
+import de.uzl.itm.ncoap.application.AbstractCoapApplication;
 import de.uzl.itm.ncoap.application.server.webresource.Webresource;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
@@ -39,16 +40,16 @@ import java.net.InetSocketAddress;
 
 
 /**
-* An instance of {@link CoapServerApplication} is the component to enable instances of {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} to
-* communicate with the outside world, i.e. the Internet. Once a {@link CoapServerApplication} was instanciated
+* An instance of {@link CoapServer} is the component to enable instances of {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} to
+* communicate with the outside world, i.e. the Internet. Once a {@link CoapServer} was instanciated
 * one can register {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances and by this means make them available at their specified path.
 *
-* Each instance of {@link CoapServerApplication} is automatically bound to a local port to listen at for
+* Each instance of {@link CoapServer} is automatically bound to a local port to listen at for
 * inbound requests.
 *
 * @author Oliver Kleine
 */
-public class CoapServerApplication extends CoapApplication {
+public class CoapServer extends AbstractCoapApplication {
 
     public static final int DEFAULT_COAP_SERVER_PORT = 5683;
 
@@ -56,22 +57,21 @@ public class CoapServerApplication extends CoapApplication {
 
     private WebresourceManager webresourceManager;
 
-
     /**
-     * <p>Creates a new instance of {@link CoapServerApplication}</p>
+     * <p>Creates a new instance of {@link CoapServer}</p>
      *
      * <p><b>Note:</b> An instance created with this constructor uses
      * {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler#getDefault()} to handle
      * {@link de.uzl.itm.ncoap.message.CoapRequest}s for unknown resources and listens on port
      * {@link #DEFAULT_COAP_SERVER_PORT} (all IP addresses)
      */
-    public CoapServerApplication(){
+    public CoapServer(){
         this(DEFAULT_COAP_SERVER_PORT);
     }
 
 
     /**
-     * <p>Creates a new instance of {@link CoapServerApplication}</p>
+     * <p>Creates a new instance of {@link CoapServer}</p>
      *
      * <p><b>Note:</b> An instance created with this constructor uses
      * {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler#getDefault()} to handle
@@ -79,13 +79,13 @@ public class CoapServerApplication extends CoapApplication {
      *
      * @param serverPort the port number for the server to listen at (holds for all IP addresses of the server)
      */
-    public CoapServerApplication(int serverPort){
+    public CoapServer(int serverPort){
         this(new InetSocketAddress(serverPort));
     }
     
     
     /**
-     * <p>Creates a new instance of {@link CoapServerApplication}</p>
+     * <p>Creates a new instance of {@link CoapServer}</p>
      *
      * <p><b>Note:</b> An instance created with this constructor uses
      * {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler#getDefault()} to handle
@@ -93,81 +93,83 @@ public class CoapServerApplication extends CoapApplication {
      *
      * @param localSocket the socket address for the server to listen at
      */
-    public CoapServerApplication(InetSocketAddress localSocket){
+    public CoapServer(InetSocketAddress localSocket){
         this(NotFoundHandler.getDefault(), localSocket);
     }
 
 
     /**
-     * <p>Creates a new instance of {@link CoapServerApplication}</p>
+     * <p>Creates a new instance of {@link CoapServer}</p>
      *
      * <p><b>Note:</b> An instance created with this constructor listens on port
      * {@link #DEFAULT_COAP_SERVER_PORT} (all IP addresses)
      * 
      * @param notFoundHandler to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s for unknown resources
      */
-    public CoapServerApplication(NotFoundHandler notFoundHandler){
+    public CoapServer(NotFoundHandler notFoundHandler){
         this(notFoundHandler, DEFAULT_COAP_SERVER_PORT);
     }
 
     /**
-     * Creates a new instance of {@link CoapServerApplication}
+     * Creates a new instance of {@link CoapServer}
      *
      * @param notFoundHandler to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s for unknown resources
      * @param serverPort the port number for the server to listen at (holds for all IP addresses of the server)
      */
-    public CoapServerApplication(NotFoundHandler notFoundHandler, int serverPort){
+    public CoapServer(NotFoundHandler notFoundHandler, int serverPort){
         this(notFoundHandler, new InetSocketAddress(serverPort));
     }
     
 
     /**
-     * Creates a new instance of {@link CoapServerApplication}
+     * Creates a new instance of {@link CoapServer}
      *
      * @param notFoundHandler to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s for unknown resources
      * @param localSocket the socket address for the server to listen at
      */
-    public CoapServerApplication(NotFoundHandler notFoundHandler, InetSocketAddress localSocket){
+    public CoapServer(NotFoundHandler notFoundHandler, InetSocketAddress localSocket){
 
         super("CoAP Server", Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
 
-        ServerChannelPipelineFactory pipelineFactory =
-                new ServerChannelPipelineFactory(this.getExecutor(), notFoundHandler);
+        CoapServerChannelPipelineFactory pipelineFactory =
+                new CoapServerChannelPipelineFactory(this.getExecutor(), notFoundHandler);
 
         startApplication(pipelineFactory, localSocket);
         
         // set the webresource manager
-        ChannelHandler webresourceManager =
-                pipelineFactory.getChannelHandler(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER);
-        this.webresourceManager = (WebresourceManager) webresourceManager;
+        this.webresourceManager = getChannel().getPipeline().get(WebresourceManager.class);
         this.webresourceManager.setChannel(this.getChannel());
         
-        notFoundHandler.setWebresourceManager((WebresourceManager) webresourceManager);
+        notFoundHandler.setWebresourceManager(webresourceManager);
 
-        //Set the ChannelHandlerContext for the inbound reliability handler
-        InboundReliabilityHandler inboundReliabilityHandler =
-                (InboundReliabilityHandler) this.getChannel().getPipeline()
-                        .get(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER);
+        ServerObservationHandler handler = getChannel().getPipeline().get(ServerObservationHandler.class);
+        ChannelHandlerContext context = getChannel().getPipeline().getContext(handler);
+        handler.setChannelHandlerContext(context);
 
-        inboundReliabilityHandler.setChannelHandlerContext(
-                this.getChannel().getPipeline().getContext(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER)
-        );
+//        //Set the ChannelHandlerContext for the inbound reliability handler
+//        InboundReliabilityHandler inboundReliabilityHandler =
+//                (InboundReliabilityHandler) this.getChannel().getPipeline()
+//                        .get(CoapServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER);
+//
+//        inboundReliabilityHandler.setChannelHandlerContext(
+//                this.getChannel().getPipeline().getContext(CoapServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER)
+//        );
 
         //Set the ChannelHandlerContext for the server observation handler
-        ServerObservationHandler serverObservationHandler =
-                (ServerObservationHandler) this.getChannel().getPipeline()
-                        .get(ServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER);
-
-        serverObservationHandler.setChannelHandlerContext(
-                this.getChannel().getPipeline().getContext(ServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER)
-        );
+//        ServerObservationHandler serverObservationHandler =
+//                (ServerObservationHandler) this.getChannel().getPipeline()
+//                        .get(CoapServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER);
+//
+//        serverObservationHandler.setChannelHandlerContext(
+//                this.getChannel().getPipeline().getContext(CoapServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER)
+//        );
     }
     
 
 
     /**
      * Registers a new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} at this
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication}.
+     * {@link CoapServer}.
      *
      * @param webresource the {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instance to
      *                   be registered
@@ -180,9 +182,7 @@ public class CoapServerApplication extends CoapApplication {
     }
 
     private WebresourceManager getWebresourceManager(){
-        return (WebresourceManager) this.getChannel().getPipeline().get(
-                ServerChannelPipelineFactory.WEBRESOURCE_MANAGER
-        );
+        return getChannel().getPipeline().get(WebresourceManager.class);
     }
 
     public void shutdownWebresource(Webresource webresource){

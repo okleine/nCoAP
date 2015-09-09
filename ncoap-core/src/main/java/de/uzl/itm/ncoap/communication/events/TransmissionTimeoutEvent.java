@@ -51,8 +51,12 @@ public class TransmissionTimeoutEvent extends AbstractMessageTransferEvent {
     }
 
 
-    @Override
-    public boolean stopsMessageExchange() {
-        return true;
+//    @Override
+//    public boolean stopsMessageExchange() {
+//        return true;
+//    }
+
+    public interface Handler {
+        public void handleEvent(TransmissionTimeoutEvent event);
     }
 }

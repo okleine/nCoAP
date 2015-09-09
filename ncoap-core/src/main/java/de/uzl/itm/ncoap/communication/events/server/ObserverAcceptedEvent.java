@@ -22,41 +22,55 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.communication.events;
+package de.uzl.itm.ncoap.communication.events.server;
 
+import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.events.AbstractMessageTransferEvent;
 
 import java.net.InetSocketAddress;
 
 /**
- * Created by olli on 07.10.14.
+ * Created by olli on 04.09.15.
  */
-public interface MessageTransferEvent {
+public class ObserverAcceptedEvent extends AbstractMessageTransferEvent {
+
+    private final ObservableWebresource webresource;
+    private final long contentFormat;
 
     /**
-     * Returns the remote endpoint of the message exchange (i.e. communication) that caused this event
-     * @return the remote endpoint of the message exchange (i.e. communication) that caused this event
+     * Creates a new instance of {@link AbstractMessageTransferEvent}
+     *
+     * @param remoteEndpoint the remote endpoint of the
+     *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this
+     *                       event
+     * @param messageID      the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer}
+     *                       that caused this event
+     * @param token          the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
+     *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this event
      */
-    public InetSocketAddress getRemoteEndpoint();
+    public ObserverAcceptedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token,
+            ObservableWebresource webresource, long contentFormat) {
 
-    /**
-     * Returns the token of the message that caused this event
-     * @return the token of the message that caused this event
-     */
-    public Token getToken();
+        super(remoteEndpoint, messageID, token);
+        this.webresource = webresource;
+        this.contentFormat = contentFormat;
+    }
 
-    /**
-     * Returns the message ID of the message that caused this event
-     * @return the message ID of the message that caused this event
-     */
-    public int getMessageID();
+//    @Override
+//    public boolean stopsMessageExchange() {
+//        return false;
+//    }
 
-    /**
-     * Returns <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
-     * otherwise
-     * @return <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
-     * otherwise
-     */
-    public boolean stopsMessageExchange();
-    
+    public ObservableWebresource getWebresource() {
+        return webresource;
+    }
+
+    public long getContentFormat() {
+        return contentFormat;
+    }
+
+    public interface Handler {
+        public void handleEvent(ObserverAcceptedEvent event);
+    }
 }

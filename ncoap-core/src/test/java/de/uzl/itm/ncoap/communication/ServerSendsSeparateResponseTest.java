@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
@@ -55,7 +55,7 @@ import static org.junit.Assert.assertEquals;
 */
 public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTest {
 
-    private static CoapClientApplication client;
+    private static CoapClient client;
     private static ClientTestCallback clientCallback;
     private static CoapRequest request;
 
@@ -65,8 +65,8 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.client").setLevel(Level.DEBUG);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.plugtest.endpoint.DummyEndpoint").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability").setLevel(Level.DEBUG);
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint").setLevel(Level.DEBUG);
     }
 
     @Override
@@ -74,7 +74,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         endpoint = new DummyEndpoint();
         endpointSocket = new InetSocketAddress("localhost", endpoint.getPort());
 
-        client = new CoapClientApplication();
+        client = new CoapClient();
         clientCallback = new ClientTestCallback();
 
         URI targetUri = new URI("coap", null, "localhost", endpoint.getPort(), "/service/path", null, null);

@@ -70,7 +70,7 @@ public interface Webresource<T> {
      * {@link de.uzl.itm.ncoap.message.CoapRequest} with
      * {@link de.uzl.itm.ncoap.message.MessageCode.Name#POST}.
      *
-     * @return the {@link de.uzl.itm.ncoap.application.server.CoapServerApplication} this {@link Webresource} instance is registered at.
+     * @return the {@link de.uzl.itm.ncoap.application.server.CoapServer} this {@link Webresource} instance is registered at.
      */
     public WebresourceManager getWebresourceManager();
 
@@ -146,13 +146,13 @@ public interface Webresource<T> {
     /**
      * <p>This method is called by the nCoAP framework when this
      * {@link Webresource} is removed from the
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication} instance. One could e.g. try to
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer} instance. One could e.g. try to
      * cancel scheduled tasks if any. There might even be no need to do anything at all, i.e. implement the method with
      * empty body.</p>
      *
      * <p><b>Note: </b>If this {@link Webresource} uses the
      * {@link java.util.concurrent.ScheduledExecutorService} returned by
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication#getExecutor()} one MUST NOT
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer#getExecutor()} one MUST NOT
      * terminate this {@link java.util.concurrent.ScheduledExecutorService} but only cancel scheduled tasks using there
      * {@link java.util.concurrent.ScheduledFuture}.</p>
      */

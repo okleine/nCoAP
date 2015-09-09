@@ -40,42 +40,41 @@ import java.util.concurrent.ScheduledExecutorService;
 *
 * @author Oliver Kleine
 */
-public class ServerChannelPipelineFactory extends CoapChannelPipelineFactory {
+public class CoapServerChannelPipelineFactory extends CoapChannelPipelineFactory {
+
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
+//     * instance of a CoAP server
+//     */
+//    public static final String SERVER_OBSERVATION_HANDLER = "SERVER-OBSERVATION";
+//
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
+//     * instance of a CoAP server
+//     */
+//    public static final String INBOUND_RELIABILITY_HANDLER = "INBOUND-RELIABILITY";
+//
+//
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager}
+//     * instance of a CoAP server
+//     */
+//    public static final String WEBRESOURCE_MANAGER = "WEBRESOURCE-MANAGER";
+
 
     /**
-     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
-     * instance of a CoAP server
-     */
-    public static final String SERVER_OBSERVATION_HANDLER = "SERVER-OBSERVATION";
-
-    /**
-     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
-     * instance of a CoAP server
-     */
-    public static final String INBOUND_RELIABILITY_HANDLER = "INBOUND-RELIABILITY";
-
-
-    /**
-     * The name of the {@link de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager}
-     * instance of a CoAP server
-     */
-    public static final String WEBRESOURCE_MANAGER = "WEBRESOURCE-MANAGER";
-
-
-    /**
-     * Creates a new instance of {@link ServerChannelPipelineFactory}.
+     * Creates a new instance of {@link CoapServerChannelPipelineFactory}.
      *
      * @param executor The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler}
      *                        to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s targeting
      *                        unknown {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s.
      */
-    public ServerChannelPipelineFactory(ScheduledExecutorService executor, NotFoundHandler notFoundHandler){
+    public CoapServerChannelPipelineFactory(ScheduledExecutorService executor, NotFoundHandler notFoundHandler){
 
         super(executor);
 
-        addChannelHandler(INBOUND_RELIABILITY_HANDLER, new InboundReliabilityHandler(executor));
-        addChannelHandler(SERVER_OBSERVATION_HANDLER, new ServerObservationHandler(executor));
-        addChannelHandler(WEBRESOURCE_MANAGER, new WebresourceManager(notFoundHandler, executor));
+        addChannelHandler(new ServerObservationHandler(executor));
+        addChannelHandler(new WebresourceManager(notFoundHandler, executor));
     }
 }

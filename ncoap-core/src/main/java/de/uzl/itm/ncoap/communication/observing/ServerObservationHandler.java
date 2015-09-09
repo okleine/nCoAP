@@ -1,3 +1,27 @@
+/**
+ * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * All rights reserved
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package de.uzl.itm.ncoap.communication.observing;
 
 import com.google.common.collect.HashBasedTable;
@@ -5,8 +29,7 @@ import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.ObservableWebresourceRegistrationEvent;
-import de.uzl.itm.ncoap.communication.events.ObserverAcceptedEvent;
+import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
 import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
@@ -23,13 +46,14 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by olli on 04.09.15.
  */
-public class ServerObservationHandler extends AbstractCoapChannelHandler implements Observer, ResetReceivedEvent.Handler,
-        ObserverAcceptedEvent.Handler, ObservableWebresourceRegistrationEvent.Handler {
+public class ServerObservationHandler extends AbstractCoapChannelHandler implements Observer,
+        ResetReceivedEvent.Handler, ObserverAcceptedEvent.Handler {
 
     private static Logger LOG = LoggerFactory.getLogger(ServerObservationHandler.class.getName());
 
@@ -38,12 +62,11 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     private HashBasedTable<InetSocketAddress, Token, Long> contentFormats;
 
     private ReentrantReadWriteLock lock;
-    private ScheduledExecutorService executor;
     private ChannelHandlerContext ctx;
 
 
     public ServerObservationHandler(ScheduledExecutorService executor){
-        this.executor = executor;
+        super(executor);
         this.observations1 = HashBasedTable.create();
         this.observations2 = HashBasedTable.create();
         this.contentFormats = HashBasedTable.create();
@@ -77,22 +100,22 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
 
     @Override
-    public void handleResetReceivedEvent(ResetReceivedEvent event) {
-        stopObservation(event.getRemoteEndpoint(), event.getToken());
+    public void handleEvent(ResetReceivedEvent event) {
+        stopObservation(event.getRemoteSocket(), event.getToken());
     }
 
 
     @Override
-    public void handleObserverAcceptedEvent(ObserverAcceptedEvent event) {
-        startObservation(event.getRemoteEndpoint(), event.getToken(), event.getWebresource(), event.getContentFormat());
+    public void handleEvent(ObserverAcceptedEvent event) {
+        startObservation(event.getRemoteSocket(), event.getToken(), event.getWebresource(), event.getContentFormat());
     }
 
 
-    @Override
-    public void handleObservableWebresourceRegistrationEvent(ObservableWebresourceRegistrationEvent event) {
-        ObservableWebresource webresource = event.getWebresource();
+    public void registerWebresource(ObservableWebresource webresource) {
+        LOG.debug("ServerObservationHandler is now observing \"{}\".", webresource.getUriPath());
         webresource.addObserver(this);
     }
+
 
     public void setChannelHandlerContext(ChannelHandlerContext ctx){
         this.ctx = ctx;
@@ -161,7 +184,7 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
                 Token token = observation.getValue();
                 stopObservation(remoteSocket, token);
 
-                this.executor.submit(new ShutdownNotificationTask(remoteSocket, token, webresource.getUriPath()));
+                getExecutor().submit(new ShutdownNotificationTask(remoteSocket, token, webresource.getUriPath()));
             }
         } finally {
             this.lock.writeLock().unlock();
@@ -179,16 +202,17 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
                 Token token = observation.getValue();
                 long contentFormat = this.contentFormats.get(remoteSocket, token);
 
-                WrappedResourceStatus representation = representations.get(contentFormat);
-                if(representation == null) {
-                    representation = webresource.getWrappedResourceStatus(contentFormat);
-                    representations.put(contentFormat, representation);
+                WrappedResourceStatus status = representations.get(contentFormat);
+                if(status == null) {
+                    status = webresource.getWrappedResourceStatus(contentFormat);
+                    representations.put(contentFormat, status);
                 }
 
                 // schedule update notification (immediately)
                 boolean confirmable = webresource.isUpdateNotificationConfirmable(remoteSocket);
                 MessageType.Name messageType =  confirmable ? MessageType.Name.CON : MessageType.Name.NON;
-                this.executor.submit(new UpdateNotificationTask(remoteSocket, representation, messageType, token));
+                UpdateNotificationTask task = new UpdateNotificationTask(remoteSocket, status, messageType, token);
+                getExecutor().schedule(task, 0, TimeUnit.MILLISECONDS);
             }
         } finally {
             this.lock.readLock().unlock();
@@ -248,26 +272,29 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
         }
 
         public void run() {
-            CoapResponse updateNotification = new CoapResponse(messageType, MessageCode.Name.CONTENT_205);
-            updateNotification.setToken(token);
-            updateNotification.setEtag(representation.getEtag());
-            updateNotification.setContent(representation.getContent(), representation.getContentFormat());
-            updateNotification.setObserve();
+            try {
+                CoapResponse updateNotification = new CoapResponse(messageType, MessageCode.Name.CONTENT_205);
+                updateNotification.setToken(token);
+                updateNotification.setEtag(representation.getEtag());
+                updateNotification.setContent(representation.getContent(), representation.getContentFormat());
+                updateNotification.setObserve();
 
-            ChannelFuture future = Channels.future(ctx.getChannel());
-            Channels.write(ctx, future, updateNotification, remoteSocket);
+                ChannelFuture future = Channels.future(ctx.getChannel());
+                Channels.write(ctx, future, updateNotification, remoteSocket);
 
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if(!future.isSuccess()){
-                        LOG.error("Update Notification Failure!", future.getCause());
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if (!future.isSuccess()) {
+                            LOG.error("Update Notification Failure!", future.getCause());
+                        } else {
+                            LOG.info("Update Notification sent to \"{}\" (Token: {}).", remoteSocket, token);
+                        }
                     }
-                    else{
-                        LOG.info("Sent Update Notification to \"{}\" (Token: {}).", remoteSocket, token);
-                    }
-                }
-            });
+                });
+            } catch (Exception ex) {
+                LOG.error("Exception!", ex);
+            }
         }
     }
 }

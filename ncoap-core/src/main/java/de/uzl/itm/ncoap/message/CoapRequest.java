@@ -36,7 +36,7 @@ import java.util.*;
 
 /**
  * Instances of {@link CoapRequest} are created by
- * {@link de.uzl.itm.ncoap.application.client.CoapClientApplication}s to retrieve data from
+ * {@link de.uzl.itm.ncoap.application.client.CoapClient}s to retrieve data from
  * remote CoAP Webservices.
  *
  * @author Oliver Kleine

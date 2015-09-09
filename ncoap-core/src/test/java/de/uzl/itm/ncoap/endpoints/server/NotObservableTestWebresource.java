@@ -108,14 +108,14 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
 
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteAddress)
-            throws Exception{
+                                   InetSocketAddress remoteAddress) throws Exception{
 
-        log.info("Incoming request for resource " + getUriPath());
+        log.info("HANDLE INBOUND REQUEST (Resource: \"" + getUriPath() + "\")");
 
         //Delay the inbound requests
-        if(this.pretendedProcessingTimeForRequests > 0)
+        if(this.pretendedProcessingTimeForRequests > 0) {
             delay();
+        }
 
         Long contentFormat = determineResponseContentFormat(coapRequest);
 

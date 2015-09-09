@@ -25,8 +25,8 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -41,23 +41,23 @@ import static org.junit.Assert.assertFalse;
 */
 public class ClientPingsServer extends AbstractCoapCommunicationTest{
 
-    private static CoapClientApplication coapClientApplication;
-    private static CoapServerApplication coapServerApplication;
+    private static CoapClient coapClient;
+    private static CoapServer coapServer;
     private static ClientTestCallback callback;
 
 
     @Override
     public void setupComponents() throws Exception {
-        coapClientApplication = new CoapClientApplication();
+        coapClient = new CoapClient();
         callback = new ClientTestCallback();
-        coapServerApplication = new CoapServerApplication();
+        coapServer = new CoapServer();
     }
 
 
     @Override
     public void createTestScenario() throws Exception {
-        InetSocketAddress serverAddress = new InetSocketAddress("127.0.0.1", coapServerApplication.getPort());
-        coapClientApplication.sendCoapPing(callback, serverAddress);
+        InetSocketAddress serverAddress = new InetSocketAddress("127.0.0.1", coapServer.getPort());
+        coapClient.sendCoapPing(callback, serverAddress);
 
 
         Thread.sleep(1000);
@@ -66,18 +66,17 @@ public class ClientPingsServer extends AbstractCoapCommunicationTest{
 
     @Override
     public void shutdownComponents() throws Exception {
-        coapClientApplication.shutdown();
-        coapServerApplication.shutdown();
+        coapClient.shutdown();
+        coapServer.shutdown();
     }
 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("InboundReliabilityHandler")
-              .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
+                .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints")
-              .setLevel(Level.INFO);
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
 

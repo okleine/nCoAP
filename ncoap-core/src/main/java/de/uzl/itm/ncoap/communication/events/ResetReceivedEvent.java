@@ -72,19 +72,19 @@ public class ResetReceivedEvent extends AbstractMessageTransferEvent {
         super(remoteEndpoint, messageID, token);
     }
 
-    @Override
-    public boolean stopsMessageExchange() {
-        return true;
-    }
+//    @Override
+//    public boolean stopsMessageExchange() {
+//        return true;
+//    }
 
 
     @Override
     public String toString(){
-        return "EMPTY RST (from  " + this.getRemoteEndpoint() + " for message ID " + this.getMessageID() + " with token "
+        return "EMPTY RST (from  " + this.getRemoteSocket() + " for message ID " + this.getMessageID() + " with token "
                 + this.getToken() + ")";
     }
 
     public interface Handler {
-        public void handleResetReceivedEvent(ResetReceivedEvent event);
+        public void handleEvent(ResetReceivedEvent event);
     }
 }

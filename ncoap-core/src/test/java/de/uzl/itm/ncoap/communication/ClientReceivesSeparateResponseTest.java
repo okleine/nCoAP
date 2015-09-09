@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -58,7 +58,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     private static String PATH_TO_SERVICE = "/path/to/service";
     private static String PAYLOAD = "some arbitrary payload...";
-    private static CoapServerApplication server;
+    private static CoapServer server;
     private static NotObservableTestWebresource service;
 
     private static DummyEndpoint endpoint;
@@ -68,15 +68,15 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability")
-                .setLevel(Level.INFO);
-        Logger.getLogger("DummyEndpoint")
-                .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler")
+                .setLevel(Level.DEBUG);
+        Logger.getLogger("de.uzl.itm.ncoap.endpointsDummyEndpoint")
+                .setLevel(Level.DEBUG);
     }
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServerApplication();
+        server = new CoapServer();
         service = new NotObservableTestWebresource(PATH_TO_SERVICE, PAYLOAD, 0, 3000, server.getExecutor());
         server.registerWebresource(service);
 

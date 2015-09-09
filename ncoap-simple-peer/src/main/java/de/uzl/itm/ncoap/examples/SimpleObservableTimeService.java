@@ -101,7 +101,7 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
 
 
     @Override
-    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteEndpoint, Token token) {
+    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteEndpoint) {
         return false;
     }
 

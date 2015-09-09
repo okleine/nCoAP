@@ -51,14 +51,18 @@ public class MessageIDAssignedEvent extends AbstractMessageTransferEvent {
     }
 
 
-    @Override
-    public boolean stopsMessageExchange() {
-        return false;
-    }
+//    @Override
+//    public boolean stopsMessageExchange() {
+//        return false;
+//    }
 
     @Override
     public String toString(){
-        return "MESSAGE ID " + this.getMessageID() + " ASSIGNED (remote endpoint: " + this.getRemoteEndpoint() +
+        return "MESSAGE ID " + this.getMessageID() + " ASSIGNED (remote endpoint: " + this.getRemoteSocket() +
                 ", token: " + this.getToken() + ")";
+    }
+
+    public interface Handler {
+        public void handleEvent(MessageIDAssignedEvent event);
     }
 }

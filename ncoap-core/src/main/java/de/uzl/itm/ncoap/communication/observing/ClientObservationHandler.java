@@ -24,31 +24,37 @@
  */
 package de.uzl.itm.ncoap.communication.observing;
 
-import com.google.common.collect.*;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
-import de.uzl.itm.ncoap.communication.events.client.ObservationCancelledEvent;
 import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
+import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
-import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.Channels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * The {@link ClientObservationHandler} deals with
  * running observations. It e.g. ensures that inbound update notifications answered with a RST if the
- * observation was canceled by the {@link de.uzl.itm.ncoap.application.client.CoapClientApplication}.
+ * observation was canceled by the {@link de.uzl.itm.ncoap.application.client.CoapClient}.
  *
  * @author Oliver Kleine
  */
-public class ClientObservationHandler extends SimpleChannelHandler {
+public class ClientObservationHandler extends AbstractCoapChannelHandler implements
+        LazyObservationTerminationEvent.Handler, ResetReceivedEvent.Handler, RemoteSocketChangedEvent.Handler,
+        TransmissionTimeoutEvent.Handler {
 
     private static Logger LOG = LoggerFactory.getLogger(ClientObservationHandler.class.getName());
 
@@ -57,12 +63,137 @@ public class ClientObservationHandler extends SimpleChannelHandler {
 
 
     /**
-     * Creates a new instance of
-     * {@link ClientObservationHandler}
+     * Creates a new instance of {@link de.uzl.itm.ncoap.communication.observing.ClientObservationHandler}
      */
-    public ClientObservationHandler(){
+    public ClientObservationHandler(ScheduledExecutorService executor){
+        super(executor);
         this.observations = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
+    }
+
+    @Override
+    public boolean handleInboundCoapMessage(final ChannelHandlerContext ctx, CoapMessage coapMessage,
+            final InetSocketAddress remoteSocket) {
+
+        if(!(coapMessage instanceof CoapResponse)) {
+            return true;
+        }
+
+        final CoapResponse coapResponse = (CoapResponse) coapMessage;
+        Token token = coapResponse.getToken();
+
+        if(!coapResponse.isUpdateNotification() || coapResponse.isErrorResponse()){
+            //Current response is NO update notification or is an error response (which SHOULD implicate the first)
+            if(observations.contains(remoteSocket, token)){
+                LOG.info("Stop observation (remote address: {}, token: {}) due to received response: {}",
+                        new Object[]{remoteSocket, token, coapResponse});
+
+                stopObservation(remoteSocket, token);
+            }
+        } else {
+            if(!observations.contains(remoteSocket, token)){
+                //current response is update notification but there is no matching observation
+                LOG.warn("No observation found for update notification (remote endpoint: {}, token: {}). Send RESET!",
+                        remoteSocket, token);
+                getExecutor().submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        CoapMessage resetMessage = CoapMessage.createEmptyReset(coapResponse.getMessageID());
+                        Channels.write(ctx.getChannel(), resetMessage, remoteSocket);
+                    }
+                });
+            } else if(coapResponse.isUpdateNotification() && !coapResponse.isErrorResponse()) {
+                //Current response is (non-error) update notification and there is a suitable observation
+                ResourceStatusAge latestStatusAge = observations.get(remoteSocket, token);
+
+                //Get status age from newly received update notification
+                long receivedSequenceNo = coapResponse.getObserve();
+                ResourceStatusAge receivedStatusAge = new ResourceStatusAge(receivedSequenceNo, System.currentTimeMillis());
+
+                if(ResourceStatusAge.isReceivedStatusNewer(latestStatusAge, receivedStatusAge)){
+                    updateStatusAge(remoteSocket, token, receivedStatusAge);
+                } else {
+                    LOG.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
+                            receivedStatusAge, latestStatusAge);
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
+            InetSocketAddress remoteSocket) {
+
+        if (coapMessage instanceof CoapRequest && coapMessage.getObserve() != UintOptionValue.UNDEFINED) {
+            Token token = coapMessage.getToken();
+            if(coapMessage.getObserve() == 0){
+                LOG.debug("Add observation (remote endpoint: {}, token: {})", remoteSocket, token);
+                startObservation(remoteSocket, token);
+            } else {
+                LOG.debug("Stop observation due to \"observe != 0\" (remote endpoint: {}, token: {})",
+                        remoteSocket, token);
+                stopObservation(remoteSocket, token);
+            }
+        }
+
+        return true;
+    }
+
+
+    @Override
+    public void handleEvent(LazyObservationTerminationEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        stopObservation(remoteSocket, token);
+        LOG.debug("Next update notification from \"{}\" with token {} will cause a RST.", remoteSocket, token);
+    }
+
+
+    @Override
+    public void handleEvent(ResetReceivedEvent event) {
+        stopObservation(event.getRemoteSocket(), event.getToken());
+    }
+
+
+    @Override
+    public void handleEvent(RemoteSocketChangedEvent event) {
+        InetSocketAddress previousSocket = event.getPreviousRemoteSocket();
+        Token token = event.getToken();
+        try{
+            lock.readLock().lock();
+            ResourceStatusAge statusAge = this.observations.get(previousSocket, token);
+            if(statusAge == null){
+                LOG.info("No observation found for updated socket (token: {}, old socket: {}).", token, previousSocket);
+                return;
+            }
+        } finally {
+            lock.readLock().unlock();
+        }
+
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        try{
+            lock.writeLock().lock();
+            ResourceStatusAge statusAge = this.observations.remove(previousSocket, token);
+            if(statusAge == null){
+                LOG.info("No observation found with token {} for updated socket (old: {}, new: {}).",
+                        new Object[]{token, previousSocket, remoteSocket});
+            } else {
+                this.observations.put(remoteSocket, token, statusAge);
+                LOG.info("Observation (Token: {}) updated with new remote socket (old: {}, new: {})!",
+                        new Object[]{token, previousSocket, remoteSocket});
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+
+    @Override
+    public void handleEvent(TransmissionTimeoutEvent event) {
+        stopObservation(event.getRemoteSocket(), event.getToken());
     }
 
 
@@ -113,7 +244,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         try{
             this.lock.readLock().lock();
             if(!this.observations.contains(remoteEndpoint, token)){
-                LOG.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.debug("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
                 return null;
             }
         }
@@ -125,7 +256,7 @@ public class ClientObservationHandler extends SimpleChannelHandler {
             this.lock.writeLock().lock();
             ResourceStatusAge age = this.observations.remove(remoteEndpoint, token);
             if(age == null){
-                LOG.error("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.warn("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
             }
             else{
                 LOG.info("Observation stopped (remote endpoint: {}, token: {})!", remoteEndpoint, token);
@@ -135,184 +266,5 @@ public class ClientObservationHandler extends SimpleChannelHandler {
         finally{
             this.lock.writeLock().unlock();
         }
-    }
-
-
-    @Override
-    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me){
-
-        if(me.getMessage() instanceof CoapRequest){
-            handleOutgoingCoapRequest(ctx, me);
-        }
-        else if(me.getMessage() instanceof ObservationCancelledEvent){
-            handleObservationCancelledEvent((ObservationCancelledEvent) me.getMessage());
-        }
-        else if(me.getMessage() instanceof CoapMessage){
-            ctx.sendDownstream(me);
-        }
-        else{
-            ctx.sendDownstream(me);
-        }
-    }
-
-
-    private void handleObservationCancelledEvent(ObservationCancelledEvent event) {
-        LOG.info("EVENT received: {}", event);
-        InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
-        Token token = event.getToken();
-        stopObservation(remoteEndpoint, token);
-    }
-
-
-    private void handleOutgoingCoapRequest(ChannelHandlerContext ctx, MessageEvent me) {
-        CoapRequest coapRequest = (CoapRequest) me.getMessage();
-
-        long observe = coapRequest.getObserve();
-        if(observe != UintOptionValue.UNDEFINED){
-            InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
-            Token token = coapRequest.getToken();
-
-            if(observe == 0){
-                LOG.debug("Add observation (remote endpoint: {}, token: {})", remoteEndpoint, token);
-                startObservation(remoteEndpoint, token);
-            }
-
-            else{
-                LOG.debug("Stop observation due to \"observe != 0\" (remote endpoint: {}, token: {})",
-                        remoteEndpoint, token);
-                stopObservation(remoteEndpoint, token);
-            }
-        }
-
-        ctx.sendDownstream(me);
-    }
-
-
-    @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
-
-        //any kind of (non-empty) response
-        if(me.getMessage() instanceof CoapResponse){
-            handleIncomingCoapResponse(ctx, me);
-        }
-
-        //received RST from remote endpoint
-        else if(me.getMessage() instanceof ResetReceivedEvent) {
-            handleResetReceivedEvent(ctx, me);
-        }
-
-        // new socket of remote endpoint
-        else if(me.getMessage() instanceof RemoteSocketChangedEvent){
-            handleRemoteSocketChangedEvent(ctx, me);
-        }
-
-        //something else...
-        else{
-            ctx.sendUpstream(me);
-        }
-    }
-
-
-    private void handleRemoteSocketChangedEvent(ChannelHandlerContext ctx, MessageEvent me){
-        RemoteSocketChangedEvent event = (RemoteSocketChangedEvent) me.getMessage();
-        LOG.debug("Received: {}", event);
-
-        InetSocketAddress oldRemoteSocket = event.getOldRemoteSocket();
-        Token token = event.getToken();
-
-        try{
-            lock.readLock().lock();
-            ResourceStatusAge statusAge = this.observations.get(oldRemoteSocket, token);
-            if(statusAge == null){
-                LOG.info("No observation found for updated socket (token: {}, old socket: {}).",
-                        token, oldRemoteSocket);
-                ctx.sendUpstream(me);
-                return;
-            }
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-
-        InetSocketAddress newRemoteSocket = event.getRemoteEndpoint();
-
-        try{
-            lock.writeLock().lock();
-            ResourceStatusAge statusAge = this.observations.remove(oldRemoteSocket, token);
-            if(statusAge == null){
-                LOG.info("No observation found with token {} for updated socket (old: {}, new: {}).",
-                        new Object[]{token, oldRemoteSocket, newRemoteSocket});
-            }
-            else{
-                this.observations.put(newRemoteSocket, token, statusAge);
-                LOG.info("Observation (Token: {}) updated with new remote socket (old: {}, new: {})!",
-                        new Object[]{token, oldRemoteSocket, newRemoteSocket});
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
-            ctx.sendUpstream(me);
-        }
-    }
-
-    private void handleResetReceivedEvent(ChannelHandlerContext ctx, MessageEvent me) {
-        ResetReceivedEvent event = (ResetReceivedEvent) me.getMessage();
-        InetSocketAddress remoteEndpoint = event.getRemoteEndpoint();
-        Token token = event.getToken();
-
-        if(this.observations.contains(remoteEndpoint, token)){
-            stopObservation(remoteEndpoint, token);
-        }
-
-        ctx.sendUpstream(me);
-    }
-
-
-    private void handleIncomingCoapResponse(ChannelHandlerContext ctx, MessageEvent me) {
-
-        CoapResponse coapResponse = (CoapResponse) me.getMessage();
-
-        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
-        Token token = coapResponse.getToken();
-
-        //Current response is NO update notification or is an error response (which SHOULD implicate the first)
-        if(!coapResponse.isUpdateNotification() || MessageCode.isErrorMessage(coapResponse.getMessageCode())){
-            if(observations.contains(remoteEndpoint, token)){
-                LOG.info("Stop observation (remote address: {}, token: {}) due to received response: {}",
-                        new Object[]{remoteEndpoint, token, coapResponse});
-
-                stopObservation(remoteEndpoint, token);
-            }
-        }
-
-        else{
-            //current response is update notification but there is no suitable observation
-            if(!observations.contains(remoteEndpoint, token)){
-                LOG.warn("No observation found for update notification (remote endpoint: {}, token: {}).",
-                        remoteEndpoint, token);
-            }
-
-            //Current response is (non-error) update notification and there is a suitable observation
-            else if(coapResponse.isUpdateNotification() && !MessageCode.isErrorMessage(coapResponse.getMessageCode())){
-                //Lookup status age of latest update notification
-                ResourceStatusAge latestStatusAge = observations.get(remoteEndpoint, token);
-
-                //Get status age from newly received update notification
-                long receivedSequenceNo = coapResponse.getObserve();
-                ResourceStatusAge receivedStatusAge = new ResourceStatusAge(receivedSequenceNo, System.currentTimeMillis());
-
-                if(ResourceStatusAge.isReceivedStatusNewer(latestStatusAge, receivedStatusAge)){
-                    updateStatusAge(remoteEndpoint, token, receivedStatusAge);
-                }
-
-                else{
-                    LOG.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
-                            receivedStatusAge, latestStatusAge);
-                    return;
-                }
-            }
-        }
-
-        ctx.sendUpstream(me);
     }
 }

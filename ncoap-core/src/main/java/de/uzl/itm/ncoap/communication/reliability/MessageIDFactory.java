@@ -24,7 +24,8 @@
  */
 package de.uzl.itm.ncoap.communication.reliability;
 
-import de.uzl.itm.ncoap.communication.events.MessageIDReleasedEvent;
+import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.Channels;
@@ -32,7 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -44,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Oliver Kleine
 */
-public class MessageIDFactory{
+public class MessageIDFactory {
 
     /**
      * The number of seconds (247) a message ID is allocated by the nCoAP framework to avoid duplicate
@@ -65,7 +69,6 @@ public class MessageIDFactory{
     private Map<InetSocketAddress, ArrayDeque<AllocationRetirementTask>> retirementTasks;
     private ReentrantReadWriteLock lock;
     private ScheduledExecutorService executor;
-    private Channel channel;
 
     /**
      * @param executor the {@link ScheduledExecutorService} to provide the thread for operations to
@@ -79,9 +82,9 @@ public class MessageIDFactory{
     }
 
 
-    public void setChannel(Channel channel){
-        this.channel = channel;
-    }
+//    public void setChannel(Channel channel){
+//        this.channel = channel;
+//    }
 
     /**
      * Returns a message ID to be used for outgoing {@link de.uzl.itm.ncoap.message.CoapMessage}s and
@@ -96,7 +99,7 @@ public class MessageIDFactory{
      * @return the message ID to be used for outgoing messages or
      * {@link de.uzl.itm.ncoap.message.CoapMessage#UNDEFINED_MESSAGE_ID} if all IDs are in use.
      */
-    public int getNextMessageID(InetSocketAddress remoteEndpoint){
+    public int getNextMessageID(Channel channel, InetSocketAddress remoteEndpoint, Token token){
 
         try{
             lock.readLock().lock();
@@ -121,10 +124,12 @@ public class MessageIDFactory{
                 return CoapMessage.UNDEFINED_MESSAGE_ID;
             }
             else{
-                int nextMessageID = allocations == null ? this.random.nextInt(MODULUS) :
+                int messageID = allocations == null ? this.random.nextInt(MODULUS) :
                         (allocations.getFirst().getMessageID() + 1) % MODULUS;
 
-                AllocationRetirementTask retirementTask = new AllocationRetirementTask(remoteEndpoint, nextMessageID);
+                AllocationRetirementTask retirementTask = new AllocationRetirementTask(
+                    channel, remoteEndpoint, messageID, token
+                );
 
                 if(allocations == null){
                     this.retirementTasks.put(remoteEndpoint, new ArrayDeque<AllocationRetirementTask>());
@@ -135,7 +140,7 @@ public class MessageIDFactory{
 
                 this.executor.schedule(retirementTask, EXCHANGE_LIFETIME, TimeUnit.SECONDS);
 
-                return nextMessageID;
+                return messageID;
             }
         }
         finally{
@@ -157,11 +162,15 @@ public class MessageIDFactory{
 
     private class AllocationRetirementTask implements Runnable{
 
+        private Channel channel;
         private InetSocketAddress remoteEndpoint;
+        private Token token;
         private int messageID;
 
-        private AllocationRetirementTask(InetSocketAddress remoteEndpoint, int messageID) {
-            this.remoteEndpoint = remoteEndpoint;
+        private AllocationRetirementTask(Channel channel, InetSocketAddress remoteSocket, int messageID, Token token) {
+            this.channel = channel;
+            this.remoteEndpoint = remoteSocket;
+            this.token = token;
             this.messageID = messageID;
         }
 
@@ -175,9 +184,6 @@ public class MessageIDFactory{
 
         @Override
         public void run() {
-            MessageIDReleasedEvent event = new MessageIDReleasedEvent(this.remoteEndpoint, this.messageID);
-            Channels.fireMessageReceived(MessageIDFactory.this.channel, event);
-
             try{
                 lock.writeLock().lock();
                 ArrayDeque<AllocationRetirementTask> tasks = retirementTasks.get(remoteEndpoint);
@@ -185,10 +191,13 @@ public class MessageIDFactory{
                 if(tasks.size() == 0){
                     retirementTasks.remove(remoteEndpoint);
                 }
-            }
-            finally {
+            } finally {
                 lock.writeLock().unlock();
             }
+
+            Channels.fireMessageReceived(this.channel, new TransmissionTimeoutEvent(
+                this.remoteEndpoint, this.messageID, this.token
+            ));
         }
     }
 }

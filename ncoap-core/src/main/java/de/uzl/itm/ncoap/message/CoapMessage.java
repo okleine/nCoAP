@@ -357,6 +357,32 @@ public abstract class CoapMessage {
 
 
     /**
+     * Sets the message type of this {@link CoapMessage}. Usually there is no need to use this method as the value
+     * is either set via constructor parameter (for requests) or automatically by the nCoAP framework (for responses).
+     *
+     * @param messageType the {@link de.uzl.itm.ncoap.message.MessageType.Name} to be set
+     *
+     * @throws java.lang.IllegalArgumentException if the given message type is not supported.
+     */
+    public void setMessageType(MessageType.Name messageType) throws IllegalArgumentException {
+        setMessageType(messageType.getNumber());
+    }
+
+
+    public boolean isPingMessage() {
+        return this.messageCode == MessageCode.Name.EMPTY.getNumber() &&
+                this.messageType == MessageType.Name.CON.getNumber();
+    }
+
+    public boolean isRequest() {
+        return MessageCode.isRequest(this.getMessageCode());
+    }
+
+    public boolean isResponse() {
+        return MessageCode.isResponse(this.getMessageCode());
+    }
+
+    /**
      * Adds an option to this {@link CoapMessage}. However, it is recommended to use the options specific methods
      * from {@link CoapRequest} and {@link CoapResponse} to add options. This method is intended for framework internal
      * use.

@@ -25,10 +25,10 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
 import de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource;
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
@@ -52,10 +52,10 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
     private static final String PATH_TO_SERVICE = "/observable";
 
-    private static CoapClientApplication client;
+    private static CoapClient client;
     private static ClientTestCallback clientCallback;
 
-    private static CoapServerApplication server;
+    private static CoapServer server;
     private static ObservableTestWebresource service;
 
     //observable request
@@ -64,27 +64,35 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
     @Override
     public void setupLogging() throws Exception {
-//        Logger.getLogger("ClientReceivesUpdateNotifications$SpecificClientCallback")
-//                .setLevel(Level.INFO);
-//        Logger.getLogger("WebserviceManager")
-//                .setLevel(Level.INFO);
-//        Logger.getLogger("CoapServerApplication")
-//                .setLevel(Level.INFO);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webresource.ObservableWebservice")
-//                .setLevel(Level.DEBUG);
-//        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.observing.client.ClientObservationHandler")
-//                .setLevel(Level.INFO);
-        Logger.getRootLogger().setLevel(Level.DEBUG);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.observing")
+              .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource")
+              .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.communication.observing.ServerObservationHandler")
+              .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler")
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.communication.ClientReceivesUpdateNotifications$SpecificClientCallback")
+                .setLevel(Level.DEBUG);
+
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServerApplication();
+        server = new CoapServer();
 
         service = new ObservableTestWebresource(PATH_TO_SERVICE, 1, 0, server.getExecutor());
         server.registerWebresource(service);
 
-        client = new CoapClientApplication();
+        client = new CoapClient();
         clientCallback = new SpecificClientCallback();
 
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
@@ -173,40 +181,11 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
         assertEquals("MessageCode is not 404", MessageCode.Name.NOT_FOUND_404, response.getMessageCodeName());
     }
 
-//    @Test
-//    public void testReceiverReceivedNotification1() {
-//        SortedMap<Long, CoapResponse> receivedMessages = testClient.getReceivedResponses();
-//        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
-//        String message = "1st notification: MessageType is not ACK";
-//        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
-//        message = "1st notification: MessageCode is not 2.05 (Content)";
-//        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
-//        message = "1st notification: Payload does not match";
-//        assertEquals(message, expectedNotification1.getContent(), receivedMessage.getContent());
-//    }
-//
-//    @Test
-//    public void testReceiverReceivedNotification2() {
-//        SortedMap<Long, CoapResponse> receivedMessages = testClient.getReceivedResponses();
-//        Iterator<Long> timeKeys = receivedMessages.keySet().iterator();
-//        timeKeys.next();
-//        CoapMessage receivedMessage = receivedMessages.get(timeKeys.next());
-//        String message = "2nd notification: MessageType is not ACK";
-//        assertEquals(message, MessageType.CON, receivedMessage.getMessageType());
-//        message = "2nd notification: MessageCode is not 2.05 (Content)";
-//        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
-//        message = "2nd notification: Payload does not match";
-//        assertEquals(message, expectedNotification2.getContent(), receivedMessage.getContent());
-//    }
-
 
     private class SpecificClientCallback extends ClientTestCallback {
 
-        private Logger log = Logger.getLogger(SpecificClientCallback.class.getName());
-
         @Override
         public boolean continueObservation(){
-            log.debug("TEST!!!");
             return true;
         }
     }

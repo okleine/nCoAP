@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 */
 public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
-    private static Logger log = LoggerFactory.getLogger(NotObservableWebresource.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(NotObservableWebresource.class.getName());
 
     private WebresourceManager webresourceManager;
 
@@ -152,7 +152,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
             this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
             updateEtag(resourceStatus);
 
-            log.debug("New status of {} set (expires in {} seconds).", this.path, lifetimeSeconds);
+            LOG.debug("New status of {} set (expires in {} seconds).", this.path, lifetimeSeconds);
         }
         finally {
             readWriteLock.writeLock().unlock();

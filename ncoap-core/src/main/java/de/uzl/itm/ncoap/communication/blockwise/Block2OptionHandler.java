@@ -25,8 +25,9 @@
 package de.uzl.itm.ncoap.communication.blockwise;
 
 import com.google.common.collect.HashBasedTable;
+import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
+import de.uzl.itm.ncoap.communication.events.PartialContentReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -40,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -55,9 +57,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Oliver Kleine
  */
-public class Block2OptionHandler extends SimpleChannelHandler{
+public class Block2OptionHandler extends AbstractCoapChannelHandler implements TransmissionTimeoutEvent.Handler,
+        RemoteSocketChangedEvent.Handler {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private static Logger LOG = LoggerFactory.getLogger(Block2OptionHandler.class.getName());
 
     private HashBasedTable<InetSocketAddress, Token, CoapRequest> openRequests;
     private HashBasedTable<InetSocketAddress, Token, ChannelBuffer> partialResponses;
@@ -67,66 +70,46 @@ public class Block2OptionHandler extends SimpleChannelHandler{
     /**
      * Creates a new instance of {@link Block2OptionHandler}.
      */
-    public Block2OptionHandler(){
+    public Block2OptionHandler(ScheduledExecutorService executor){
+        super(executor);
         this.openRequests = HashBasedTable.create();
         this.partialResponses = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
     }
 
     @Override
-    public void writeRequested(ChannelHandlerContext ctx, MessageEvent me){
-        if(me.getMessage() instanceof CoapRequest){
-            handleOutgoingCoapRequest(ctx, me);
+    public boolean handleInboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
+            InetSocketAddress remoteSocket) {
+
+        LOG.debug("INBOUND: {}", coapMessage);
+        if(coapMessage instanceof CoapResponse) {
+            handleIncomingCoapResponse(ctx, (CoapResponse) coapMessage, remoteSocket);
         }
-        else{
-            ctx.sendDownstream(me);
-        }
+        return true;
     }
 
-    private void handleOutgoingCoapRequest(ChannelHandlerContext ctx, MessageEvent me) {
-        CoapRequest coapRequest = (CoapRequest) me.getMessage();
-        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
 
-        if(addCoapRequest(remoteEndpoint, coapRequest)){
-            ctx.sendDownstream(me);
-        }
-        else{
-            log.error("This should never happen!");
-            MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(
-                    remoteEndpoint, coapRequest.getMessageID(), coapRequest.getToken(), "Error in Block2OptionHandler"
-            );
-            Channels.fireMessageReceived(ctx, event);
-
-            me.getFuture().setFailure(new Exception("Error in Block2OptionHandler"));
-        }
+    @Override
+    public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
+            InetSocketAddress remoteSocket) {
+        LOG.debug("OUTBOUND: {}", coapMessage);
+        return !(coapMessage instanceof CoapRequest && !addCoapRequest(remoteSocket, (CoapRequest) coapMessage));
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent me){
-        if(me.getMessage() instanceof CoapResponse){
-            handleIncomingCoapResponse(ctx, me);
-        }
-        else if(me.getMessage() instanceof TransmissionTimeoutEvent){
-            handleTransmissionTimeout(ctx, me);
-        }
-        else if(me.getMessage() instanceof RemoteSocketChangedEvent){
-            handleRemoteSocketChangedEvent(ctx, me);
-        }
-        else {
-            ctx.sendUpstream(me);
-        }
+    public void handleEvent(TransmissionTimeoutEvent event) {
+        removeCoapRequest(event.getRemoteSocket(), event.getToken());
     }
 
 
-    private void handleRemoteSocketChangedEvent(ChannelHandlerContext ctx, MessageEvent me){
-        RemoteSocketChangedEvent event = (RemoteSocketChangedEvent) me.getMessage();
-        InetSocketAddress previousRemoteSocket = event.getOldRemoteSocket();
+    @Override
+    public void handleEvent(RemoteSocketChangedEvent event) {
+        InetSocketAddress previousRemoteSocket = event.getPreviousRemoteSocket();
         Token token = event.getToken();
 
         try{
             this.lock.readLock().lock();
             if(!this.openRequests.contains(previousRemoteSocket, token)){
-                ctx.sendUpstream(me);
                 return;
             }
         }
@@ -138,11 +121,10 @@ public class Block2OptionHandler extends SimpleChannelHandler{
             this.lock.writeLock().lock();
             CoapRequest coapRequest = this.openRequests.remove(previousRemoteSocket, token);
             if(coapRequest == null){
-                ctx.sendUpstream(me);
                 return;
             }
 
-            InetSocketAddress remoteSocket = event.getRemoteEndpoint();
+            InetSocketAddress remoteSocket = event.getRemoteSocket();
             this.openRequests.put(remoteSocket, token, coapRequest);
             ChannelBuffer partialContent = this.partialResponses.remove(previousRemoteSocket, token);
             this.partialResponses.put(remoteSocket, token, partialContent);
@@ -152,55 +134,58 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         }
     }
 
-    private void handleTransmissionTimeout(ChannelHandlerContext ctx, MessageEvent me) {
-        TransmissionTimeoutEvent timeoutEvent = (TransmissionTimeoutEvent) me.getMessage();
-        removeCoapRequest(timeoutEvent.getRemoteEndpoint(), timeoutEvent.getToken());
 
-        ctx.sendUpstream(me);
-    }
+    private void handleIncomingCoapResponse(ChannelHandlerContext ctx, CoapResponse coapResponse,
+            InetSocketAddress remoteSocket) {
 
-    private void handleIncomingCoapResponse(ChannelHandlerContext ctx, MessageEvent me) {
-        CoapResponse coapResponse = (CoapResponse) me.getMessage();
         Token token = coapResponse.getToken();
-        InetSocketAddress remoteEndpoint = (InetSocketAddress) me.getRemoteAddress();
-
-        log.info("Received response from {}: {}", remoteEndpoint, coapResponse);
+        LOG.info("Received response from {}: {}", remoteSocket, coapResponse);
 
         if(coapResponse.getBlock2Number() == UintOptionValue.UNDEFINED){
-            removePartialPayload(remoteEndpoint, token);
-            removeCoapRequest(remoteEndpoint, token);
-            ctx.sendUpstream(me);
-        }
-        else{
-            addPayloadBlock(remoteEndpoint, token, coapResponse.getContent());
-
+            removePartialPayload(remoteSocket, token);
+            removeCoapRequest(remoteSocket, token);
+        } else {
+            addPayloadBlock(remoteSocket, token, coapResponse.getContent());
             if(coapResponse.isLastBlock2()){
-                coapResponse.setContent(getPayload(remoteEndpoint, token));
-                removePartialPayload(remoteEndpoint, token);
-                removeCoapRequest(remoteEndpoint, token);
-                ctx.sendUpstream(me);
-            }
-            else{
-                CoapRequest coapRequest = this.getCoapRequest(remoteEndpoint, token);
-                coapRequest.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
-                coapRequest.setBlock2(coapResponse.getBlock2Number() + 1, false, coapResponse.getBlock2EncodedSize());
+                coapResponse.setContent(getPayload(remoteSocket, token));
+                removePartialPayload(remoteSocket, token);
+                removeCoapRequest(remoteSocket, token);
+            } else {
+                long blockNumber = coapResponse.getBlock2Number();
+                long encodedBlockSize = coapResponse.getBlock2EncodedSize();
+                requestNextBlock(ctx, remoteSocket, coapResponse.getToken(), blockNumber + 1, encodedBlockSize);
 
-                ChannelFuture future = Channels.future(ctx.getChannel());
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if(future.isSuccess()){
-                            log.info("Successfully sent request for next block.");
-                        }
-                        else{
-                            log.error("Error: {}", future.getCause());
-                        }
-                    }
-                });
-
-                Channels.write(ctx, future, coapRequest, remoteEndpoint);
+                // send internal event
+                PartialContentReceivedEvent event = new PartialContentReceivedEvent(
+                    remoteSocket, token, blockNumber, (long) Math.pow(2, encodedBlockSize + 4)
+                );
+                Channels.fireMessageReceived(ctx.getChannel(), event);
             }
         }
+    }
+
+
+    private void requestNextBlock(ChannelHandlerContext ctx, InetSocketAddress remoteSocket, Token token,
+            long blockNumber, long encodedBlockSize) {
+
+        CoapRequest coapRequest = this.getCoapRequest(remoteSocket, token);
+        coapRequest.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
+        coapRequest.setBlock2(blockNumber, false, encodedBlockSize);
+
+        ChannelFuture future = Channels.future(ctx.getChannel());
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if(future.isSuccess()){
+                    LOG.info("Successfully sent request for next block.");
+                }
+                else{
+                    LOG.error("Error: {}", future.getCause());
+                }
+            }
+        });
+
+        Channels.write(ctx, future, coapRequest, remoteSocket);
     }
 
     private void removePartialPayload(InetSocketAddress remoteEndpoint, Token token){
@@ -226,7 +211,7 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         try{
             this.lock.readLock().lock();
             if(!this.openRequests.contains(remoteEndpoint, token)){
-                log.error("No partial payload available (remote endpoint: {}, token: {}).",
+                LOG.error("No partial payload available (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
                 return null;
             }
@@ -252,7 +237,7 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         try{
             this.lock.writeLock().lock();
             if(!this.partialResponses.contains(remoteEndpoint, token)){
-                log.error("No partial payload available (remote endpoint: {}, token: {}).",
+                LOG.error("No partial payload available (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
                 return ChannelBuffers.EMPTY_BUFFER;
             }
@@ -272,19 +257,20 @@ public class Block2OptionHandler extends SimpleChannelHandler{
             this.lock.writeLock().lock();
             if(!this.partialResponses.contains(remoteEndpoint, token)){
                 this.partialResponses.put(remoteEndpoint, token, payloadBlock);
-                log.info("Added new partial payload (remote endpoint: {}, token: {}).", remoteEndpoint, token);
+                LOG.info("Added new partial payload (remote endpoint: {}, token: {}).", remoteEndpoint, token);
             }
 
             else{
                 ChannelBuffer previous = this.partialResponses.get(remoteEndpoint, token);
                 this.partialResponses.put(remoteEndpoint, token, ChannelBuffers.wrappedBuffer(previous, payloadBlock));
-                log.info("Added new block to partial payload (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.info("Added new block to partial payload (remote endpoint: {}, token: {})", remoteEndpoint, token);
             }
         }
         finally{
             this.lock.writeLock().unlock();
         }
     }
+
 
     private CoapRequest removeCoapRequest(InetSocketAddress remoteEndpoint, Token token){
         try{
@@ -300,14 +286,14 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         try{
             this.lock.writeLock().lock();
             if(!this.openRequests.contains(remoteEndpoint, token)){
-                log.error("No open request found (remote endpoint: {}, token: {}).",
+                LOG.error("No open request found (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
                 return null;
             }
 
             else{
                 CoapRequest result = this.openRequests.remove(remoteEndpoint, token);
-                log.info("Removed open request (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.info("Removed open request (remote endpoint: {}, token: {})", remoteEndpoint, token);
                 return result;
             }
         }
@@ -322,14 +308,14 @@ public class Block2OptionHandler extends SimpleChannelHandler{
         try{
             this.lock.writeLock().lock();
             if(this.openRequests.contains(remoteEndpoint, token)){
-                log.error("Tried to override existing conversation (remote endpoint: {}, token: {}).",
+                LOG.error("Tried to override existing conversation (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
                 return false;
             }
 
             else{
                 this.openRequests.put(remoteEndpoint, token, coapRequest);
-                log.info("New conversation added (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.info("New conversation added (remote endpoint: {}, token: {})", remoteEndpoint, token);
                 return true;
             }
         }
@@ -337,4 +323,6 @@ public class Block2OptionHandler extends SimpleChannelHandler{
             this.lock.writeLock().unlock();
         }
     }
+
+
 }

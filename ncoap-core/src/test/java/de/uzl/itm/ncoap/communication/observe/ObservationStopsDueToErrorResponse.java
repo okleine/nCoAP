@@ -25,8 +25,8 @@
 
 package de.uzl.itm.ncoap.communication.observe;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
 import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
 import de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource;
@@ -46,10 +46,10 @@ import java.net.URI;
 */
 public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicationTest {
 
-    private static CoapClientApplication client;
+    private static CoapClient client;
     private static ClientTestCallback clientCallback;
 
-    private static CoapServerApplication server;
+    private static CoapServer server;
     private static InetSocketAddress serverSocket;
 
     private static ObservableTestWebresource service;
@@ -58,9 +58,9 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
 
     @Override
     public void setupComponents() throws Exception {
-        client = new CoapClientApplication();
+        client = new CoapClient();
         clientCallback = new ClientTestCallback();
-        server = new CoapServerApplication();
+        server = new CoapServer();
         service = new ObservableTestWebresource("/test", 1, 0, server.getExecutor());
         server.registerWebresource(service);
 
@@ -87,18 +87,14 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints.client")
-                .setLevel(Level.INFO);
-        Logger.getLogger("ClientObservationHandler")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webresource.ObservableWebservice")
-                .setLevel(Level.INFO);
-        Logger.getLogger("WebserviceManager")
-                .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.observing")
+                .setLevel(Level.DEBUG);
+
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
     @Test
     public void test(){
-
+        // TODO
     }
 }

@@ -24,9 +24,11 @@
  */
 package de.uzl.itm.ncoap.application;
 
+import de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uzl.itm.ncoap.communication.identification.IdentificationHandler;
+import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
 import de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -36,8 +38,7 @@ import org.jboss.netty.handler.execution.ExecutionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -49,52 +50,54 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
 
     private static Logger LOG = LoggerFactory.getLogger(CoapChannelPipelineFactory.class.getName());
 
-    /**
-     * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
-     */
-    public static final String EXECUTION_HANDLER = "EXECUTION";
+//    /**
+//     * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
+//     */
+//    public static final String EXECUTION_HANDLER = "EXECUTION";
+//
+//    /**
+//     * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
+//     */
+//    public static final String IDENTIFICATION_HANDLER = "IDENTIFICATION";
+//
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder} instance
+//     * of a CoAP application
+//     */
+//    public static final String ENCODER = "ENCODER";
+//
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder} instance
+//     * of a CoAP application
+//     */
+//    public static final String DECODER = "DECODER";
+//
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler} instance
+//     * of a CoAP application
+//     */
+//    public static String OUTBOUND_RELIABILITY_HANDLER = "OUTBOUND-RELIABILITY";
 
-    /**
-     * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
-     */
-    public static final String IDENTIFICATION_HANDLER = "IDENTIFICATION";
-
-    /**
-     * The name of the {@link de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder} instance
-     * of a CoAP application
-     */
-    public static final String ENCODER = "ENCODER";
-
-    /**
-     * The name of the {@link de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder} instance
-     * of a CoAP application
-     */
-    public static final String DECODER = "DECODER";
-
-    /**
-     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler} instance
-     * of a CoAP application
-     */
-    public static String OUTBOUND_RELIABILITY_HANDLER = "OUTBOUND-RELIABILITY";
-
-    private Map<String, ChannelHandler> handler;
+    private Set<ChannelHandler> channelHandlers;
 
 
     protected CoapChannelPipelineFactory(ScheduledExecutorService executor){
-         this.handler = new LinkedHashMap<>();
+        this.channelHandlers = new LinkedHashSet<>();
 
-        addChannelHandler(EXECUTION_HANDLER, new ExecutionHandler(executor));
+        addChannelHandler(new ExecutionHandler(executor));
 
-        addChannelHandler(ENCODER, new CoapMessageEncoder());
-        addChannelHandler(DECODER, new CoapMessageDecoder());
+        addChannelHandler(new CoapMessageEncoder());
+        addChannelHandler(new CoapMessageDecoder());
 
-        addChannelHandler(IDENTIFICATION_HANDLER, new IdentificationHandler());
-        addChannelHandler(OUTBOUND_RELIABILITY_HANDLER, new OutboundReliabilityHandler(executor));
+        addChannelHandler(new IdentificationHandler(executor));
+
+        addChannelHandler(new OutboundReliabilityHandler(executor));
+        addChannelHandler(new InboundReliabilityHandler(executor, true));
      }
 
 
-    protected void addChannelHandler(String name, ChannelHandler channelHandler){
-        this.handler.put(name, channelHandler);
+    protected void addChannelHandler(ChannelHandler channelHandler){
+        this.channelHandlers.add(channelHandler);
     }
 
 
@@ -102,26 +105,27 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
-        for(String handlerName : handler.keySet()){
-            pipeline.addLast(handlerName, handler.get(handlerName));
+        for(ChannelHandler handler : this.channelHandlers){
+            String handlerName = handler.getClass().getSimpleName();
+            pipeline.addLast(handler.getClass().getSimpleName(), handler);
             LOG.debug("Added Handler to Pipeline: {}.", handlerName);
         }
 
         return pipeline;
     }
 
-    /**
-     * Returns the {@link org.jboss.netty.channel.ChannelHandler} instance which is part of each pipeline created
-     * using this factory (or <code>null</code> if no such handler exists). See static constants for the
-     * available names.
-     *
-     * @param name the name of the {@link org.jboss.netty.channel.ChannelHandler instance to be returned}
-     *
-     * @return the {@link org.jboss.netty.channel.ChannelHandler} instance which is part of each pipeline created
-     * using this factory (or <code>null</code> if no such handler exists).
-     */
-    public ChannelHandler getChannelHandler(String name){
-        return handler.get(name);
-    }
+//    /**
+//     * Returns the {@link org.jboss.netty.channel.ChannelHandler} instance which is part of each pipeline created
+//     * using this factory (or <code>null</code> if no such handler exists). See static constants for the
+//     * available names.
+//     *
+//     * @param name the name of the {@link org.jboss.netty.channel.ChannelHandler instance to be returned}
+//     *
+//     * @return the {@link org.jboss.netty.channel.ChannelHandler} instance which is part of each pipeline created
+//     * using this factory (or <code>null</code> if no such handler exists).
+//     */
+//    public ChannelHandler getChannelHandler(String name){
+//        return handler.get(name);
+//    }
 
 }

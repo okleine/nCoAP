@@ -133,7 +133,11 @@ public class DummyEndpoint extends SimpleChannelHandler {
     }
 
 
-    public CoapMessage getReceivedMessage(int index) throws IndexOutOfBoundsException{
+    public CoapMessage getReceivedMessage(int index) throws IndexOutOfBoundsException {
+        if (this.getReceivedCoapMessages().size() < index - 1) {
+            return null;
+        }
+
         Iterator<Long> receptionTimes = this.receivedCoapMessages.keySet().iterator();
 
         for(int i = 0; i < index; i++){

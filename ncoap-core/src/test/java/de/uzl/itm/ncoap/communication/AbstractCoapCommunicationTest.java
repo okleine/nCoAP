@@ -34,8 +34,8 @@ import org.junit.AfterClass;
 /**
  * Abstract class to be extended by all tests classes to test communication functionality, i.e. all
  * tests using at least one of
- * {@link de.uzl.itm.ncoap.application.client.CoapClientApplication}, or
- * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication}.
+ * {@link de.uzl.itm.ncoap.application.client.CoapClient}, or
+ * {@link de.uzl.itm.ncoap.application.server.CoapServer}.
  *
  * @author Oliver Kleine
  */
@@ -50,12 +50,12 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
 
     /**
      * This method is to create all necessary instances of
-     * {@link de.uzl.itm.ncoap.application.client.CoapClientApplication},
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication} and
+     * {@link de.uzl.itm.ncoap.application.client.CoapClient},
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer} and
      * {@link de.uzl.itm.ncoap.endpoints.DummyEndpoint}.
      *
      * Additionally all necessary instances of webservices are supposed to be created and registered at the
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication} instance(s)
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer} instance(s)
      *
      * @throws Exception
      */
@@ -68,8 +68,8 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
 
     /**
      * This method is to shutdown all existing instances of
-     * {@link de.uzl.itm.ncoap.application.client.CoapClientApplication},
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication}, and
+     * {@link de.uzl.itm.ncoap.application.client.CoapClient},
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer}, and
      * {@link de.uzl.itm.ncoap.endpoints.DummyEndpoint}.
      *
      * @throws Exception

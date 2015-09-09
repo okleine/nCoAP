@@ -27,7 +27,6 @@ package de.uzl.itm.ncoap.endpoints.server;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -60,7 +59,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
     private static int NO_AUTOMATIC_UPDATE = 0;
 
-    private static Logger log = LoggerFactory.getLogger(ObservableTestWebresource.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(ObservableTestWebresource.class.getName());
 
     private long artificalDelay;
     private long updateInterval;
@@ -118,7 +117,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                    InetSocketAddress remoteEndpoint){
-
+        LOG.debug("Process Request from \"{}\".", remoteEndpoint);
         try{
 
             Thread.sleep(this.artificalDelay);
@@ -140,7 +139,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
             }
 
             else{
-                log.error("This should never happen!");
+                LOG.error("This should never happen!");
                 responseFuture.setException(new Exception("Something went wrong..."));
             }
         }

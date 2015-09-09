@@ -154,6 +154,12 @@ public class CoapResponse extends CoapMessage {
         return createErrorResponse(messageType, messageCode, stringWriter.toString());
     }
 
+
+    public boolean isErrorResponse() {
+        return MessageCode.isErrorMessage(this.getMessageCode());
+    }
+
+
     /**
      * Sets the {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ETAG} of this
      * {@link CoapResponse}.

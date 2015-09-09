@@ -25,7 +25,7 @@
 package de.uzl.itm.ncoap.application;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uzl.itm.ncoap.application.server.ServerChannelPipelineFactory;
+import de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
@@ -43,7 +43,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  * Created by olli on 27.08.15.
  */
-public abstract class CoapApplication {
+public abstract class AbstractCoapApplication {
 
     public static final int RECEIVE_BUFFER_SIZE = 65536;
     public static final int NOT_BOUND = -1;
@@ -54,7 +54,7 @@ public abstract class CoapApplication {
 
 
 
-    protected CoapApplication(String applicationName, int ioThreads){
+    protected AbstractCoapApplication(String applicationName, int ioThreads){
 
         this.applicationName = applicationName;
 
@@ -72,6 +72,7 @@ public abstract class CoapApplication {
         this.executor = new ScheduledThreadPoolExecutor(Math.max(ioThreads, 4), threadFactory);
     }
 
+
     protected void startApplication(CoapChannelPipelineFactory pipelineFactory, InetSocketAddress socketAddress){
         ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, executor.getCorePoolSize()/2);
 
@@ -83,16 +84,6 @@ public abstract class CoapApplication {
 
         //Create datagram channel
         this.channel = (DatagramChannel) bootstrap.bind(socketAddress);
-
-        //Set the ChannelHandlerContext for the outbound reliability handler
-        OutboundReliabilityHandler outboundReliabilityHandler =
-                (OutboundReliabilityHandler) this.channel.getPipeline()
-                        .get(ServerChannelPipelineFactory.OUTBOUND_RELIABILITY_HANDLER);
-
-        outboundReliabilityHandler.setChannelHandlerContext(
-                this.channel.getPipeline()
-                        .getContext(ServerChannelPipelineFactory.OUTBOUND_RELIABILITY_HANDLER)
-        );
     }
 
 
@@ -102,11 +93,11 @@ public abstract class CoapApplication {
 
     /**
      * Returns the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
-     * {@link de.uzl.itm.ncoap.application.client.CoapClientApplication} is bound to or
+     * {@link de.uzl.itm.ncoap.application.client.CoapClient} is bound to or
      * {@value #NOT_BOUND} if the application has not yet been started.
      *
      * @return the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
-     * {@link de.uzl.itm.ncoap.application.client.CoapClientApplication} is bound to or
+     * {@link de.uzl.itm.ncoap.application.client.CoapClient} is bound to or
      * {@value #NOT_BOUND} if the application has not yet been started.
      */
     public int getPort() {
@@ -120,13 +111,13 @@ public abstract class CoapApplication {
 
     /**
      * Returns the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication} to handle tasks, e.g. write and
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer} to handle tasks, e.g. write and
      * receive messages. The returned {@link java.util.concurrent.ScheduledExecutorService} may also be used by
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s to handle inbound
      * {@link de.uzl.itm.ncoap.message.CoapRequest}s
      *
      * @return the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication} to handle tasks, e.g. write and
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer} to handle tasks, e.g. write and
      * receive messages.
      */
     public ScheduledExecutorService getExecutor(){

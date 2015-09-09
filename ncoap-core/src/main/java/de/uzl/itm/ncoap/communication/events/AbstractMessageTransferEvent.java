@@ -33,11 +33,9 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public abstract class AbstractMessageTransferEvent implements MessageTransferEvent{
+public abstract class AbstractMessageTransferEvent extends AbstractMessageExchangeEvent{
 
     private int messageID;
-    private Token token;
-    private InetSocketAddress remoteEndpoint;
 
     /**
      * Creates a new instance of {@link AbstractMessageTransferEvent}
@@ -50,26 +48,10 @@ public abstract class AbstractMessageTransferEvent implements MessageTransferEve
      *              {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this event
      */
     public AbstractMessageTransferEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
+        super(remoteEndpoint, token);
         this.messageID = messageID;
-        this.token = token;
-        this.remoteEndpoint = remoteEndpoint;
     }
 
-    /**
-     * Returns the remote endpoint of the message exchange (i.e. communication) that caused this events
-     * @return the remote endpoint of the message exchange (i.e. communication) that caused this events
-     */
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
-    }
-
-    /**
-     * Returns the token of the message exchange (i.e. communication) that caused this events
-     * @return the token of the message exchange (i.e. communication) that caused this events
-     */
-    public Token getToken() {
-        return token;
-    }
 
     /**
      * Returns the message ID of the message that caused this events
@@ -79,11 +61,11 @@ public abstract class AbstractMessageTransferEvent implements MessageTransferEve
         return messageID;
     }
 
-    /**
-     * Returns <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
-     * otherwise
-     * @return <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
-     * otherwise
-     */
-    public abstract boolean stopsMessageExchange();
+//    /**
+//     * Returns <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
+//     * otherwise
+//     * @return <code>true</code> if this events causes the related message exchange to stop and <code>false</code>
+//     * otherwise
+//     */
+//    public abstract boolean stopsMessageExchange();
 }

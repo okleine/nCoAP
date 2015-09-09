@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication.observe;
 
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 */
 public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommunicationTest {
 
-    private static CoapServerApplication server;
+    private static CoapServer server;
     private static ObservableTestWebresource service;
     private static DummyEndpoint clientEndpoint;
 
@@ -55,7 +55,7 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServerApplication();
+        server = new CoapServer();
         service = new ObservableTestWebresource("/observable", 1, 0, server.getExecutor());
         server.registerWebresource(service);
 
@@ -131,11 +131,20 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
     public void setupLogging() throws Exception {
         Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler")
                 .setLevel(Level.DEBUG);
+
         Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliableMessageTransfer")
                 .setLevel(Level.DEBUG);
+
         Logger.getLogger("de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource")
                 .setLevel(Level.DEBUG);
+
         Logger.getLogger("de.uzl.itm.ncoap.communication.observing.ServerObservationHandler")
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource")
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
                 .setLevel(Level.DEBUG);
 
     }

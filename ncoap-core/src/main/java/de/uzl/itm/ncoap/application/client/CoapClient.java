@@ -25,9 +25,9 @@
 
 package de.uzl.itm.ncoap.application.client;
 
-import de.uzl.itm.ncoap.application.CoapApplication;
+import de.uzl.itm.ncoap.application.AbstractCoapApplication;
 import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
-import de.uzl.itm.ncoap.communication.dispatching.client.OutboundMessageWrapper;
+import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 /**
- * An instance of {@link CoapClientApplication} is the entry point to send {@link CoapMessage}s to a (remote)
+ * An instance of {@link CoapClient} is the entry point to send {@link CoapMessage}s to a (remote)
  * server or proxy.
  * 
  * With {@link #sendCoapRequest(CoapRequest, de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback, InetSocketAddress)} it e.g. provides an
@@ -52,17 +52,17 @@ import java.net.InetSocketAddress;
  * 
  * @author Oliver Kleine
 */
-public class CoapClientApplication extends CoapApplication{
+public class CoapClient extends AbstractCoapApplication {
 
 //    public static final int RECEIVE_BUFFER_SIZE = 65536;
 
-    private static Logger LOG = LoggerFactory.getLogger(CoapClientApplication.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(CoapClient.class.getName());
 
     /**
-     * Creates a new instance of {@link CoapClientApplication}.
+     * Creates a new instance of {@link CoapClient}.
      *
      * @param name the name of the application (used for logging purposes)
-     * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
+     * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
      *             arbitrary port)
      * @param ioThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
      *                        if the given number is smaller then 4, the application will use 4 threads.
@@ -74,24 +74,24 @@ public class CoapClientApplication extends CoapApplication{
      *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
     @Deprecated
-    public CoapClientApplication(String name, int port, int ioThreads, int maxTokenLength) {
+    public CoapClient(String name, int port, int ioThreads, int maxTokenLength) {
 
         super(name, ioThreads);
 
         if (maxTokenLength < 0 || maxTokenLength > 8)
             throw new IllegalArgumentException("Token length must be between 0 and 8 (both inclusive)");
 
-        startApplication(new ClientChannelPipelineFactory(this.getExecutor(), new TokenFactory(maxTokenLength)), port);
+        startApplication(new CoapClientChannelPipelineFactory(this.getExecutor(), new TokenFactory(maxTokenLength)), port);
     }
 
 
     /**
      * Creates a new instance.
      *
-     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int, int)} with
      * <code>"CoAP Client"</code> as parameter name.
      *
-     * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
+     * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
      *             arbitrary port)
      * @param numberOfThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
      *                        if the given number is smaller then 4, the application will use 4 threads.
@@ -103,55 +103,55 @@ public class CoapClientApplication extends CoapApplication{
      *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
     @Deprecated
-    public CoapClientApplication(int port, int numberOfThreads, int maxTokenLength){
+    public CoapClient(int port, int numberOfThreads, int maxTokenLength){
         this("CoAP Client", port, numberOfThreads, maxTokenLength);
     }
 
 
     /**
-     * Creates a new instance of {@link CoapClientApplication} with default parameters.
+     * Creates a new instance of {@link CoapClient} with default parameters.
      * 
-     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int)} with
      * parameters <code>name = "CoAP Client"</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>.
      */
-    public CoapClientApplication(){
+    public CoapClient(){
         this("CoAP Client", 0, 8);
     }
 
     /**
-     * Creates a new instance of {@link CoapClientApplication}.
+     * Creates a new instance of {@link CoapClient}.
      *
-     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int)} with
      * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>.
      */
-    public CoapClientApplication(String name){
+    public CoapClient(String name){
         this(name, 0, 8);
     }
 
     /**
-     * Creates a new instance of {@link CoapClientApplication}.
+     * Creates a new instance of {@link CoapClient}.
      *
-     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int, int)} with
      * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>, and
      * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>.
      *
      * @param name the name of the application (used for logging purposes)
-     * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
+     * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
      *             arbitrary port)
      */
-    public CoapClientApplication(String name, int port){
+    public CoapClient(String name, int port){
         this(name, port, Runtime.getRuntime().availableProcessors() * 2, 8);
     }
 
     /**
-     * Creates a new instance of {@link CoapClientApplication}.
+     * Creates a new instance of {@link CoapClient}.
      *
-     * Invocation of this constructor has the same effect as {@link #CoapClientApplication(String, int, int, int)} with
+     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int, int)} with
      * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>, and
      * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>.
      *
      * @param name the name of the application (used for logging purposes)
-     * @param port the port, this {@link CoapClientApplication} should be bound to (use <code>0</code> for
+     * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
      *             arbitrary port)
      * @param maxTokenLength the maximum length of
      *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s to be created by
@@ -160,7 +160,7 @@ public class CoapClientApplication extends CoapApplication{
      *                       message exchanges with one server (see {@link TokenFactory} for details).
      */
     @Deprecated
-    public CoapClientApplication(String name, int port, int maxTokenLength){
+    public CoapClient(String name, int port, int maxTokenLength){
         this(name, port, Runtime.getRuntime().availableProcessors() * 2, maxTokenLength);
     }
 
@@ -175,34 +175,15 @@ public class CoapClientApplication extends CoapApplication{
      *
      * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be sent
      *
-     * @param clientCallback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to process the corresponding response, resp.
+     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to process the corresponding response, resp.
      *                              update notification (which are also instances of {@link CoapResponse}.
      *
      * @param remoteEndpoint the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
-    public void sendCoapRequest(final CoapRequest coapRequest, final ClientCallback clientCallback,
-                                final InetSocketAddress remoteEndpoint){
+    public void sendCoapRequest(CoapRequest coapRequest, ClientCallback callback, InetSocketAddress remoteEndpoint){
 
-        this.getExecutor().submit(new Runnable() {
-
-            @Override
-            public void run() {
-                OutboundMessageWrapper message = new OutboundMessageWrapper(coapRequest, clientCallback);
-
-                ChannelFuture future = Channels.write(getChannel(), message, remoteEndpoint);
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (future.isSuccess()) {
-                            LOG.debug("Sent to {}:{}: {}",
-                                    new Object[]{remoteEndpoint.getAddress().getHostAddress(),
-                                            remoteEndpoint.getPort(), coapRequest});
-                        }
-                    }
-                });
-            }
-
-        });
+        ClientCallbackManager callbackManager = getChannel().getPipeline().get(ClientCallbackManager.class);
+        callbackManager.sendCoapRequest(getChannel(), coapRequest, remoteEndpoint, callback);
     }
 
 
@@ -217,7 +198,7 @@ public class CoapClientApplication extends CoapApplication{
      * Make sure to override {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
      * #processReset()} to handle the CoAP PONG!
      *
-     * @param clientCallback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to be
+     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to be
      *                       called upon reception of the corresponding
      *                       {@link de.uzl.itm.ncoap.message.MessageType.Name#RST} message.
      *                       <br><br>
@@ -226,36 +207,14 @@ public class CoapClientApplication extends CoapApplication{
      *                       #processReset()} MUST be overridden
      * @param remoteEndpoint the desired recipient of the CoAP PING message
      */
-    public void sendCoapPing(final ClientCallback clientCallback, final InetSocketAddress remoteEndpoint){
-
-        this.getExecutor().submit(new Runnable() {
-
-            @Override
-            public void run() {
-
-                final CoapMessage coapPing = CoapMessage.createPing(CoapMessage.UNDEFINED_MESSAGE_ID);
-                OutboundMessageWrapper wrapper = new OutboundMessageWrapper(coapPing, clientCallback);
-
-                ChannelFuture future = Channels.write(getChannel(), wrapper, remoteEndpoint);
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (!future.isSuccess()) {
-                            Throwable cause = future.getCause();
-                            LOG.error("Error with CoAP ping!", cause);
-                            String description = cause == null ? "UNEXPECTED ERROR!" : cause.getMessage();
-                            clientCallback.processMiscellaneousError(description);
-                        }
-                    }
-                });
-            }
-        });
-
+    public void sendCoapPing(final ClientCallback callback, final InetSocketAddress remoteEndpoint){
+        ClientCallbackManager callbackManager = getChannel().getPipeline().get(ClientCallbackManager.class);
+        callbackManager.sendCoapPing(getChannel(), remoteEndpoint, callback);
     }
 
 
     /**
-     * Shuts this {@link CoapClientApplication} down by closing its
+     * Shuts this {@link CoapClient} down by closing its
      * {@link org.jboss.netty.channel.socket.DatagramChannel} which includes to unbind
      * this {@link org.jboss.netty.channel.socket.DatagramChannel} from the listening port and by this means free the
      * port.
@@ -266,9 +225,9 @@ public class CoapClientApplication extends CoapApplication{
         getChannel().close().awaitUninterruptibly().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                LOG.warn("Channel closed ({}).", CoapClientApplication.this.getApplicationName());
+                LOG.warn("Channel closed ({}).", CoapClient.this.getApplicationName());
                 getChannel().getFactory().releaseExternalResources();
-                LOG.warn("External resources released ({}).", CoapClientApplication.this.getApplicationName());
+                LOG.warn("External resources released ({}).", CoapClient.this.getApplicationName());
                 LOG.warn("Shutdown of " + getApplicationName() + " completed.");
             }
         });

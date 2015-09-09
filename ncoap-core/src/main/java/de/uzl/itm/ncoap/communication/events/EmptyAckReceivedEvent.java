@@ -70,14 +70,18 @@ public class EmptyAckReceivedEvent extends AbstractMessageTransferEvent {
         super(remoteEndpoint, messageID, token);
     }
 
-    @Override
-    public boolean stopsMessageExchange() {
-        return false;
-    }
+//    @Override
+//    public boolean stopsMessageExchange() {
+//        return false;
+//    }
 
     @Override
     public String toString(){
-        return "EMPTY ACK (from  " + this.getRemoteEndpoint() + " for message ID " + this.getMessageID() + " with token "
+        return "EMPTY ACK (from  " + this.getRemoteSocket() + " for message ID " + this.getMessageID() + " with token "
                 + this.getToken() + ")";
+    }
+
+    public interface Handler {
+        public void handleEvent(EmptyAckReceivedEvent event);
     }
 }

@@ -24,48 +24,39 @@
  */
 package de.uzl.itm.ncoap.communication.events;
 
+import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+
 import java.net.InetSocketAddress;
 
 /**
- * Instances of {@link MessageIDReleasedEvent} are sent upstream
- * if a message ID was released, i.e. the ID can be used for new instances of
- * {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer}
- *
- * @author Oliver Kleine
+ * Created by olli on 05.09.15.
  */
-public class MessageIDReleasedEvent {
+public abstract class AbstractMessageExchangeEvent{
 
-    private InetSocketAddress remoteEndpoint;
-    private int messageID;
 
-    /**
-     * Creates a new instance of {@link MessageIDReleasedEvent}
-     * @param remoteEndpoint the communication partner the released ID was used for
-     * @param messageID the released message ID
-     */
-    public MessageIDReleasedEvent(InetSocketAddress remoteEndpoint, int messageID) {
+    private final InetSocketAddress remoteEndpoint;
+    private final Token token;
+
+
+    public AbstractMessageExchangeEvent(InetSocketAddress remoteEndpoint, Token token){
         this.remoteEndpoint = remoteEndpoint;
-        this.messageID = messageID;
+        this.token = token;
     }
 
     /**
-     * Returns the released message ID
-     * @return the released message ID
+     * Returns the remote endpoint of the message exchange (i.e. communication) that caused this events
+     * @return the remote endpoint of the message exchange (i.e. communication) that caused this events
      */
-    public int getMessageID() {
-        return messageID;
-    }
-
-    /**
-     * Returns the communication partner the released ID was used for
-     * @return the communication partner the released ID was used for
-     */
-    public InetSocketAddress getRemoteEndpoint() {
+    public InetSocketAddress getRemoteSocket() {
         return remoteEndpoint;
     }
 
-
-    public interface Handler {
-        public void handleMessageIDReleasedEvent(MessageIDReleasedEvent event);
+    /**
+     * Returns the token of the message exchange (i.e. communication) that caused this events
+     * @return the token of the message exchange (i.e. communication) that caused this events
+     */
+    public Token getToken() {
+        return token;
     }
+
 }

@@ -26,7 +26,7 @@
 package de.uzl.itm.ncoap.communication.observe;
 
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource;
@@ -48,11 +48,11 @@ import static junit.framework.Assert.assertEquals;
 *
 * @author Oliver Kleine, Stefan Hüske
 */
-public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest {
+public class ObservationTerminationTest extends AbstractCoapCommunicationTest {
 
     private static String PATH_TO_SERVICE = "/observable";
 
-    private static CoapServerApplication server;
+    private static CoapServer server;
     private static InetSocketAddress serverSocket;
     private static ObservableTestWebresource service;
 
@@ -66,19 +66,21 @@ public class ObserveOptionCancelationTest extends AbstractCoapCommunicationTest 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.reliability.")
-                .setLevel(Level.INFO);
-        Logger.getLogger("WebserviceManager")
-                .setLevel(Level.INFO);
-        Logger.getLogger("de.uniluebeck.itm.ncoap.application.server.webresource.ObservableWebservice")
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
                 .setLevel(Level.DEBUG);
-        Logger.getLogger("DummyEndpoint")
-                .setLevel(Level.INFO);
+
+        Logger.getLogger("de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource")
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger("de.uzl.itm.ncoap.communication.observing.ServerObservationHandler")
+                .setLevel(Level.DEBUG);
+
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServerApplication();
+        server = new CoapServer();
         serverSocket = new InetSocketAddress("localhost", server.getPort());
 
         service = new ObservableTestWebresource(PATH_TO_SERVICE, 1, 0, server.getExecutor());

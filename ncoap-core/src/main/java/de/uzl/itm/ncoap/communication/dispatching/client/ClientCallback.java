@@ -41,17 +41,17 @@ import java.net.InetSocketAddress;
  * {@link #processCoapResponse(de.uzl.itm.ncoap.message.CoapResponse)} is to be overridden. To handle
  * the several types of events the corresponding methods are to be overridden (which is optional!).
  *
- * A {@link ClientCallback} is comparable to a tab in a browser, whereas the {@link de.uzl.itm.ncoap.application.client.CoapClientApplication}
+ * A {@link ClientCallback} is comparable to a tab in a browser, whereas the {@link de.uzl.itm.ncoap.application.client.CoapClient}
  * is comparable to the browser.
  *
  * @author Oliver Kleine
  */
 public abstract class ClientCallback {
 
-    private boolean observing = false;
+    //private boolean observing = false;
 
     /**
-     * Method invoked by the {@link de.uzl.itm.ncoap.application.client.CoapClientApplication} for an inbound response (which is of any type but
+     * Method invoked by the {@link de.uzl.itm.ncoap.application.client.CoapClient} for an inbound response (which is of any type but
      * empty {@link de.uzl.itm.ncoap.message.MessageType.Name#ACK} or
      * {@link de.uzl.itm.ncoap.message.MessageType.Name#RST}).
      *
@@ -60,13 +60,13 @@ public abstract class ClientCallback {
     public abstract void processCoapResponse(CoapResponse coapResponse);
 
 
-    void setObserving(){
-        this.observing = true;
-    }
-
-    boolean isObserving(){
-        return this.observing;
-    }
+//    void setObserving(){
+//        this.observing = true;
+//    }
+//
+//    boolean isObserving(){
+//        return this.observing;
+//    }
 
     /**
      * This method is called by the framework whenever an update notification was received, i.e. this method is
@@ -83,39 +83,39 @@ public abstract class ClientCallback {
     }
 
 
-    final void processMessageExchangeEvent(MessageTransferEvent event){
-
-        if(event instanceof EmptyAckReceivedEvent){
-            processEmptyAcknowledgement();
-        }
-
-        else if(event instanceof ResetReceivedEvent){
-            processReset();
-        }
-
-        else if(event instanceof MessageRetransmittedEvent){
-            processRetransmission();
-        }
-
-        else if(event instanceof TransmissionTimeoutEvent){
-            processTransmissionTimeout();
-        }
-
-        else if(event instanceof MessageIDAssignedEvent){
-            processMessageIDAssignment(event.getMessageID());
-        }
-
-        else if(event instanceof RemoteSocketChangedEvent){
-            RemoteSocketChangedEvent event1 = (RemoteSocketChangedEvent) event;
-            InetSocketAddress newSocketAddress = event1.getRemoteEndpoint();
-            InetSocketAddress oldSocketAddress = event1.getOldRemoteSocket();
-            processRemoteSocketChanged(oldSocketAddress, newSocketAddress);
-        }
-
-        else if(event instanceof MiscellaneousErrorEvent){
-            processMiscellaneousError(((MiscellaneousErrorEvent) event).getDescription());
-        }
-    }
+//    final void processMessageExchangeEvent(AbstractMessageTransferEvent event){
+//
+//        if(event instanceof EmptyAckReceivedEvent){
+//            processEmptyAcknowledgement();
+//        }
+//
+//        else if(event instanceof ResetReceivedEvent){
+//            processReset();
+//        }
+//
+//        else if(event instanceof MessageRetransmittedEvent){
+//            processRetransmission();
+//        }
+//
+//        else if(event instanceof TransmissionTimeoutEvent){
+//            processTransmissionTimeout();
+//        }
+//
+//        else if(event instanceof MessageIDAssignedEvent){
+//            processMessageIDAssignment(event.getMessageID());
+//        }
+//
+//        else if(event instanceof RemoteSocketChangedEvent){
+//            RemoteSocketChangedEvent event1 = (RemoteSocketChangedEvent) event;
+//            InetSocketAddress newSocketAddress = event1.getRemoteSocket();
+//            InetSocketAddress oldSocketAddress = event1.getPreviousRemoteSocket();
+//            processRemoteSocketChanged(oldSocketAddress, newSocketAddress);
+//        }
+//
+//        else if(event instanceof MiscellaneousErrorEvent){
+//            processMiscellaneousError(((MiscellaneousErrorEvent) event).getDescription());
+//        }
+//    }
 
     /**
      * This method is called by the framework if the socket address of the remote endpoint changed during an
@@ -123,7 +123,7 @@ public abstract class ClientCallback {
      *
      * <b>Note:</b>to somehow handle the change this method is to be overridden.
      */
-    public void processRemoteSocketChanged(InetSocketAddress oldRemoteSocket, InetSocketAddress newRemoteSocket) {
+    public void processRemoteSocketChanged(InetSocketAddress remoteSocket, InetSocketAddress previous) {
         // to be overridden by extending classes
     }
 

@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -40,15 +40,15 @@ import static org.junit.Assert.assertFalse;
 */
 public class ClientPingsClient extends AbstractCoapCommunicationTest{
 
-    private static CoapClientApplication client1;
-    private static CoapClientApplication client2;
+    private static CoapClient client1;
+    private static CoapClient client2;
     private static ClientTestCallback callback;
 
 
     @Override
     public void setupComponents() throws Exception {
-        client1 = new CoapClientApplication("CoAP Client #1");
-        client2 = new CoapClientApplication("CoAP Client #2");
+        client1 = new CoapClient("CoAP Client #1");
+        client2 = new CoapClient("CoAP Client #2");
         callback = new ClientTestCallback();
     }
 
@@ -70,11 +70,10 @@ public class ClientPingsClient extends AbstractCoapCommunicationTest{
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uniluebeck.itm.ncoap.communication.dispatching.client")
-              .setLevel(Level.INFO);
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
+            .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uniluebeck.itm.ncoap.endpoints")
-              .setLevel(Level.INFO);
+        Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
 

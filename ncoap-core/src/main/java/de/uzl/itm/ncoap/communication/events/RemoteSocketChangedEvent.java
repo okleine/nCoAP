@@ -32,13 +32,13 @@ import java.net.InetSocketAddress;
 /**
  * Created by olli on 31.08.15.
  */
-public class RemoteSocketChangedEvent extends AbstractMessageTransferEvent{
+public class RemoteSocketChangedEvent extends AbstractMessageTransferEvent {
 
     private final InetSocketAddress oldRemoteSocket;
     private final EndpointID endpointID;
 
     /**
-     * Creates a new instance of {@link de.uzl.itm.ncoap.communication.events.AbstractMessageTransferEvent}
+     * Creates a new instance of {@link AbstractMessageTransferEvent}
      *
      * @param remoteEndpoint the remote endpoint of the
      *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this
@@ -57,28 +57,28 @@ public class RemoteSocketChangedEvent extends AbstractMessageTransferEvent{
         this.endpointID = endpointID;
     }
 
-    @Override
-    public boolean stopsMessageExchange() {
-        return false;
-    }
+//    @Override
+//    public boolean stopsMessageExchange() {
+//        return false;
+//    }
 
     public EndpointID getEndpointID() {
         return endpointID;
     }
 
-    public InetSocketAddress getOldRemoteSocket() {
+    public InetSocketAddress getPreviousRemoteSocket() {
         return oldRemoteSocket;
     }
 
     @Override
     public String toString(){
-        return "REMOTE SOCKET CHANGED (old: " + this.getOldRemoteSocket() + ", new: " + this.getRemoteEndpoint() +
+        return "REMOTE SOCKET CHANGED (old: " + this.getPreviousRemoteSocket() + ", new: " + this.getRemoteSocket() +
                 ", Token: " + this.getToken() + ")";
     }
 
     public interface Handler {
 
-        public void handleRemoteSocketChangedEvent(RemoteSocketChangedEvent event);
+        public void handleEvent(RemoteSocketChangedEvent event);
 
     }
 }

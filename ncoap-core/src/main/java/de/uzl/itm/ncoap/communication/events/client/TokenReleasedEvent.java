@@ -22,48 +22,23 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.communication.events;
+package de.uzl.itm.ncoap.communication.events.client;
 
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.identification.EndpointID;
+import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
 
 import java.net.InetSocketAddress;
 
 /**
  * Created by olli on 03.09.15.
  */
-public class MessageExchangeFinishedEvent extends AbstractMessageTransferEvent{
+public class TokenReleasedEvent extends AbstractMessageExchangeEvent {
 
-    private EndpointID endpointID;
-
-    /**
-     * Creates a new instance of {@link de.uzl.itm.ncoap.communication.events.AbstractMessageTransferEvent}
-     *
-     * @param remoteEndpoint the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this
-     *                       event
-     * @param messageID      the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer}
-     *                       that caused this event
-     * @param token          the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this event
-     */
-    public MessageExchangeFinishedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token,
-                                        EndpointID endpointID) {
-        super(remoteEndpoint, messageID, token);
-        this.endpointID = endpointID;
+    public TokenReleasedEvent(InetSocketAddress remoteSocket, Token token) {
+        super(remoteSocket, token);
     }
 
-    public MessageExchangeFinishedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token,
-                                        byte[] endpointID) {
-        this(remoteEndpoint, messageID, token, endpointID == null ? null : new EndpointID(endpointID));
-    }
-
-    @Override
-    public boolean stopsMessageExchange() {
-        return true;
-    }
-
-    public EndpointID getEndpointID() {
-        return endpointID;
+    public interface Handler {
+        public void handleEvent(TokenReleasedEvent event);
     }
 }

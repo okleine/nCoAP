@@ -22,18 +22,17 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.application.peer;
+package de.uzl.itm.ncoap.application.endpoint;
 
 
-import de.uzl.itm.ncoap.application.CoapApplication;
-import de.uzl.itm.ncoap.application.server.ServerChannelPipelineFactory;
+import de.uzl.itm.ncoap.application.AbstractCoapApplication;
+import de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory;
 import de.uzl.itm.ncoap.application.server.webresource.Webresource;
 import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
-import de.uzl.itm.ncoap.communication.dispatching.client.OutboundMessageWrapper;
+import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
-import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import org.jboss.netty.channel.ChannelFuture;
@@ -45,7 +44,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 /**
- * A {@link de.uzl.itm.ncoap.application.peer.CoapPeerApplication} combines both, client and server functionality, i.e.
+ * A {@link CoapEndpoint} combines both, client and server functionality, i.e.
  * it enables to send {@link de.uzl.itm.ncoap.message.CoapRequest}s and receive
  * {@link de.uzl.itm.ncoap.message.CoapResponse}s on the one hand and provides
  * {@link Webresource}s to be queried by other clients on the other hand.
@@ -55,51 +54,49 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public class CoapPeerApplication extends CoapApplication {
+public class CoapEndpoint extends AbstractCoapApplication {
     
-    private static Logger LOG = LoggerFactory.getLogger(CoapPeerApplication.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(CoapEndpoint.class.getName());
 
     public static final String VERSION = "1.8.3-SNAPSHOT-2";
 
     private WebresourceManager webresourceManager;
 
-    public CoapPeerApplication(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket){
+    public CoapEndpoint(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket){
 
         super(applicationName, Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
 
-        PeerChannelPipelineFactory pipelineFactory = new PeerChannelPipelineFactory(
+        CoapEndpointChannelPipelineFactory pipelineFactory = new CoapEndpointChannelPipelineFactory(
                 this.getExecutor(), new TokenFactory(8), notFoundHandler
         );
 
         startApplication(pipelineFactory, localSocket);
 
-        this.webresourceManager =
-                (WebresourceManager) pipelineFactory.getChannelHandler(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER);
-
+        this.webresourceManager = getChannel().getPipeline().get(WebresourceManager.class);
         this.webresourceManager.setChannel(this.getChannel());
 
         notFoundHandler.setWebresourceManager(webresourceManager);
 
-        //Set the ChannelHandlerContext for the inbound reliability handler
-        InboundReliabilityHandler inboundReliabilityHandler =
-                (InboundReliabilityHandler) this.getChannel().getPipeline()
-                        .get(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER);
-
-        inboundReliabilityHandler.setChannelHandlerContext(
-                this.getChannel().getPipeline()
-                        .getContext(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER)
-        );
+//        //Set the ChannelHandlerContext for the inbound reliability handler
+//        InboundReliabilityHandler inboundReliabilityHandler =
+//                (InboundReliabilityHandler) this.getChannel().getPipeline()
+//                        .get(CoapServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER);
+//
+//        inboundReliabilityHandler.setChannelHandlerContext(
+//                this.getChannel().getPipeline()
+//                        .getContext(CoapServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER)
+//        );
     }
 
     /**
-     * Creates a new instance of {@link de.uzl.itm.ncoap.application.peer.CoapPeerApplication}.
+     * Creates a new instance of {@link CoapEndpoint}.
      *
      * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler}
      * to deal with incoming requests for unknown {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s.
      *
      * @param localSocket the socket for both, listening for incoming requests and send requests
      */
-    public CoapPeerApplication(NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
+    public CoapEndpoint(NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
         this("CoAP Peer", notFoundHandler, localSocket);
     }
 
@@ -114,33 +111,15 @@ public class CoapPeerApplication extends CoapApplication {
      *
      * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be sent
      *
-     * @param clientCallback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to process the corresponding response, resp.
+     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to process the corresponding response, resp.
      *                              update notification (which are also instances of {@link de.uzl.itm.ncoap.message.CoapResponse}.
      *
-     * @param remoteEndpoint the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
+     * @param remoteSocket the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
-    public void sendCoapRequest(final CoapRequest coapRequest, final ClientCallback clientCallback,
-                                final InetSocketAddress remoteEndpoint){
+    public void sendCoapRequest(CoapRequest coapRequest, ClientCallback callback, InetSocketAddress remoteSocket){
 
-        this.getExecutor().submit(new Runnable() {
-
-            @Override
-            public void run() {
-                OutboundMessageWrapper message = new OutboundMessageWrapper(coapRequest, clientCallback);
-
-                ChannelFuture future = Channels.write(getChannel(), message, remoteEndpoint);
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (future.isSuccess()) {
-                            LOG.info("Sent to {}:{}: {}",
-                                    new Object[]{remoteEndpoint.getAddress().getHostAddress(),
-                                            remoteEndpoint.getPort(), coapRequest});
-                        }
-                    }
-                });
-            }
-        });
+        ClientCallbackManager callbackManager = getChannel().getPipeline().get(ClientCallbackManager.class);
+        callbackManager.sendCoapRequest(getChannel(), coapRequest, remoteSocket, callback);
     }
 
 
@@ -155,45 +134,24 @@ public class CoapPeerApplication extends CoapApplication {
      * Make sure to override {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
      * #processReset()} to handle the CoAP PONG!
      *
-     * @param clientCallback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to be
+     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to be
      *                       called upon reception of the corresponding
      *                       {@link de.uzl.itm.ncoap.message.MessageType.Name#RST} message.
      *                       <br><br>
      *                       <b>Note:</b> To handle the CoAP PONG, i.e. the empty RST, the method
      *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
      *                       #processReset()} MUST be overridden
-     * @param remoteEndpoint the desired recipient of the CoAP PING message
+     * @param remoteSocket the desired recipient of the CoAP PING message
      */
-    public void sendCoapPing(final ClientCallback clientCallback, final InetSocketAddress remoteEndpoint){
-
-        this.getExecutor().submit(new Runnable() {
-
-            @Override
-            public void run() {
-
-                final CoapMessage coapPing = CoapMessage.createPing(CoapMessage.UNDEFINED_MESSAGE_ID);
-                OutboundMessageWrapper wrapper = new OutboundMessageWrapper(coapPing, clientCallback);
-
-                ChannelFuture future = Channels.write(getChannel(), wrapper, remoteEndpoint);
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (!future.isSuccess()) {
-                            Throwable cause = future.getCause();
-                            LOG.error("Error with CoAP ping!", cause);
-                            String description = cause == null ? "UNEXPECTED ERROR!" : cause.getMessage();
-                            clientCallback.processMiscellaneousError(description);
-                        }
-                    }
-                });
-            }
-        });
+    public void sendCoapPing(final ClientCallback callback, final InetSocketAddress remoteSocket){
+        ClientCallbackManager callbackManager = getChannel().getPipeline().get(ClientCallbackManager.class);
+        callbackManager.sendCoapPing(getChannel(), remoteSocket, callback);
 
     }
 
     /**
      * Registers a new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} at this
-     * {@link de.uzl.itm.ncoap.application.server.CoapServerApplication}.
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer}.
      *
      * @param webresource the {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instance to
      *                   be registered
@@ -206,11 +164,13 @@ public class CoapPeerApplication extends CoapApplication {
     }
 
     private WebresourceManager getWebresourceManager(){
-        return (WebresourceManager) this.getChannel().getPipeline().get(
-                ServerChannelPipelineFactory.WEBRESOURCE_MANAGER
-        );
+        return getChannel().getPipeline().get(WebresourceManager.class);
     }
 
+    /**
+     *
+     * @param webresource
+     */
     public void shutdownWebresource(Webresource webresource){
         this.getWebresourceManager().shutdownWebresource(webresource.getUriPath());
     }

@@ -22,57 +22,62 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.application.peer;
+
+package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
-import de.uzl.itm.ncoap.application.client.ClientChannelPipelineFactory;
-import de.uzl.itm.ncoap.application.server.ServerChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.blockwise.Block2OptionHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
-import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
-import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
 import de.uzl.itm.ncoap.communication.observing.ClientObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.socket.DatagramChannel;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+
 /**
- * The {@link de.uzl.itm.ncoap.application.CoapChannelPipelineFactory} to create the proper
- * {@link org.jboss.netty.channel.ChannelPipeline} for {@link de.uzl.itm.ncoap.application.peer.CoapPeerApplication}s.
+ * Factory to provide the {@link ChannelPipeline} for a newly created {@link DatagramChannel} for a
+ * {@link CoapClient}.
  *
  * @author Oliver Kleine
  */
-public class PeerChannelPipelineFactory extends CoapChannelPipelineFactory {
+public class CoapClientChannelPipelineFactory extends CoapChannelPipelineFactory {
+
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.observing.ClientObservationHandler}
+//     * instance of a CoAP client
+//     */
+//    public static String CLIENT_OBSERVATION_HANDLER = "OBSERVATION";
+//
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager}
+//     * instance of a CoAP client
+//     */
+//    public static String CLIENT_CALLBACK_MANAGER = "CLIENT-CALLBACK";
+//
+//    /**
+//     * The name of the {@link de.uzl.itm.ncoap.communication.blockwise.Block2OptionHandler}
+//     * instance of a CoAP client
+//     */
+//    public static String BLOCK2_HANDLER = "BLOCK2";
 
     /**
-     * Creates a new instance of {@link de.uzl.itm.ncoap.application.peer.PeerChannelPipelineFactory}.
+     * Creates a new instance of {@link CoapClientChannelPipelineFactory}.
      *
-     * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to be used to handle I/O
+     * @param executor The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      *
-     * @param tokenFactory the {@link de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory} which is to be
-     * used to create {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s
-     *
-     * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler} to handle
-     * incoming requests for unknown {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s.
+     * @param tokenFactory The {@link de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory} to be used
+     *                     for generating {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s for
+     *                     outbound {@link de.uzl.itm.ncoap.message.CoapRequest}s
      */
-    public PeerChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory, NotFoundHandler notFoundHandler){
+    public CoapClientChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory){
 
         super(executor);
-
-        // client specific handlers
-        addChannelHandler(ClientChannelPipelineFactory.BLOCK2_HANDLER,
-                new Block2OptionHandler());
-        addChannelHandler(ClientChannelPipelineFactory.CLIENT_OBSERVATION_HANDLER,
-                new ClientObservationHandler());
-        addChannelHandler(ClientChannelPipelineFactory.CLIENT_CALLBACK_MANAGER,
-                new ClientCallbackManager(executor, tokenFactory));
-
-        // server specific handlers
-        addChannelHandler(ServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER,
-                new InboundReliabilityHandler(executor));
-        addChannelHandler(ServerChannelPipelineFactory.WEBRESOURCE_MANAGER,
-                new WebresourceManager(notFoundHandler, executor));
+        addChannelHandler(new Block2OptionHandler(executor));
+        addChannelHandler(new ClientObservationHandler(executor));
+        addChannelHandler(new ClientCallbackManager(executor, tokenFactory));
     }
 
 }

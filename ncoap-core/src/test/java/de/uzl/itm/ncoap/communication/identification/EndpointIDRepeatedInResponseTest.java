@@ -24,8 +24,8 @@
  */
 package de.uzl.itm.ncoap.communication.identification;
 
-import de.uzl.itm.ncoap.application.client.CoapClientApplication;
-import de.uzl.itm.ncoap.application.server.CoapServerApplication;
+import de.uzl.itm.ncoap.application.client.CoapClient;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
 import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -49,15 +49,15 @@ public class EndpointIDRepeatedInResponseTest extends AbstractCoapCommunicationT
 
     private static Logger log = Logger.getLogger(EndpointIDRepeatedInResponseTest.class.getName());
 
-    private static CoapClientApplication client;
-    private static CoapServerApplication server;
+    private static CoapClient client;
+    private static CoapServer server;
     private static CoapRequest coapRequest;
     private static CoapResponse coapResponse;
 
     @Override
     public void setupComponents() throws Exception {
-        client = new CoapClientApplication();
-        server = new CoapServerApplication();
+        client = new CoapClient();
+        server = new CoapServer();
 
         URI targetUri = new URI("coap://localhost:" + server.getPort() + "/.well-known/core");
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
