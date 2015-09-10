@@ -51,34 +51,34 @@ import java.net.InetSocketAddress;
  */
 public abstract class NotFoundHandler {
 
-    private WebresourceManager webresourceManager;
+    private RequestDispatcher requestDispatcher;
 
     private static Logger log = LoggerFactory.getLogger(NotFoundHandler.class.getName());
 
     /**
-     * This method is invoked by the framework to set the {@link WebresourceManager} that is supposed to be used to
+     * This method is invoked by the framework to set the {@link RequestDispatcher} that is supposed to be used to
      * register newly created {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances.
      *
-     * @param webresourceManager the {@link WebresourceManager} that is supposed to be used to register newly created
+     * @param requestDispatcher the {@link RequestDispatcher} that is supposed to be used to register newly created
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances.
      */
-    public final void setWebresourceManager(WebresourceManager webresourceManager){
-        this.webresourceManager = webresourceManager;
+    public final void setRequestDispatcher(RequestDispatcher requestDispatcher){
+        this.requestDispatcher = requestDispatcher;
     }
 
 
     /**
-     * Returns the {@link WebresourceManager} for this CoAP
-     * server. The {@link WebresourceManager} instance can be
+     * Returns the {@link RequestDispatcher} for this CoAP
+     * server. The {@link RequestDispatcher} instance can be
      * e.g. used to register new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s
-     * using {@link WebresourceManager
+     * using {@link RequestDispatcher
      * #registerResource(Webservice)}.
      *
-     * @return the {@link WebresourceManager} for this CoAP
+     * @return the {@link RequestDispatcher} for this CoAP
      * server.
      */
-    protected WebresourceManager getWebresourceManager(){
-        return this.webresourceManager;
+    protected RequestDispatcher getRequestDispatcher(){
+        return this.requestDispatcher;
     }
 
     /**

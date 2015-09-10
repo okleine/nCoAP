@@ -25,13 +25,15 @@
 
 package de.uzl.itm.ncoap.application.server;
 
-import com.sun.corba.se.spi.activation.Server;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
 import de.uzl.itm.ncoap.application.server.webresource.Webresource;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
-import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
-import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +55,9 @@ public class CoapServer extends AbstractCoapApplication {
 
     public static final int DEFAULT_COAP_SERVER_PORT = 5683;
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private static Logger LOG = LoggerFactory.getLogger(CoapServer.class.getName());
 
-    private WebresourceManager webresourceManager;
+    private RequestDispatcher requestDispatcher;
 
     /**
      * <p>Creates a new instance of {@link CoapServer}</p>
@@ -137,32 +139,14 @@ public class CoapServer extends AbstractCoapApplication {
         startApplication(pipelineFactory, localSocket);
         
         // set the webresource manager
-        this.webresourceManager = getChannel().getPipeline().get(WebresourceManager.class);
-        this.webresourceManager.setChannel(this.getChannel());
-        
-        notFoundHandler.setWebresourceManager(webresourceManager);
-
-        ServerObservationHandler handler = getChannel().getPipeline().get(ServerObservationHandler.class);
-        ChannelHandlerContext context = getChannel().getPipeline().getContext(handler);
-        handler.setChannelHandlerContext(context);
-
-//        //Set the ChannelHandlerContext for the inbound reliability handler
-//        InboundReliabilityHandler inboundReliabilityHandler =
-//                (InboundReliabilityHandler) this.getChannel().getPipeline()
-//                        .get(CoapServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER);
+        this.requestDispatcher = getChannel().getPipeline().get(RequestDispatcher.class);
+//        this.requestDispatcher.setChannel(this.getChannel());
 //
-//        inboundReliabilityHandler.setChannelHandlerContext(
-//                this.getChannel().getPipeline().getContext(CoapServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER)
-//        );
-
-        //Set the ChannelHandlerContext for the server observation handler
-//        ServerObservationHandler serverObservationHandler =
-//                (ServerObservationHandler) this.getChannel().getPipeline()
-//                        .get(CoapServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER);
+//        notFoundHandler.setRequestDispatcher(requestDispatcher);
 //
-//        serverObservationHandler.setChannelHandlerContext(
-//                this.getChannel().getPipeline().getContext(CoapServerChannelPipelineFactory.SERVER_OBSERVATION_HANDLER)
-//        );
+//        ServerObservationHandler handler = getChannel().getPipeline().get(ServerObservationHandler.class);
+//        ChannelHandlerContext context = getChannel().getPipeline().getContext(handler);
+//        handler.setChannelHandlerContext(context);
     }
     
 
@@ -178,70 +162,55 @@ public class CoapServer extends AbstractCoapApplication {
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered with the same path
      */
     public void registerWebresource(Webresource webresource) throws IllegalArgumentException{
-        this.getWebresourceManager().registerWebresource(webresource);
+        this.getRequestDispatcher().registerWebresource(webresource);
     }
 
-    private WebresourceManager getWebresourceManager(){
-        return getChannel().getPipeline().get(WebresourceManager.class);
+    private RequestDispatcher getRequestDispatcher(){
+        return getChannel().getPipeline().get(RequestDispatcher.class);
     }
+
 
     public void shutdownWebresource(Webresource webresource){
-        this.getWebresourceManager().shutdownWebresource(webresource.getUriPath());
+        this.getRequestDispatcher().shutdownWebresource(webresource.getUriPath());
     }
-
-
-//    /**
-//     * Returns the port number this {@link CoapServerApplication} listens at
-//     * @return the port number this {@link CoapServerApplication} listens at
-//     */
-//    public int getPort(){
-//        return this.channel.getLocalAddress().getPort();
-//    }
-
-
-//    /**
-//     * Returns the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
-//     * {@link CoapServerApplication} to handle tasks, e.g. write and
-//     * receive messages. The returned {@link java.util.concurrent.ScheduledExecutorService} may also be used by
-//     * {@link de.uniluebeck.itm.ncoap.application.server.webresource.Webservice}s to handle inbound
-//     * {@link CoapRequest}s
-//     *
-//     * @return the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
-//     * {@link CoapServerApplication} to handle tasks, e.g. write and
-//     * receive messages.
-//     */
-//    public ScheduledExecutorService getExecutor(){
-//        return this.executor;
-//    }
-
 
     /**
      * Gracefully shuts down the server by sequentially shutting down all its components, i.e. the registered
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s and the
      * {@link org.jboss.netty.channel.socket.DatagramChannel} to write and receive messages.
      */
-    public void shutdown(){
-        log.warn("Shutdown server...");
-
-        this.webresourceManager.shutdown();
-
-        ChannelFuture channelClosedFuture = this.getChannel().close();
-
-        //Await the closure and let the factory release its external resource to finalize the shutdown
-        channelClosedFuture.addListener(new ChannelFutureListener() {
+    public ListenableFuture<Void> shutdown(){
+        LOG.warn("Shutdown server...");
+        final SettableFuture<Void> shutdownFuture = SettableFuture.create();
+        Futures.addCallback(this.requestDispatcher.shutdown(), new FutureCallback<Void>() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                log.warn("Server channel closed. Release external resources...");
+            public void onSuccess(Void aVoid) {
+                ChannelFuture channelClosedFuture = getChannel().close();
 
-                getChannel().getFactory().releaseExternalResources();
+                //Await the closure and let the factory release its external resource to finalize the shutdown
+                channelClosedFuture.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        LOG.warn("Server channel closed. Release external resources...");
+
+                        getChannel().getFactory().releaseExternalResources();
+                    }
+                });
+
+                channelClosedFuture.awaitUninterruptibly().addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        LOG.warn("Server shutdown completed!");
+                        shutdownFuture.set(null);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                onSuccess(null);
             }
         });
-
-        channelClosedFuture.awaitUninterruptibly().addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                log.warn("Server shutdown completed!");
-            }
-        });
+        return shutdownFuture;
     }
 }

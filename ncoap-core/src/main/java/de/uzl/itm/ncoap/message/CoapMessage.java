@@ -369,7 +369,7 @@ public abstract class CoapMessage {
     }
 
 
-    public boolean isPingMessage() {
+    public boolean isPing() {
         return this.messageCode == MessageCode.Name.EMPTY.getNumber() &&
                 this.messageType == MessageType.Name.CON.getNumber();
     }

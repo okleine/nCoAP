@@ -25,16 +25,18 @@
 package de.uzl.itm.ncoap.application.endpoint;
 
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
-import de.uzl.itm.ncoap.application.client.CoapClientChannelPipelineFactory;
-import de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.blockwise.Block2OptionHandler;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
+import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
-import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
+import de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler;
+import de.uzl.itm.ncoap.communication.identification.ServerIdentificationHandler;
 import de.uzl.itm.ncoap.communication.observing.ClientObservationHandler;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
-import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -57,18 +59,28 @@ public class CoapEndpointChannelPipelineFactory extends CoapChannelPipelineFacto
      * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler} to handle
      * incoming requests for unknown {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s.
      */
-    public CoapEndpointChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory, NotFoundHandler notFoundHandler){
+    public CoapEndpointChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory,
+            NotFoundHandler notFoundHandler){
 
         super(executor);
 
+        // identification
+        addChannelHandler(new ClientIdentificationHandler(executor));
+        addChannelHandler(new ServerIdentificationHandler(executor));
+
+        // generic handler
+        addChannelHandler(new OutboundReliabilityHandler(executor));
+
         // client specific handlers
+        addChannelHandler(new ClientInboundReliabilityHandler(executor));
         addChannelHandler(new Block2OptionHandler(executor));
         addChannelHandler(new ClientObservationHandler(executor));
-        addChannelHandler(new ClientCallbackManager(executor, tokenFactory));
+        addChannelHandler(new ResponseDispatcher(executor, tokenFactory));
 
         // server specific handlers
+        addChannelHandler(new ServerInboundReliabilityHandler(executor));
         addChannelHandler(new ServerObservationHandler(executor));
-        addChannelHandler(new WebresourceManager(notFoundHandler, executor));
+        addChannelHandler(new RequestDispatcher(notFoundHandler, executor));
     }
 
 }

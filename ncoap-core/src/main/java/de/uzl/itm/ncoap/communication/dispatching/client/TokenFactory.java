@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * The TokenFactory generates tokens to match inbound responses with open requests and enable the
- * {@link ClientCallbackManager} to invoke the correct callback method.
+ * {@link ResponseDispatcher} to invoke the correct callback method.
  *
  * The CoAP specification makes no assumptions how to interpret the bytes returned by {@link Token#getBytes()()}, i.e.
  * a {@link Token} instances where {@link Token#getBytes()} returns an empty byte array is different from a

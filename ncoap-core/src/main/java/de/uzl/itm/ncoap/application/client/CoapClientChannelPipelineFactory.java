@@ -27,10 +27,12 @@ package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.blockwise.Block2OptionHandler;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
+import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
+import de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler;
 import de.uzl.itm.ncoap.communication.observing.ClientObservationHandler;
-import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
 
@@ -45,23 +47,6 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class CoapClientChannelPipelineFactory extends CoapChannelPipelineFactory {
 
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.observing.ClientObservationHandler}
-//     * instance of a CoAP client
-//     */
-//    public static String CLIENT_OBSERVATION_HANDLER = "OBSERVATION";
-//
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager}
-//     * instance of a CoAP client
-//     */
-//    public static String CLIENT_CALLBACK_MANAGER = "CLIENT-CALLBACK";
-//
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.blockwise.Block2OptionHandler}
-//     * instance of a CoAP client
-//     */
-//    public static String BLOCK2_HANDLER = "BLOCK2";
 
     /**
      * Creates a new instance of {@link CoapClientChannelPipelineFactory}.
@@ -75,9 +60,12 @@ public class CoapClientChannelPipelineFactory extends CoapChannelPipelineFactory
     public CoapClientChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory){
 
         super(executor);
+        addChannelHandler(new ClientIdentificationHandler(executor));
+        addChannelHandler(new OutboundReliabilityHandler(executor));
+        addChannelHandler(new ClientInboundReliabilityHandler(executor));
         addChannelHandler(new Block2OptionHandler(executor));
         addChannelHandler(new ClientObservationHandler(executor));
-        addChannelHandler(new ClientCallbackManager(executor, tokenFactory));
+        addChannelHandler(new ResponseDispatcher(executor, tokenFactory));
     }
 
 }

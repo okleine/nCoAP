@@ -28,7 +28,6 @@ package de.uzl.itm.ncoap.communication.identification;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +39,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * The TokenFactory generates endpointIDs to match inbound responses with open requests and enable the
- * {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager} to invoke the correct callback method.
+ * {@link de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher} to invoke the correct callback method.
  *
  * The CoAP specification makes no assumptions how to interpret the bytes returned by {@link de.uzl.itm.ncoap.communication.dispatching.client.Token#getBytes()()}, i.e.
  * a {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} instances where {@link de.uzl.itm.ncoap.communication.dispatching.client.Token#getBytes()} returns an empty byte array is different from a

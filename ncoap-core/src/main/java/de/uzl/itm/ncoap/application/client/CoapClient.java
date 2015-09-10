@@ -27,14 +27,13 @@ package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
 import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
+import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.Channels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,7 +181,7 @@ public class CoapClient extends AbstractCoapApplication {
      */
     public void sendCoapRequest(CoapRequest coapRequest, ClientCallback callback, InetSocketAddress remoteEndpoint){
 
-        ClientCallbackManager callbackManager = getChannel().getPipeline().get(ClientCallbackManager.class);
+        ResponseDispatcher callbackManager = getChannel().getPipeline().get(ResponseDispatcher.class);
         callbackManager.sendCoapRequest(getChannel(), coapRequest, remoteEndpoint, callback);
     }
 
@@ -208,7 +207,7 @@ public class CoapClient extends AbstractCoapApplication {
      * @param remoteEndpoint the desired recipient of the CoAP PING message
      */
     public void sendCoapPing(final ClientCallback callback, final InetSocketAddress remoteEndpoint){
-        ClientCallbackManager callbackManager = getChannel().getPipeline().get(ClientCallbackManager.class);
+        ResponseDispatcher callbackManager = getChannel().getPipeline().get(ResponseDispatcher.class);
         callbackManager.sendCoapPing(getChannel(), remoteEndpoint, callback);
     }
 

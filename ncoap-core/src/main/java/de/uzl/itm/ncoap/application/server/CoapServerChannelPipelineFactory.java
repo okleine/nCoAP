@@ -27,9 +27,12 @@ package de.uzl.itm.ncoap.application.server;
 
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
-import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
+import de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler;
+import de.uzl.itm.ncoap.communication.identification.ServerIdentificationHandler;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
-import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
 
@@ -42,26 +45,6 @@ import java.util.concurrent.ScheduledExecutorService;
 */
 public class CoapServerChannelPipelineFactory extends CoapChannelPipelineFactory {
 
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
-//     * instance of a CoAP server
-//     */
-//    public static final String SERVER_OBSERVATION_HANDLER = "SERVER-OBSERVATION";
-//
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler}
-//     * instance of a CoAP server
-//     */
-//    public static final String INBOUND_RELIABILITY_HANDLER = "INBOUND-RELIABILITY";
-//
-//
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager}
-//     * instance of a CoAP server
-//     */
-//    public static final String WEBRESOURCE_MANAGER = "WEBRESOURCE-MANAGER";
-
-
     /**
      * Creates a new instance of {@link CoapServerChannelPipelineFactory}.
      *
@@ -73,8 +56,10 @@ public class CoapServerChannelPipelineFactory extends CoapChannelPipelineFactory
     public CoapServerChannelPipelineFactory(ScheduledExecutorService executor, NotFoundHandler notFoundHandler){
 
         super(executor);
-
+        addChannelHandler(new ServerIdentificationHandler(executor));
+        addChannelHandler(new OutboundReliabilityHandler(executor));
+        addChannelHandler(new ServerInboundReliabilityHandler(executor));
         addChannelHandler(new ServerObservationHandler(executor));
-        addChannelHandler(new WebresourceManager(notFoundHandler, executor));
+        addChannelHandler(new RequestDispatcher(notFoundHandler, executor));
     }
 }

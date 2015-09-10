@@ -28,7 +28,7 @@ import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.events.PartialContentReceivedEvent;
-import de.uzl.itm.ncoap.communication.events.RemoteSocketChangedEvent;
+import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -58,7 +58,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Oliver Kleine
  */
 public class Block2OptionHandler extends AbstractCoapChannelHandler implements TransmissionTimeoutEvent.Handler,
-        RemoteSocketChangedEvent.Handler {
+        RemoteServerSocketChangedEvent.Handler {
 
     private static Logger LOG = LoggerFactory.getLogger(Block2OptionHandler.class.getName());
 
@@ -78,19 +78,18 @@ public class Block2OptionHandler extends AbstractCoapChannelHandler implements T
     }
 
     @Override
-    public boolean handleInboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
-            InetSocketAddress remoteSocket) {
+    public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 
         LOG.debug("INBOUND: {}", coapMessage);
         if(coapMessage instanceof CoapResponse) {
-            handleIncomingCoapResponse(ctx, (CoapResponse) coapMessage, remoteSocket);
+            handleIncomingCoapResponse((CoapResponse) coapMessage, remoteSocket);
         }
         return true;
     }
 
 
     @Override
-    public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
+    public boolean handleOutboundCoapMessage(CoapMessage coapMessage,
             InetSocketAddress remoteSocket) {
         LOG.debug("OUTBOUND: {}", coapMessage);
         return !(coapMessage instanceof CoapRequest && !addCoapRequest(remoteSocket, (CoapRequest) coapMessage));
@@ -103,7 +102,7 @@ public class Block2OptionHandler extends AbstractCoapChannelHandler implements T
 
 
     @Override
-    public void handleEvent(RemoteSocketChangedEvent event) {
+    public void handleEvent(RemoteServerSocketChangedEvent event) {
         InetSocketAddress previousRemoteSocket = event.getPreviousRemoteSocket();
         Token token = event.getToken();
 
@@ -135,8 +134,7 @@ public class Block2OptionHandler extends AbstractCoapChannelHandler implements T
     }
 
 
-    private void handleIncomingCoapResponse(ChannelHandlerContext ctx, CoapResponse coapResponse,
-            InetSocketAddress remoteSocket) {
+    private void handleIncomingCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
 
         Token token = coapResponse.getToken();
         LOG.info("Received response from {}: {}", remoteSocket, coapResponse);
@@ -152,14 +150,13 @@ public class Block2OptionHandler extends AbstractCoapChannelHandler implements T
                 removeCoapRequest(remoteSocket, token);
             } else {
                 long blockNumber = coapResponse.getBlock2Number();
-                long encodedBlockSize = coapResponse.getBlock2EncodedSize();
-                requestNextBlock(ctx, remoteSocket, coapResponse.getToken(), blockNumber + 1, encodedBlockSize);
+                long encBlockSize = coapResponse.getBlock2EncodedSize();
+                requestNextBlock(getContext(), remoteSocket, coapResponse.getToken(), blockNumber + 1, encBlockSize);
 
                 // send internal event
-                PartialContentReceivedEvent event = new PartialContentReceivedEvent(
-                    remoteSocket, token, blockNumber, (long) Math.pow(2, encodedBlockSize + 4)
-                );
-                Channels.fireMessageReceived(ctx.getChannel(), event);
+                triggerEvent(new PartialContentReceivedEvent(
+                    remoteSocket, token, blockNumber, (long) Math.pow(2, encBlockSize + 4)
+                ), false);
             }
         }
     }

@@ -26,7 +26,11 @@
 package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.client.CoapClient;
-import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
+import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
+import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
+import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -53,7 +57,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
     private static final String PATH_TO_SERVICE = "/observable";
 
     private static CoapClient client;
-    private static ClientTestCallback clientCallback;
+    private static TestCallback clientCallback;
 
     private static CoapServer server;
     private static ObservableTestWebresource service;
@@ -64,22 +68,22 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uzl.itm.ncoap.communication.observing")
+        Logger.getLogger(ServerObservationHandler.class.getName())
               .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource")
+        Logger.getLogger(ObservableWebresource.class.getName())
               .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.communication.observing.ServerObservationHandler")
+        Logger.getLogger(ServerObservationHandler.class.getName())
               .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
+        Logger.getLogger(ClientInboundReliabilityHandler.class.getName())
                 .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler")
+        Logger.getLogger(OutboundReliabilityHandler.class.getName())
                 .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.communication.ClientReceivesUpdateNotifications$SpecificClientCallback")
+        Logger.getLogger(SpecificClientCallback.class.getName())
                 .setLevel(Level.DEBUG);
 
         Logger.getRootLogger().setLevel(Level.ERROR);
@@ -102,6 +106,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
     @Override
     public void shutdownComponents() throws Exception {
+        server.shutdown().get();
         client.shutdown();
     }
 
@@ -182,7 +187,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
     }
 
 
-    private class SpecificClientCallback extends ClientTestCallback {
+    private class SpecificClientCallback extends TestCallback {
 
         @Override
         public boolean continueObservation(){

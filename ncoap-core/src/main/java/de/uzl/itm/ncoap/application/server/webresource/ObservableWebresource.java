@@ -28,7 +28,7 @@ package de.uzl.itm.ncoap.application.server.webresource;
 import com.google.common.collect.LinkedHashMultimap;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.EmptyLinkAttribute;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
-import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.message.options.OptionValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
     public static final boolean SHUTDOWN = true;
     public static final boolean UPDATE = false;
 
-    private WebresourceManager webresourceManager;
+    private RequestDispatcher requestDispatcher;
     private String uriPath;
     private LinkedHashMultimap<String, LinkAttribute> linkAttributes;
 
@@ -126,14 +126,14 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     @Override
-    public void setWebresourceManager(WebresourceManager webresourceManager){
-        this.webresourceManager = webresourceManager;
+    public void setRequestDispatcher(RequestDispatcher requestDispatcher){
+        this.requestDispatcher = requestDispatcher;
     }
 
 
     @Override
-    public WebresourceManager getWebresourceManager(){
-        return this.webresourceManager;
+    public RequestDispatcher getRequestDispatcher(){
+        return this.requestDispatcher;
     }
 
 
@@ -310,23 +310,31 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
-     * This method is called by the nCoAP framework within the unregistration process of this
-     * {@link de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource} instance.
+     * <p>This method is called by the nCoAP framework within the unregistration process of this
+     * {@link de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource} instance.</p>
      *
-     * Note: Do NOT INVOKE this method directly! Use
+     * <p><b>Important:</b> Make sure to invoke <code>super.shutdown()</code> if you override this method in an extending
+     * class.</p>
+     *
+     * <p><b>Note:</b> Do NOT INVOKE this method directly! Use
      * {@link de.uzl.itm.ncoap.application.server.CoapServer#
      *  shutdownWebresource(de.uzl.itm.ncoap.application.server.webresource.Webresource)
      * } or
      * {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint#
      *  shutdownWebresource(de.uzl.itm.ncoap.application.server.webresource.Webresource)
      * }
-     * to shutdown a resource!
+     * to shutdown a resource!</p>
      */
     @Override
     public void shutdown() {
-        log.warn("Shutdown service \"{}\"!", this.getUriPath());
-        this.statusLock.writeLock().lock();
-        setChanged();
-        notifyObservers(SHUTDOWN);
+        getExecutor().submit(new Runnable() {
+            @Override
+            public void run() {
+                log.warn("Shutdown service \"{}\"!", getUriPath());
+                statusLock.writeLock().lock();
+                setChanged();
+                notifyObservers(SHUTDOWN);
+            }
+        });
     }
 }

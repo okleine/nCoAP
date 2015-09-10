@@ -31,9 +31,9 @@ import java.net.InetSocketAddress;
 /**
  * Instances of {@link TransmissionTimeoutEvent} are sent upstream if
  * a {@link MessageIDReleasedEvent} occurs which is related to an open
- * {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliableMessageTransfer}, i.e. there was an
+ * {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer}, i.e. there was an
  * outbound reliable message transfer (CON message) which was neither acknowledged nor resetted by the remote endpoint
- * within {@link de.uzl.itm.ncoap.communication.reliability.MessageIDFactory#EXCHANGE_LIFETIME} seconds.
+ * within {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory#EXCHANGE_LIFETIME} seconds.
  */
 public class TransmissionTimeoutEvent extends AbstractMessageTransferEvent {
 
@@ -42,9 +42,9 @@ public class TransmissionTimeoutEvent extends AbstractMessageTransferEvent {
      *
      * @param remoteEndpoint the remote endpoint that did not confirm the reception of a reliable message
      * @param messageID the message ID of the timed out
-     *                  {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliableMessageTransfer}
+     *                  {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer}
      * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the timed out
-     *              {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliableMessageTransfer}
+     *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer}
      */
     public TransmissionTimeoutEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         super(remoteEndpoint, messageID, token);

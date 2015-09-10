@@ -27,7 +27,7 @@ package de.uzl.itm.ncoap.application.server.webresource;
 
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
-import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 
@@ -53,17 +53,17 @@ public interface Webresource<T> {
 
 
     /**
-     * This method is invoked by the framework to set the {@link de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager} of the CoAP server this
+     * This method is invoked by the framework to set the {@link de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher} of the CoAP server this
      * {@link Webresource} instance is registered at.
      *
-     * @param webresourceManager the {@link de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager} of the CoAP server this
+     * @param requestDispatcher the {@link de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher} of the CoAP server this
      * {@link Webresource} instance is registered at.
      */
-    public void setWebresourceManager(WebresourceManager webresourceManager);
+    public void setRequestDispatcher(RequestDispatcher requestDispatcher);
 
 
     /**
-     * Returns the {@link de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager} this
+     * Returns the {@link de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher} this
      * {@link Webresource} instance is registered at. This is
      * useful, e.g. to create and register or modify
      * {@link Webresource} instances upon reception of a
@@ -72,7 +72,7 @@ public interface Webresource<T> {
      *
      * @return the {@link de.uzl.itm.ncoap.application.server.CoapServer} this {@link Webresource} instance is registered at.
      */
-    public WebresourceManager getWebresourceManager();
+    public RequestDispatcher getRequestDispatcher();
 
 
     /**

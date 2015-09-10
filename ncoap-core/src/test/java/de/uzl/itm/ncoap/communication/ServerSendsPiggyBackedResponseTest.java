@@ -28,7 +28,7 @@ package de.uzl.itm.ncoap.communication;
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
-import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
+import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 
@@ -54,7 +54,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
     private static final String PAYLOAD = "Some arbitrary content!";
 
     private static CoapClient client;
-    private static ClientTestCallback callback;
+    private static TestCallback callback;
     private static CoapRequest coapRequest;
 
     private static DummyEndpoint endpoint;
@@ -69,7 +69,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
 
         //Create client and callback
         client = new CoapClient();
-        callback = new ClientTestCallback();
+        callback = new TestCallback();
 
         URI targetUri =  new URI("coap://localhost:" + endpoint.getPort() + "/");
         coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
@@ -83,15 +83,8 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
 
     @Override
     public void setupLogging() throws Exception {
-
-        Logger.getLogger("de.uzl.itm.ncoap.endpoints.client.ClientTestCallback")
-                .setLevel(Level.DEBUG);
-
-        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
-                .setLevel(Level.DEBUG);
-
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
-                .setLevel(Level.DEBUG);
+        Logger.getLogger(TestCallback.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(DummyEndpoint.class.getName()).setLevel(Level.DEBUG);
     }
 
     @Override

@@ -25,10 +25,11 @@
 package de.uzl.itm.ncoap.application;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory;
-import de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelHandler;
+import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
@@ -84,6 +85,14 @@ public abstract class AbstractCoapApplication {
 
         //Create datagram channel
         this.channel = (DatagramChannel) bootstrap.bind(socketAddress);
+
+        // set the channel handler contexts
+        for(ChannelHandler handler : pipelineFactory.getChannelHandlers()) {
+            if(handler instanceof AbstractCoapChannelHandler) {
+                ChannelHandlerContext context = this.channel.getPipeline().getContext(handler.getClass());
+                ((AbstractCoapChannelHandler) handler).setContext(context);
+            }
+        }
     }
 
 

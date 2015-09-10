@@ -28,7 +28,7 @@ package de.uzl.itm.ncoap.communication.observe;
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
-import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
+import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.MessageCode;
@@ -47,7 +47,7 @@ import java.net.URI;
 public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicationTest {
 
     private static CoapClient client;
-    private static ClientTestCallback clientCallback;
+    private static TestCallback clientCallback;
 
     private static CoapServer server;
     private static InetSocketAddress serverSocket;
@@ -59,7 +59,7 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
     @Override
     public void setupComponents() throws Exception {
         client = new CoapClient();
-        clientCallback = new ClientTestCallback();
+        clientCallback = new TestCallback();
         server = new CoapServer();
         service = new ObservableTestWebresource("/test", 1, 0, server.getExecutor());
         server.registerWebresource(service);
@@ -81,8 +81,9 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
 
     @Override
     public void shutdownComponents() throws Exception {
+        server.shutdown().get();
         client.shutdown();
-        server.shutdown();
+
     }
 
     @Override

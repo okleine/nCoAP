@@ -25,19 +25,22 @@
 package de.uzl.itm.ncoap.application.endpoint;
 
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
-import de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory;
 import de.uzl.itm.ncoap.application.server.webresource.Webresource;
 import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallbackManager;
+import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
-import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
-import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
+import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,10 +61,17 @@ public class CoapEndpoint extends AbstractCoapApplication {
     
     private static Logger LOG = LoggerFactory.getLogger(CoapEndpoint.class.getName());
 
-    public static final String VERSION = "1.8.3-SNAPSHOT-2";
+    private ResponseDispatcher responseDispatcher;
+    private RequestDispatcher requestDispatcher;
 
-    private WebresourceManager webresourceManager;
-
+    /**
+     * Creates a new instance of {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint}
+     *
+     * @param applicationName the name of the application
+     * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler}
+     * to deal with requests that are addressed to resources that do not (yet) exist.
+     * @param localSocket the local {@link java.net.InetSocketAddress} to listen at for incoming messages
+     */
     public CoapEndpoint(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket){
 
         super(applicationName, Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
@@ -72,32 +82,31 @@ public class CoapEndpoint extends AbstractCoapApplication {
 
         startApplication(pipelineFactory, localSocket);
 
-        this.webresourceManager = getChannel().getPipeline().get(WebresourceManager.class);
-        this.webresourceManager.setChannel(this.getChannel());
-
-        notFoundHandler.setWebresourceManager(webresourceManager);
-
-//        //Set the ChannelHandlerContext for the inbound reliability handler
-//        InboundReliabilityHandler inboundReliabilityHandler =
-//                (InboundReliabilityHandler) this.getChannel().getPipeline()
-//                        .get(CoapServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER);
+        // retrieve the request dispatcher (server component)
+        this.requestDispatcher = getChannel().getPipeline().get(RequestDispatcher.class);
+//        this.requestDispatcher.setChannel(this.getChannel());
+//        notFoundHandler.setRequestDispatcher(requestDispatcher);
 //
-//        inboundReliabilityHandler.setChannelHandlerContext(
-//                this.getChannel().getPipeline()
-//                        .getContext(CoapServerChannelPipelineFactory.INBOUND_RELIABILITY_HANDLER)
-//        );
+//        // set the context for the servers observation handler
+//        ServerObservationHandler handler = getChannel().getPipeline().get(ServerObservationHandler.class);
+//        ChannelHandlerContext context = getChannel().getPipeline().getContext(handler);
+//        handler.setChannelHandlerContext(context);
+
+        // retrieve the response dispatcher (client component)
+        this.responseDispatcher = getChannel().getPipeline().get(ResponseDispatcher.class);
     }
 
     /**
-     * Creates a new instance of {@link CoapEndpoint}.
+     * <p>Creates a new instance of {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint}</p>
+     * <p>Using this constructor has the same effect as invoking the other constructor with name
+     * <code>COAP ENDPOINT</code>.
      *
      * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler}
-     * to deal with incoming requests for unknown {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s.
-     *
-     * @param localSocket the socket for both, listening for incoming requests and send requests
+     * to deal with requests that are addressed to resources that do not (yet) exist.
+     * @param localSocket the local {@link java.net.InetSocketAddress} to listen at for incoming messages
      */
     public CoapEndpoint(NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
-        this("CoAP Peer", notFoundHandler, localSocket);
+        this("COAP ENDPOINT", notFoundHandler, localSocket);
     }
 
 
@@ -117,9 +126,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * @param remoteSocket the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
     public void sendCoapRequest(CoapRequest coapRequest, ClientCallback callback, InetSocketAddress remoteSocket){
-
-        ClientCallbackManager callbackManager = getChannel().getPipeline().get(ClientCallbackManager.class);
-        callbackManager.sendCoapRequest(getChannel(), coapRequest, remoteSocket, callback);
+        this.responseDispatcher.sendCoapRequest(getChannel(), coapRequest, remoteSocket, callback);
     }
 
 
@@ -144,8 +151,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * @param remoteSocket the desired recipient of the CoAP PING message
      */
     public void sendCoapPing(final ClientCallback callback, final InetSocketAddress remoteSocket){
-        ClientCallbackManager callbackManager = getChannel().getPipeline().get(ClientCallbackManager.class);
-        callbackManager.sendCoapPing(getChannel(), remoteSocket, callback);
+        this.responseDispatcher.sendCoapPing(getChannel(), remoteSocket, callback);
 
     }
 
@@ -160,11 +166,11 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered with the same path
      */
     public void registerResource(Webresource webresource) throws IllegalArgumentException{
-        this.getWebresourceManager().registerWebresource(webresource);
+        this.getRequestDispatcher().registerWebresource(webresource);
     }
 
-    private WebresourceManager getWebresourceManager(){
-        return getChannel().getPipeline().get(WebresourceManager.class);
+    private RequestDispatcher getRequestDispatcher(){
+        return getChannel().getPipeline().get(RequestDispatcher.class);
     }
 
     /**
@@ -172,7 +178,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * @param webresource
      */
     public void shutdownWebresource(Webresource webresource){
-        this.getWebresourceManager().shutdownWebresource(webresource.getUriPath());
+        this.getRequestDispatcher().shutdownWebresource(webresource.getUriPath());
     }
 
     /**
@@ -180,29 +186,38 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s and the
      * {@link org.jboss.netty.channel.socket.DatagramChannel} to write and receive messages.
      */
-    public void shutdown(){
+    public ListenableFuture<Void> shutdown(){
         LOG.warn("Shutdown server...");
-
-        this.webresourceManager.shutdown();
-
-        ChannelFuture channelClosedFuture = this.getChannel().close();
-
-        //Await the closure and let the factory release its external resource to finalize the shutdown
-        channelClosedFuture.addListener(new ChannelFutureListener() {
+        final SettableFuture<Void> shutdownFuture = SettableFuture.create();
+        Futures.addCallback(this.requestDispatcher.shutdown(), new FutureCallback<Void>() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                LOG.warn("Server channel closed. Release external resources...");
+            public void onSuccess(Void aVoid) {
+                ChannelFuture channelClosedFuture = getChannel().close();
 
-                getChannel().getFactory().releaseExternalResources();
+                //Await the closure and let the factory release its external resource to finalize the shutdown
+                channelClosedFuture.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        LOG.warn("Server channel closed. Release external resources...");
+                        getChannel().getFactory().releaseExternalResources();
+                    }
+                });
+
+                channelClosedFuture.awaitUninterruptibly().addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        LOG.warn("Server shutdown completed!");
+                        shutdownFuture.set(null);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                onSuccess(null);
             }
         });
-
-        channelClosedFuture.awaitUninterruptibly().addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                LOG.warn("Server shutdown completed!");
-            }
-        });
+        return shutdownFuture;
     }
 
 }

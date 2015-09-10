@@ -26,7 +26,7 @@
 package de.uzl.itm.ncoap.application.server.webresource;
 
 import com.google.common.collect.*;
-import de.uzl.itm.ncoap.communication.dispatching.server.WebresourceManager;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
     private static Logger LOG = LoggerFactory.getLogger(NotObservableWebresource.class.getName());
 
-    private WebresourceManager webresourceManager;
+    private RequestDispatcher requestDispatcher;
 
     private String path;
 
@@ -102,14 +102,14 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
 
     @Override
-    public final void setWebresourceManager(WebresourceManager webresourceManager){
-        this.webresourceManager = webresourceManager;
+    public final void setRequestDispatcher(RequestDispatcher requestDispatcher){
+        this.requestDispatcher = requestDispatcher;
     }
 
 
     @Override
-    public final WebresourceManager getWebresourceManager(){
-        return this.webresourceManager;
+    public final RequestDispatcher getRequestDispatcher(){
+        return this.requestDispatcher;
     }
 
 

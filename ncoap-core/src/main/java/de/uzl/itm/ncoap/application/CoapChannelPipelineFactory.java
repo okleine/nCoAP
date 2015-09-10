@@ -24,12 +24,8 @@
  */
 package de.uzl.itm.ncoap.application;
 
-import de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder;
-import de.uzl.itm.ncoap.communication.identification.IdentificationHandler;
-import de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler;
-import de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -50,34 +46,6 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
 
     private static Logger LOG = LoggerFactory.getLogger(CoapChannelPipelineFactory.class.getName());
 
-//    /**
-//     * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
-//     */
-//    public static final String EXECUTION_HANDLER = "EXECUTION";
-//
-//    /**
-//     * The name of the {@link org.jboss.netty.handler.execution.ExecutionHandler} instance of a CoAP application
-//     */
-//    public static final String IDENTIFICATION_HANDLER = "IDENTIFICATION";
-//
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder} instance
-//     * of a CoAP application
-//     */
-//    public static final String ENCODER = "ENCODER";
-//
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder} instance
-//     * of a CoAP application
-//     */
-//    public static final String DECODER = "DECODER";
-//
-//    /**
-//     * The name of the {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler} instance
-//     * of a CoAP application
-//     */
-//    public static String OUTBOUND_RELIABILITY_HANDLER = "OUTBOUND-RELIABILITY";
-
     private Set<ChannelHandler> channelHandlers;
 
 
@@ -85,14 +53,8 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
         this.channelHandlers = new LinkedHashSet<>();
 
         addChannelHandler(new ExecutionHandler(executor));
-
         addChannelHandler(new CoapMessageEncoder());
         addChannelHandler(new CoapMessageDecoder());
-
-        addChannelHandler(new IdentificationHandler(executor));
-
-        addChannelHandler(new OutboundReliabilityHandler(executor));
-        addChannelHandler(new InboundReliabilityHandler(executor, true));
      }
 
 
@@ -100,6 +62,9 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
         this.channelHandlers.add(channelHandler);
     }
 
+    public Set<ChannelHandler> getChannelHandlers () {
+        return this.channelHandlers;
+    }
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {

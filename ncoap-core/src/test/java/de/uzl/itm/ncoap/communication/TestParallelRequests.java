@@ -27,7 +27,7 @@ package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
-import de.uzl.itm.ncoap.endpoints.client.ClientTestCallback;
+import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
@@ -56,8 +56,8 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     private static final int NUMBER_OF_PARALLEL_REQUESTS = 200;
 
-    private static ClientTestCallback[] clientCallbacks =
-            new ClientTestCallback[NUMBER_OF_PARALLEL_REQUESTS];
+    private static TestCallback[] clientCallbacks =
+            new TestCallback[NUMBER_OF_PARALLEL_REQUESTS];
 
     private static CoapRequest[] requests = new CoapRequest[NUMBER_OF_PARALLEL_REQUESTS];
 
@@ -66,14 +66,9 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uzl.itm.ncoap.endpoints.client.ClientTestCallback")
-                .setLevel(Level.DEBUG);
-
-//        Logger.getLogger("de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource")
-//                .setLevel(Level.DEBUG);
-//
-//        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.InboundReliabilityHandler")
-//                .setLevel(Level.DEBUG);
+        Logger.getLogger(TestCallback.class.getName()).setLevel(Level.DEBUG);
+//        Logger.getLogger(NotObservableTestWebresource.class.getName()).setLevel(Level.DEBUG);
+//        Logger.getLogger(ServerInboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
 
         Logger.getRootLogger().setLevel(Level.ERROR);
     }
@@ -94,7 +89,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         client = new CoapClient();
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            clientCallbacks[i] = new ClientTestCallback();
+            clientCallbacks[i] = new TestCallback();
             requests[i] =  new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET,
                     new URI("coap://localhost:" + server.getPort() + "/service" + (i+1)));
         }
@@ -102,8 +97,8 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     @Override
     public void shutdownComponents() throws Exception {
+        server.shutdown().get();
         client.shutdown();
-        server.shutdown();
     }
 
    @Override

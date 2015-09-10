@@ -123,16 +123,16 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
 
     @Override
     public void shutdownComponents() throws Exception {
-        server.shutdown();
+        server.shutdown().get();
         clientEndpoint.shutdown();
     }
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler")
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler")
                 .setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliableMessageTransfer")
+        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer")
                 .setLevel(Level.DEBUG);
 
         Logger.getLogger("de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource")

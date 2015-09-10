@@ -54,7 +54,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Instances are sent upstream by the
- * {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler}
+ * {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler}
  * if there was a RST message received and a related outbound transfer was found.
  *
  * @author Oliver Kleine

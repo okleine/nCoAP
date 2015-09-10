@@ -30,7 +30,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Instances of {@link MessageIDAssignedEvent} are sent upstream if a
- * message ID was assigned to a {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer}.
+ * message ID was assigned to a {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}.
  *
  * @author Oliver Kleine
  */
@@ -39,12 +39,12 @@ public class MessageIDAssignedEvent extends AbstractMessageTransferEvent {
     /**
      * Creates a new instance of {@link MessageIDAssignedEvent}
      * @param remoteEndpoint the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that was
+     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that was
      *                       assigned a message ID
      * @param messageID the message ID that was assigned to a new
-     *                  {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer}
+     *                  {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
      * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
-     *              {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that was assigned an ID
+     *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that was assigned an ID
      */
     public MessageIDAssignedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         super(remoteEndpoint, messageID, token);

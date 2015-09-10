@@ -40,12 +40,12 @@ public abstract class AbstractMessageTransferEvent extends AbstractMessageExchan
     /**
      * Creates a new instance of {@link AbstractMessageTransferEvent}
      * @param remoteEndpoint the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this
+     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
      *                       event
-     * @param messageID the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer}
+     * @param messageID the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
      *                  that caused this event
      * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
-     *              {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this event
+     *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
      */
     public AbstractMessageTransferEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         super(remoteEndpoint, token);

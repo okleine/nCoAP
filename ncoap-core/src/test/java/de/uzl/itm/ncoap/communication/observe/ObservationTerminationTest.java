@@ -204,6 +204,7 @@ public class ObservationTerminationTest extends AbstractCoapCommunicationTest {
 
     @Override
     public void shutdownComponents() throws Exception {
+        server.shutdown().get();
         clientEndpoint.shutdown();
     }
 

@@ -26,6 +26,8 @@
 package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.server.CoapServer;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -68,9 +70,16 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler")
+        Logger.getLogger(ServerInboundReliabilityHandler.class.getName())
                 .setLevel(Level.DEBUG);
-        Logger.getLogger("de.uzl.itm.ncoap.endpointsDummyEndpoint")
+
+        Logger.getLogger(OutboundReliabilityHandler.class.getName())
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger(AbstractCoapChannelHandler.class.getName())
+                .setLevel(Level.DEBUG);
+
+        Logger.getLogger(DummyEndpoint.class.getName())
                 .setLevel(Level.DEBUG);
     }
 
@@ -88,7 +97,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
     @Override
     public void shutdownComponents() throws Exception {
-        server.shutdown();
+        server.shutdown().get();
         endpoint.shutdown();
     }
 

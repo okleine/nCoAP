@@ -29,13 +29,13 @@ import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
 import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.Channels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Created by olli on 04.09.15.
  */
 public class ServerObservationHandler extends AbstractCoapChannelHandler implements Observer,
-        ResetReceivedEvent.Handler, ObserverAcceptedEvent.Handler {
+        ResetReceivedEvent.Handler, ObserverAcceptedEvent.Handler, RemoteClientSocketChangedEvent.Handler{
 
     private static Logger LOG = LoggerFactory.getLogger(ServerObservationHandler.class.getName());
 
@@ -62,7 +62,6 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     private HashBasedTable<InetSocketAddress, Token, Long> contentFormats;
 
     private ReentrantReadWriteLock lock;
-    private ChannelHandlerContext ctx;
 
 
     public ServerObservationHandler(ScheduledExecutorService executor){
@@ -76,8 +75,7 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
 
     @Override
-    public boolean handleInboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
-            InetSocketAddress remoteSocket) {
+    public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 
         if(coapMessage instanceof CoapRequest) {
             stopObservation(remoteSocket, coapMessage.getToken());
@@ -88,8 +86,7 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
 
     @Override
-    public boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
-            InetSocketAddress remoteSocket) {
+    public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 
         if(coapMessage instanceof CoapResponse && !((CoapResponse) coapMessage).isUpdateNotification()){
             stopObservation(remoteSocket, coapMessage.getToken());
@@ -110,16 +107,17 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
         startObservation(event.getRemoteSocket(), event.getToken(), event.getWebresource(), event.getContentFormat());
     }
 
+    @Override
+    public void handleEvent(RemoteClientSocketChangedEvent event) {
+        // TODO
+    }
+
 
     public void registerWebresource(ObservableWebresource webresource) {
         LOG.debug("ServerObservationHandler is now observing \"{}\".", webresource.getUriPath());
         webresource.addObserver(this);
     }
 
-
-    public void setChannelHandlerContext(ChannelHandlerContext ctx){
-        this.ctx = ctx;
-    }
 
     private void startObservation(InetSocketAddress remoteAddress, Token token, ObservableWebresource webresource,
             long contentFormat){
@@ -238,8 +236,8 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
             String content = "Resource \"" + this.webresourcePath + "\" is no longer available.";
             coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 
-            ChannelFuture future = Channels.future(ctx.getChannel());
-            Channels.write(ctx, future, coapResponse, remoteSocket);
+            ChannelFuture future = Channels.future(getContext().getChannel());
+            Channels.write(getContext(), future, coapResponse, remoteSocket);
 
             future.addListener(new ChannelFutureListener() {
                 @Override
@@ -279,8 +277,8 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
                 updateNotification.setContent(representation.getContent(), representation.getContentFormat());
                 updateNotification.setObserve();
 
-                ChannelFuture future = Channels.future(ctx.getChannel());
-                Channels.write(ctx, future, updateNotification, remoteSocket);
+                ChannelFuture future = Channels.future(getContext().getChannel());
+                Channels.write(getContext(), future, updateNotification, remoteSocket);
 
                 future.addListener(new ChannelFutureListener() {
                     @Override

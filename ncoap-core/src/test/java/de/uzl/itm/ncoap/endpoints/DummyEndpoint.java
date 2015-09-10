@@ -68,7 +68,7 @@ public class DummyEndpoint extends SimpleChannelHandler {
 
     public DummyEndpoint() {
         //Create thread pool factory (for thread-naming)
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Dummy Endpoint Thread#%d").build();
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Dummy Endpoint I/O worker #%d").build();
 
         //This is to suppress renaming of the threads by the netty framework
         ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {

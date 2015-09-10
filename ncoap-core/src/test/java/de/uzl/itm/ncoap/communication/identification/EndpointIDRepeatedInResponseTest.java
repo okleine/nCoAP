@@ -80,8 +80,8 @@ public class EndpointIDRepeatedInResponseTest extends AbstractCoapCommunicationT
 
     @Override
     public void shutdownComponents() throws Exception {
+        server.shutdown().get();
         client.shutdown();
-        server.shutdown();
     }
 
     @Override

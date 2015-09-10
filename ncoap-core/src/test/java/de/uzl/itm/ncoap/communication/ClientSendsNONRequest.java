@@ -25,12 +25,18 @@
 
 package de.uzl.itm.ncoap.communication;
 
+import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
+import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
+import de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory;
+import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
+import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -46,39 +52,47 @@ import static junit.framework.Assert.assertTrue;
 *
 * @author Stefan Hueske, Oliver Kleine
 */
+@Ignore
 public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
+
+    private static Logger LOG = Logger.getLogger(ClientSendsNONRequest.class.getName());
 
     private static CoapServer server;
     private static NotObservableTestWebresource service;
     private static String PATH_TO_SERVICE = "/could/be/any/path";
     private static String PAYLOAD = "some arbitrary payload";
 
-    private static DummyEndpoint endpoint;
+    //private static DummyEndpoint endpoint;
+    private static CoapClient client;
+    private static TestCallback callback;
     private static CoapRequest request;
 
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
-                .setLevel(Level.DEBUG);
+        Logger.getLogger(ClientSendsNONRequest.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(OutboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(MessageIDFactory.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(ResponseDispatcher.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(TestCallback.class.getName()).setLevel(Level.DEBUG);
     }
 
     @Override
     public void setupComponents() throws Exception {
-        server = new CoapServer(0);
+        server = new CoapServer();
         service = new NotObservableTestWebresource(PATH_TO_SERVICE, PAYLOAD, 0, 0, server.getExecutor());
         server.registerWebresource(service);
 
-        endpoint = new DummyEndpoint();
+        client = new CoapClient();
+        callback = new TestCallback();
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
         request = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri);
-        request.setMessageID(54321);
     }
 
     @Override
     public void shutdownComponents() throws Exception {
-        server.shutdown();
-        endpoint.shutdown();
+        server.shutdown().get();
+        client.shutdown();
     }
 
     @Override
@@ -92,56 +106,55 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
 //                  |                             |
 //                  |                             |
 
+        LOG.warn("*****THIS TEST TAKES MORE THAN 4 MINUTES******");
+
         //send request to testServer
-        endpoint.writeMessage(request, new InetSocketAddress("localhost", server.getPort()));
+        client.sendCoapRequest(request, callback, new InetSocketAddress("localhost", server.getPort()));
 
         //wait some time for response from server
-        Thread.sleep(150);
+        Thread.sleep(250000);
     }
 
     @Test
     public void testReceiverReceivedOnlyOneMessage() {
         String message = "Receiver received unexpected number of messages.";
-        assertEquals(message, 1, endpoint.getReceivedCoapMessages().values().size());
-    }
-
-    @Test
-    public void testReceiverReceivedResponse() {
-        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
-        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
-        String message = "Received message is not a CoapResponse";
-        assertTrue(message, receivedMessage instanceof CoapResponse);
+        assertEquals(message, 1, callback.getCoapResponses().size());
     }
 
     @Test
     public void testReceivedMessageHasSameToken() {
-        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
-        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
+        SortedMap<Long, CoapResponse> receivedMessages = callback.getCoapResponses();
+        CoapResponse response = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response token does not match with request token";
-        assertEquals(message, request.getToken(), receivedMessage.getToken());
+        assertEquals(message, request.getToken(), response.getToken());
     }
 
     @Test
     public void testReceivedMessageHasCodeContent() {
-        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
-        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
+        SortedMap<Long, CoapResponse> receivedMessages = callback.getCoapResponses();
+        CoapResponse response = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response code is not CONTENT 205";
-        assertEquals(message, MessageCode.Name.CONTENT_205, receivedMessage.getMessageCodeName());
+        assertEquals(message, MessageCode.Name.CONTENT_205, response.getMessageCodeName());
     }
 
     @Test
     public void testReceivedMessageHasUnmodifiedPayload() {
-        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
-        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
+        SortedMap<Long, CoapResponse> receivedMessages = callback.getCoapResponses();
+        CoapResponse response = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response payload was modified by testServer";
-        assertEquals(message, PAYLOAD, receivedMessage.getContent().toString(Charset.forName("UTF-8")));
+        assertEquals(message, PAYLOAD, response.getContent().toString(Charset.forName("UTF-8")));
     }
 
     @Test
     public void testReceivedMessageHasMsgTypeNON() {
-        SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
-        CoapMessage receivedMessage = receivedMessages.get(receivedMessages.firstKey());
+        SortedMap<Long, CoapResponse> receivedMessages = callback.getCoapResponses();
+        CoapResponse response = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response Msg EventType is not NON";
-        assertEquals(message, MessageType.Name.NON, receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageType.Name.NON, response.getMessageTypeName());
+    }
+
+    @Test
+    public void testNoTimeoutReceived() {
+        assertTrue("Unexpected Timeout!", callback.getTransmissionTimeouts().size() == 0);
     }
 }

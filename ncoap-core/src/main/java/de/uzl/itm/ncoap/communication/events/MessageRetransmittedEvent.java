@@ -30,7 +30,7 @@ import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 
 /**
  * Instances are sent upstream by the
- * {@link de.uzl.itm.ncoap.communication.reliability.OutboundReliabilityHandler} whenever there was a
+ * {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler} whenever there was a
  * retransmission of a confirmable {@link de.uzl.itm.ncoap.message.CoapMessage}.
  *
  * @author Oliver Kleine

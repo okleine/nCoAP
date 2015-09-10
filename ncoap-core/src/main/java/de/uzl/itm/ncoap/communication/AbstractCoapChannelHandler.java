@@ -26,10 +26,14 @@ package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
+import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
+import de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import org.jboss.netty.channel.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,7 +43,10 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
 
+    private static Logger LOG = LoggerFactory.getLogger(AbstractCoapChannelHandler.class.getName());
+
     private ScheduledExecutorService executor;
+    private ChannelHandlerContext context;
 
     protected AbstractCoapChannelHandler(ScheduledExecutorService executor) {
         this.executor = executor;
@@ -48,7 +55,7 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
     public final void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         Object message = me.getMessage();
         if (message instanceof CoapMessage) {
-            if(!handleInboundCoapMessage(ctx, (CoapMessage) message, (InetSocketAddress) me.getRemoteAddress())) {
+            if(!handleInboundCoapMessage((CoapMessage) message, (InetSocketAddress) me.getRemoteAddress())) {
                 return;
             }
         } else if (message instanceof TokenReleasedEvent && this instanceof TokenReleasedEvent.Handler) {
@@ -61,9 +68,11 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
             ((MessageRetransmittedEvent.Handler) this).handleEvent((MessageRetransmittedEvent) message);
         } else if (message instanceof MiscellaneousErrorEvent && this instanceof MiscellaneousErrorEvent.Handler) {
             ((MiscellaneousErrorEvent.Handler) this).handleEvent((MiscellaneousErrorEvent) message);
-        } else if (message instanceof RemoteSocketChangedEvent && this instanceof RemoteSocketChangedEvent.Handler) {
-            ((RemoteSocketChangedEvent.Handler) this).handleEvent((RemoteSocketChangedEvent) message);
-        } else if (message instanceof ResetReceivedEvent && this instanceof ResetReceivedEvent.Handler) {
+        } else if (message instanceof RemoteServerSocketChangedEvent && this instanceof RemoteServerSocketChangedEvent.Handler) {
+            ((RemoteServerSocketChangedEvent.Handler) this).handleEvent((RemoteServerSocketChangedEvent) message);
+        } else if (message instanceof RemoteClientSocketChangedEvent && this instanceof RemoteClientSocketChangedEvent.Handler) {
+            ((RemoteClientSocketChangedEvent.Handler) this).handleEvent((RemoteClientSocketChangedEvent) message);
+        }else if (message instanceof ResetReceivedEvent && this instanceof ResetReceivedEvent.Handler) {
             ((ResetReceivedEvent.Handler) this).handleEvent((ResetReceivedEvent) message);
         } else if (message instanceof TransmissionTimeoutEvent && this instanceof TransmissionTimeoutEvent.Handler) {
             ((TransmissionTimeoutEvent.Handler) this).handleEvent((TransmissionTimeoutEvent) message);
@@ -76,11 +85,19 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         ctx.sendUpstream(me);
     }
 
+    public void setContext(ChannelHandlerContext context) {
+        this.context = context;
+    }
+
+    public ChannelHandlerContext getContext() {
+        return this.context;
+    }
+
     public final void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception {
         Object message = me.getMessage();
 
         if(me.getMessage() instanceof CoapMessage) {
-            if (!handleOutboundCoapMessage(ctx, (CoapMessage) message, (InetSocketAddress) me.getRemoteAddress())) {
+            if (!handleOutboundCoapMessage((CoapMessage) message, (InetSocketAddress) me.getRemoteAddress())) {
                 return;
             }
         }
@@ -93,35 +110,66 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
 
     /**
      *
-     * @param ctx
      * @param coapMessage
      * @param remoteSocket
      *
      * @return <code>true</code> if this {@link AbstractCoapChannelHandler} is to be
      * further processed by the next handler(s) and <code>false</code> otherwise.
      */
-    public abstract boolean handleInboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
-            InetSocketAddress remoteSocket);
+    public abstract boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket);
+
 
     /**
      *
-     * @param ctx
      * @param coapMessage
      * @param remoteSocket
      *
      * @return <code>true</code> if this {@link AbstractCoapChannelHandler} is to be
      * further processed by the next handler(s) and <code>false</code> otherwise.
      */
-    public abstract boolean handleOutboundCoapMessage(ChannelHandlerContext ctx, CoapMessage coapMessage,
-            InetSocketAddress remoteSocket);
+    public abstract boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket);
 
 
-    protected void triggerEvent(final Channel channel, final AbstractMessageExchangeEvent event) {
-        this.executor.submit(new Runnable() {
-            @Override
-            public void run() {
-                Channels.fireMessageReceived(channel, event);
-            }
-        });
+    protected void triggerEvent(final AbstractMessageExchangeEvent event, boolean bottomUp) {
+        if(bottomUp) {
+            Channels.fireMessageReceived(context.getChannel(), event);
+        } else {
+            Channels.fireMessageReceived(this.context, event);
+        }
+    }
+
+    protected void continueMessageProcessing(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
+        Channels.fireMessageReceived(this.context, coapMessage, remoteSocket);
+    }
+
+
+    protected void sendEmptyACK(int messageID, final InetSocketAddress remoteSocket) {
+        final CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
+        ChannelFuture future = Channels.future(getContext().getChannel());
+        Channels.write(getContext(), future, emptyACK, remoteSocket);
+        if(LOG.isDebugEnabled()) {
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    int messageID = emptyACK.getMessageID();
+                    LOG.debug("Empty ACK sent to \"{}\" (message ID: {}).", remoteSocket, messageID);
+                }
+            });
+        }
+    }
+
+    protected void sendReset(int messageID, final InetSocketAddress remoteSocket) {
+        final CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
+        ChannelFuture future = Channels.future(getContext().getChannel());
+        Channels.write(getContext(), future, resetMessage, remoteSocket);
+        if(LOG.isDebugEnabled()) {
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    int messageID = resetMessage.getMessageID();
+                    LOG.debug("RST sent to \"{}\" (Message ID: {}).", remoteSocket, messageID);
+                }
+            });
+        }
     }
 }

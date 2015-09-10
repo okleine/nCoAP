@@ -29,6 +29,7 @@ import de.uzl.itm.ncoap.AbstractCoapTest;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 
 
 /**
@@ -39,6 +40,7 @@ import org.junit.AfterClass;
  *
  * @author Oliver Kleine
  */
+ @Ignore
 public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
 
     private static Logger log = Logger.getLogger(AbstractCoapCommunicationTest.class.getName());

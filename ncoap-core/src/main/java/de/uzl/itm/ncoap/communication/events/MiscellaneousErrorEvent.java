@@ -30,7 +30,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Instances of {@link MiscellaneousErrorEvent} are sent upstream if some
- * error occurred while establishing a new {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer}.
+ * error occurred while establishing a new {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}.
  *
  * @author Oliver Kleine
  */
@@ -42,12 +42,12 @@ public class MiscellaneousErrorEvent extends AbstractMessageTransferEvent {
      * Creates a new instance of {@link MiscellaneousErrorEvent}
      *
      * @param remoteEndpoint the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this
+     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
      *                       event
-     * @param messageID the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer}
+     * @param messageID the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
      *                  that caused this event
      * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
-     *              {@link de.uzl.itm.ncoap.communication.reliability.MessageTransfer} that caused this event
+     *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
      * @param description a human readable description of the error that caused this event
      */
     public MiscellaneousErrorEvent(InetSocketAddress remoteEndpoint, int messageID, Token token, String description) {
