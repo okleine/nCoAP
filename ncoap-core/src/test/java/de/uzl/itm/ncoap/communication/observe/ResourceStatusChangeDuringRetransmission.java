@@ -26,6 +26,9 @@
 package de.uzl.itm.ncoap.communication.observe;
 
 import de.uzl.itm.ncoap.application.server.CoapServer;
+import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
+import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
@@ -129,23 +132,15 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler")
-                .setLevel(Level.DEBUG);
+        Logger.getLogger(ServerOutboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer")
-                .setLevel(Level.DEBUG);
+        Logger.getLogger(ObservableWebresource.class.getName()).setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource")
-                .setLevel(Level.DEBUG);
+        Logger.getLogger(ServerObservationHandler.class.getName()).setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.communication.observing.ServerObservationHandler")
-                .setLevel(Level.DEBUG);
+        Logger.getLogger(ObservableTestWebresource.class.getName()).setLevel(Level.DEBUG);
 
-        Logger.getLogger("de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource")
-                .setLevel(Level.DEBUG);
-
-        Logger.getLogger("de.uzl.itm.ncoap.endpoints.DummyEndpoint")
-                .setLevel(Level.DEBUG);
+        Logger.getLogger(DummyEndpoint.class.getName()).setLevel(Level.DEBUG);
 
     }
 

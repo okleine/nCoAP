@@ -26,13 +26,13 @@
 package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
-import de.uzl.itm.ncoap.communication.blockwise.Block2OptionHandler;
+import de.uzl.itm.ncoap.communication.blockwise.ClientBlock2OptionHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler;
 import de.uzl.itm.ncoap.communication.observing.ClientObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
-import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
 
@@ -61,9 +61,9 @@ public class CoapClientChannelPipelineFactory extends CoapChannelPipelineFactory
 
         super(executor);
         addChannelHandler(new ClientIdentificationHandler(executor));
-        addChannelHandler(new OutboundReliabilityHandler(executor));
+        addChannelHandler(new ClientOutboundReliabilityHandler(executor));
         addChannelHandler(new ClientInboundReliabilityHandler(executor));
-        addChannelHandler(new Block2OptionHandler(executor));
+        addChannelHandler(new ClientBlock2OptionHandler(executor));
         addChannelHandler(new ClientObservationHandler(executor));
         addChannelHandler(new ResponseDispatcher(executor, tokenFactory));
     }

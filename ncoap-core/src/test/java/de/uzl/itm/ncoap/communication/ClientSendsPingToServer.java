@@ -27,6 +27,7 @@ package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -73,11 +74,9 @@ public class ClientSendsPingToServer extends AbstractCoapCommunicationTest{
 
     @Override
     public void setupLogging() throws Exception {
-        Logger.getLogger("de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler")
-                .setLevel(Level.DEBUG);
-
-        Logger.getLogger("de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler")
-                .setLevel(Level.DEBUG);
+        Logger.getLogger(ServerInboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(AbstractCoapChannelHandler.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(TestCallback.class.getName()).setLevel(Level.DEBUG);
 
         Logger.getRootLogger().setLevel(Level.WARN);
     }

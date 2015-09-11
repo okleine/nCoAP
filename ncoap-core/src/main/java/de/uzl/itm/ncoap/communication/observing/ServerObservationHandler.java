@@ -29,6 +29,7 @@ import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
 import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
@@ -53,7 +54,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Created by olli on 04.09.15.
  */
 public class ServerObservationHandler extends AbstractCoapChannelHandler implements Observer,
-        ResetReceivedEvent.Handler, ObserverAcceptedEvent.Handler, RemoteClientSocketChangedEvent.Handler{
+        ResetReceivedEvent.Handler, ObserverAcceptedEvent.Handler, RemoteClientSocketChangedEvent.Handler,
+        TransmissionTimeoutEvent.Handler {
 
     private static Logger LOG = LoggerFactory.getLogger(ServerObservationHandler.class.getName());
 
@@ -89,7 +91,9 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 
         if(coapMessage instanceof CoapResponse && !((CoapResponse) coapMessage).isUpdateNotification()){
-            stopObservation(remoteSocket, coapMessage.getToken());
+            if(stopObservation(remoteSocket, coapMessage.getToken())) {
+                LOG.info("Observation stopped due to non-update-notification response.");
+            }
         }
 
         return true;
@@ -105,6 +109,13 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     @Override
     public void handleEvent(ObserverAcceptedEvent event) {
         startObservation(event.getRemoteSocket(), event.getToken(), event.getWebresource(), event.getContentFormat());
+    }
+
+    @Override
+    public void handleEvent(TransmissionTimeoutEvent event) {
+       if(stopObservation(event.getRemoteSocket(), event.getToken())) {
+        LOG.info("Observation stopped due to transmission timeout of latest update notification!");
+       }
     }
 
     @Override
@@ -135,11 +146,11 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     }
 
 
-    private void stopObservation(InetSocketAddress remoteSocket, Token token){
+    private boolean stopObservation(InetSocketAddress remoteSocket, Token token){
         try {
             this.lock.readLock().lock();
             if(!this.observations1.contains(remoteSocket, token)){
-                return;
+                return false;
             }
         } finally {
             this.lock.readLock().unlock();
@@ -149,12 +160,13 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
             this.lock.writeLock().lock();
             ObservableWebresource webresource = this.observations1.remove(remoteSocket, token);
             if(webresource == null){
-                return;
+                return false;
             }
             this.observations2.remove(webresource, remoteSocket);
             this.contentFormats.remove(remoteSocket, token);
             LOG.info("Client \"{}\" is no longer observing \"{}\" (token was: \"{}\").",
                     new Object[]{remoteSocket, webresource.getUriPath(), token});
+            return true;
 
         } finally {
             this.lock.writeLock().unlock();

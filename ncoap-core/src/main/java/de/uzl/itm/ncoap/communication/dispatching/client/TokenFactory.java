@@ -86,25 +86,6 @@ public class TokenFactory {
         }
     }
 
-//    public Token getNextToken() {
-//        try{
-//            this.lock.writeLock().lock();
-//            Token token;
-//            if(activeTokens.isEmpty()){
-//                token = new Token(new byte[1]);
-//            }
-//            else{
-//                token = getSuccessor(activeTokens.last());
-//            }
-//
-//            activeTokens.add(token);
-//            return token;
-//        }
-//        finally {
-//            this.lock.writeLock().unlock();
-//        }
-//    }
-
 
     public synchronized boolean passBackToken(Token token){
         try{

@@ -29,7 +29,7 @@ import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
-import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.ObservableTestWebresource;
 import de.uzl.itm.ncoap.application.server.CoapServer;
@@ -80,7 +80,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
         Logger.getLogger(ClientInboundReliabilityHandler.class.getName())
                 .setLevel(Level.DEBUG);
 
-        Logger.getLogger(OutboundReliabilityHandler.class.getName())
+        Logger.getLogger(ServerOutboundReliabilityHandler.class.getName())
                 .setLevel(Level.DEBUG);
 
         Logger.getLogger(SpecificClientCallback.class.getName())

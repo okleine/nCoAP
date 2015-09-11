@@ -48,7 +48,6 @@ import java.net.InetSocketAddress;
  */
 public abstract class ClientCallback {
 
-    //private boolean observing = false;
 
     /**
      * Method invoked by the {@link de.uzl.itm.ncoap.application.client.CoapClient} for an inbound response (which is of any type but
@@ -60,14 +59,6 @@ public abstract class ClientCallback {
     public abstract void processCoapResponse(CoapResponse coapResponse);
 
 
-//    void setObserving(){
-//        this.observing = true;
-//    }
-//
-//    boolean isObserving(){
-//        return this.observing;
-//    }
-
     /**
      * This method is called by the framework whenever an update notification was received, i.e. this method is
      * only called if the {@link de.uzl.itm.ncoap.message.CoapRequest} that is associated with this
@@ -76,46 +67,12 @@ public abstract class ClientCallback {
      *
      * @return <code>true</code> if the observation is to be continued, <code>false</code> if the observation
      * is to be canceled (next update notification will cause a RST being send to the remote endpoint). Default,
-     * (i.e. if not overridden), is <code>false</code>, i.e. observations stops after first update notification.
+     * (i.e. if not overridden), is <code>true</code>, i.e. observations stops after first update notification.
      */
     public boolean continueObservation(){
         return false;
     }
 
-
-//    final void processMessageExchangeEvent(AbstractMessageTransferEvent event){
-//
-//        if(event instanceof EmptyAckReceivedEvent){
-//            processEmptyAcknowledgement();
-//        }
-//
-//        else if(event instanceof ResetReceivedEvent){
-//            processReset();
-//        }
-//
-//        else if(event instanceof MessageRetransmittedEvent){
-//            processRetransmission();
-//        }
-//
-//        else if(event instanceof TransmissionTimeoutEvent){
-//            processTransmissionTimeout();
-//        }
-//
-//        else if(event instanceof MessageIDAssignedEvent){
-//            processMessageIDAssignment(event.getMessageID());
-//        }
-//
-//        else if(event instanceof RemoteSocketChangedEvent){
-//            RemoteSocketChangedEvent event1 = (RemoteSocketChangedEvent) event;
-//            InetSocketAddress newSocketAddress = event1.getRemoteSocket();
-//            InetSocketAddress oldSocketAddress = event1.getPreviousRemoteSocket();
-//            processRemoteSocketChanged(oldSocketAddress, newSocketAddress);
-//        }
-//
-//        else if(event instanceof MiscellaneousErrorEvent){
-//            processMiscellaneousError(((MiscellaneousErrorEvent) event).getDescription());
-//        }
-//    }
 
     /**
      * This method is called by the framework if the socket address of the remote endpoint changed during an
@@ -180,7 +137,7 @@ public abstract class ClientCallback {
      *
      * @param description a description of the error that caused this event
      */
-    public void processMiscellaneousError(String description){
+    public void processMiscellaneousError(String description) {
         //to be overridden by extending classes
     }
 
@@ -198,13 +155,22 @@ public abstract class ClientCallback {
 
     /**
      * This method is invoked by the framework if the {@link de.uzl.itm.ncoap.message.CoapRequest} that is
-     * associated with this callback is assigned a {@link Token}.
-     *
-     * @param token the {@link Token} that was assigned to the
-     *              {@link de.uzl.itm.ncoap.message.CoapRequest} that is associated with this callback
+     * associated with this callback could not be assigned a message ID (due to an exhausted ID pool).
      */
-    public void processTokenAssignment(Token token){
+    public void processNoMessageIDAvailable() {
         //to be overridden by extending classes
     }
+
+
+//    /**
+//     * This method is invoked by the framework if the {@link de.uzl.itm.ncoap.message.CoapRequest} that is
+//     * associated with this callback is assigned a {@link Token}.
+//     *
+//     * @param token the {@link Token} that was assigned to the
+//     *              {@link de.uzl.itm.ncoap.message.CoapRequest} that is associated with this callback
+//     */
+//    public void processTokenAssignment(Token token){
+//        //to be overridden by extending classes
+//    }
 
 }

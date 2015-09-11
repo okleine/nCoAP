@@ -27,9 +27,8 @@ package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler;
 import de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory;
-import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
-import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.message.*;
 import org.apache.log4j.Level;
@@ -41,14 +40,12 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
 
 /**
 * Tests to verify the server functionality related to piggy-backed responses.
 *
 * @author Stefan Hueske, Oliver Kleine
 */
-@Ignore
 public class ClientSendsNONRequestThatTimesOut extends AbstractCoapCommunicationTest {
 
     private static Logger LOG = Logger.getLogger(ClientSendsNONRequestThatTimesOut.class.getName());
@@ -61,7 +58,7 @@ public class ClientSendsNONRequestThatTimesOut extends AbstractCoapCommunication
     @Override
     public void setupLogging() throws Exception {
         Logger.getLogger(ClientSendsNONRequestThatTimesOut.class.getName()).setLevel(Level.DEBUG);
-        Logger.getLogger(OutboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(ClientOutboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
         Logger.getLogger(MessageIDFactory.class.getName()).setLevel(Level.DEBUG);
         Logger.getLogger(ResponseDispatcher.class.getName()).setLevel(Level.DEBUG);
         Logger.getLogger(TestCallback.class.getName()).setLevel(Level.DEBUG);

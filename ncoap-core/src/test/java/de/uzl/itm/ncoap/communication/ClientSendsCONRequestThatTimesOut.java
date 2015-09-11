@@ -53,7 +53,6 @@ import static org.junit.Assert.*;
 *
 * @author Oliver Kleine, Stefan Hüske
 */
-@Ignore
 public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunicationTest {
 
     private static Logger log = Logger.getLogger(ClientSendsCONRequestThatTimesOut.class.getName());
@@ -139,7 +138,7 @@ public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunication
         //Wait for the message ID to retire (takes 247 seconds).
         Thread.sleep(48000);
         log.warn("Now we have to wait for the message ID to time out (~200 seconds)... Time to get a coffee!");
-        Thread.sleep(200000);
+        Thread.sleep(201000);
     }
 
 

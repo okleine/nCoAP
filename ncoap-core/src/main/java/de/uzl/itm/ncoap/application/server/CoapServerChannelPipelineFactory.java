@@ -28,11 +28,10 @@ package de.uzl.itm.ncoap.application.server;
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
-import de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler;
 import de.uzl.itm.ncoap.communication.identification.ServerIdentificationHandler;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
-import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
 
@@ -57,7 +56,7 @@ public class CoapServerChannelPipelineFactory extends CoapChannelPipelineFactory
 
         super(executor);
         addChannelHandler(new ServerIdentificationHandler(executor));
-        addChannelHandler(new OutboundReliabilityHandler(executor));
+        addChannelHandler(new ServerOutboundReliabilityHandler(executor));
         addChannelHandler(new ServerInboundReliabilityHandler(executor));
         addChannelHandler(new ServerObservationHandler(executor));
         addChannelHandler(new RequestDispatcher(notFoundHandler, executor));

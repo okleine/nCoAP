@@ -57,10 +57,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Oliver Kleine
  */
-public class Block2OptionHandler extends AbstractCoapChannelHandler implements TransmissionTimeoutEvent.Handler,
+public class ClientBlock2OptionHandler extends AbstractCoapChannelHandler implements TransmissionTimeoutEvent.Handler,
         RemoteServerSocketChangedEvent.Handler {
 
-    private static Logger LOG = LoggerFactory.getLogger(Block2OptionHandler.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(ClientBlock2OptionHandler.class.getName());
 
     private HashBasedTable<InetSocketAddress, Token, CoapRequest> openRequests;
     private HashBasedTable<InetSocketAddress, Token, ChannelBuffer> partialResponses;
@@ -68,9 +68,9 @@ public class Block2OptionHandler extends AbstractCoapChannelHandler implements T
     private ReentrantReadWriteLock lock;
 
     /**
-     * Creates a new instance of {@link Block2OptionHandler}.
+     * Creates a new instance of {@link ClientBlock2OptionHandler}.
      */
-    public Block2OptionHandler(ScheduledExecutorService executor){
+    public ClientBlock2OptionHandler(ScheduledExecutorService executor){
         super(executor);
         this.openRequests = HashBasedTable.create();
         this.partialResponses = HashBasedTable.create();
@@ -286,9 +286,7 @@ public class Block2OptionHandler extends AbstractCoapChannelHandler implements T
                 LOG.error("No open request found (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
                 return null;
-            }
-
-            else{
+            } else {
                 CoapRequest result = this.openRequests.remove(remoteEndpoint, token);
                 LOG.info("Removed open request (remote endpoint: {}, token: {})", remoteEndpoint, token);
                 return result;
@@ -301,7 +299,6 @@ public class Block2OptionHandler extends AbstractCoapChannelHandler implements T
 
     private boolean addCoapRequest(InetSocketAddress remoteEndpoint, CoapRequest coapRequest){
         Token token = coapRequest.getToken();
-
         try{
             this.lock.writeLock().lock();
             if(this.openRequests.contains(remoteEndpoint, token)){

@@ -27,7 +27,7 @@ package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
-import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -73,7 +73,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         Logger.getLogger(ServerInboundReliabilityHandler.class.getName())
                 .setLevel(Level.DEBUG);
 
-        Logger.getLogger(OutboundReliabilityHandler.class.getName())
+        Logger.getLogger(ClientOutboundReliabilityHandler.class.getName())
                 .setLevel(Level.DEBUG);
 
         Logger.getLogger(AbstractCoapChannelHandler.class.getName())

@@ -57,7 +57,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class ResponseDispatcher extends AbstractCoapChannelHandler implements RemoteServerSocketChangedEvent.Handler,
         EmptyAckReceivedEvent.Handler, ResetReceivedEvent.Handler, PartialContentReceivedEvent.Handler,
         MessageIDAssignedEvent.Handler, MessageRetransmittedEvent.Handler, TransmissionTimeoutEvent.Handler,
-        MiscellaneousErrorEvent.Handler{
+        NoMessageIDAvailableEvent.Handler, MiscellaneousErrorEvent.Handler{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -165,6 +165,18 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         }
     }
 
+    @Override
+    public void handleEvent(NoMessageIDAvailableEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = removeCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processNoMessageIDAvailable();
+        } else {
+            log.warn("No callback found for \"no MsgID available\" (remote socket: \"{}\", token: {}", remoteSocket, token);
+        }
+    }
+
 
     @Override
     public void handleEvent(MessageRetransmittedEvent event) {
@@ -187,7 +199,8 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         if(callback != null) {
             callback.processTransmissionTimeout();
         } else {
-            log.warn("No callback found for timeout (remote socket: \"{}\", token: {}", remoteSocket, token);
+            log.warn("No callback found for timeout (remote socket: \"{}\", token: {}, message ID: {})",
+                new Object[]{remoteSocket, token, event.getMessageID()});
         }
     }
 
@@ -268,6 +281,9 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
             } else {
                 clientCallbacks.put(remoteEndpoint, token, clientCallback);
                 log.info("Added callback (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                if(this.clientCallbacks.size() > 1000){
+                    log.error("More than 1000 callbacks!");
+                }
             }
         } finally {
             this.lock.writeLock().unlock();

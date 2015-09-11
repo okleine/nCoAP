@@ -28,9 +28,8 @@ package de.uzl.itm.ncoap.communication;
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler;
 import de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory;
-import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
-import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.*;
@@ -52,7 +51,6 @@ import static junit.framework.Assert.assertTrue;
 *
 * @author Stefan Hueske, Oliver Kleine
 */
-@Ignore
 public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
 
     private static Logger LOG = Logger.getLogger(ClientSendsNONRequest.class.getName());
@@ -71,7 +69,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
     @Override
     public void setupLogging() throws Exception {
         Logger.getLogger(ClientSendsNONRequest.class.getName()).setLevel(Level.DEBUG);
-        Logger.getLogger(OutboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(ClientOutboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
         Logger.getLogger(MessageIDFactory.class.getName()).setLevel(Level.DEBUG);
         Logger.getLogger(ResponseDispatcher.class.getName()).setLevel(Level.DEBUG);
         Logger.getLogger(TestCallback.class.getName()).setLevel(Level.DEBUG);

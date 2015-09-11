@@ -25,7 +25,7 @@
 package de.uzl.itm.ncoap.application.endpoint;
 
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
-import de.uzl.itm.ncoap.communication.blockwise.Block2OptionHandler;
+import de.uzl.itm.ncoap.communication.blockwise.ClientBlock2OptionHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
@@ -36,7 +36,8 @@ import de.uzl.itm.ncoap.communication.observing.ClientObservationHandler;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
-import de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -68,16 +69,15 @@ public class CoapEndpointChannelPipelineFactory extends CoapChannelPipelineFacto
         addChannelHandler(new ClientIdentificationHandler(executor));
         addChannelHandler(new ServerIdentificationHandler(executor));
 
-        // generic handler
-        addChannelHandler(new OutboundReliabilityHandler(executor));
-
         // client specific handlers
+        addChannelHandler(new ClientOutboundReliabilityHandler(executor));
         addChannelHandler(new ClientInboundReliabilityHandler(executor));
-        addChannelHandler(new Block2OptionHandler(executor));
+        addChannelHandler(new ClientBlock2OptionHandler(executor));
         addChannelHandler(new ClientObservationHandler(executor));
         addChannelHandler(new ResponseDispatcher(executor, tokenFactory));
 
         // server specific handlers
+        addChannelHandler(new ServerOutboundReliabilityHandler(executor));
         addChannelHandler(new ServerInboundReliabilityHandler(executor));
         addChannelHandler(new ServerObservationHandler(executor));
         addChannelHandler(new RequestDispatcher(notFoundHandler, executor));

@@ -64,6 +64,8 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
             ((EmptyAckReceivedEvent.Handler) this).handleEvent((EmptyAckReceivedEvent) message);
         } else if (message instanceof MessageIDAssignedEvent && this instanceof MessageIDAssignedEvent.Handler) {
             ((MessageIDAssignedEvent.Handler) this).handleEvent((MessageIDAssignedEvent) message);
+        } else if (message instanceof NoMessageIDAvailableEvent && this instanceof NoMessageIDAvailableEvent.Handler) {
+            ((NoMessageIDAvailableEvent.Handler) this).handleEvent((NoMessageIDAvailableEvent) message);
         } else if (message instanceof MessageRetransmittedEvent && this instanceof MessageRetransmittedEvent.Handler) {
             ((MessageRetransmittedEvent.Handler) this).handleEvent((MessageRetransmittedEvent) message);
         } else if (message instanceof MiscellaneousErrorEvent && this instanceof MiscellaneousErrorEvent.Handler) {
