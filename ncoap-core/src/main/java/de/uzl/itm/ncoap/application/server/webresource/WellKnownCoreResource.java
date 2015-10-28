@@ -53,7 +53,7 @@ import java.util.concurrent.ScheduledExecutorService;
 *
 * @author Oliver Kleine
 */
-public final class WellKnownCoreResource extends NotObservableWebresource<Map<String, Webresource>> {
+public final class WellKnownCoreResource extends ObservableWebresource<Map<String, Webresource>> {
 
     private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
 
@@ -163,7 +163,7 @@ public final class WellKnownCoreResource extends NotObservableWebresource<Map<St
     public byte[] getSerializedResourceStatus(LinkAttribute attribute){
         StringBuilder buffer = new StringBuilder();
 
-        for(Webresource webresource : getStatus().values()){
+        for(Webresource webresource : getResourceStatus().values()){
 
             if(attribute != null && !webresource.hasLinkAttribute(attribute))
                 continue;
@@ -202,7 +202,7 @@ public final class WellKnownCoreResource extends NotObservableWebresource<Map<St
     public byte[] getSerializedResourceStatus(long contentFormat){
         StringBuilder buffer = new StringBuilder();
 
-        for(Webresource webresource : getStatus().values()){
+        for(Webresource webresource : getResourceStatus().values()){
             buffer.append("<").append(webresource.getUriPath()).append(">");
 
             String previousKey = null;
@@ -223,6 +223,10 @@ public final class WellKnownCoreResource extends NotObservableWebresource<Map<St
     }
 
 
+    @Override
+    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteSocket) {
+        return true;
+    }
 
     @Override
     public void shutdown() {

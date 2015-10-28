@@ -58,19 +58,16 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     private ReentrantReadWriteLock lock;
 
-    //private final MessageIDFactory messageIDFactory;
 
     /**
      * Creates a new instance of {@link de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler}
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
      *                 reliable message transfer
      */
-    public ClientOutboundReliabilityHandler(ScheduledExecutorService executor){
-        super(executor);
+    public ClientOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory){
+        super(executor, factory);
         this.transfers1 = HashBasedTable.create();
         this.transfers2 = HashBasedTable.create();
-        //this.messageIDFactory = new MessageIDFactory(executor);
-        //this.messageIDFactory.addObserver(this);
         this.lock = new ReentrantReadWriteLock();
     }
 
@@ -124,21 +121,25 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
     private boolean handleInboundEmptyMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         MessageType.Name messageType = coapMessage.getMessageTypeName();
         if(messageType == MessageType.Name.CON) {
-            // incoming PINGs are handled by the inbound reliabilty handler
+            // incoming PINGs are handled by the inbound reliability handler
             return true;
         } else {
             int messageID = coapMessage.getMessageID();
             Token token = removeTransfer(remoteSocket, messageID);
-            if(token != null && messageType == MessageType.Name.ACK) {
+            if(token == null) {
+                return true;
+            } else if (messageType == MessageType.Name.ACK) {
                 LOG.info("Received empty ACK from \"{}\" for token {} (Message ID: {}).",
                     new Object[]{remoteSocket, messageID, token});
                 triggerEvent(new EmptyAckReceivedEvent(remoteSocket, messageID, token), false);
-            } else if (token != null && messageType == MessageType.Name.RST) {
+                return false;
+            } else if (messageType == MessageType.Name.RST) {
                 LOG.info("Received RST from \"{}\" for token {} (Message ID: {}).",
                         new Object[]{remoteSocket, messageID, token});
                 triggerEvent(new ResetReceivedEvent(remoteSocket, messageID, token), false);
+                return false;
             } else {
-                LOG.warn("No open transfer found for RST from \"{}\" (Message ID: {}).", remoteSocket, messageID);
+                LOG.error("Could not handle empty message from \"{}\": {}", remoteSocket, coapMessage);
             }
             return false;
         }

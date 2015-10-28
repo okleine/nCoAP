@@ -69,8 +69,8 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
      *                 reliable message transfer
      */
-    public ServerOutboundReliabilityHandler(ScheduledExecutorService executor){
-        super(executor);
+    public ServerOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory){
+        super(executor, factory);
         this.transfers1 = HashBasedTable.create();
         this.transfers2 = HashBasedTable.create();
 

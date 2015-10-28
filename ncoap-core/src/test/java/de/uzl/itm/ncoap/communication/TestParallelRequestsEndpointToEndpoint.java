@@ -25,8 +25,8 @@
 
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClient;
-import de.uzl.itm.ncoap.application.server.CoapServer;
+import de.uzl.itm.ncoap.application.endpoint.CoapEndpoint;
+import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -50,9 +50,9 @@ import static org.junit.Assert.assertEquals;
 * Time: 14:58
 * To change this template use File | Settings | File Templates.
 */
-public class TestParallelRequests extends AbstractCoapCommunicationTest {
+public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunicationTest {
 
-    private static CoapClient client;
+    private static CoapEndpoint client;
 
     private static final int NUMBER_OF_PARALLEL_REQUESTS = 200;
 
@@ -61,7 +61,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
     private static CoapRequest[] requests = new CoapRequest[NUMBER_OF_PARALLEL_REQUESTS];
 
-    private static CoapServer server;
+    private static CoapEndpoint server;
     private static InetSocketAddress serverSocket;
 
     @Override
@@ -74,7 +74,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
     @Override
     public void setupComponents() throws Exception {
 
-        server = new CoapServer();
+        server = new CoapEndpoint(NotFoundHandler.getDefault(), new InetSocketAddress(5683));
         serverSocket = new InetSocketAddress("localhost", server.getPort());
 
         //Add different webservices to server
@@ -84,7 +84,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         }
 
         //Create client, callbacks and requests
-        client = new CoapClient();
+        client = new CoapEndpoint(NotFoundHandler.getDefault(), new InetSocketAddress(5684));
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
             clientCallbacks[i] = new TestCallback();
@@ -103,7 +103,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
     public void createTestScenario() throws Exception {
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            client.sendCoapRequest(requests[i], serverSocket, clientCallbacks[i]);
+            client.sendCoapRequest(requests[i], clientCallbacks[i], serverSocket);
         }
 
         //await responses (10 seconds should more than enough for 100 requests!)

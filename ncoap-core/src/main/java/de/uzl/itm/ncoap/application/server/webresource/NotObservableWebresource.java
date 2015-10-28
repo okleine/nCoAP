@@ -220,6 +220,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      * @return a {@link WrappedResourceStatus} if any of the given content formats was supported or
      * <code>null</code> if the resource status could not be serialized to any accepted content format.
      */
+    @Override
     public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
         try{
             this.readWriteLock.readLock().lock();
@@ -242,7 +243,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
 
     @Override
-    public final T getStatus(){
+    public final T getResourceStatus(){
         return this.resourceStatus;
     }
 
@@ -260,7 +261,8 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      * @return the number of seconds the actual resource state can be considered fresh for status caching on proxies
      * or clients.
      */
-    protected final long getMaxAge(){
+    @Override
+    public final long getMaxAge(){
         return Math.max(this.resourceStatusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
 

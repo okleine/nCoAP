@@ -27,6 +27,7 @@ package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.message.*;
@@ -85,6 +86,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
     public void setupLogging() throws Exception {
         Logger.getLogger(TestCallback.class.getName()).setLevel(Level.DEBUG);
         Logger.getLogger(DummyEndpoint.class.getName()).setLevel(Level.DEBUG);
+        Logger.getLogger(ClientInboundReliabilityHandler.class.getName()).setLevel(Level.DEBUG);
     }
 
     @Override
@@ -103,7 +105,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         */
 
         //write request
-        client.sendCoapRequest(coapRequest, callback, endpointSocket);
+        client.sendCoapRequest(coapRequest, endpointSocket, callback);
 
         //Wait some time
         Thread.sleep(300);

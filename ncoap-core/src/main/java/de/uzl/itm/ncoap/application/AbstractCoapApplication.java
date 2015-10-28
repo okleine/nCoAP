@@ -32,6 +32,7 @@ import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
+import org.jboss.netty.channel.socket.InternetProtocolFamily;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
@@ -75,7 +76,7 @@ public abstract class AbstractCoapApplication {
 
 
     protected void startApplication(CoapChannelPipelineFactory pipelineFactory, InetSocketAddress socketAddress){
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, executor.getCorePoolSize()/2);
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, executor.getCorePoolSize() / 2);
 
         //Create and configure bootstrap
         ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
@@ -96,9 +97,9 @@ public abstract class AbstractCoapApplication {
     }
 
 
-    protected void startApplication(CoapChannelPipelineFactory pipelineFactory, int port){
-        this.startApplication(pipelineFactory, new InetSocketAddress(port));
-    }
+//    protected void startApplication(CoapChannelPipelineFactory pipelineFactory, int port){
+//        this.startApplication(pipelineFactory, new InetSocketAddress(port));
+//    }
 
     /**
      * Returns the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
@@ -141,4 +142,5 @@ public abstract class AbstractCoapApplication {
     public String getApplicationName() {
         return applicationName;
     }
+
 }

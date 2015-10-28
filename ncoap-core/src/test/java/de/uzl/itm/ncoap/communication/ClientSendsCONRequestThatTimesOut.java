@@ -133,7 +133,7 @@ public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunication
         //Send coapRequest
         InetSocketAddress remoteEndpoint = new InetSocketAddress("localhost", testEndpoint.getPort());
         timeRequestSent = System.currentTimeMillis();
-        client.sendCoapRequest(coapRequest, callback, remoteEndpoint);
+        client.sendCoapRequest(coapRequest, remoteEndpoint, callback);
 
         //Wait for the message ID to retire (takes 247 seconds).
         Thread.sleep(48000);

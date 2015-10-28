@@ -132,7 +132,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
 
 
         //write request
-        client.sendCoapRequest(request, clientCallback, new InetSocketAddress("localhost", server.getPort()));
+        client.sendCoapRequest(request, new InetSocketAddress("localhost", server.getPort()), clientCallback);
 
         Thread.sleep(5000);
         service.setResourceStatus(2, 10);

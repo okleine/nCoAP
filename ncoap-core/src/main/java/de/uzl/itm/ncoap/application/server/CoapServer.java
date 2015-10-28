@@ -33,7 +33,6 @@ import de.uzl.itm.ncoap.application.AbstractCoapApplication;
 import de.uzl.itm.ncoap.application.server.webresource.Webresource;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
-import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,6 +139,7 @@ public class CoapServer extends AbstractCoapApplication {
         
         // set the webresource manager
         this.requestDispatcher = getChannel().getPipeline().get(RequestDispatcher.class);
+        this.requestDispatcher.registerWellKnownCoreResource();
 //        this.requestDispatcher.setChannel(this.getChannel());
 //
 //        notFoundHandler.setRequestDispatcher(requestDispatcher);

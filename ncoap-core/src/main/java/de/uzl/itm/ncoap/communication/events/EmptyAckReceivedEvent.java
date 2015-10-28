@@ -62,12 +62,12 @@ import java.net.InetSocketAddress;
 public class EmptyAckReceivedEvent extends AbstractMessageTransferEvent {
 
     /**
-     * @param remoteEndpoint the remote endpoint that sent the empty ACK
+     * @param remoteSocket the remote endpoint that sent the empty ACK
      * @param messageID the message ID of the message whose reception was confirmed with this empty ACK
      * @param token the token of the confirmed message
      */
-    public EmptyAckReceivedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token){
-        super(remoteEndpoint, messageID, token);
+    public EmptyAckReceivedEvent(InetSocketAddress remoteSocket, int messageID, Token token){
+        super(remoteSocket, messageID, token);
     }
 
 //    @Override

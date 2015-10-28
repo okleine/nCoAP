@@ -49,7 +49,7 @@
                     <execution>
                         <configuration>
                             <mainClass>
-                                de.uzl.itm.ncoap.examples.SimpleCoapClient
+                                de.uzl.itm.ncoap.examples.PerformanceTestServer
                             </mainClass>
                             <!-- Optional -->
                             <onejarVersion>0.97</onejarVersion>

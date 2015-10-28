@@ -287,4 +287,35 @@ public class CoapResponse extends CoapMessage {
         return new URI(null, null, null, (int) UintOptionValue.UNDEFINED, locationPath.toString(),
                 locationQuery.toString(), null);
     }
+
+    /**
+     * Sets the Max-Age option of this {@link de.uzl.itm.ncoap.message.CoapResponse}. If there was a Max-Age option set prior to the
+     * invocation of this method, the previous value is overwritten.
+     *
+     * @param maxAge the value for the Max-Age option to be set
+     */
+    public void setMaxAge(long maxAge){
+        try{
+            this.options.removeAll(OptionValue.Name.MAX_AGE);
+            this.addUintOption(OptionValue.Name.MAX_AGE, maxAge);
+        }
+        catch (IllegalArgumentException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+
+    /**
+     * Returns the value of the Max-Age option of this {@link de.uzl.itm.ncoap.message.CoapResponse}. If no such option
+     * exists, this method returns {@link de.uzl.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
+     *
+     * @return the value of the Max-Age option of this {@link de.uzl.itm.ncoap.message.CoapResponse}. If no such option
+     * exists, this method returns {@link de.uzl.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
+     */
+    public long getMaxAge(){
+        if(options.containsKey(OptionValue.Name.MAX_AGE))
+            return ((UintOptionValue) options.get(OptionValue.Name.MAX_AGE).iterator().next()).getDecodedValue();
+        else
+            return OptionValue.MAX_AGE_DEFAULT;
+    }
 }

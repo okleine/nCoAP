@@ -164,10 +164,10 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
     @Override
     public byte[] getSerializedResourceStatus(long contentFormat) {
         if(contentFormat == ContentFormat.TEXT_PLAIN_UTF8)
-            return getStatus().getBytes(Charset.forName("UTF-8"));
+            return getResourceStatus().getBytes(Charset.forName("UTF-8"));
 
         if(contentFormat == ContentFormat.APP_XML)
-            return ("<status>" + getStatus() + "</status>").getBytes(Charset.forName("UTF-8"));
+            return ("<status>" + getResourceStatus() + "</status>").getBytes(Charset.forName("UTF-8"));
 
         return null;
     }

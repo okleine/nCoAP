@@ -58,7 +58,7 @@ public class ClientSendsPingToServer extends AbstractCoapCommunicationTest{
     @Override
     public void createTestScenario() throws Exception {
         InetSocketAddress serverAddress = new InetSocketAddress("127.0.0.1", coapServer.getPort());
-        coapClient.sendCoapPing(callback, serverAddress);
+        coapClient.sendCoapPing(serverAddress, callback);
 
 
         Thread.sleep(1000);

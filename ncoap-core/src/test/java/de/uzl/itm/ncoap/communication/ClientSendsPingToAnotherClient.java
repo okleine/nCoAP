@@ -56,7 +56,7 @@ public class ClientSendsPingToAnotherClient extends AbstractCoapCommunicationTes
     @Override
     public void createTestScenario() throws Exception {
         InetSocketAddress client2Address = new InetSocketAddress("127.0.0.1", client2.getPort());
-        client1.sendCoapPing(callback, client2Address);
+        client1.sendCoapPing(client2Address, callback);
         Thread.sleep(1000);
     }
 

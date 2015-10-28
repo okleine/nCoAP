@@ -25,14 +25,15 @@
 package de.uzl.itm.ncoap.communication.events.client;
 
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.AbstractMessageTransferEvent;
+import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
+
 
 import java.net.InetSocketAddress;
 
 /**
  * Created by olli on 31.08.15.
  */
-public class RemoteServerSocketChangedEvent extends AbstractMessageTransferEvent {
+public class RemoteServerSocketChangedEvent extends AbstractMessageExchangeEvent {
 
     private final InetSocketAddress previous;
 
@@ -42,15 +43,12 @@ public class RemoteServerSocketChangedEvent extends AbstractMessageTransferEvent
      * @param remoteSocket the remote endpoint of the
      *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
      *                       event
-     * @param messageID      the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
-     *                       that caused this event
      * @param token          the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
      *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
      */
-    public RemoteServerSocketChangedEvent(InetSocketAddress remoteSocket, InetSocketAddress previous, int messageID,
-                                          Token token) {
+    public RemoteServerSocketChangedEvent(InetSocketAddress remoteSocket, InetSocketAddress previous, Token token) {
 
-        super(remoteSocket, messageID, token);
+        super(remoteSocket, token);
         this.previous = previous;
 
     }

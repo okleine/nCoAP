@@ -92,7 +92,7 @@ public class ClientSendsNONRequestThatTimesOut extends AbstractCoapCommunication
         LOG.warn("*****THIS TEST TAKES MORE THAN 4 MINUTES******");
 
         //send request to testServer
-        client.sendCoapRequest(request, callback, new InetSocketAddress("localhost", 5683));
+        client.sendCoapRequest(request, new InetSocketAddress("localhost", 5683), callback);
 
         //wait some time for response from server
         Thread.sleep(250000);

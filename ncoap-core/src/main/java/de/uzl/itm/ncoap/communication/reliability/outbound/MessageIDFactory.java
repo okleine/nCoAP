@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Oliver Kleine
 */
-public class MessageIDFactory extends Observable{
+public class MessageIDFactory extends Observable {
 
     /**
      * The number of seconds (247) a message ID is allocated by the nCoAP framework to avoid duplicate
@@ -67,6 +67,7 @@ public class MessageIDFactory extends Observable{
     private TreeMultimap<InetSocketAddress, Integer> allocations;
     private ReentrantReadWriteLock lock;
     private ScheduledExecutorService executor;
+
 
     /**
      * @param executor the {@link ScheduledExecutorService} to provide the thread for operations to

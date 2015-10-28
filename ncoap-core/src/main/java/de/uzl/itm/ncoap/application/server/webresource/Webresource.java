@@ -27,12 +27,14 @@ package de.uzl.itm.ncoap.application.server.webresource;
 
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestConsumer;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -42,7 +44,7 @@ import java.util.concurrent.ScheduledExecutorService;
 * Example: Assume, you want to realize a service representing a temperature with limited accuracy (integer values).
 * Then, your service class must implement Webservice<Integer>.
 */
-public interface Webresource<T> {
+public interface Webresource<T> extends RequestConsumer{
 
     /**
      * Returns the (relative) path this service is registered at.
@@ -86,8 +88,9 @@ public interface Webresource<T> {
      *
      * @return the object of type T that holds the actual resourceStatus of the resource
      */
-    public T getStatus();
+    public T getResourceStatus();
 
+    public WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats);
 
     /**
      * Method to set the new status of the resource represented by this {@link Webresource}.
@@ -184,6 +187,7 @@ public interface Webresource<T> {
      *
      * @throws Exception if an error occurred while processing the {@link de.uzl.itm.ncoap.message.CoapRequest}.
      */
+    @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                    InetSocketAddress remoteEndpoint) throws Exception;
 
@@ -253,6 +257,15 @@ public interface Webresource<T> {
      * {@link Webresource} instance
      */
     public Collection<LinkAttribute> getLinkAttributes();
+
+    /**
+     * Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies
+     * or clients.
+     *
+     * @return the number of seconds the actual resource state can be considered fresh for status caching on proxies
+     * or clients.
+     */
+    public long getMaxAge();
 
 //    /**
 //     * Implementing classes must provide this method such that it returns <code>true</code> if

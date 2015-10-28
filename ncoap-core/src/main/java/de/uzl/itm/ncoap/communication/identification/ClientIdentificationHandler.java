@@ -25,12 +25,11 @@
 package de.uzl.itm.ncoap.communication.identification;
 
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
+import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
-import org.jboss.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,8 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * @author Oliver Kleine
  */
-public class ClientIdentificationHandler extends AbstractIdentificationHandler implements TokenReleasedEvent.Handler {
+public class ClientIdentificationHandler extends AbstractIdentificationHandler
+        implements TokenReleasedEvent.Handler {
 
     private static Logger LOG = LoggerFactory.getLogger(ClientIdentificationHandler.class.getName());
 
@@ -109,8 +109,8 @@ public class ClientIdentificationHandler extends AbstractIdentificationHandler i
 
             if(updateAssignedByMe(endpointID2, token, remoteSocket)){
                 triggerEvent(new RemoteServerSocketChangedEvent(
-                        remoteSocket, previousSocket, coapResponse.getMessageID(), coapResponse.getToken()
-                ), false);
+                    remoteSocket, previousSocket, coapResponse.getToken()
+                    ), false);
                 continueMessageProcessing(coapResponse, remoteSocket);
                 result = false;
             }

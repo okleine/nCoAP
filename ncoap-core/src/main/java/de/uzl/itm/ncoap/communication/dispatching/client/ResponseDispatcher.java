@@ -25,10 +25,11 @@
 package de.uzl.itm.ncoap.communication.dispatching.client;
 
 import com.google.common.collect.HashBasedTable;
+import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.events.*;
-import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
+import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
@@ -44,7 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <p>The {@link ResponseDispatcher} is responsible for
  * processing inbound {@link de.uzl.itm.ncoap.message.CoapResponse}s. That is why each
  * {@link de.uzl.itm.ncoap.message.CoapRequest} needs an associated instance of
- * {@link ClientCallback} to be called upon reception
+ * {@link de.uzl.itm.ncoap.application.client.ClientCallback} to be called upon reception
  * of a related {@link de.uzl.itm.ncoap.message.CoapResponse}.</p>
  * <p/>
  * <p>Besides the response dispatching the
@@ -57,7 +58,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class ResponseDispatcher extends AbstractCoapChannelHandler implements RemoteServerSocketChangedEvent.Handler,
         EmptyAckReceivedEvent.Handler, ResetReceivedEvent.Handler, PartialContentReceivedEvent.Handler,
         MessageIDAssignedEvent.Handler, MessageRetransmittedEvent.Handler, TransmissionTimeoutEvent.Handler,
-        NoMessageIDAvailableEvent.Handler, MiscellaneousErrorEvent.Handler{
+        NoMessageIDAvailableEvent.Handler, MiscellaneousErrorEvent.Handler, TokenReleasedEvent.Handler{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -126,12 +127,18 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         }
     }
 
+    @Override
+    public void handleEvent(TokenReleasedEvent event) {
+        Token token = event.getToken();
+        this.tokenFactory.releaseToken(token);
+    }
+
 
     @Override
     public void handleEvent(ResetReceivedEvent event) {
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
-        ClientCallback callback = getCallback(remoteSocket, token);
+        ClientCallback callback = removeCallback(remoteSocket, token);
         if(callback != null) {
             callback.processReset();
         } else {
@@ -220,22 +227,20 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
      * This method is called by the {@link de.uzl.itm.ncoap.application.client.CoapClient} or by the
      * {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint} to send a request to a remote endpoint (server).
      *
-     * @param channel the {@link org.jboss.netty.channel.Channel} to send the message
      * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be sent
      * @param remoteSocket the {@link java.net.InetSocketAddress} of the recipient
-     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to be
+     * @param callback the {@link de.uzl.itm.ncoap.application.client.ClientCallback} to be
      * called upon reception of a response or any kind of
      * {@link de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent}.
      */
-    public void sendCoapRequest(Channel channel, CoapRequest coapRequest, InetSocketAddress remoteSocket,
-                                ClientCallback callback) {
-        getExecutor().submit(new WriteCoapMessageTask(channel, coapRequest, remoteSocket, callback));
+    public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteSocket, ClientCallback callback) {
+        getExecutor().submit(new WriteCoapMessageTask(coapRequest, remoteSocket, callback));
     }
 
 
-    public void sendCoapPing(Channel channel, InetSocketAddress remoteSocket, ClientCallback callback) {
+    public void sendCoapPing(InetSocketAddress remoteSocket, ClientCallback callback) {
         final CoapMessage coapPing = CoapMessage.createPing(CoapMessage.UNDEFINED_MESSAGE_ID);
-        getExecutor().submit(new WriteCoapMessageTask(channel, coapPing, remoteSocket, callback));
+        getExecutor().submit(new WriteCoapMessageTask(coapPing, remoteSocket, callback));
     }
 
 
@@ -310,7 +315,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
             } else {
                 log.info("Removed callback (remote endpoint: {}, token: {}). Remaining: {}",
                         new Object[]{remoteEndpoint, token, this.clientCallbacks.size()});
-                this.tokenFactory.passBackToken(token);
+                triggerEvent(new TokenReleasedEvent(remoteEndpoint, token), true);
             }
             return callback;
         } finally {
@@ -336,14 +341,16 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
             if (coapResponse.isErrorResponse() || !coapResponse.isUpdateNotification()) {
                 removeCallback(remoteSocket, token);
                 log.debug("Callback removed because inbound response was no update notification!");
-            } else if (!callback.continueObservation()) {
-                // send internal message to stop the observation
-                triggerEvent(new LazyObservationTerminationEvent(remoteSocket, token), true);
+            }
+            callback.processCoapResponse(coapResponse);
+
+            if (coapResponse.isUpdateNotification() && !callback.continueObservation()) {
+                removeCallback(remoteSocket, token);
             }
 
             //Process the CoAP response
             log.debug("Callback found for token {} from {}.", token, remoteSocket);
-            callback.processCoapResponse(coapResponse);
+
         } else {
             log.warn("No callback found for CoAP response (from {}): {}", remoteSocket, coapResponse);
         }
@@ -358,15 +365,13 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
 
     private class WriteCoapMessageTask implements Runnable {
 
-        private final Channel channel;
         private final CoapMessage coapMessage;
         private final InetSocketAddress remoteSocket;
         private final ClientCallback callback;
 
-        public WriteCoapMessageTask(Channel channel, CoapMessage coapMessage, InetSocketAddress remoteSocket,
+        public WriteCoapMessageTask(CoapMessage coapMessage, InetSocketAddress remoteSocket,
                                     ClientCallback callback) {
 
-            this.channel = channel;
             this.coapMessage = coapMessage;
             this.remoteSocket = remoteSocket;
             this.callback = callback;
@@ -412,7 +417,8 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         }
 
         private void sendRequest() {
-            ChannelFuture future = Channels.write(this.channel, this.coapMessage, this.remoteSocket);
+            ChannelFuture future = Channels.future(getContext().getChannel());
+            Channels.write(getContext(), future, coapMessage, this.remoteSocket);
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {

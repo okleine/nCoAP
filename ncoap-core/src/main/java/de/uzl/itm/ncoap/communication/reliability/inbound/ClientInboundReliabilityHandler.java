@@ -29,11 +29,11 @@ import com.google.common.collect.Multimap;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
+import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageType;
-import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,14 +45,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Created by olli on 09.09.15.
  */
 public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
-        implements RemoteServerSocketChangedEvent.Handler{
+        implements RemoteServerSocketChangedEvent.Handler, TokenReleasedEvent.Handler{
 
     /**
      * Minimum delay in milliseconds (1500) between the reception of a confirmable request and an empty ACK
      */
     private static Logger LOG = LoggerFactory.getLogger(ClientInboundReliabilityHandler.class.getName());
 
-    private Multimap<InetSocketAddress, Token> ongoingExchanges;
+    private Multimap<InetSocketAddress, Token> awaitedResponses;
     private ReentrantReadWriteLock lock;
 
 
@@ -65,7 +65,7 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
      */
     public ClientInboundReliabilityHandler(ScheduledExecutorService executor){
         super(executor);
-        this.ongoingExchanges = HashMultimap.create();
+        this.awaitedResponses = HashMultimap.create();
         this.lock = new ReentrantReadWriteLock();
     }
 
@@ -91,18 +91,23 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 
         if (coapMessage instanceof CoapRequest) {
-            addMessageExchange(remoteSocket, coapMessage.getToken());
-            return true;
-        } else {
-            return true;
+            addToAwaitedResponses(remoteSocket, coapMessage.getToken());
+            LOG.debug("Exchanges: {}", this.awaitedResponses.size());
         }
+
+        return true;
     }
 
 
     @Override
     public void handleEvent(RemoteServerSocketChangedEvent event) {
-        removeMessageExchange(event.getPreviousRemoteSocket(), event.getToken());
-        addMessageExchange(event.getRemoteSocket(), event.getToken());
+        removeFromAwaitedResponses(event.getPreviousRemoteSocket(), event.getToken());
+        addToAwaitedResponses(event.getRemoteSocket(), event.getToken());
+    }
+
+    @Override
+    public void handleEvent(TokenReleasedEvent event) {
+        removeFromAwaitedResponses(event.getRemoteSocket(), event.getToken());
     }
 
 
@@ -112,18 +117,14 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
         Token token = coapResponse.getToken();
 
         if(!this.isResponseAwaited(remoteSocket, token)) {
-            if(messageType == MessageType.Name.CON) {
+            if(messageType == MessageType.Name.CON
+               || (messageType == MessageType.Name.NON && coapResponse.isUpdateNotification())) {
                 // response was unexpected (send RST)
                 sendReset(coapResponse.getMessageID(), remoteSocket);
             }
             LOG.debug("Received unexpected response from \"{}\" (token: {})", remoteSocket, token);
             return false;
-        } else if(!coapResponse.isUpdateNotification()) {
-            // this is the only expected response within this message transfer (i.e. no update notification)
-            removeMessageExchange(remoteSocket, token);
-        }
-
-        if((messageType == MessageType.Name.CON)){
+        } else if ((messageType == MessageType.Name.CON)){
             // send empty ACK
             sendEmptyACK(coapResponse.getMessageID(), remoteSocket);
         }
@@ -134,27 +135,27 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
     private boolean isResponseAwaited(InetSocketAddress remoteSocket, Token token){
         try {
             this.lock.readLock().lock();
-            return ongoingExchanges.get(remoteSocket).contains(token);
+            return awaitedResponses.get(remoteSocket).contains(token);
         } finally {
             this.lock.readLock().unlock();
         }
     }
 
-    private void addMessageExchange(InetSocketAddress remoteSocket, Token token) {
+    private void addToAwaitedResponses(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.writeLock().lock();
-            this.ongoingExchanges.put(remoteSocket, token);
+            this.awaitedResponses.put(remoteSocket, token);
             LOG.debug("Added message exchange with \"{}\" and token {} (Now: {})",
-                    new Object[]{remoteSocket, token, this.ongoingExchanges.size()});
+                    new Object[]{remoteSocket, token, this.awaitedResponses.size()});
         } finally {
             this.lock.writeLock().unlock();
         }
     }
 
-    private boolean removeMessageExchange(InetSocketAddress remoteSocket, Token token){
+    private boolean removeFromAwaitedResponses(InetSocketAddress remoteSocket, Token token){
         try {
             this.lock.readLock().lock();
-            if(!ongoingExchanges.get(remoteSocket).contains(token)){
+            if(!awaitedResponses.get(remoteSocket).contains(token)){
                 return false;
             }
         } finally {
@@ -163,9 +164,9 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
 
         try {
             this.lock.writeLock().lock();
-            if(this.ongoingExchanges.remove(remoteSocket, token)) {
+            if(this.awaitedResponses.remove(remoteSocket, token)) {
                 LOG.debug("Removed message exchange with \"{}\" and token {} (Remaining: {})",
-                        new Object[]{remoteSocket, token, this.ongoingExchanges.size()});
+                        new Object[]{remoteSocket, token, this.awaitedResponses.size()});
                 return true;
             } else {
                 return false;

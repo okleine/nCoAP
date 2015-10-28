@@ -53,9 +53,8 @@ import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Instances are sent upstream by the
- * {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler}
- * if there was a RST message received and a related outbound transfer was found.
+ * Internal {@link de.uzl.itm.ncoap.communication.events.AbstractMessageTransferEvent} which is fired whenever an
+ * a RST message was received.
  *
  * @author Oliver Kleine
  */
@@ -72,10 +71,6 @@ public class ResetReceivedEvent extends AbstractMessageTransferEvent {
         super(remoteEndpoint, messageID, token);
     }
 
-//    @Override
-//    public boolean stopsMessageExchange() {
-//        return true;
-//    }
 
 
     @Override

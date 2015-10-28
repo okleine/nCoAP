@@ -28,16 +28,14 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
-import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
+import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
+import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.Channels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,8 +51,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Oliver Kleine
  */
 public class ClientObservationHandler extends AbstractCoapChannelHandler implements
-        LazyObservationTerminationEvent.Handler, ResetReceivedEvent.Handler, RemoteServerSocketChangedEvent.Handler,
-        TransmissionTimeoutEvent.Handler {
+        TokenReleasedEvent.Handler, RemoteServerSocketChangedEvent.Handler {
 
     private static Logger LOG = LoggerFactory.getLogger(ClientObservationHandler.class.getName());
 
@@ -81,22 +78,23 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
         final CoapResponse coapResponse = (CoapResponse) coapMessage;
         Token token = coapResponse.getToken();
 
-        if(!coapResponse.isUpdateNotification() || coapResponse.isErrorResponse()){
-            //Current response is NO update notification or is an error response (which SHOULD implicate the first)
-            if(observations.contains(remoteSocket, token)){
-                LOG.info("Stop observation (remote address: {}, token: {}) due to received response: {}",
-                        new Object[]{remoteSocket, token, coapResponse});
-
-                stopObservation(remoteSocket, token);
-            }
-        } else {
-            if(!observations.contains(remoteSocket, token)){
-                //current response is update notification but there is no matching observation
-                LOG.warn("No observation found for update notification (remote endpoint: {}, token: {}). Send RESET!",
-                        remoteSocket, token);
-                sendReset(coapMessage.getMessageID(), remoteSocket);
-                return false;
-            } else if(coapResponse.isUpdateNotification() && !coapResponse.isErrorResponse()) {
+//        if(!coapResponse.isUpdateNotification() || coapResponse.isErrorResponse()){
+//            //Current response is NO update notification or is an error response (which SHOULD implicate the first)
+//            if(observations.contains(remoteSocket, token)){
+//                LOG.info("Stop observation (remote address: {}, token: {}) due to received response: {}",
+//                        new Object[]{remoteSocket, token, coapResponse});
+//
+//                stopObservation(remoteSocket, token);
+//            }
+//        } else {
+//            if(!observations.contains(remoteSocket, token)){
+//                //current response is update notification but there is no matching observation
+//                LOG.warn("No observation found for update notification (remote endpoint: {}, token: {}). Send RESET!",
+//                        remoteSocket, token);
+//                //sendReset(coapMessage.getMessageID(), remoteSocket);
+//                return false;
+//            } else
+            if(coapResponse.isUpdateNotification() && !coapResponse.isErrorResponse()) {
                 //Current response is (non-error) update notification and there is a suitable observation
                 ResourceStatusAge latestStatusAge = observations.get(remoteSocket, token);
 
@@ -112,7 +110,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
                     return false;
                 }
             }
-        }
+//        }
 
         return true;
     }
@@ -137,7 +135,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
 
 
     @Override
-    public void handleEvent(LazyObservationTerminationEvent event) {
+    public void handleEvent(TokenReleasedEvent event) {
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         stopObservation(remoteSocket, token);
@@ -145,10 +143,10 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
     }
 
 
-    @Override
-    public void handleEvent(ResetReceivedEvent event) {
-        stopObservation(event.getRemoteSocket(), event.getToken());
-    }
+//    @Override
+//    public void handleEvent(ResetReceivedEvent event) {
+//        stopObservation(event.getRemoteSocket(), event.getToken());
+//    }
 
 
     @Override
@@ -184,10 +182,10 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
     }
 
 
-    @Override
-    public void handleEvent(TransmissionTimeoutEvent event) {
-        stopObservation(event.getRemoteSocket(), event.getToken());
-    }
+//    @Override
+//    public void handleEvent(TransmissionTimeoutEvent event) {
+//        stopObservation(event.getRemoteSocket(), event.getToken());
+//    }
 
 
     private void startObservation(InetSocketAddress remoteEndpoint, Token token){

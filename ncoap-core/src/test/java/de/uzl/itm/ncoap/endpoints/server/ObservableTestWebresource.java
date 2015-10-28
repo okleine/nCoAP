@@ -47,7 +47,7 @@ import static org.junit.Assert.fail;
 /**
 * This observable resource changes its status periodically with a delay given as argument for the constructor.
 * There are 5 possible states. The internal state representation, i.e. the returned value v of
-* {@link #getStatus()} is 1, 2, 3, 4 or 5. The payload contained in a the {@link de.uzl.itm.ncoap.message.CoapResponse}
+* {@link #getResourceStatus()} is 1, 2, 3, 4 or 5. The payload contained in a the {@link de.uzl.itm.ncoap.message.CoapResponse}
 * produced by {@link #processCoapRequest(SettableFuture, de.uzl.itm.ncoap.message.CoapRequest, InetSocketAddress)} is "Status 1",
 * "Status 2", ..., "Status 5".
 *
@@ -83,7 +83,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
                 @Override
                 public void run() {
-                    int newStatus = (getStatus() + 1) % 6;
+                    int newStatus = (getResourceStatus() + 1) % 6;
                     if(newStatus == 0)
                         newStatus = 1;
                     setResourceStatus(newStatus, updateInterval / 1000);
@@ -106,7 +106,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
     @Override
     public byte[] getEtag(long contentFormat) {
-        return Ints.toByteArray(Ints.hashCode(getStatus()));
+        return Ints.toByteArray(Ints.hashCode(getResourceStatus()));
     }
 
     @Override
@@ -227,10 +227,10 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
         switch((int) contentFormat){
 
             case (int) ContentFormat.TEXT_PLAIN_UTF8:
-                return ("Status #" + getStatus()).getBytes(CoapMessage.CHARSET);
+                return ("Status #" + getResourceStatus()).getBytes(CoapMessage.CHARSET);
 
             case (int) ContentFormat.APP_XML:
-                return ("<status>" + getStatus() + "</status>").getBytes(CoapMessage.CHARSET);
+                return ("<status>" + getResourceStatus() + "</status>").getBytes(CoapMessage.CHARSET);
 
             default:
                 return null;
@@ -239,7 +239,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
 
     @Override
-    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteEndpoint) {
+    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteSocket) {
         return true;
     }
 }

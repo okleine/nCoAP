@@ -73,7 +73,7 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
         CoapRequest coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, serviceUri);
         coapRequest.setObserve(0);
         coapRequest.setAccept(111);
-        client.sendCoapRequest(coapRequest, clientCallback, serverSocket);
+        client.sendCoapRequest(coapRequest, serverSocket, clientCallback);
         Thread.sleep(2000);
         service.setResourceStatus(2, 0);
         Thread.sleep(2000);

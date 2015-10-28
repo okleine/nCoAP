@@ -108,7 +108,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
 
 
         //write request
-        client.sendCoapRequest(request, clientCallback, endpointSocket);
+        client.sendCoapRequest(request, endpointSocket, clientCallback);
 
         //wait (2000 - epsilon) milliseconds
         Thread.sleep(1800);

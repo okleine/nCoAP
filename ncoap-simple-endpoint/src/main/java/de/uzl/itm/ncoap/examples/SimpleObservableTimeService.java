@@ -30,7 +30,6 @@ import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.LongLinkAttribute;
 import de.uzl.itm.ncoap.application.server.webresource.linkformat.StringLinkAttribute;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
@@ -101,14 +100,14 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
 
 
     @Override
-    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteEndpoint) {
+    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteSocket) {
         return false;
     }
 
 
     @Override
     public byte[] getEtag(long contentFormat) {
-        return Longs.toByteArray(getStatus() | (contentFormat << 56));
+        return Longs.toByteArray(getResourceStatus() | (contentFormat << 56));
     }
 
 
@@ -125,7 +124,7 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
             public void run() {
                 try{
                     setResourceStatus(System.currentTimeMillis(), updateInterval / 1000);
-                    log.info("New status of resource " + getUriPath() + ": " + getStatus());
+                    log.info("New status of resource " + getUriPath() + ": " + getResourceStatus());
                 }
                 catch(Exception ex){
                     log.error("Exception while updating actual time...", ex);
@@ -228,7 +227,7 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
     public byte[] getSerializedResourceStatus(long contentFormat) {
         log.debug("Try to create payload (content format: " + contentFormat + ")");
 
-        long time = getStatus() % 86400000;
+        long time = getResourceStatus() % 86400000;
         long hours = time / 3600000;
         long remainder = time % 3600000;
         long minutes = remainder / 60000;

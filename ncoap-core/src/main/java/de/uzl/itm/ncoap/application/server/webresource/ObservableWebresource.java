@@ -158,7 +158,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * this method is safely called within {@link #getWrappedResourceStatus(java.util.Set)}.</p>
      */
     @Override
-    public final T getStatus(){
+    public final T getResourceStatus(){
         return this.status;
     }
 
@@ -257,6 +257,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * @return a {@link WrappedResourceStatus} if any of the given content formats was supported or
      * <code>null</code> if the resource status could not be serialized to any accepted content format.
      */
+    @Override
     public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
         try{
             this.statusLock.readLock().lock();
@@ -284,11 +285,11 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * or {@link de.uzl.itm.ncoap.message.MessageType.Name#NON}. However, this method also gives {@link ObservableWebresource}s the opportunity
      * to e.g. distinguish between observers or have some other arbitrary logic...
      *
-     * @param remoteEndpoint the remote CoAP endpoints that observes this {@link ObservableWebresource}
+     * @param remoteSocket the remote CoAP endpoints that observes this {@link ObservableWebresource}
      *
      * @return the message type for the next update notification for the observer identified by the given parameters
      */
-    public abstract boolean isUpdateNotificationConfirmable(InetSocketAddress remoteEndpoint);
+    public abstract boolean isUpdateNotificationConfirmable(InetSocketAddress remoteSocket);
 
 
     /**
@@ -304,7 +305,8 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * @return the number of seconds the actual resource state can be considered fresh for status caching on proxies
      * or clients.
      */
-    protected final long getMaxAge(){
+    @Override
+    public final long getMaxAge(){
         return Math.max(this.statusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
 

@@ -33,6 +33,7 @@ import de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler
 import de.uzl.itm.ncoap.communication.observing.ClientObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
 import de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler;
+import de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.socket.DatagramChannel;
 
@@ -57,15 +58,15 @@ public class CoapClientChannelPipelineFactory extends CoapChannelPipelineFactory
      *                     for generating {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s for
      *                     outbound {@link de.uzl.itm.ncoap.message.CoapRequest}s
      */
-    public CoapClientChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory){
+    public CoapClientChannelPipelineFactory(ScheduledExecutorService executor, int maxTokenLength){
 
         super(executor);
         addChannelHandler(new ClientIdentificationHandler(executor));
-        addChannelHandler(new ClientOutboundReliabilityHandler(executor));
+        addChannelHandler(new ClientOutboundReliabilityHandler(executor, new MessageIDFactory(executor)));
         addChannelHandler(new ClientInboundReliabilityHandler(executor));
         addChannelHandler(new ClientBlock2OptionHandler(executor));
         addChannelHandler(new ClientObservationHandler(executor));
-        addChannelHandler(new ResponseDispatcher(executor, tokenFactory));
+        addChannelHandler(new ResponseDispatcher(executor, new TokenFactory(maxTokenLength)));
     }
 
 }

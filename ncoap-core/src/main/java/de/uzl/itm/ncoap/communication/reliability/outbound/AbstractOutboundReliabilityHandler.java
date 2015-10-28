@@ -81,9 +81,9 @@ public abstract class AbstractOutboundReliabilityHandler extends AbstractCoapCha
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
      *                 reliable message transfer
      */
-    public AbstractOutboundReliabilityHandler(ScheduledExecutorService executor){
+    public AbstractOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory){
         super(executor);
-        this.messageIDFactory = new MessageIDFactory(executor);
+        this.messageIDFactory = factory;
         this.messageIDFactory.addObserver(this);
     }
 

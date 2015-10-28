@@ -87,7 +87,7 @@ public class TokenFactory {
     }
 
 
-    public synchronized boolean passBackToken(Token token){
+    public synchronized boolean releaseToken(Token token){
         try{
             this.lock.readLock().lock();
             if(!this.activeTokens.contains(token)){

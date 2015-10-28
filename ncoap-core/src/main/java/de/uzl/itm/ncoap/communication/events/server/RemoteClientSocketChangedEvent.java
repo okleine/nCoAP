@@ -25,36 +25,30 @@
 package de.uzl.itm.ncoap.communication.events.server;
 
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-import de.uzl.itm.ncoap.communication.events.AbstractMessageTransferEvent;
+import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
 
 import java.net.InetSocketAddress;
 
 /**
  * Created by olli on 31.08.15.
  */
-public class RemoteClientSocketChangedEvent extends AbstractMessageTransferEvent {
+public class RemoteClientSocketChangedEvent extends AbstractMessageExchangeEvent {
 
     private final InetSocketAddress previous;
 
     /**
-     * Creates a new instance of {@link AbstractMessageTransferEvent}
+     * Creates a new instance of {@link de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent}
      *
-     * @param remoteSocket the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
-     *                       event
-     * @param messageID      the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
+     * @param remoteSocket the remote endpoint that caused this event
+     * @param token        the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the exchange
      *                       that caused this event
-     * @param token          the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
      */
-    public RemoteClientSocketChangedEvent(InetSocketAddress remoteSocket, InetSocketAddress previous, int messageID,
-            Token token) {
+    public RemoteClientSocketChangedEvent(InetSocketAddress remoteSocket, InetSocketAddress previous, Token token) {
 
-        super(remoteSocket, messageID, token);
+        super(remoteSocket, token);
         this.previous = previous;
 
     }
-
 
     public InetSocketAddress getPreviousRemoteSocket() {
         return previous;

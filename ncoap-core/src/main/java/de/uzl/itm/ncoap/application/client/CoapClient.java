@@ -26,7 +26,6 @@
 package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -34,6 +33,7 @@ import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.Channels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,10 +43,10 @@ import java.net.InetSocketAddress;
  * An instance of {@link CoapClient} is the entry point to send {@link CoapMessage}s to a (remote)
  * server or proxy.
  * 
- * With {@link #sendCoapRequest(CoapRequest, de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback, InetSocketAddress)} it e.g. provides an
+ * With {@link #sendCoapRequest(CoapRequest, InetSocketAddress, ClientCallback)} it e.g. provides an
  * easy-to-use method to write CoAP requests to a server.
  * 
- * Furthermore, with {@link #sendCoapPing(de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback, java.net.InetSocketAddress)} it provides a method to test
+ * Furthermore, with {@link #sendCoapPing(java.net.InetSocketAddress, ClientCallback)} it provides a method to test
  * if a remote CoAP endpoint (i.e. the CoAP application and not only the host(!)) is alive.
  * 
  * @author Oliver Kleine
@@ -55,6 +55,7 @@ public class CoapClient extends AbstractCoapApplication {
 
 //    public static final int RECEIVE_BUFFER_SIZE = 65536;
 
+    private ResponseDispatcher responseDispatcher;
     private static Logger LOG = LoggerFactory.getLogger(CoapClient.class.getName());
 
     /**
@@ -80,7 +81,12 @@ public class CoapClient extends AbstractCoapApplication {
         if (maxTokenLength < 0 || maxTokenLength > 8)
             throw new IllegalArgumentException("Token length must be between 0 and 8 (both inclusive)");
 
-        startApplication(new CoapClientChannelPipelineFactory(this.getExecutor(), new TokenFactory(maxTokenLength)), port);
+        InetSocketAddress socketAddress = new InetSocketAddress(port);
+        startApplication(
+            new CoapClientChannelPipelineFactory(this.getExecutor(), maxTokenLength), socketAddress
+        );
+
+        this.responseDispatcher = getChannel().getPipeline().get(ResponseDispatcher.class);
     }
 
 
@@ -166,23 +172,22 @@ public class CoapClient extends AbstractCoapApplication {
 
     /**
      * Sends a {@link de.uzl.itm.ncoap.message.CoapRequest} to the given remote endpoints, i.e. CoAP server or
-     * proxy, and registers the given {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback}
+     * proxy, and registers the given {@link ClientCallback}
      * to be called upon reception of a {@link de.uzl.itm.ncoap.message.CoapResponse}.
      *
-     * <b>Note:</b> Override {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
+     * <b>Note:</b> Override {@link ClientCallback
      * #continueObservation(InetSocketAddress, Token)} on the given callback for observations!
      *
      * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be sent
      *
-     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to process the corresponding response, resp.
+     * @param callback the {@link ClientCallback} to process the corresponding response, resp.
      *                              update notification (which are also instances of {@link CoapResponse}.
      *
      * @param remoteEndpoint the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
-    public void sendCoapRequest(CoapRequest coapRequest, ClientCallback callback, InetSocketAddress remoteEndpoint){
+    public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteEndpoint, ClientCallback callback){
 
-        ResponseDispatcher callbackManager = getChannel().getPipeline().get(ResponseDispatcher.class);
-        callbackManager.sendCoapRequest(getChannel(), coapRequest, remoteEndpoint, callback);
+        this.responseDispatcher.sendCoapRequest(coapRequest, remoteEndpoint, callback);
     }
 
 
@@ -190,25 +195,25 @@ public class CoapClient extends AbstractCoapApplication {
      * Sends a CoAP PING, i.e. a {@link de.uzl.itm.ncoap.message.CoapMessage} with
      * {@link de.uzl.itm.ncoap.message.MessageType.Name#CON} and
      * {@link de.uzl.itm.ncoap.message.MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the
-     * given {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback}
+     * given {@link ClientCallback}
      * to be called upon reception of the corresponding {@link de.uzl.itm.ncoap.message.MessageType.Name#RST}
      * message (CoAP PONG).
      *
-     * Make sure to override {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
+     * Make sure to override {@link ClientCallback
      * #processReset()} to handle the CoAP PONG!
      *
-     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to be
+     * @param callback the {@link ClientCallback} to be
      *                       called upon reception of the corresponding
      *                       {@link de.uzl.itm.ncoap.message.MessageType.Name#RST} message.
      *                       <br><br>
      *                       <b>Note:</b> To handle the CoAP PONG, i.e. the empty RST, the method
-     *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
+     *                       {@link ClientCallback
      *                       #processReset()} MUST be overridden
      * @param remoteEndpoint the desired recipient of the CoAP PING message
      */
-    public void sendCoapPing(final ClientCallback callback, final InetSocketAddress remoteEndpoint){
+    public void sendCoapPing(InetSocketAddress remoteEndpoint, ClientCallback callback){
         ResponseDispatcher callbackManager = getChannel().getPipeline().get(ResponseDispatcher.class);
-        callbackManager.sendCoapPing(getChannel(), remoteEndpoint, callback);
+        callbackManager.sendCoapPing(remoteEndpoint, callback);
     }
 
 

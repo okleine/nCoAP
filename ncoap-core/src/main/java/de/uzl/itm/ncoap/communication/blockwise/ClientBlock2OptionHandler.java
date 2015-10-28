@@ -50,9 +50,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * block size (as given in the SZX part of the response option) and requests the next blocks with the same size until
  * the full payload was received (as indicated by the M part of the (final) response option).
  *
- * The full payload (the cumulative blocks) are then set as the payload of the latest response. Only this response
+ * The full payload (the cumulative blocks) is then set as the payload of the latest response. Only this response
  * (with full payload) is sent further upstream. Thus, from the
- * {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback}s perspective there is virtually no
+ * {@link de.uzl.itm.ncoap.application.client.ClientCallback}s perspective there is virtually no
  * difference between a blockwise transfer and a large payload in a single response.
  *
  * @author Oliver Kleine

@@ -99,7 +99,10 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         this.registeredServices = Collections.synchronizedMap(new HashMap<String, Webresource>());
         this.notFoundHandler = notFoundHandler;
         this.shutdown = false;
-        registerWebresource(new WellKnownCoreResource(registeredServices, executor));
+    }
+
+    public void registerWellKnownCoreResource(){
+        registerWebresource(new WellKnownCoreResource(registeredServices, getExecutor()));
     }
 
 
@@ -119,7 +122,11 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         final Webresource webresource = registeredServices.get(coapRequest.getUriPath());
         if(webresource == null) {
             // the requested Webservice DOES NOT exist
-            notFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocket);
+            try {
+                notFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocket);
+            } catch(Exception ex){
+                responseFuture.setException(ex);
+            }
         } else if (coapRequest.isIfNonMatchSet()) {
                 createPreconditionFailed(coapRequest.getMessageTypeName(), coapRequest.getUriPath(), responseFuture);
         } else {
@@ -294,11 +301,10 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
             if (coapResponse.isUpdateNotification()) {
                 if (webresource instanceof ObservableWebresource && coapRequest.getObserve() == 0) {
                     // trigger new observer accepted event
-                    int messageID = coapResponse.getMessageID();
                     Token token = coapResponse.getToken();
                     long contentFormat = coapResponse.getContentFormat();
                     triggerEvent(new ObserverAcceptedEvent(
-                            remoteSocket, messageID, token, (ObservableWebresource) webresource, contentFormat
+                            remoteSocket, token, (ObservableWebresource) webresource, contentFormat
                     ), true);
                 } else {
                     // the observe option is useless here (remove it)...

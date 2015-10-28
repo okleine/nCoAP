@@ -25,7 +25,7 @@
 package de.uzl.itm.ncoap.examples;
 
 import de.uzl.itm.ncoap.application.endpoint.CoapEndpoint;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
+import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.MessageCode;
@@ -58,10 +58,10 @@ public class SimpleCoapEndpoint extends CoapEndpoint {
         SimpleCoapEndpoint coapPeer = new SimpleCoapEndpoint(NotFoundHandler.getDefault(), new InetSocketAddress(5683));
 
         // register services
-        coapPeer.registerResource(new SimpleNotObservableWebresource("/simple", "Some aribtrary content...",
+        coapPeer.registerWebresource(new SimpleNotObservableWebresource("/simple", "Some aribtrary content...",
                 60, coapPeer.getExecutor()));
 
-        coapPeer.registerResource(new SimpleObservableTimeService("/utc-time", 2000, coapPeer.getExecutor()));
+        coapPeer.registerWebresource(new SimpleObservableTimeService("/utc-time", 2000, coapPeer.getExecutor()));
 
         // send some requests...
         ClientCallback callback = new SimpleCallback();

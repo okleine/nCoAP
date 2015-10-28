@@ -25,7 +25,7 @@
 package de.uzl.itm.ncoap.endpoints.client;
 
 import com.google.common.collect.Ordering;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
+import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

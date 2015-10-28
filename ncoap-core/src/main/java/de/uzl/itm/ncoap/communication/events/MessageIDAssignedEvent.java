@@ -29,8 +29,8 @@ import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Instances of {@link MessageIDAssignedEvent} are sent upstream if a
- * message ID was assigned to a {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}.
+ * Instances of {@link MessageIDAssignedEvent} are sent upstream if a message ID was assigned to an outbound
+ * message.
  *
  * @author Oliver Kleine
  */
@@ -51,10 +51,6 @@ public class MessageIDAssignedEvent extends AbstractMessageTransferEvent {
     }
 
 
-//    @Override
-//    public boolean stopsMessageExchange() {
-//        return false;
-//    }
 
     @Override
     public String toString(){

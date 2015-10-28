@@ -25,7 +25,7 @@
 package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.communication.events.*;
-import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
+//import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
@@ -78,8 +78,6 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
             ((ResetReceivedEvent.Handler) this).handleEvent((ResetReceivedEvent) message);
         } else if (message instanceof TransmissionTimeoutEvent && this instanceof TransmissionTimeoutEvent.Handler) {
             ((TransmissionTimeoutEvent.Handler) this).handleEvent((TransmissionTimeoutEvent) message);
-        } else if (message instanceof LazyObservationTerminationEvent && this instanceof LazyObservationTerminationEvent.Handler) {
-            ((LazyObservationTerminationEvent.Handler) this).handleEvent((LazyObservationTerminationEvent) message);
         } else if (message instanceof ObserverAcceptedEvent && this instanceof ObserverAcceptedEvent.Handler) {
             ((ObserverAcceptedEvent.Handler) this).handleEvent((ObserverAcceptedEvent) message);
         }

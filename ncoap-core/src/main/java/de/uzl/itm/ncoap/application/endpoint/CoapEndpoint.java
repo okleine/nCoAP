@@ -31,16 +31,14 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
 import de.uzl.itm.ncoap.application.server.webresource.Webresource;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
+import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
-import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,21 +110,21 @@ public class CoapEndpoint extends AbstractCoapApplication {
 
     /**
      * Sends a {@link de.uzl.itm.ncoap.message.CoapRequest} to the given remote endpoints, i.e. CoAP server or
-     * proxy, and registers the given {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback}
+     * proxy, and registers the given {@link de.uzl.itm.ncoap.application.client.ClientCallback}
      * to be called upon reception of a {@link de.uzl.itm.ncoap.message.CoapResponse}.
      *
-     * <b>Note:</b> Override {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
+     * <b>Note:</b> Override {@link de.uzl.itm.ncoap.application.client.ClientCallback
      * #continueObservation(InetSocketAddress, Token)} on the given callback for observations!
      *
      * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be sent
      *
-     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to process the corresponding response, resp.
+     * @param callback the {@link de.uzl.itm.ncoap.application.client.ClientCallback} to process the corresponding response, resp.
      *                              update notification (which are also instances of {@link de.uzl.itm.ncoap.message.CoapResponse}.
      *
      * @param remoteSocket the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
     public void sendCoapRequest(CoapRequest coapRequest, ClientCallback callback, InetSocketAddress remoteSocket){
-        this.responseDispatcher.sendCoapRequest(getChannel(), coapRequest, remoteSocket, callback);
+        this.responseDispatcher.sendCoapRequest(coapRequest, remoteSocket, callback);
     }
 
 
@@ -134,24 +132,24 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * Sends a CoAP PING, i.e. a {@link de.uzl.itm.ncoap.message.CoapMessage} with
      * {@link de.uzl.itm.ncoap.message.MessageType.Name#CON} and
      * {@link de.uzl.itm.ncoap.message.MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the
-     * given {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback}
+     * given {@link de.uzl.itm.ncoap.application.client.ClientCallback}
      * to be called upon reception of the corresponding {@link de.uzl.itm.ncoap.message.MessageType.Name#RST}
      * message (CoAP PONG).
      *
-     * Make sure to override {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
+     * Make sure to override {@link de.uzl.itm.ncoap.application.client.ClientCallback
      * #processReset()} to handle the CoAP PONG!
      *
-     * @param callback the {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback} to be
+     * @param callback the {@link de.uzl.itm.ncoap.application.client.ClientCallback} to be
      *                       called upon reception of the corresponding
      *                       {@link de.uzl.itm.ncoap.message.MessageType.Name#RST} message.
      *                       <br><br>
      *                       <b>Note:</b> To handle the CoAP PONG, i.e. the empty RST, the method
-     *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback
+     *                       {@link de.uzl.itm.ncoap.application.client.ClientCallback
      *                       #processReset()} MUST be overridden
      * @param remoteSocket the desired recipient of the CoAP PING message
      */
     public void sendCoapPing(final ClientCallback callback, final InetSocketAddress remoteSocket){
-        this.responseDispatcher.sendCoapPing(getChannel(), remoteSocket, callback);
+        this.responseDispatcher.sendCoapPing(remoteSocket, callback);
 
     }
 
@@ -165,7 +163,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * @throws java.lang.IllegalArgumentException if there was already a
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered with the same path
      */
-    public void registerResource(Webresource webresource) throws IllegalArgumentException{
+    public void registerWebresource(Webresource webresource) throws IllegalArgumentException{
         this.getRequestDispatcher().registerWebresource(webresource);
     }
 

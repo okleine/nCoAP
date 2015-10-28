@@ -49,7 +49,7 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public abstract class NotFoundHandler {
+public abstract class NotFoundHandler implements RequestConsumer{
 
     private RequestDispatcher requestDispatcher;
 
@@ -72,7 +72,7 @@ public abstract class NotFoundHandler {
      * server. The {@link RequestDispatcher} instance can be
      * e.g. used to register new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s
      * using {@link RequestDispatcher
-     * #registerResource(Webservice)}.
+     * #registerWebresource(Webservice)}.
      *
      * @return the {@link RequestDispatcher} for this CoAP
      * server.
@@ -81,19 +81,7 @@ public abstract class NotFoundHandler {
         return this.requestDispatcher;
     }
 
-    /**
-     * This method is invoked by the framework on inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s with {@link de.uzl.itm.ncoap.message.MessageCode.Name#PUT} if
-     * there is no {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered at the path given as {@link de.uzl.itm.ncoap.message.CoapRequest#getUriPath()}.
-     *
-     * @param responseFuture the {@link SettableFuture} to be set with a proper {@link de.uzl.itm.ncoap.message.CoapResponse} to indicate
-     *                       whether there was a new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} created or not.
-     *
-     * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be processed
-     *
-     * @param remoteEndpoint the {@link InetSocketAddress} of the {@link de.uzl.itm.ncoap.message.CoapRequest}s origin.
-     */
-    public abstract void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                            InetSocketAddress remoteEndpoint);
+
 
 
     /**

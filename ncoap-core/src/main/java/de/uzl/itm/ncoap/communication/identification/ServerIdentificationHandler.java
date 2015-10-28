@@ -107,7 +107,7 @@ public class ServerIdentificationHandler extends AbstractIdentificationHandler {
 
             if(updateAssignedByMe(endpointID2, token, remoteSocket)){
                 triggerEvent(new RemoteClientSocketChangedEvent(
-                        remoteSocket, previousSocket, coapRequest.getMessageID(), coapRequest.getToken()
+                        remoteSocket, previousSocket, coapRequest.getToken()
                 ), false);
                 continueMessageProcessing(coapRequest, remoteSocket);
             }

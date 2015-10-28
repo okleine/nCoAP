@@ -27,7 +27,7 @@ package de.uzl.itm.ncoap.communication.identification;
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
-import de.uzl.itm.ncoap.communication.dispatching.client.ClientCallback;
+import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
@@ -66,14 +66,14 @@ public class EndpointIDRepeatedInResponseTest extends AbstractCoapCommunicationT
 
     @Override
     public void createTestScenario() throws Exception {
-        client.sendCoapRequest(coapRequest, new ClientCallback() {
+        client.sendCoapRequest(coapRequest, new InetSocketAddress("localhost", server.getPort()), new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
                 log.info("Request: " + coapRequest);
                 log.info("Response: " + coapResponse);
                 EndpointIDRepeatedInResponseTest.coapResponse = coapResponse;
             }
-        }, new InetSocketAddress("localhost", server.getPort()));
+        });
 
         Thread.sleep(1000);
     }

@@ -23,9 +23,8 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uzl.itm.ncoap.communication.dispatching.client;
+package de.uzl.itm.ncoap.application.client;
 
-import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.message.CoapResponse;
 
 import java.net.InetSocketAddress;
