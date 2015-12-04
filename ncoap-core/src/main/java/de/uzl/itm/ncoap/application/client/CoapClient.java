@@ -193,10 +193,10 @@ public class CoapClient extends AbstractCoapApplication {
 
     /**
      * Sends a CoAP PING, i.e. a {@link de.uzl.itm.ncoap.message.CoapMessage} with
-     * {@link de.uzl.itm.ncoap.message.MessageType.Name#CON} and
-     * {@link de.uzl.itm.ncoap.message.MessageCode.Name#EMPTY} to the given CoAP endpoints and registers the
+     * {@link de.uzl.itm.ncoap.message.MessageType#CON} and
+     * {@link de.uzl.itm.ncoap.message.MessageCode#EMPTY} to the given CoAP endpoints and registers the
      * given {@link ClientCallback}
-     * to be called upon reception of the corresponding {@link de.uzl.itm.ncoap.message.MessageType.Name#RST}
+     * to be called upon reception of the corresponding {@link de.uzl.itm.ncoap.message.MessageType#RST}
      * message (CoAP PONG).
      *
      * Make sure to override {@link ClientCallback
@@ -204,7 +204,7 @@ public class CoapClient extends AbstractCoapApplication {
      *
      * @param callback the {@link ClientCallback} to be
      *                       called upon reception of the corresponding
-     *                       {@link de.uzl.itm.ncoap.message.MessageType.Name#RST} message.
+     *                       {@link de.uzl.itm.ncoap.message.MessageType#RST} message.
      *                       <br><br>
      *                       <b>Note:</b> To handle the CoAP PONG, i.e. the empty RST, the method
      *                       {@link ClientCallback

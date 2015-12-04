@@ -58,7 +58,7 @@ public class PerformanceTestResource extends NotObservableWebresource<String> {
             System.out.println("Process Request No. " + count);
         }
         WrappedResourceStatus status = getWrappedResourceStatus(0);
-        CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, MessageCode.Name.CONTENT_205);
+        CoapResponse coapResponse = new CoapResponse(MessageType.NON, MessageCode.CONTENT_205);
         coapResponse.setContent(status.getContent(), ContentFormat.TEXT_PLAIN_UTF8);
         responseFuture.set(coapResponse);
     }

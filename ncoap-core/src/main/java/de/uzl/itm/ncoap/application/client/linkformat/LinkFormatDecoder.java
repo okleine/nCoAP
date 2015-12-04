@@ -24,10 +24,10 @@
  */
 package de.uzl.itm.ncoap.application.client.linkformat;
 
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.EmptyLinkAttribute;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.LongLinkAttribute;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.StringLinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LongLinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +43,9 @@ import java.util.Set;
  */
 public class LinkFormatDecoder {
 
-    static{
-        LinkAttribute.initialize();
-    }
+//    static{
+//        LinkAttribute.initialize();
+//    }
 
     private static Logger LOG = LoggerFactory.getLogger(LinkFormatDecoder.class.getName());
 
@@ -85,21 +85,17 @@ public class LinkFormatDecoder {
             for(String attribute : attributes){
                 LOG.info("Service {} has attribute {}.", serviceName, attribute);
                 String key = !attribute.contains("=") ? attribute : attribute.substring(0, attribute.indexOf("="));
-                int attributeType = LinkAttribute.getAttributeType(key);
+                LinkAttribute.Type attributeType = LinkAttribute.getAttributeType(key);
 
-                if(attributeType == LinkAttribute.EMPTY_ATTRIBUTE){
+                if(LinkAttribute.Type.EMPTY.equals(attributeType)) {
                     attributesSet.add(new EmptyLinkAttribute(key));
-                }
-                else{
-                    if(attribute.length() == attribute.indexOf("=") + 1){
-                        LOG.warn("Service {} has attribute {} without any value (IGNORE!)", serviceName, key);
-                        continue;
-                    }
+                } else if(attribute.length() == attribute.indexOf("=") + 1){
+                    LOG.warn("Service {} has attribute {} without any value (IGNORE!)", serviceName, key);
+                } else {
 
                     String encodedValues = attribute.substring(attribute.indexOf("=") + 1);
 
-                    if(attributeType == LinkAttribute.STRING_ATTRIBUTE) {
-
+                    if(LinkAttribute.Type.STRING.equals(attributeType)) {
                         //Remove the quotation marks
                         if(encodedValues.startsWith("\"")){
                             encodedValues = encodedValues.substring(1);
@@ -112,20 +108,17 @@ public class LinkFormatDecoder {
                         for(String value : encodedValues.split(" ")) {
                             attributesSet.add(new StringLinkAttribute(key, value));
                         }
-                    }
-                    else if (attributeType == LinkAttribute.LONG_ATTRIBUTE) {
+                    } else if (LinkAttribute.Type.LONG.equals(attributeType)) {
                         String tmp = attribute.substring(attribute.indexOf("=") + 1, attribute.length());
                         String[] values = tmp.split(" ");
                         for(String value : values) {
                             try {
                                 attributesSet.add(new LongLinkAttribute(key, Long.valueOf(value)));
-                            }
-                            catch(NumberFormatException ex){
+                            } catch(NumberFormatException ex){
                                 LOG.warn("Value ({}) of link attribute \"{}\" is no number (IGNORE!)", value, key);
                             }
                         }
-                    }
-                    else{
+                    } else {
                         LOG.warn("Found attribute of unknown type ({}) for service {}. IGNORE!", key, serviceName);
                     }
                 }

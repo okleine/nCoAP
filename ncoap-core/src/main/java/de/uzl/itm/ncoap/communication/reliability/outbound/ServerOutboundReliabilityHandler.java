@@ -91,7 +91,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if (coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY) {
+        if (coapMessage.getMessageCode() == MessageCode.EMPTY) {
             return handleInboundEmptyMessage(coapMessage, remoteSocket);
         } else {
             return true;
@@ -105,7 +105,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
             InetSocketAddress remoteSocket = ((MessageIDFactory.ReleasedMessageID) arg).getRemoteSocket();
             Token token = ((MessageIDFactory.ReleasedMessageID) arg).getToken();
             CoapResponse coapResponse = removeTransfer(remoteSocket, token);
-            if(coapResponse != null && coapResponse.getMessageTypeName() == MessageType.Name.CON) {
+            if(coapResponse != null && coapResponse.getMessageType() == MessageType.CON) {
                 // there was an ongoing outbound transfer
                 int messageID = coapResponse.getMessageID();
                 LOG.warn("Transmission timed out (remote socket: \"{}\", token: {}, message ID: {})",
@@ -120,14 +120,14 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
     }
 
     private boolean handleInboundEmptyMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        MessageType.Name messageType = coapMessage.getMessageTypeName();
-        if(messageType == MessageType.Name.CON) {
+        int messageType = coapMessage.getMessageType();
+        if(messageType == MessageType.CON) {
             // incoming PINGs are handled by the inbound reliability handler
             return true;
         } else {
             int messageID = coapMessage.getMessageID();
             Token token = removeTransfer(remoteSocket, messageID);
-            if (token != null && messageType == MessageType.Name.RST) {
+            if (token != null && messageType == MessageType.RST) {
                 LOG.info("Received RST from \"{}\" for token {} (Message ID: {}).",
                         new Object[]{remoteSocket, messageID, token});
                 triggerEvent(new ResetReceivedEvent(remoteSocket, messageID, token), false);
@@ -142,7 +142,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
     private boolean handleOutboundCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
 
         // update update notifications (i.e. send as next retransmission)
-        if(coapResponse.isUpdateNotification() && coapResponse.getMessageTypeName() != MessageType.Name.ACK) {
+        if(coapResponse.isUpdateNotification() && coapResponse.getMessageType() != MessageType.ACK) {
             if(updateRetransmission(remoteSocket, coapResponse)){
                 return false;
             } else {
@@ -160,10 +160,10 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
             }
         }
 
-        MessageType.Name messageType = coapResponse.getMessageTypeName();
-        if (messageType == MessageType.Name.CON || messageType == MessageType.Name.NON) {
+        int messageType = coapResponse.getMessageType();
+        if (messageType == MessageType.CON || messageType == MessageType.NON) {
             this.addTransfer(remoteSocket, coapResponse);
-            if(coapResponse.getMessageTypeName() == MessageType.Name.CON) {
+            if(coapResponse.getMessageType() == MessageType.CON) {
                 scheduleRetransmission(remoteSocket, coapResponse.getToken(), 1);
             }
         }

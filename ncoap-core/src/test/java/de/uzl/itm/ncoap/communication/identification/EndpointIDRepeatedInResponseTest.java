@@ -60,7 +60,7 @@ public class EndpointIDRepeatedInResponseTest extends AbstractCoapCommunicationT
         server = new CoapServer();
 
         URI targetUri = new URI("coap://localhost:" + server.getPort() + "/.well-known/core");
-        coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
+        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
         coapRequest.setEndpointID1();
     }
 

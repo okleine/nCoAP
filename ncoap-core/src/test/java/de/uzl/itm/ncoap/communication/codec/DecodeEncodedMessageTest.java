@@ -66,11 +66,11 @@ public class DecodeEncodedMessageTest extends AbstractCoapTest {
 
         return Lists.newArrayList(
                 //[0] TKL is 1, but 0 remaining bytes after header
-                new Object[]{new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET,
+                new Object[]{new CoapRequest(MessageType.CON, MessageCode.GET,
                         new URI("coap://coap.me:5683/test"))},
 
                 //[1] TKL is 8, but only 6 remaining bytes after header
-                new Object[]{new CoapRequest(MessageType.Name.NON, MessageCode.Name.POST,
+                new Object[]{new CoapRequest(MessageType.NON, MessageCode.POST,
                         new URI("coap://coap.me:5683/p1/p2/p3/p4/p5/p6/p7"))}
         );
     }
@@ -82,7 +82,7 @@ public class DecodeEncodedMessageTest extends AbstractCoapTest {
         coapMessage.setMessageID(1234);
         coapMessage.setToken(new Token(new byte[]{1,2,3,4}));
 
-        if(coapMessage.getMessageCodeName() == MessageCode.Name.POST){
+        if(coapMessage.getMessageCode() == MessageCode.POST){
             String payload = "Some arbitrary payload";
             coapMessage.setContent(payload.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         }

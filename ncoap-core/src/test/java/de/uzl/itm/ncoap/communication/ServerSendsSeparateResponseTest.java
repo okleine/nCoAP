@@ -78,7 +78,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         clientCallback = new TestCallback();
 
         URI targetUri = new URI("coap", null, "localhost", endpoint.getPort(), "/service/path", null, null);
-        request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
+        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
     }
 
     @Override
@@ -124,7 +124,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         //create seperate response to be sent by the message receiver
         Token token = endpoint.getReceivedCoapMessages().values().iterator().next().getToken();
 
-        CoapResponse seperateResponse = new CoapResponse(MessageType.Name.CON, MessageCode.Name.CONTENT_205);
+        CoapResponse seperateResponse = new CoapResponse(MessageType.CON, MessageCode.CONTENT_205);
         seperateResponse.setMessageID(11111);
         seperateResponse.setToken(token);
         seperateResponse.setContent("Some payload...".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
@@ -167,7 +167,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Second received message is not an EMPTY ACK";
-        assertEquals(message, MessageCode.Name.EMPTY, receivedMessage.getMessageCodeName());
-        assertEquals(message, MessageType.Name.ACK, receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageCode.EMPTY, receivedMessage.getMessageCode());
+        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
     }
 }

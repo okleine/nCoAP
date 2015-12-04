@@ -24,7 +24,6 @@
  */
 package de.uzl.itm.ncoap.message.options;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.net.InetAddresses;
 import com.google.common.primitives.Longs;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -32,6 +31,9 @@ import de.uzl.itm.ncoap.message.CoapMessage;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
+
+import static de.uzl.itm.ncoap.message.options.Option.*;
+import static de.uzl.itm.ncoap.message.options.OptionValue.Type.*;
 
 /**
  * {@link OptionValue} is the abstract base class for CoAP options. It provides a number of useful static constants and
@@ -46,141 +48,23 @@ public abstract class OptionValue<T>{
     private static final String OUT_OF_ALLOWED_RANGE = "Given value length (%d) is out of allowed range " +
             "for option no. %d (min: %d, max; %d).";
 
-    /**
-     * Helper class to provide useful constants for available option types (basically for internal use)
-     */
-    public static class Type{
-
-        /**
-         * Corresponds to number 0
-         */
-        public static final int EMPTY = 0;
-
-        /**
-         * Corresponds to number 1
-         */
-        public static final int STRING = 1;
-
-        /**
-         * Corresponds to number 2
-         */
-        public static final int UINT = 2;
-
-        /**
-         * Corresponds to number 3
-         */
-        public static final int OPAQUE = 3;
-    }
 
     /**
-     * Helper class to provide useful constants for option names
+     * Provides names of available option types (basically for internal use)
      */
-    public static class Name{
-
-        private Name(){}
-
-        /**
-         * Corresponds to option number 1
-         */
-        public static final int IF_MATCH        = 1;
-
-        /**
-         * Corresponds to option number 3
-         */
-        public static final int URI_HOST        = 3;
-
-        /**
-         * Corresponds to option number 4
-         */
-        public static final int ETAG            = 4;
-
-        /**
-         * Corresponds to option number 5
-         */
-        public static final int IF_NONE_MATCH   = 5;
-
-        /**
-         * Corresponds to option number 6
-         */
-        public static final int OBSERVE         = 6;
-
-        /**
-         * Corresponds to option number 7
-         */
-        public static final int URI_PORT        = 7;
-
-        /**
-         * Corresponds to option number 8
-         */
-        public static final int LOCATION_PATH   = 8;
-
-        /**
-         * Corresponds to option number 11
-         */
-        public static final int URI_PATH        = 11;
-
-        /**
-         * Corresponds to option number 12
-         */
-        public static final int CONTENT_FORMAT  = 12;
-
-        /**
-         * Corresponds to option number 14
-         */
-        public static final int MAX_AGE         = 14;
-
-        /**
-         * Corresponds to option number 15
-         */
-        public static final int URI_QUERY       = 15;
-
-        /**
-         * Corresponds to option number 17
-         */
-        public static final int ACCEPT          = 17;
-
-        /**
-         * Corresponds to option number 20
-         */
-        public static final int LOCATION_QUERY  = 20;
-
-        /**
-         * Corresponds to option number 23
-         */
-        public static final int BLOCK2          = 23;
-
-        /**
-         * Corresponds to option number 35
-         */
-        public static final int PROXY_URI       = 35;
-
-        /**
-         * Corresponds to option number 39
-         */
-        public static final int PROXY_SCHEME    = 39;
-
-        /**
-         * Corresponds to option number 60
-         */
-        public static final int SIZE_1          = 60;
-
-        /**
-         * Corresponds to option number 124
-         */
-        public static final int ENDPOINT_ID_1   = 124;
-
-        /**
-         * Corresponds to option number 189
-         */
-        public static final int ENDPOINT_ID_2   = 189;
+    public static enum Type {
+        EMPTY, STRING, UINT, OPAQUE
     }
+    
 
     /**
      * Corresponds to 60, i.e. 60 seconds
      */
     public static final long MAX_AGE_DEFAULT    = 60;
 
-
+    /**
+     * Corresponds to the maximum value of the max-age option (app. 136 years)
+     */
     public static final long MAX_AGE_MAX        = 0xFFFFFFFFL;
 
     /**
@@ -200,64 +84,71 @@ public abstract class OptionValue<T>{
     public static final byte[] ENCODED_URI_PORT_DEFAULT =
             new BigInteger(1, Longs.toByteArray(URI_PORT_DEFAULT)).toByteArray();
 
-//    /**
-//     * Corresponds to 4, i.e. default ETAG length is 4 bytes
-//     */
-//    public static final int ETAG_LENGTH_DEFAULT = 4;
 
-    private static HashMap<Integer, Integer[]> characteristics = new HashMap<Integer, Integer[]>();
-    static{
-        characteristics.put(    Name.IF_MATCH,       new Integer[]{Type.OPAQUE,       0,      8       });
-        characteristics.put(    Name.URI_HOST,       new Integer[]{Type.STRING,       1,      255     });
-        characteristics.put(    Name.ETAG,           new Integer[]{Type.OPAQUE,       1,      8       });
-        characteristics.put(    Name.IF_NONE_MATCH,  new Integer[]{Type.EMPTY,        0,      0       });
-        characteristics.put(    Name.URI_PORT,       new Integer[]{Type.UINT,         0,      2       });
-        characteristics.put(    Name.LOCATION_PATH,  new Integer[]{Type.STRING,       0,      255     });
-        characteristics.put(    Name.OBSERVE,        new Integer[]{Type.UINT,         0,      3       });
-        characteristics.put(    Name.URI_PATH,       new Integer[]{Type.STRING,       0,      255     });
-        characteristics.put(    Name.CONTENT_FORMAT, new Integer[]{Type.UINT,         0,      2       });
-        characteristics.put(    Name.MAX_AGE,        new Integer[]{Type.UINT,         0,      4       });
-        characteristics.put(    Name.URI_QUERY,      new Integer[]{Type.STRING,       0,      255     });
-        characteristics.put(    Name.ACCEPT,         new Integer[]{Type.UINT,         0,      2       });
-        characteristics.put(    Name.LOCATION_QUERY, new Integer[]{Type.STRING,       0,      255     });
-        characteristics.put(    Name.BLOCK2,         new Integer[]{Type.UINT,         0,      3       });
-        characteristics.put(    Name.PROXY_URI,      new Integer[]{Type.STRING,       1,      1034    });
-        characteristics.put(    Name.PROXY_SCHEME,   new Integer[]{Type.STRING,       1,      255     });
-        characteristics.put(    Name.SIZE_1,         new Integer[]{Type.UINT,         0,      4       });
-        characteristics.put(    Name.ENDPOINT_ID_1,  new Integer[]{Type.OPAQUE,       0,      8       });
-        characteristics.put(    Name.ENDPOINT_ID_2,  new Integer[]{Type.OPAQUE,       0,      8       });
+    private static class Characteristics {
+        private Type type;
+        private int minLength;
+        private int maxLength;
+
+        private Characteristics(Type type, int minLength, int maxLength) {
+            this.type = type;
+            this.minLength = minLength;
+            this.maxLength = maxLength;
+        }
+
+        public Type getType() {
+            return type;
+        }
+
+        public int getMinLength() {
+            return minLength;
+        }
+
+        public int getMaxLength() {
+            return maxLength;
+        }
     }
 
-    private static HashMultimap<Integer, Integer> mutualExclusions = HashMultimap.create();
-    static{
-        mutualExclusions.put(Name.URI_HOST,     Name.PROXY_URI);
-        mutualExclusions.put(Name.PROXY_URI,    Name.URI_HOST);
-
-        mutualExclusions.put(Name.URI_PORT,     Name.PROXY_URI);
-        mutualExclusions.put(Name.PROXY_URI,    Name.URI_PORT);
-
-        mutualExclusions.put(Name.URI_PATH,     Name.PROXY_URI);
-        mutualExclusions.put(Name.PROXY_URI,    Name.URI_PATH);
-
-        mutualExclusions.put(Name.URI_QUERY,    Name.PROXY_URI);
-        mutualExclusions.put(Name.PROXY_URI,    Name.URI_QUERY);
-
-        mutualExclusions.put(Name.PROXY_SCHEME, Name.PROXY_URI);
-        mutualExclusions.put(Name.PROXY_URI,    Name.PROXY_SCHEME);
+    private static HashMap<Integer, Characteristics> CHARACTERISTICS = new HashMap<>();
+    static {
+        CHARACTERISTICS.put( IF_MATCH,        new Characteristics( OPAQUE,  0,    8 ));
+        CHARACTERISTICS.put( URI_HOST,        new Characteristics( STRING,  1,  255 ));
+        CHARACTERISTICS.put( ETAG,            new Characteristics( OPAQUE,  1,    8 ));
+        CHARACTERISTICS.put( IF_NONE_MATCH,   new Characteristics( EMPTY,   0,    0 ));
+        CHARACTERISTICS.put( URI_PORT,        new Characteristics( UINT,    0,    2 ));
+        CHARACTERISTICS.put( LOCATION_PATH,   new Characteristics( STRING,  0,  255 ));
+        CHARACTERISTICS.put( OBSERVE,         new Characteristics( UINT,    0,    3 ));
+        CHARACTERISTICS.put( URI_PATH,        new Characteristics( STRING,  0,  255 ));
+        CHARACTERISTICS.put( CONTENT_FORMAT,  new Characteristics( UINT,    0,    2 ));
+        CHARACTERISTICS.put( MAX_AGE,         new Characteristics( UINT,    0,    4 ));
+        CHARACTERISTICS.put( URI_QUERY,       new Characteristics( STRING,  0,  255 ));
+        CHARACTERISTICS.put( ACCEPT,          new Characteristics( UINT,    0,    2 ));
+        CHARACTERISTICS.put( LOCATION_QUERY,  new Characteristics( STRING,  0,  255 ));
+        CHARACTERISTICS.put( BLOCK_2,          new Characteristics( UINT,    0,    3 ));
+        CHARACTERISTICS.put( BLOCK_1,          new Characteristics( UINT,    0,    3 ));
+        CHARACTERISTICS.put( PROXY_URI,       new Characteristics( STRING,  1, 1034 ));
+        CHARACTERISTICS.put( PROXY_SCHEME,    new Characteristics( STRING,  1,  255 ));
+        CHARACTERISTICS.put( SIZE_1,          new Characteristics( UINT,    0,    4 ));
+        CHARACTERISTICS.put( ENDPOINT_ID_1,   new Characteristics( OPAQUE,  0,    8 ));
+        CHARACTERISTICS.put( ENDPOINT_ID_2,   new Characteristics( OPAQUE,  0,    8 ));
     }
 
     /**
-     * Returns <code>true</code> if and only if the co-existence of both options is not allowed in a single
-     * message. As this method checks for mutual exclusion, the order of the given arguments has no impact on the
-     * result.
+     * Returns the {@link de.uzl.itm.ncoap.message.options.OptionValue.Type} the given option number refers to
      *
-     * @param firstOptionNumber the first option number
-     * @param secondOptionNumber the second option number
+     * @param optionNumber the option number to return the type of
      *
-     * @return <code>true</code> if the co-existence of the given option numbers is not allowed in a single message
+     * @return the {@link de.uzl.itm.ncoap.message.options.OptionValue.Type} the given option number refers to
+     *
+     * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option
      */
-    public static boolean mutuallyExcludes(int firstOptionNumber, int secondOptionNumber){
-        return mutualExclusions.get(firstOptionNumber).contains(secondOptionNumber);
+    public static Type getType(int optionNumber) throws IllegalArgumentException {
+        Characteristics characteristics = CHARACTERISTICS.get(optionNumber);
+        if(characteristics == null){
+            throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
+        } else {
+            return characteristics.getType();
+        }
     }
 
     /**
@@ -270,10 +161,12 @@ public abstract class OptionValue<T>{
      * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option
      */
     public static int getMinLength(int optionNumber) throws IllegalArgumentException {
-        if(!characteristics.containsKey(optionNumber))
+        Characteristics characteristics = CHARACTERISTICS.get(optionNumber);
+        if(characteristics == null){
             throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
-
-        return characteristics.get(optionNumber)[1];
+        } else {
+            return characteristics.getMinLength();
+        }
     }
 
 
@@ -287,67 +180,14 @@ public abstract class OptionValue<T>{
      * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option
      */
     public static int getMaxLength(int optionNumber) throws IllegalArgumentException {
-        if(!characteristics.containsKey(optionNumber))
+        Characteristics characteristics = CHARACTERISTICS.get(optionNumber);
+        if(characteristics == null){
             throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
-
-        return characteristics.get(optionNumber)[2];
+        } else {
+            return characteristics.getMaxLength();
+        }
     }
 
-
-    /**
-     * Returns <code>true</code> if the option is critical and <code>false</code> if the option is elective
-     *
-     * @return <code>true</code> if the option is critical and <code>false</code> if the option is elective
-     */
-    public static boolean isCritical(int optionNumber){
-        return (optionNumber & 1) == 1;
-    }
-
-    /**
-     * Returns <code>true</code> if the option is safe-to-forward and <code>false</code> if the option is
-     * unsafe-to-forward by a proxy
-     *
-     * @param optionNumber the option number to be checked for safeness.
-     *
-     * @return <code>true</code> if the option is safe-to-forward and <code>false</code> if the option is
-     * unsafe-to-forward by a proxy
-     */
-    public static boolean isSafe(int optionNumber){
-        return !((optionNumber & 2) == 2);
-    }
-
-    /**
-     * Returns <code>true</code> if the option is part of the cache key and <code>false</code> if the option
-     * is not part of the cache key for proxies.
-     *
-     * @param optionNumber the option number to be checked if it is part of the cache key.
-     *
-     * @return <code>true</code> if the option is part of the cache key and <code>false</code> if the option
-     * is not part of the cache key for proxies.
-     */
-    public static boolean isCacheKey(int optionNumber){
-        return !((optionNumber & 0x1e) == 0x1c);
-    }
-
-    /**
-     * Returns the integer value representing the type of the option the given option number refers to (see
-     * {@link Type} for constants)
-     *
-     * @param optionNumber the option number to return the type of
-     *
-     * @return the integer value representing the type of the option the given option number refers to
-     *
-     * @throws java.lang.IllegalArgumentException if the given option number refers to an unknown option
-     */
-    public static int getOptionType(int optionNumber) throws IllegalArgumentException{
-
-        Integer[] result = characteristics.get(optionNumber);
-        if(result == null)
-            throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
-        else
-            return result[0];
-
-    }
 
     /**
      * Returns <code>true</code> if the given value is the default value for the given option number and
@@ -360,13 +200,13 @@ public abstract class OptionValue<T>{
      */
     public static boolean isDefaultValue(int optionNumber, byte[] value){
 
-        if(optionNumber == Name.URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT))
+        if(optionNumber == URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT))
             return true;
 
-        if(optionNumber == Name.MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT))
+        if(optionNumber == MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT))
             return true;
 
-        if(optionNumber == Name.URI_HOST){
+        if(optionNumber == URI_HOST){
             String hostName = new String(value, CoapMessage.CHARSET);
             if(hostName.startsWith("[") && hostName.endsWith("]"))
                 hostName = hostName.substring(1, hostName.length() - 1);
@@ -447,4 +287,6 @@ public abstract class OptionValue<T>{
     public String toString(){
         return "" + this.getDecodedValue();
     }
+
+   
 }

@@ -91,7 +91,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
 
         endpoint = new DummyEndpoint();
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
-        request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
+        request = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
         request.setMessageID(12345);
     }
 
@@ -153,8 +153,8 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         CoapMessage receivedMessage = receivedMessages.get(emptyAckReceptionTime);
         String message = "First received message is not an EMPTY ACK";
 
-        assertEquals(message, MessageType.Name.ACK, receivedMessage.getMessageTypeName());
-        assertEquals(message, MessageCode.Name.EMPTY, receivedMessage.getMessageCodeName());
+        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
+        assertEquals(message, MessageCode.EMPTY, receivedMessage.getMessageCode());
     }
 
     @Test
@@ -179,7 +179,7 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response code is not CONTENT 205";
-        assertEquals(message, MessageCode.Name.CONTENT_205, receivedMessage.getMessageCodeName());
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
     }
 
     @Test
@@ -195,6 +195,6 @@ public class ClientReceivesSeparateResponseTest extends AbstractCoapCommunicatio
         SortedMap<Long, CoapMessage> receivedMessages = endpoint.getReceivedCoapMessages();
         CoapMessage receivedMessage = receivedMessages.get(receivedMessages.lastKey());
         String message = "Response Msg EventType is not CON";
-        assertEquals(message, MessageType.Name.CON, receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageType.CON, receivedMessage.getMessageType());
     }
 }

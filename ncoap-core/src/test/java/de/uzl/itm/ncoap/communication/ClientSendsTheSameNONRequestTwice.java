@@ -77,11 +77,11 @@ public class ClientSendsTheSameNONRequestTwice extends AbstractCoapCommunication
         token = new Token(new byte[]{1, 2, 3, 4});
         messageID = 1;
 
-        coapRequest1 = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, serviceURI);
+        coapRequest1 = new CoapRequest(MessageType.NON, MessageCode.GET, serviceURI);
         coapRequest1.setMessageID(messageID);
         coapRequest1.setToken(token);
 
-        coapRequest2 = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, serviceURI);
+        coapRequest2 = new CoapRequest(MessageType.NON, MessageCode.GET, serviceURI);
         coapRequest2.setMessageID(messageID);
         coapRequest2.setToken(token);
     }
@@ -127,7 +127,6 @@ public class ClientSendsTheSameNONRequestTwice extends AbstractCoapCommunication
     public void testFirstMessage(){
         CoapMessage message2 = endpoint.getReceivedMessage(0);
 
-        assertEquals("Third message has wrong message code!", MessageCode.Name.CONTENT_205,
-                message2.getMessageCodeName());
+        assertEquals("Third message has wrong message code!", MessageCode.CONTENT_205, message2.getMessageCode());
     }
 }

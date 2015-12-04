@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
+import static de.uzl.itm.ncoap.message.MessageCode.NOT_FOUND_404;
+
 /**
  * <p>Instances of {@link NotFoundHandler} are invoked to handle
  * inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s that targets a not (yet?) existing
@@ -92,7 +94,7 @@ public abstract class NotFoundHandler implements RequestConsumer{
      * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} but sets the given
      * {@link com.google.common.util.concurrent.SettableFuture} with a
      * {@link de.uzl.itm.ncoap.message.CoapResponse} with
-     * {@link de.uzl.itm.ncoap.message.MessageCode.Name#NOT_FOUND_404}.
+     * {@link de.uzl.itm.ncoap.message.MessageCode#NOT_FOUND_404}.
      *
      * @return a new default {@link NotFoundHandler} instance
      */
@@ -106,11 +108,8 @@ public abstract class NotFoundHandler implements RequestConsumer{
             public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                            InetSocketAddress remoteEndpoint) {
                 try {
-                    CoapResponse coapResponse =
-                            new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.NOT_FOUND_404);
-
+                    CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), NOT_FOUND_404);
                     String content = String.format(message, coapRequest.getUriPath());
-
                     coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
                     responseFuture.set(coapResponse);
                 }

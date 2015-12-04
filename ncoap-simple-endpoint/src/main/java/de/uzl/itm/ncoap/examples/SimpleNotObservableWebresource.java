@@ -29,7 +29,7 @@ import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.server.webresource.NotObservableWebresource;
 import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.LongLinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LongLinkAttribute;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;

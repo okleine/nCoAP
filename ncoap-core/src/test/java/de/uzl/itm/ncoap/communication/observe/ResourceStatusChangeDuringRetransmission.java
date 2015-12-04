@@ -66,7 +66,7 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
 
         URI targetUri = new URI("coap", null, "localhost", -1, "/observable", null, null);
 
-        coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
+        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
         coapRequest.setObserve(0);
     }
 
@@ -153,7 +153,7 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
     @Test
     public void testFirstMessage(){
         CoapMessage coapMessage = clientEndpoint.getReceivedMessage(0);
-        assertEquals("Wrong message type!", MessageType.Name.ACK, coapMessage.getMessageTypeName());
+        assertEquals("Wrong message type!", MessageType.ACK, coapMessage.getMessageType());
     }
 
     @Test

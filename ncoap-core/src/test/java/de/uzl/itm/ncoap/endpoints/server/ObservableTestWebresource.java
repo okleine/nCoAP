@@ -122,19 +122,19 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
             Thread.sleep(this.artificalDelay);
 
-            if(coapRequest.getMessageCodeName() == MessageCode.Name.GET){
+            if(coapRequest.getMessageCode() == MessageCode.GET){
                 processGetRequest(responseFuture, coapRequest, remoteEndpoint);
             }
 
-            else if(coapRequest.getMessageCodeName() == MessageCode.Name.POST){
+            else if(coapRequest.getMessageCode() == MessageCode.POST){
                 processPostRequest(responseFuture, coapRequest, remoteEndpoint);
             }
 
-            else if(coapRequest.getMessageCodeName() == MessageCode.Name.PUT){
+            else if(coapRequest.getMessageCode() == MessageCode.PUT){
                 processPutRequest(responseFuture, coapRequest, remoteEndpoint);
             }
 
-            else if(coapRequest.getMessageCodeName() == MessageCode.Name.DELETE){
+            else if(coapRequest.getMessageCode() == MessageCode.DELETE){
                 processDeleteRequest(responseFuture, coapRequest, remoteEndpoint);
             }
 
@@ -178,7 +178,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
         if(wrappedResourceStatus == null){
             CoapResponse coapResponse =
-                    new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.BAD_REQUEST_400);
+                    new CoapResponse(coapRequest.getMessageType(), MessageCode.BAD_REQUEST_400);
 
             String content = "Resource status is not available in any of the accepted content formats!";
             coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
@@ -188,7 +188,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
         else{
             CoapResponse coapResponse =
-                    new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.CONTENT_205);
+                    new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
 
             coapResponse.setContent(wrappedResourceStatus.getContent(), wrappedResourceStatus.getContentFormat());
             coapResponse.setEtag(wrappedResourceStatus.getEtag());

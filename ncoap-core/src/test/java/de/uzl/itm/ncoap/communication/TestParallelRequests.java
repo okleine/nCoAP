@@ -88,7 +88,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
             clientCallbacks[i] = new TestCallback();
-            requests[i] =  new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET,
+            requests[i] =  new CoapRequest(MessageType.CON, MessageCode.GET,
                     new URI("coap://localhost:" + server.getPort() + "/service" + (i+1)));
         }
     }

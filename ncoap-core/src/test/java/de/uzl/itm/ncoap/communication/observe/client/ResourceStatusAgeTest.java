@@ -94,10 +94,10 @@ public class ResourceStatusAgeTest extends AbstractCoapTest {
 
     public ResourceStatusAgeTest(long v1, long v2, long t1, long t2, boolean expected){
 
-        CoapResponse coapResponse1 = new CoapResponse(MessageType.Name.CON, MessageCode.Name.CONTENT_205);
+        CoapResponse coapResponse1 = new CoapResponse(MessageType.CON, MessageCode.CONTENT_205);
         coapResponse1.setObserve(v1);
 
-        CoapResponse coapResponse2 = new CoapResponse(MessageType.Name.CON, MessageCode.Name.CONTENT_205);
+        CoapResponse coapResponse2 = new CoapResponse(MessageType.CON, MessageCode.CONTENT_205);
         coapResponse2.setObserve(v2);
 
         long sequenceNo1 = coapResponse1.getObserve();

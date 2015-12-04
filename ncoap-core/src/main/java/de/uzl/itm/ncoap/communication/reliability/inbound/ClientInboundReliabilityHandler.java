@@ -41,6 +41,8 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static de.uzl.itm.ncoap.message.MessageType.*;
+
 /**
  * Created by olli on 09.09.15.
  */
@@ -113,18 +115,17 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
 
     private boolean handleInboundCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteSocket){
 
-        final MessageType.Name messageType = coapResponse.getMessageTypeName();
+        final int messageType = coapResponse.getMessageType();
         Token token = coapResponse.getToken();
 
         if(!this.isResponseAwaited(remoteSocket, token)) {
-            if(messageType == MessageType.Name.CON
-               || (messageType == MessageType.Name.NON && coapResponse.isUpdateNotification())) {
+            if(messageType == CON || (messageType == NON && coapResponse.isUpdateNotification())) {
                 // response was unexpected (send RST)
                 sendReset(coapResponse.getMessageID(), remoteSocket);
             }
             LOG.debug("Received unexpected response from \"{}\" (token: {})", remoteSocket, token);
             return false;
-        } else if ((messageType == MessageType.Name.CON)){
+        } else if ((messageType == CON)){
             // send empty ACK
             sendEmptyACK(coapResponse.getMessageID(), remoteSocket);
         }

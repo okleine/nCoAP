@@ -27,6 +27,7 @@ package de.uzl.itm.ncoap.communication.codec;
 import com.google.common.collect.Lists;
 import de.uzl.itm.ncoap.AbstractCoapTest;
 import de.uzl.itm.ncoap.communication.codec.tools.CoapTestEncoder;
+import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.OptionValue;
 import de.uzl.itm.ncoap.message.options.StringOptionValue;
 import org.apache.log4j.Level;
@@ -57,16 +58,16 @@ public class OptionEncoding extends AbstractCoapTest {
     @Parameterized.Parameters(name = "Test: [Prev. No. {0}, Option No. {1}, value: {2}]")
     public static Collection<Object[]> data() throws Exception {
         return Lists.newArrayList(
-                new Object[]{0, OptionValue.Name.URI_HOST, "www.example.org"},
-                new Object[]{0, OptionValue.Name.URI_HOST, "WWW.EXAMPLE.ORG"},
-                new Object[]{0, OptionValue.Name.URI_HOST, "WwW.eXaMpLe.OrG"},
-                new Object[]{0, OptionValue.Name.URI_HOST, "WwW.this-is-a-long-uri-host-part.OrG"},
+                new Object[]{0, Option.URI_HOST, "www.example.org"},
+                new Object[]{0, Option.URI_HOST, "WWW.EXAMPLE.ORG"},
+                new Object[]{0, Option.URI_HOST, "WwW.eXaMpLe.OrG"},
+                new Object[]{0, Option.URI_HOST, "WwW.this-is-a-long-uri-host-part.OrG"},
 
                 //Short Proxy URI
-                new Object[]{0, OptionValue.Name.PROXY_URI, "coap://www.example.org/path/to/service"},
+                new Object[]{0, Option.PROXY_URI, "coap://www.example.org/path/to/service"},
 
                 //Very long Proxy URI
-                new Object[]{30, OptionValue.Name.PROXY_URI, "coap://www.example.org/this/is/a/very/long/path/to/service/" +
+                new Object[]{30, Option.PROXY_URI, "coap://www.example.org/this/is/a/very/long/path/to/service/" +
                         "this/is/a/very/long/path/to/service/this/is/a/very/long/path/to/service/" +
                         "this/is/a/very/long/path/to/service/this/is/a/very/long/path/to/service/" +
                         "this/is/a/very/long/path/to/service/this/is/a/very/long/path/to/service/" +

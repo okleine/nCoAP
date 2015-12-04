@@ -53,10 +53,6 @@ public class CoapClientChannelPipelineFactory extends CoapChannelPipelineFactory
      * Creates a new instance of {@link CoapClientChannelPipelineFactory}.
      *
      * @param executor The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
-     *
-     * @param tokenFactory The {@link de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory} to be used
-     *                     for generating {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s for
-     *                     outbound {@link de.uzl.itm.ncoap.message.CoapRequest}s
      */
     public CoapClientChannelPipelineFactory(ScheduledExecutorService executor, int maxTokenLength){
 

@@ -38,6 +38,7 @@ import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
+import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.OptionValue;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
@@ -48,6 +49,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+
+import static de.uzl.itm.ncoap.message.MessageCode.*;
 
 /**
 * The {@link RequestDispatcher} is the topmost {@link ChannelHandler} of the {@link ChannelPipeline} returned
@@ -67,11 +70,11 @@ import java.util.concurrent.ScheduledExecutorService;
 *
 * However, the {@link RequestDispatcher} is aware of all registered {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances and is thus to be
 * used to register new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances, e.g. while processing an inbound {@link de.uzl.itm.ncoap.message.CoapRequest} with
-* {@link de.uzl.itm.ncoap.message.MessageCode.Name#POST}. That is why all {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances can reference their
+* {@link de.uzl.itm.ncoap.message.MessageCode#POST}. That is why all {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances can reference their
 * {@link RequestDispatcher} via {@link de.uzl.itm.ncoap.application.server.webresource.Webresource#getRequestDispatcher()}.
 *
-* Last but not least it checks whether the {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#IF_NONE_MATCH} is set on inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s
-* and sends a {@link de.uzl.itm.ncoap.message.CoapResponse} with {@link de.uzl.itm.ncoap.message.MessageCode.Name#PRECONDITION_FAILED_412} if the option was set but the
+* Last but not least it checks whether the {@link de.uzl.itm.ncoap.message.options.Option#IF_NONE_MATCH} is set on inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s
+* and sends a {@link de.uzl.itm.ncoap.message.CoapResponse} with {@link de.uzl.itm.ncoap.message.MessageCode#PRECONDITION_FAILED_412} if the option was set but the
 * addressed {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} already exists.
 *
 * @author Oliver Kleine
@@ -89,7 +92,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
 
     /**
      * @param notFoundHandler Instance of {@link NotFoundHandler} to deal with inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s with
-     *                          {@link de.uzl.itm.ncoap.message.MessageCode.Name#PUT} if the addresses {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} does not exist.
+     *                          {@link de.uzl.itm.ncoap.message.MessageCode#PUT} if the addresses {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} does not exist.
      *
      * @param executor the {@link ScheduledExecutorService} to process the task to send a {@link de.uzl.itm.ncoap.message.CoapResponse}
      *                        and
@@ -128,7 +131,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
                 responseFuture.setException(ex);
             }
         } else if (coapRequest.isIfNonMatchSet()) {
-                createPreconditionFailed(coapRequest.getMessageTypeName(), coapRequest.getUriPath(), responseFuture);
+                createPreconditionFailed(coapRequest.getMessageType(), coapRequest.getUriPath(), responseFuture);
         } else {
             // the requested Webservice DOES exist
             try {
@@ -165,11 +168,11 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
 //        this.channel = channel;
 //    }
 
-    private void createPreconditionFailed(MessageType.Name messageType, String servicePath,
-            SettableFuture<CoapResponse> responseFuture) {
+    private void createPreconditionFailed(int messageType, String resourcePath,
+        SettableFuture<CoapResponse> responseFuture) {
 
-        CoapResponse coapResponse = new CoapResponse(messageType, MessageCode.Name.PRECONDITION_FAILED_412);
-        String message = "IF-NONE-MATCH option was set but service \"" + servicePath + "\" exists.";
+        CoapResponse coapResponse = new CoapResponse(messageType, PRECONDITION_FAILED_412);
+        String message = "IF-NONE-MATCH option was set but service \"" + resourcePath + "\" exists.";
         coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         responseFuture.set(coapResponse);
     }
@@ -308,7 +311,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
                     ), true);
                 } else {
                     // the observe option is useless here (remove it)...
-                    coapResponse.removeOptions(OptionValue.Name.OBSERVE);
+                    coapResponse.removeOptions(Option.OBSERVE);
                     LOG.warn("Removed observe option from response!");
                 }
             }
@@ -318,8 +321,9 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         @Override
         public void onFailure(Throwable throwable) {
             LOG.error("Exception while processing inbound request", throwable);
-            CoapResponse coapResponse = CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
-                    MessageCode.Name.INTERNAL_SERVER_ERROR_500, throwable.getMessage());
+            CoapResponse coapResponse = CoapResponse.createErrorResponse(
+                coapRequest.getMessageType(), INTERNAL_SERVER_ERROR_500, throwable.getMessage()
+            );
 
             coapResponse.setMessageID(coapRequest.getMessageID());
             coapResponse.setToken(coapRequest.getToken());

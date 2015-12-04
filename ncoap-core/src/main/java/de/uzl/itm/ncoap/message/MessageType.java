@@ -47,6 +47,8 @@
 
 package de.uzl.itm.ncoap.message;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.HashMap;
 
 
@@ -57,74 +59,53 @@ import java.util.HashMap;
  */
 public abstract class MessageType {
 
-    private static final HashMap<Integer, Name> validNumbers = new HashMap<>();
+    /**
+     * Corresponds to Message EventType 0
+     */
+    public static final int CON = 0;
 
     /**
-     *  This enumeration provides constants for all message types defined in CoAP
+     * Corresponds to Message EventType 1
      */
-    public static enum Name{
+    public static final int NON = 1;
 
-        UNKNOWN(-1),
+    /**
+     * Corresponds to Message EventType 2
+     */
+    public static final int ACK = 2;
 
-        /**
-         * Corresponds to Message EventType 0
-         */
-        CON(0),
+    /**
+     * Corresponds to Message EventType 3
+     */
+    public static final int RST = 3;
 
-        /**
-         * Corresponds to Message EventType 1
-         */
-        NON(1),
-
-        /**
-         * Corresponds to Message EventType 2
-         */
-        ACK(2),
-
-        /**
-         * Corresponds to Message EventType 3
-         */
-        RST(3);
-
-        private int number;
-
-        private Name(int number){
-            this.number = number;
-            validNumbers.put(number, this);
-        }
-
-        /**
-         * Returns the number that corresponds to this {@link MessageType.Name}
-         * @return the number that corresponds to this {@link MessageType.Name}
-         */
-        public int getNumber(){
-            return this.number;
-        }
-
-        /**
-         * Returns the {@link Name} corresponding to the given number or {@link Name#UNKNOWN} if no such {@link Name}
-         * exists.
-         *
-         * @return the {@link Name} corresponding to the given number or {@link Name#UNKNOWN} if no such {@link Name}
-         * exists.
-         */
-        public static Name getName(int number){
-            if(validNumbers.containsKey(number))
-                return validNumbers.get(number);
-            else
-                return Name.UNKNOWN;
-        }
-
-        /**
-         * Returns <code>true</code> if and only if the given number corresponds to a valid message type. Otherwise it
-         * returns <code>false</code>.
-         *
-         * @param number the number to check whether it corresponds to a valid message type.
-         *
-         * @return whether the given number corresponds to a valid message type.
-         */
-        public static boolean isMessageType(int number){
-            return validNumbers.keySet().contains(number);
-        }
+    private static final HashMap<Integer, String> MESSAGE_TYPES = new HashMap<>();
+    static {
+        MESSAGE_TYPES.putAll(ImmutableMap.<Integer, String>builder()
+                        .put(CON, "CON (" + CON + ")")
+                        .put(NON, "NON (" + NON + ")")
+                        .put(ACK, "ACK (" + ACK + ")")
+                        .put(RST, "RST (" + RST + ")")
+                        .build()
+        );
     }
+
+    public static String asString(int messageType) {
+        String result = MESSAGE_TYPES.get(messageType);
+        return result == null ? "UNKOWN (" + messageType + ")" : result;
+    }
+
+
+    /**
+     * Returns <code>true</code> if and only if the given number corresponds to a valid message type. Otherwise it
+     * returns <code>false</code>.
+     *
+     * @param number the number to check whether it corresponds to a valid message type.
+     *
+     * @return whether the given number corresponds to a valid message type.
+     */
+    public static boolean isMessageType(int number){
+            return MESSAGE_TYPES.containsKey(number);
+        }
+
 }

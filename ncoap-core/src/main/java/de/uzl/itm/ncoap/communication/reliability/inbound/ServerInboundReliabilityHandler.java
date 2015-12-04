@@ -111,7 +111,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
                 // will be set by the next handler
                 coapMessage.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
             } else {
-                coapMessage.setMessageType(MessageType.Name.ACK);
+                coapMessage.setMessageType(MessageType.ACK);
                 LOG.info("Changed message type to ACK!");
             }
         }
@@ -121,12 +121,12 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
 
     private boolean handleInboundCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
 
-        MessageType.Name messageType = coapRequest.getMessageTypeName();
+        int messageType = coapRequest.getMessageType();
         int messageID = coapRequest.getMessageID();
 
         if(!addUnprocessedRequest(remoteSocket, messageID, coapRequest.getToken())) {
             LOG.info("Duplicate Request received from \"{}\" (message ID: {})", remoteSocket, messageID);
-            if (coapRequest.getMessageTypeName() == MessageType.Name.CON) {
+            if (messageType == MessageType.CON) {
                 ScheduledFuture future = getFromScheduledEmptyAcknowledgements(remoteSocket, messageID);
                 if(future == null || future.isDone()) {
                     LOG.debug("Duplicate was CON. Send immediate empty ACK...");
@@ -139,7 +139,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
             }
             return false;
         } else {
-            if(messageType == MessageType.Name.CON) {
+            if(messageType == MessageType.CON) {
                 scheduleEmptyAcknowledgement(remoteSocket, messageID);
             }
             return true;

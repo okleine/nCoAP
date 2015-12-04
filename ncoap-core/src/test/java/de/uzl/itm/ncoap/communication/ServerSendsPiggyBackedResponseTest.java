@@ -73,7 +73,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         callback = new TestCallback();
 
         URI targetUri =  new URI("coap://localhost:" + endpoint.getPort() + "/");
-        coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
+        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
     }
 
     @Override
@@ -115,7 +115,7 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         Token token = endpoint.getReceivedCoapMessages().values().iterator().next().getToken();
 
         //write response #1
-        CoapResponse response = new CoapResponse(MessageType.Name.ACK, MessageCode.Name.CONTENT_205);
+        CoapResponse response = new CoapResponse(MessageType.ACK, MessageCode.CONTENT_205);
         response.setMessageID(messageID);
         response.setToken(token);
         response.setContent(PAYLOAD.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);

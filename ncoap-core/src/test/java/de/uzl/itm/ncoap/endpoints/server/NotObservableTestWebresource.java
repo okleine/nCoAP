@@ -122,7 +122,7 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
         //create error response if content could not be created
         if(contentFormat == null){
             CoapResponse coapResponse =
-                    new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.BAD_REQUEST_400);
+                    new CoapResponse(coapRequest.getMessageType(), MessageCode.BAD_REQUEST_400);
 
             String content = "None of accepted content formats is supported by this Webservice.";
             coapResponse.setContent(content.getBytes(CoapMessage.CHARSET));
@@ -133,7 +133,7 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
         else{
             byte[] content = getSerializedResourceStatus(contentFormat);
             CoapResponse coapResponse =
-                    new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.CONTENT_205);
+                    new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
 
             coapResponse.setContent(content, contentFormat);
             responseFuture.set(coapResponse);

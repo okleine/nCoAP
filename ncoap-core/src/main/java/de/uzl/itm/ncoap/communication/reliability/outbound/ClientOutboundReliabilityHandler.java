@@ -88,7 +88,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         if(coapMessage instanceof CoapResponse) {
             return handleInboundCoapResponse((CoapResponse) coapMessage, remoteSocket);
-        } else if (coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY) {
+        } else if (coapMessage.getMessageCode() == MessageCode.EMPTY) {
             return handleInboundEmptyMessage(coapMessage, remoteSocket);
         } else {
             return true;
@@ -111,7 +111,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
         }
 
         addTransfer(remoteSocket, coapRequest.getMessageID(), coapRequest.getToken());
-        if(coapRequest.getMessageTypeName() == MessageType.Name.CON) {
+        if(coapRequest.getMessageType() == MessageType.CON) {
             scheduleRetransmission(coapRequest, remoteSocket, 1);
         }
         return true;
@@ -119,8 +119,8 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
 
     private boolean handleInboundEmptyMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        MessageType.Name messageType = coapMessage.getMessageTypeName();
-        if(messageType == MessageType.Name.CON) {
+        int messageType = coapMessage.getMessageType();
+        if(messageType == MessageType.CON) {
             // incoming PINGs are handled by the inbound reliability handler
             return true;
         } else {
@@ -128,12 +128,12 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
             Token token = removeTransfer(remoteSocket, messageID);
             if(token == null) {
                 return true;
-            } else if (messageType == MessageType.Name.ACK) {
+            } else if (messageType == MessageType.ACK) {
                 LOG.info("Received empty ACK from \"{}\" for token {} (Message ID: {}).",
                     new Object[]{remoteSocket, messageID, token});
                 triggerEvent(new EmptyAckReceivedEvent(remoteSocket, messageID, token), false);
                 return false;
-            } else if (messageType == MessageType.Name.RST) {
+            } else if (messageType == MessageType.RST) {
                 LOG.info("Received RST from \"{}\" for token {} (Message ID: {}).",
                         new Object[]{remoteSocket, messageID, token});
                 triggerEvent(new ResetReceivedEvent(remoteSocket, messageID, token), false);
@@ -148,9 +148,9 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     private boolean handleInboundCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
 
-        MessageType.Name messageType = coapResponse.getMessageTypeName();
+        int messageType = coapResponse.getMessageType();
 
-        if(messageType == MessageType.Name.ACK) {
+        if(messageType == MessageType.ACK) {
             Token token = removeTransfer(remoteSocket, coapResponse.getMessageID());
             if(token == null) {
                 LOG.warn("Received ACK response for unknown request (remote socket \"{}\", message ID: {})",

@@ -33,6 +33,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Locale;
 
+import static de.uzl.itm.ncoap.message.options.Option.*;
 /**
  * @author Oliver Kleine
  */
@@ -59,10 +60,10 @@ public class StringOptionValue extends OptionValue<String> {
      *
      * <ul>
      *     <li>
-     *         {@link OptionValue.Name#URI_HOST}: convert to lower case and remove percent encoding (if present)
+     *         {@link Option#URI_HOST}: convert to lower case and remove percent encoding (if present)
      *     </li>
      *     <li>
-     *         {@link OptionValue.Name#URI_PATH} and {@link OptionValue.Name#URI_QUERY}: remove percent encoding
+     *         {@link Option#URI_PATH} and {@link Option#URI_QUERY}: remove percent encoding
      *         (if present)
      *     </li>
      *     <li>
@@ -78,9 +79,9 @@ public class StringOptionValue extends OptionValue<String> {
      */
     public StringOptionValue(int optionNumber, String value) throws IllegalArgumentException{
 
-        this(optionNumber, optionNumber == OptionValue.Name.URI_HOST ?
+        this(optionNumber, optionNumber == URI_HOST ?
                 convertToByteArrayWithoutPercentEncoding(value.toLowerCase(Locale.ENGLISH)) :
-                ((optionNumber == OptionValue.Name.URI_PATH || optionNumber == OptionValue.Name.URI_QUERY) ?
+                ((optionNumber == URI_PATH || optionNumber == URI_QUERY) ?
                             convertToByteArrayWithoutPercentEncoding(value) :
                                     value.getBytes(CoapMessage.CHARSET)));
     }

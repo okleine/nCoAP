@@ -107,7 +107,7 @@ public class CoapRequestUriOptionsTest extends AbstractCoapTest{
 
     @Before
     public void createCoapRequest() throws URISyntaxException {
-        coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
+        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
     }
 
     @After

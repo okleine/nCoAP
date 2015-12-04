@@ -47,11 +47,11 @@ public class CoapMessageEqualityTest extends AbstractCoapTest {
     public void testSameRequests() throws Exception {
         URI targetUri = new URI("coap", null, "localhost", 5683, "/path/to/service", null, null);
 
-        CoapRequest coapRequest1 = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri);
+        CoapRequest coapRequest1 = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri);
         coapRequest1.setToken(new Token(new byte[0]));
         coapRequest1.setMessageID(12345);
 
-        CoapRequest coapRequest2 = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri);
+        CoapRequest coapRequest2 = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri);
         coapRequest2.setToken(new Token(new byte[0]));
         coapRequest2.setMessageID(12345);
 
@@ -68,11 +68,11 @@ public class CoapMessageEqualityTest extends AbstractCoapTest {
         URI targetUri1 = new URI("coap", null, "localhost", 5683, path1, null, null);
         URI targetUri2 = new URI("coap", null, "localhost", 5683, path2, null, null);
 
-        CoapRequest coapRequest1 = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri1);
+        CoapRequest coapRequest1 = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri1);
         coapRequest1.setToken(new Token(new byte[0]));
         coapRequest1.setMessageID(12345);
 
-        CoapRequest coapRequest2 = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri2);
+        CoapRequest coapRequest2 = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri2);
         coapRequest2.setToken(new Token(new byte[0]));
         coapRequest2.setMessageID(12345);
 
@@ -84,12 +84,12 @@ public class CoapMessageEqualityTest extends AbstractCoapTest {
     @Test
     public void testResponsesWitDifferentMessageIDs() throws Exception {
 
-        CoapResponse coapResponse1 = new CoapResponse(MessageType.Name.NON, MessageCode.Name.CONTENT_205);
+        CoapResponse coapResponse1 = new CoapResponse(MessageType.NON, MessageCode.CONTENT_205);
         coapResponse1.setContent("Test123".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         coapResponse1.setToken(new Token(new byte[0]));
         coapResponse1.setMessageID(12346);
 
-        CoapResponse coapResponse2 = new CoapResponse(MessageType.Name.NON, MessageCode.Name.CONTENT_205);
+        CoapResponse coapResponse2 = new CoapResponse(MessageType.NON, MessageCode.CONTENT_205);
         coapResponse2.setContent("Test123".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         coapResponse2.setToken(new Token(new byte[0]));
         coapResponse2.setMessageID(12345);
@@ -102,12 +102,12 @@ public class CoapMessageEqualityTest extends AbstractCoapTest {
     @Test
     public void testResponsesWitDifferentTokens() throws Exception {
 
-        CoapResponse coapResponse1 = new CoapResponse(MessageType.Name.NON, MessageCode.Name.CONTENT_205);
+        CoapResponse coapResponse1 = new CoapResponse(MessageType.NON, MessageCode.CONTENT_205);
         coapResponse1.setContent("Test123".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         coapResponse1.setToken(new Token(new byte[0]));
         coapResponse1.setMessageID(12345);
 
-        CoapResponse coapResponse2 = new CoapResponse(MessageType.Name.NON, MessageCode.Name.CONTENT_205);
+        CoapResponse coapResponse2 = new CoapResponse(MessageType.NON, MessageCode.CONTENT_205);
         coapResponse2.setContent("Test123".getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         coapResponse2.setToken(new Token(new byte[1]));
         coapResponse2.setMessageID(12345);
@@ -121,12 +121,12 @@ public class CoapMessageEqualityTest extends AbstractCoapTest {
     public void testRequestsWithDifferentOrderOfAcceptOptions() throws Exception {
         URI targetUri = new URI("coap", null, "localhost", 5683, "/path/to/service", null, null);
 
-        CoapRequest coapRequest1 = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri);
+        CoapRequest coapRequest1 = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri);
         coapRequest1.setToken(new Token(new byte[0]));
         coapRequest1.setMessageID(12345);
         coapRequest1.setAccept(ContentFormat.TEXT_PLAIN_UTF8, ContentFormat.APP_XML);
 
-        CoapRequest coapRequest2 = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri);
+        CoapRequest coapRequest2 = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri);
         coapRequest2.setToken(new Token(new byte[0]));
         coapRequest2.setMessageID(12345);
         coapRequest1.setAccept(ContentFormat.APP_XML, ContentFormat.TEXT_PLAIN_UTF8);

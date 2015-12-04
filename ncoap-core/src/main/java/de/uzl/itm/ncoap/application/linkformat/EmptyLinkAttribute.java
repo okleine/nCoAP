@@ -22,57 +22,36 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.application.server.webresource.linkformat;
+package de.uzl.itm.ncoap.application.linkformat;
 
-import java.util.HashMap;
-import java.util.Map;
+import static de.uzl.itm.ncoap.application.linkformat.LinkAttribute.Type.EMPTY;
 
 /**
- * A {@link LongLinkAttribute} is a {@link LinkAttribute} with values of type 'Long'
- * ({@link LinkAttribute#LONG_ATTRIBUTE}).
+ * An {@link de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute} is a
+ * {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute} with no value
+ * ({@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute.Type#EMPTY}).
  *
  * @author Oliver Kleine
  */
-public class LongLinkAttribute extends LinkAttribute<Long> {
+public class EmptyLinkAttribute extends LinkAttribute<Void> {
 
     /**
-     * The key of the content type attribute ("ct")
+     * The key of the observation attribute ("obs")
      */
-    public static final String CONTENT_TYPE = "ct";
-
-    /**
-     * The key of the maximum size estimation attribute ("sz")
-     */
-    public static final String MAX_SIZE_ESTIMATE = "sz";
-
-    private static Map<String, AttributeProperties> ATTRIBUTES = new HashMap<>();
-
-    public static Map<String, AttributeProperties> getAttributes(){
-        return LongLinkAttribute.ATTRIBUTES;
-    }
-
-
-    /**
-     * This is method is just for internal use withiin the nCoAP framework
-     */
-    public static void initialize(){
-        ATTRIBUTES.put(CONTENT_TYPE, new AttributeProperties(true, LONG_ATTRIBUTE));
-        ATTRIBUTES.put(MAX_SIZE_ESTIMATE, new AttributeProperties(false, LONG_ATTRIBUTE));
-    }
+    public static final String OBSERVABLE = "obs";
 
     /**
      * Creates a new instance of
-     * {@link LongLinkAttribute}
+     * {@link de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute}
      *
-     * @param key the key of the attribute (see static constants for supported keys)
-     * @param value the attributes value
+     * @param key the key of the attribute
      */
-    public LongLinkAttribute(String key, Long value) {
-        super(key, value);
+    public EmptyLinkAttribute(String key) throws IllegalArgumentException {
+        super(key, null);
 
-        if(LinkAttribute.getAttributeType(key) != LinkAttribute.LONG_ATTRIBUTE){
+        if(!EMPTY.equals(LinkAttribute.getAttributeType(key))) {
             throw new IllegalArgumentException(
-                    "Given attribute key \"" + key + "\" does not refer to a numeric attribute."
+                "Given attribute key \"" + key + "\" does not refer to an empty attribute."
             );
         }
     }
@@ -80,17 +59,17 @@ public class LongLinkAttribute extends LinkAttribute<Long> {
 
     @Override
     public int hashCode() {
-        return this.getKey().hashCode() | this.getValue().hashCode();
+        return this.getKey().hashCode();
     }
 
 
     @Override
     public boolean equals(Object object) {
-        if(!(object instanceof LongLinkAttribute))
+        if (!(object instanceof EmptyLinkAttribute))
             return false;
 
-        LongLinkAttribute other = (LongLinkAttribute) object;
+        EmptyLinkAttribute other = (EmptyLinkAttribute) object;
 
-        return this.getKey().equals(other.getKey()) && this.getValue().equals(other.getValue());
+        return this.getKey().equals(other.getKey());
     }
 }

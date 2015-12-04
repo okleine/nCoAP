@@ -142,7 +142,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
         encodeHeader(encodedMessage, coapMessage);
         log.debug("Encoded length of message (after HEADER + TOKEN): {}", encodedMessage.readableBytes());
 
-        if(coapMessage.getMessageCodeName() == MessageCode.Name.EMPTY){
+        if(coapMessage.getMessageCode() == MessageCode.EMPTY){
             encodedMessage = ChannelBuffers.wrappedBuffer(Ints.toByteArray(encodedMessage.getInt(0) & 0xF0FFFFFF));
             return encodedMessage;
         }

@@ -26,10 +26,9 @@
 package de.uzl.itm.ncoap.application.server.webresource;
 
 import com.google.common.collect.LinkedHashMultimap;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.EmptyLinkAttribute;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
-import de.uzl.itm.ncoap.message.options.OptionValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static de.uzl.itm.ncoap.message.options.OptionValue.MAX_AGE_DEFAULT;
 
 /**
 * This is the abstract class to be extended by classes to represent an observable resource. The generic type T
@@ -70,14 +70,15 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
     /**
      * Using this constructor is the same as
-     * {@link #ObservableWebresource(String, Object, long, java.util.concurrent.ScheduledExecutorService)} with
-     * parameter <code>lifetimeSeconds</code> set to {@link OptionValue#MAX_AGE_DEFAULT}.
+     * {@link #ObservableWebresource(String, Object, long, java.util.concurrent.ScheduledExecutorService)}
+     * with parameter <code>lifetimeSeconds</code> set to
+     * {@link de.uzl.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
      *
      * @param uriPath the uriPath this {@link ObservableWebresource} is registered at.
      * @param initialStatus the initial status of this {@link ObservableWebresource}.
      */
     protected ObservableWebresource(String uriPath, T initialStatus, ScheduledExecutorService executor){
-        this(uriPath, initialStatus, OptionValue.MAX_AGE_DEFAULT, executor);
+        this(uriPath, initialStatus, MAX_AGE_DEFAULT, executor);
         this.setLinkAttribute(new EmptyLinkAttribute(EmptyLinkAttribute.OBSERVABLE));
     }
 
@@ -201,8 +202,8 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      *
      * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
-     * This is to avoid inconsistencies between the content and {@link OptionValue.Name#ETAG}, resp.
-     * {@link OptionValue.Name#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
+     * This is to avoid inconsistencies between the content and {@link de.uzl.itm.ncoap.message.options.Option#ETAG}, resp.
+     * {@link de.uzl.itm.ncoap.message.options.Option#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
      * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
      * resp. {@link #getMaxAge()}.
      *
@@ -239,8 +240,8 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      *
      * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
-     * This is to avoid inconsistencies between the content and {@link OptionValue.Name#ETAG}, resp.
-     * {@link OptionValue.Name#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
+     * This is to avoid inconsistencies between the content and {@link de.uzl.itm.ncoap.message.options.Option#ETAG}, resp.
+     * {@link de.uzl.itm.ncoap.message.options.Option#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
      * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
      * resp. {@link #getMaxAge()}.
      *
@@ -281,8 +282,9 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
     /**
      * This method is invoked by the framework for every observer after every resource update. Classes that extend
-     * {@link ObservableWebresource} may implement this method just by returning one of {@link de.uzl.itm.ncoap.message.MessageType.Name#CON}
-     * or {@link de.uzl.itm.ncoap.message.MessageType.Name#NON}. However, this method also gives {@link ObservableWebresource}s the opportunity
+     * {@link ObservableWebresource} may implement this method just by returning one of
+     * {@link de.uzl.itm.ncoap.message.MessageType#CON} or {@link de.uzl.itm.ncoap.message.MessageType#NON}.
+     * However, this method also gives {@link ObservableWebresource}s the opportunity
      * to e.g. distinguish between observers or have some other arbitrary logic...
      *
      * @param remoteSocket the remote CoAP endpoints that observes this {@link ObservableWebresource}

@@ -77,11 +77,11 @@ public class ClientSendsTheSameCONRequestTwice extends AbstractCoapCommunication
         token = new Token(new byte[]{1, 2, 3, 4});
         messageID = 1;
 
-        coapRequest1 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, serviceURI);
+        coapRequest1 = new CoapRequest(MessageType.CON, MessageCode.GET, serviceURI);
         coapRequest1.setMessageID(messageID);
         coapRequest1.setToken(token);
 
-        coapRequest2 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, serviceURI);
+        coapRequest2 = new CoapRequest(MessageType.CON, MessageCode.GET, serviceURI);
         coapRequest2.setMessageID(messageID);
         coapRequest2.setToken(token);
     }
@@ -131,27 +131,27 @@ public class ClientSendsTheSameCONRequestTwice extends AbstractCoapCommunication
     public void testFirstMessageisEmptyAck(){
         CoapMessage message1 = endpoint.getReceivedMessage(0);
 
-        assertEquals("First message is not empty!", MessageCode.Name.EMPTY, message1.getMessageCodeName());
+        assertEquals("First message is not empty!", MessageCode.EMPTY, message1.getMessageCode());
         assertEquals("First message has wrong ID!", messageID, message1.getMessageID());
-        assertEquals("First message is no ACK!", MessageType.Name.ACK, message1.getMessageTypeName());
+        assertEquals("First message is no ACK!", MessageType.ACK, message1.getMessageType());
     }
 
     @Test
     public void testSecondMessageisEmptyAck(){
         CoapMessage message1 = endpoint.getReceivedMessage(1);
 
-        assertEquals("Second message is not empty!", MessageCode.Name.EMPTY, message1.getMessageCodeName());
+        assertEquals("Second message is not empty!", MessageCode.EMPTY, message1.getMessageCode());
         assertEquals("Second message has wrong ID!", messageID, message1.getMessageID());
-        assertEquals("Second message is no ACK!", MessageType.Name.ACK, message1.getMessageTypeName());
+        assertEquals("Second message is no ACK!", MessageType.ACK, message1.getMessageType());
     }
 
     @Test
     public void testThirdMessage(){
         CoapMessage message2 = endpoint.getReceivedMessage(2);
 
-        assertEquals("Third message has wrong message code!", MessageCode.Name.CONTENT_205,
-                message2.getMessageCodeName());
+        assertEquals("Third message has wrong message code!", MessageCode.CONTENT_205,
+                message2.getMessageCode());
 
-        assertEquals("3rd message has wrong message type!", MessageType.Name.CON, message2.getMessageTypeName());
+        assertEquals("3rd message has wrong message type!", MessageType.CON, message2.getMessageType());
     }
 }

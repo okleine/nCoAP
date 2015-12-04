@@ -92,7 +92,7 @@ public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunication
         callback = new TestCallback();
 
         URI targetUri = new URI("coap://localhost:" + testEndpoint.getPort() + "/testpath");
-        coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetUri);
+        coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
     }
 
     @Override

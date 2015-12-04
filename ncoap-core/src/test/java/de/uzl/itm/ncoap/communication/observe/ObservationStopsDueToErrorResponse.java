@@ -70,7 +70,7 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
 
     @Override
     public void createTestScenario() throws Exception {
-        CoapRequest coapRequest = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, serviceUri);
+        CoapRequest coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, serviceUri);
         coapRequest.setObserve(0);
         coapRequest.setAccept(111);
         client.sendCoapRequest(coapRequest, serverSocket, clientCallback);

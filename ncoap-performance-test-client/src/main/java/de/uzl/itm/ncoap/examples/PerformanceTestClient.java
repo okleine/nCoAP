@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class PerformanceTestClient extends CoapClient {
 
-    public static final int NUMBER_OF_PARALLEL_REQUESTS = 50;
+    public static final int NUMBER_OF_PARALLEL_REQUESTS = 100;
     public static final int INTERVAL_SIZE = 1000;
 
     public static String SERVER_NAME = "141.83.157.155";
@@ -135,8 +135,8 @@ public class PerformanceTestClient extends CoapClient {
                 setWaitForMessageID(false);
                 requests.incrementAndGet();
                 openRequests.incrementAndGet();
-                CoapRequest coapRequest = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, TARGET_URI);
-                sendCoapRequest(coapRequest, new PerformanceTestCallback(), SERVER_SOCKET);
+                CoapRequest coapRequest = new CoapRequest(MessageType.NON, MessageCode.GET, TARGET_URI);
+                sendCoapRequest(coapRequest, SERVER_SOCKET, new PerformanceTestCallback());
             }
         }, this.isWaiting() ? MessageIDFactory.EXCHANGE_LIFETIME : 0, TimeUnit.SECONDS);
     }

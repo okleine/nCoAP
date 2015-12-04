@@ -84,7 +84,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
         client = new CoapClient();
         callback = new TestCallback();
         URI targetUri = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
-        request = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri);
+        request = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri);
     }
 
     @Override
@@ -132,7 +132,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
         SortedMap<Long, CoapResponse> receivedMessages = callback.getCoapResponses();
         CoapResponse response = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response code is not CONTENT 205";
-        assertEquals(message, MessageCode.Name.CONTENT_205, response.getMessageCodeName());
+        assertEquals(message, MessageCode.CONTENT_205, response.getMessageCode());
     }
 
     @Test
@@ -148,7 +148,7 @@ public class ClientSendsNONRequest extends AbstractCoapCommunicationTest {
         SortedMap<Long, CoapResponse> receivedMessages = callback.getCoapResponses();
         CoapResponse response = receivedMessages.get(receivedMessages.firstKey());
         String message = "Response Msg EventType is not NON";
-        assertEquals(message, MessageType.Name.NON, response.getMessageTypeName());
+        assertEquals(message, MessageType.NON, response.getMessageType());
     }
 
     @Test

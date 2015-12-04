@@ -70,7 +70,7 @@ public class ClientSendsNONRequestThatTimesOut extends AbstractCoapCommunication
         client = new CoapClient();
         callback = new TestCallback();
         URI targetUri = new URI("coap://localhost/");
-        request = new CoapRequest(MessageType.Name.NON, MessageCode.Name.GET, targetUri);
+        request = new CoapRequest(MessageType.NON, MessageCode.GET, targetUri);
     }
 
     @Override

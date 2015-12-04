@@ -50,8 +50,8 @@ public abstract class ClientCallback {
 
     /**
      * Method invoked by the {@link de.uzl.itm.ncoap.application.client.CoapClient} for an inbound response (which is of any type but
-     * empty {@link de.uzl.itm.ncoap.message.MessageType.Name#ACK} or
-     * {@link de.uzl.itm.ncoap.message.MessageType.Name#RST}).
+     * empty {@link de.uzl.itm.ncoap.message.MessageType#ACK} or
+     * {@link de.uzl.itm.ncoap.message.MessageType#RST}).
      *
      * @param coapResponse the response message
      */
@@ -62,7 +62,7 @@ public abstract class ClientCallback {
      * This method is called by the framework whenever an update notification was received, i.e. this method is
      * only called if the {@link de.uzl.itm.ncoap.message.CoapRequest} that is associated with this
      * {@link ClientCallback} had the
-     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#OBSERVE} set to <code>0</code>.
+     * {@link de.uzl.itm.ncoap.message.options.Option#OBSERVE} set to <code>0</code>.
      *
      * @return <code>true</code> if the observation is to be continued, <code>false</code> if the observation
      * is to be canceled (next update notification will cause a RST being send to the remote endpoint). Default,

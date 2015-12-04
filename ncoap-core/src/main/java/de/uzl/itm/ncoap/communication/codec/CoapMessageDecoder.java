@@ -34,27 +34,33 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
+import static de.uzl.itm.ncoap.message.MessageType.*;
+import static de.uzl.itm.ncoap.message.MessageCode.*;
+
 /**
  * A {@link CoapMessageDecoder} de-serializes inbound messages. Please note the following:
  * <ul>
  *     <li>
- *          If the inbound message is a {@link de.uzl.itm.ncoap.message.CoapResponse} then malformed or unknown options are silently
- *          ignored and the {@link de.uzl.itm.ncoap.message.CoapResponse} is further processed without these options.
+ *          If the inbound message is a {@link de.uzl.itm.ncoap.message.CoapResponse} then malformed or unknown options
+ *          are silently ignored and the {@link de.uzl.itm.ncoap.message.CoapResponse} is further processed without
+ *          these options.
  *     </li>
  *     <li>
- *          If the inbound message is a {@link de.uzl.itm.ncoap.message.CoapRequest}, then malformed or unsupported, i.e. unknown
- *          non-critical options are silently ignored but critical options lead to an immediate
- *          {@link de.uzl.itm.ncoap.message.CoapResponse} with {@link de.uzl.itm.ncoap.message.MessageCode.Name#BAD_OPTION_402} being sent to the remote CoAP endpoints.
+ *          If the inbound message is a {@link de.uzl.itm.ncoap.message.CoapRequest}, then malformed or unsupported,
+ *          i.e. unknown non-critical options are silently ignored but critical options lead to an immediate
+ *          {@link de.uzl.itm.ncoap.message.CoapResponse} with
+ *          {@link de.uzl.itm.ncoap.message.MessageCode#BAD_OPTION_402} being sent to the remote CoAP endpoints.
  *     </li>
  *     <li>
- *          Malformed inbound {@link de.uzl.itm.ncoap.message.CoapMessage}s with malformed header, e.g. a TKL field that does not correspond to
- *          the actual tokens length, lead to an immediate {@link de.uzl.itm.ncoap.message.CoapMessage} with {@link de.uzl.itm.ncoap.message.MessageType.Name#RST} being
+ *          Malformed inbound {@link de.uzl.itm.ncoap.message.CoapMessage}s with malformed header, e.g. a TKL field
+ *          that does not correspond to the actual tokens length, lead to an immediate
+ *          {@link de.uzl.itm.ncoap.message.CoapMessage} with {@link de.uzl.itm.ncoap.message.MessageType#RST} being
  *          sent to the remote CoAP endpoints.
  *     </li>
  *     <li>
- *         For inbound {@link de.uzl.itm.ncoap.message.CoapMessage}s with {@link de.uzl.itm.ncoap.message.MessageCode.Name#EMPTY} only the header, i.e. the first 4
- *         bytes are decoded and further processed. Any following bytes contained in the same encoded message are
- *         ignored.
+ *         For inbound {@link de.uzl.itm.ncoap.message.CoapMessage}s with
+ *         {@link de.uzl.itm.ncoap.message.MessageCode#EMPTY} only the header, i.e. the first 4 bytes are decoded and
+ *         further processed. Any following bytes contained in the same encoded message are ignored.
  *     </li>
  * </ul>
  *
@@ -138,22 +144,19 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
 
         //Handle empty message (ignore everything but the first 4 bytes)
-        if(messageCode == MessageCode.Name.EMPTY.getNumber()){
+        if(messageCode == EMPTY) {
 
-            if(messageType == MessageType.Name.ACK.getNumber())
+            if(messageType == ACK) {
                 return CoapMessage.createEmptyAcknowledgement(messageID);
-
-            else if(messageType == MessageType.Name.RST.getNumber())
+            } else if(messageType == RST) {
                 return CoapMessage.createEmptyReset(messageID);
-
-            else if(messageType == MessageType.Name.CON.getNumber())
+            } else if(messageType == CON) {
                 return CoapMessage.createPing(messageID);
-
-            //There is no empty NON message defined, so send a RST
-            else
+            } else {
+                //There is no empty NON message defined, so send a RST
                 throw new HeaderDecodingException(messageID, remoteEndpoint, "Empty NON messages are invalid!");
+            }
         }
-
 
         //Read the token
         byte[] token = new byte[tokenLength];
@@ -162,10 +165,9 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         //Handle non-empty messages (CON, NON or ACK)
         CoapMessage coapMessage;
 
-        if(MessageCode.isRequest(messageCode))
+        if(MessageCode.isRequest(messageCode)) {
             coapMessage = new CoapRequest(messageType, messageCode);
-
-        else{
+        } else {
             coapMessage = new CoapResponse(messageType, messageCode);
             coapMessage.setMessageType(messageType);
         }
@@ -177,14 +179,12 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         if(buffer.readableBytes() > 0){
             try {
                 setOptions(coapMessage, buffer);
-            }
-            catch (OptionCodecException e) {
-                e.setMessageID(messageID);
-                e.setToken(new Token(token));
-                e.setRemoteEndpoint(remoteEndpoint);
-                e.setMessageType(messageType);
-
-                throw e;
+            } catch (OptionCodecException ex) {
+                ex.setMessageID(messageID);
+                ex.setToken(new Token(token));
+                ex.setRemoteEndpoint(remoteEndpoint);
+                ex.setMessageType(messageType);
+                throw ex;
             }
         }
 
@@ -195,10 +195,9 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
         try {
             coapMessage.setContent(buffer);
-        }
-        catch (IllegalArgumentException e) {
-            log.warn("Message code {} does not allow content. Ignore {} bytes.", coapMessage.getMessageCode(),
-                    buffer.readableBytes());
+        } catch (IllegalArgumentException e) {
+            String warning = "Message code {} does not allow content. Ignore {} bytes.";
+            log.warn(warning, coapMessage.getMessageCode(), buffer.readableBytes());
         }
 
         log.info("Decoded Message: {}", coapMessage);
@@ -244,21 +243,21 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 byte[] optionValue = new byte[optionLength];
                 buffer.readBytes(optionValue);
 
-                switch(OptionValue.getOptionType(actualOptionNumber)){
+                switch(OptionValue.getType(actualOptionNumber)){
 
-                    case OptionValue.Type.EMPTY:
+                    case EMPTY:
                         coapMessage.addOption(actualOptionNumber, new EmptyOptionValue(actualOptionNumber));
                         break;
 
-                    case OptionValue.Type.OPAQUE:
+                    case OPAQUE:
                         coapMessage.addOption(actualOptionNumber, new OpaqueOptionValue(actualOptionNumber, optionValue));
                         break;
 
-                    case OptionValue.Type.STRING:
+                    case STRING:
                         coapMessage.addOption(actualOptionNumber, new StringOptionValue(actualOptionNumber, optionValue));
                         break;
 
-                    case OptionValue.Type.UINT:
+                    case UINT:
                         coapMessage.addOption(actualOptionNumber, new UintOptionValue(actualOptionNumber, optionValue));
                         break;
 
@@ -279,7 +278,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                     log.warn("Silently ignore malformed option no. {} in inbound response.", actualOptionNumber);
                 
                 //Critical malformed options in requests cause an exception
-                else if(OptionValue.isCritical(actualOptionNumber))
+                else if(Option.isCritical(actualOptionNumber))
                     throw new OptionCodecException(actualOptionNumber);
                 
                 //Not critical malformed options in requests are silently ignored... 
@@ -313,18 +312,13 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 writeReset(ctx, ex.getMessageID(), ex.getRemoteEndpoint());
             else
                 log.warn("Ignore inbound message with malformed header...");
-        }
-
-        else if(cause instanceof OptionCodecException){
+        } else if(cause instanceof OptionCodecException) {
             OptionCodecException ex = (OptionCodecException) cause;
-            MessageType.Name messageType = ex.getMessageType() == MessageType.Name.CON.getNumber() ?
-                    MessageType.Name.ACK : MessageType.Name.NON;
+            int messageType = ex.getMessageType() == CON ? ACK : NON;
 
             writeBadOptionResponse(ctx, messageType, ex.getMessageID(), ex.getToken(), ex.getRemoteEndpoint(),
                     ex.getMessage());
-        }
-
-        else{
+        } else {
             ctx.sendUpstream(exceptionEvent);
         }
 
@@ -336,11 +330,10 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
     }
 
 
-    private void writeBadOptionResponse(ChannelHandlerContext ctx, MessageType.Name messageType, int messageID,
+    private void writeBadOptionResponse(ChannelHandlerContext ctx, int messageType, int messageID,
                                         Token token, InetSocketAddress remoteEndpoint, String content) {
 
-        CoapResponse errorResponse =
-                CoapResponse.createErrorResponse(messageType, MessageCode.Name.BAD_OPTION_402, content);
+        CoapResponse errorResponse = CoapResponse.createErrorResponse(messageType, BAD_OPTION_402, content);
         errorResponse.setMessageID(messageID);
         errorResponse.setToken(token);
 

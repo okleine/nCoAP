@@ -27,7 +27,7 @@ package de.uzl.itm.ncoap.application.server.webresource;
 
 import com.google.common.collect.*;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +137,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      * Invocation of this method write-locks the resource status, i.e. concurrent invocations of
      * {@link #getWrappedResourceStatus(long)} or this method wait for this method to
      * finish, i.e. to unlock the write-lock. This is e.g. to avoid inconsistencies between the content and
-     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ETAG}, resp. {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such
+     * {@link de.uzl.itm.ncoap.message.options.Option#ETAG}, resp. {@link de.uzl.itm.ncoap.message.options.Option#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such
      * inconsistencies could happen in case of a resource update between calls of e.g.
      * {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)}, resp. {@link #getMaxAge()}.
      *
@@ -165,8 +165,8 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      *
      * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
-     * This is to avoid inconsistencies between the content and {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ETAG}, resp.
-     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
+     * This is to avoid inconsistencies between the content and {@link de.uzl.itm.ncoap.message.options.Option#ETAG}, resp.
+     * {@link de.uzl.itm.ncoap.message.options.Option#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
      * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
      * resp. {@link #getMaxAge()}.
      *
@@ -202,8 +202,8 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      *
      * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
-     * This is to avoid inconsistencies between the content and {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ETAG}, resp.
-     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
+     * This is to avoid inconsistencies between the content and {@link de.uzl.itm.ncoap.message.options.Option#ETAG}, resp.
+     * {@link de.uzl.itm.ncoap.message.options.Option#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
      * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
      * resp. {@link #getMaxAge()}.
      *

@@ -22,9 +22,15 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.application.server.webresource.linkformat;
+package de.uzl.itm.ncoap.application.linkformat;
+
+import com.google.common.collect.ImmutableMap;
 
 import java.util.*;
+import static de.uzl.itm.ncoap.application.linkformat.LinkAttribute.Type.*;
+import static de.uzl.itm.ncoap.application.linkformat.LongLinkAttribute.*;
+import static de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute.*;
+import static de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute.*;
 
 /**
  * Each {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} can be enriched with
@@ -38,52 +44,35 @@ import java.util.*;
  */
 public abstract class LinkAttribute<T> {
 
-    /**
-     * The integer value (0) representing the internal type for empty attributes, i.e. attributes without value
-     */
-    public static final int EMPTY_ATTRIBUTE = 0;
+    public static enum Type {
+        UNKNOWN, EMPTY, LONG, STRING
+    }
 
-    /**
-     * The integer value (1) representing the internal type for long attributes, i.e. attributes with numeric values
-     */
-    public static final int LONG_ATTRIBUTE = 1;
-
-    /**
-     * The integer value (2) representing the internal type for string attributes, i.e. attributes with string values
-     */
-    public static final int STRING_ATTRIBUTE = 2;
+    private static Map<String, AttributeProperties> ATTRIBUTES = new HashMap<>();
+    static {
+        ATTRIBUTES.putAll(ImmutableMap.<String, AttributeProperties>builder()
+            .put(CONTENT_TYPE, new AttributeProperties(true, LONG))
+            .put(MAX_SIZE_ESTIMATE, new AttributeProperties(false, LONG))
+            .put(OBSERVABLE, new AttributeProperties(false, EMPTY))
+            .put(RESOURCE_TYPE, new AttributeProperties(true, STRING))
+            .put(INTERFACE, new AttributeProperties(false, STRING))
+            .build()
+        );
+    }
 
     private String key;
     private T value;
 
-    private static Map<String, AttributeProperties> ATTRIBUTES = new HashMap<>();
-
-    private static boolean initialized = false;
-
-    public static void initialize(){
-
-        EmptyLinkAttribute.initialize();
-        ATTRIBUTES.putAll(EmptyLinkAttribute.getAttributes());
-        LongLinkAttribute.initialize();
-        ATTRIBUTES.putAll(LongLinkAttribute.getAttributes());
-        StringLinkAttribute.initialize();
-        ATTRIBUTES.putAll(StringLinkAttribute.getAttributes());
-
-        initialized = true;
-    }
-
 
     protected LinkAttribute(String attributeKey, T value) throws IllegalArgumentException{
-        if(!initialized){
-            initialize();
-        }
 
         this.key = attributeKey;
 
-        if(!ATTRIBUTES.containsKey(attributeKey))
+        if(!ATTRIBUTES.containsKey(attributeKey)) {
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
-
-        this.value = value;
+        } else {
+            this.value = value;
+        }
     }
 
 
@@ -116,7 +105,45 @@ public abstract class LinkAttribute<T> {
         if(!ATTRIBUTES.containsKey(attributeKey))
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
 
-        return ATTRIBUTES.get(attributeKey).isMultipleValues();
+        return ATTRIBUTES.get(attributeKey).permitMultipleValues();
+    }
+
+    /**
+     * Creates an instance of {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute} from a URI query
+     * parameter, i.e. <code>key=value</code>.
+     *
+     * @param queryParameter e.g. "<code>ct=0</code>" for content-format "plain text"
+     *
+     * @return an instance of {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}
+     *
+     * @throws IllegalArgumentException
+     */
+    public static LinkAttribute createFromUriQuery(String queryParameter) throws IllegalArgumentException {
+
+        if(!queryParameter.equals("")){
+            String[] param = queryParameter.split("=");
+
+            if(param.length != 2) {
+                throw new IllegalArgumentException("Could not parse query " + queryParameter);
+            }
+
+            LinkAttribute linkAttribute;
+            LinkAttribute.Type attributeType = LinkAttribute.getAttributeType(param[0]);
+
+            if(STRING.equals(attributeType)) {
+                linkAttribute = new StringLinkAttribute(param[0], param[1]);
+            } else if(LONG.equals(attributeType)) {
+                linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
+            } else if(EMPTY.equals(attributeType)) {
+                linkAttribute = new EmptyLinkAttribute(param[0]);
+            } else {
+                throw new IllegalArgumentException("Unknown link attribute key (\"" + param[0] + "\")");
+            }
+
+            return linkAttribute;
+        }
+
+        return null;
     }
 
     /**
@@ -128,11 +155,12 @@ public abstract class LinkAttribute<T> {
      * @return the number corresponding to the given attribute key, i.e. 0, 1, or 2 (see static constants) or
      * -1 for unknown attributes.
      */
-    public static int getAttributeType(String attributeKey) throws IllegalArgumentException{
-        if(ATTRIBUTES.containsKey(attributeKey))
+    public static Type getAttributeType(String attributeKey) throws IllegalArgumentException{
+        if(ATTRIBUTES.containsKey(attributeKey)) {
             return ATTRIBUTES.get(attributeKey).getAttributeType();
-
-        return -1;
+        } else {
+            return Type.UNKNOWN;
+        }
     }
 
     @Override
@@ -143,19 +171,19 @@ public abstract class LinkAttribute<T> {
     static class AttributeProperties {
 
         private boolean multipleValues;
-        private int attributeType;
+        private Type attributeType;
 
 
-        AttributeProperties(boolean multipleValues, int attributeType){
+        AttributeProperties(boolean multipleValues, Type attributeType){
             this.multipleValues = multipleValues;
             this.attributeType = attributeType;
         }
 
-        public boolean isMultipleValues(){
+        public boolean permitMultipleValues(){
             return multipleValues;
         }
 
-        public int getAttributeType(){
+        public Type getAttributeType(){
             return this.attributeType;
         }
     }

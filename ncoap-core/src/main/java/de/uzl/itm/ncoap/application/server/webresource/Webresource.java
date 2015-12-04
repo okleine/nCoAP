@@ -26,7 +26,7 @@
 package de.uzl.itm.ncoap.application.server.webresource;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestConsumer;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -70,7 +70,7 @@ public interface Webresource<T> extends RequestConsumer{
      * useful, e.g. to create and register or modify
      * {@link Webresource} instances upon reception of a
      * {@link de.uzl.itm.ncoap.message.CoapRequest} with
-     * {@link de.uzl.itm.ncoap.message.MessageCode.Name#POST}.
+     * {@link de.uzl.itm.ncoap.message.MessageCode#POST}.
      *
      * @return the {@link de.uzl.itm.ncoap.application.server.CoapServer} this {@link Webresource} instance is registered at.
      */
@@ -174,7 +174,7 @@ public interface Webresource<T> extends RequestConsumer{
      * {@link java.lang.Exception}. Both, setting the {@link com.google.common.util.concurrent.SettableFuture} with an
      * {@link java.lang.Exception} or throw one make the framework to send
      * {@link de.uzl.itm.ncoap.message.CoapResponse} with
-     * {@link de.uzl.itm.ncoap.message.MessageCode.Name#INTERNAL_SERVER_ERROR_500} and
+     * {@link de.uzl.itm.ncoap.message.MessageCode#INTERNAL_SERVER_ERROR_500} and
      * {@link java.lang.Exception#getMessage()} as content.</p>
      *
      * @param responseFuture the {@link com.google.common.util.concurrent.SettableFuture} instance to be set with the
@@ -209,13 +209,13 @@ public interface Webresource<T> extends RequestConsumer{
 
 
     /**
-     * <p>Sets the given {@link de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute} for this
+     * <p>Sets the given {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute} for this
      * {@link Webresource} instance.</p>
      *
      * <p><b>Note:</b> Implementing classes MUST ensure that attributes keys that do only allow a single
      * value are not set multiple times</p>
      *
-     * @param attribute the {@link de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute} to
+     * @param attribute the {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute} to
      *                  be set for this {@link Webresource}
      *                  instance
      */
@@ -223,7 +223,7 @@ public interface Webresource<T> extends RequestConsumer{
 
 
     /**
-     * Removes all {@link de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute}s for the
+     * Removes all {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}s for the
      * given key.
      *
      * @param attributeKey the attribute key to remove all attributes of
@@ -235,25 +235,25 @@ public interface Webresource<T> extends RequestConsumer{
 
     /**
      * Returns <code>true</code> if this {@link Webresource}
-     * instance has the given {@link de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute}
+     * instance has the given {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}
      * and <code>false</code> otherwise
      *
-     * @param linkAttribute the {@link de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute}
+     * @param linkAttribute the {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}
      *                      to check for existence
      *
      * @return code>true</code> if this {@link Webresource}
-     * instance has the given {@link de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute}
+     * instance has the given {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}
      * and <code>false</code> otherwise
      */
     public boolean hasLinkAttribute(LinkAttribute linkAttribute);
 
     /**
      * Returns a {@link java.util.Collection} containing all
-     * {@link de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute}s of this
+     * {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}s of this
      * {@link Webresource} instance
      *
      * @return a {@link java.util.Collection} containing all
-     * {@link de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute}s of this
+     * {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}s of this
      * {@link Webresource} instance
      */
     public Collection<LinkAttribute> getLinkAttributes();

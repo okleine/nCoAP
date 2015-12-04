@@ -220,7 +220,7 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
                 // schedule update notification (immediately)
                 boolean confirmable = webresource.isUpdateNotificationConfirmable(remoteSocket);
-                MessageType.Name messageType =  confirmable ? MessageType.Name.CON : MessageType.Name.NON;
+                int messageType =  confirmable ? MessageType.CON : MessageType.NON;
                 UpdateNotificationTask task = new UpdateNotificationTask(remoteSocket, status, messageType, token);
                 getExecutor().schedule(task, 0, TimeUnit.MILLISECONDS);
             }
@@ -243,7 +243,7 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
         }
 
         public void run() {
-            CoapResponse coapResponse = new CoapResponse(MessageType.Name.NON, MessageCode.Name.NOT_FOUND_404);
+            CoapResponse coapResponse = new CoapResponse(MessageType.NON, MessageCode.NOT_FOUND_404);
             coapResponse.setToken(token);
             String content = "Resource \"" + this.webresourcePath + "\" is no longer available.";
             coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
@@ -268,12 +268,12 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     private class UpdateNotificationTask implements Runnable{
 
         private InetSocketAddress remoteSocket;
-        private MessageType.Name messageType;
+        private int messageType;
         private Token token;
         private WrappedResourceStatus representation;
 
         public UpdateNotificationTask(InetSocketAddress remoteSocket, WrappedResourceStatus representation,
-                    MessageType.Name messageType, Token token){
+                    int messageType, Token token){
 
             this.remoteSocket = remoteSocket;
             this.representation = representation;
@@ -283,7 +283,7 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
         public void run() {
             try {
-                CoapResponse updateNotification = new CoapResponse(messageType, MessageCode.Name.CONTENT_205);
+                CoapResponse updateNotification = new CoapResponse(messageType, MessageCode.CONTENT_205);
                 updateNotification.setToken(token);
                 updateNotification.setEtag(representation.getEtag());
                 updateNotification.setContent(representation.getContent(), representation.getContentFormat());

@@ -90,17 +90,17 @@ public class ObservationTerminationTest extends AbstractCoapCommunicationTest {
 
         URI targetURI = new URI("coap://localhost:" + server.getPort() + PATH_TO_SERVICE);
 
-        request1 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetURI);
+        request1 = new CoapRequest(MessageType.CON, MessageCode.GET, targetURI);
         request1.setMessageID(1);
         request1.setToken(new Token(new byte[]{1,2,3,4}));
         request1.setObserve(0);
 
-        request2 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetURI);
+        request2 = new CoapRequest(MessageType.CON, MessageCode.GET, targetURI);
         request2.setMessageID(2);
         request2.setToken(new Token(new byte[]{1,2,3,4}));
         request2.setObserve(1);
 
-        request3 = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, targetURI);
+        request3 = new CoapRequest(MessageType.CON, MessageCode.GET, targetURI);
         request3.setMessageID(3);
         request3.setToken(new Token(new byte[]{2,3,4,5,6}));
         request3.setObserve(0);
@@ -220,10 +220,10 @@ public class ObservationTerminationTest extends AbstractCoapCommunicationTest {
         CoapMessage receivedMessage = clientEndpoint.getReceivedMessage(0);
 
         String message = "Wrong message type!";
-        assertEquals(message, MessageType.Name.ACK, receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageType.ACK, receivedMessage.getMessageType());
 
         message = "Wrong message code!";
-        assertEquals(message, MessageCode.Name.CONTENT_205, receivedMessage.getMessageCodeName());
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Wrong payload!";
         assertEquals(message, "Status #1",receivedMessage.getContent().toString(Charset.forName("UTF-8")));
@@ -234,10 +234,10 @@ public class ObservationTerminationTest extends AbstractCoapCommunicationTest {
         CoapMessage receivedMessage = clientEndpoint.getReceivedMessage(1);
 
         String message = "Wrong message type!";
-        assertEquals(message, MessageType.Name.CON , receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageType.CON , receivedMessage.getMessageType());
 
         message = "Wrong message code!";
-        assertEquals(message, MessageCode.Name.CONTENT_205, receivedMessage.getMessageCodeName());
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Wrong payload!";
         assertEquals(message, "Status #2", receivedMessage.getContent().toString(Charset.forName("UTF-8")));
@@ -248,10 +248,10 @@ public class ObservationTerminationTest extends AbstractCoapCommunicationTest {
         CoapMessage receivedMessage = clientEndpoint.getReceivedMessage(2);
 
         String message = "Wrong message type!";
-        assertEquals(message, MessageType.Name.ACK , receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageType.ACK , receivedMessage.getMessageType());
 
         message = "Wrong message code!";
-        assertEquals(message, MessageCode.Name.CONTENT_205, receivedMessage.getMessageCodeName());
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Wrong payload!";
         assertEquals(message, "Status #2", receivedMessage.getContent().toString(Charset.forName("UTF-8")));
@@ -265,10 +265,10 @@ public class ObservationTerminationTest extends AbstractCoapCommunicationTest {
         CoapMessage receivedMessage = clientEndpoint.getReceivedMessage(3);
 
         String message = "Wrong message type!";
-        assertEquals(message, MessageType.Name.ACK , receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageType.ACK , receivedMessage.getMessageType());
 
         message = "Wrong message code!";
-        assertEquals(message, MessageCode.Name.CONTENT_205, receivedMessage.getMessageCodeName());
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Wrong payload!";
         assertEquals(message, "Status #4", receivedMessage.getContent().toString(Charset.forName("UTF-8")));
@@ -279,10 +279,10 @@ public class ObservationTerminationTest extends AbstractCoapCommunicationTest {
         CoapMessage receivedMessage = clientEndpoint.getReceivedMessage(4);
 
         String message = "Wrong message type!";
-        assertEquals(message, MessageType.Name.CON, receivedMessage.getMessageTypeName());
+        assertEquals(message, MessageType.CON, receivedMessage.getMessageType());
 
         message = "Wrong message code!";
-        assertEquals(message, MessageCode.Name.CONTENT_205, receivedMessage.getMessageCodeName());
+        assertEquals(message, MessageCode.CONTENT_205, receivedMessage.getMessageCode());
 
         message = "Wrong payload!";
         assertEquals(message, "Status #5", receivedMessage.getContent().toString(Charset.forName("UTF-8")));

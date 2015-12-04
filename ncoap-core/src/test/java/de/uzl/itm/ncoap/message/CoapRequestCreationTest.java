@@ -52,15 +52,15 @@ public class CoapRequestCreationTest extends AbstractCoapTest{
     @Parameterized.Parameters(name = "[{index}] Message Type: {0}, Message Code: {1}")
     public static Collection<Object[]> data() throws Exception {
         return Lists.newArrayList(
-                new Object[]{MessageType.Name.CON,
-                             MessageCode.Name.GET,
+                new Object[]{MessageType.CON,
+                             MessageCode.GET,
                              new URI("coap", null, "www.example.org", -1, "/path/to/service", null, null),
                              null,
                              12345,
                              new byte[]{1, 2, 3, 4, 5, 6, 7, 8}},
 
-                new Object[]{MessageType.Name.CON,
-                             MessageCode.Name.GET,
+                new Object[]{MessageType.CON,
+                             MessageCode.GET,
                              new URI("coap", null, "www.example.org", -1, "/path/to/service", null, null),
                              InetAddress.getByName("2001:1:2:3:4:5:6:7"),
                              65535,
@@ -70,15 +70,15 @@ public class CoapRequestCreationTest extends AbstractCoapTest{
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
-    private final MessageType.Name messageType;
-    private final MessageCode.Name messageCode;
+    private final int messageType;
+    private final int messageCode;
     private final URI targetUri;
     private final InetAddress proxyAddress;
     private final int messageID;
     private final byte[] token;
     private CoapRequest coapRequest;
 
-    public CoapRequestCreationTest(MessageType.Name messageType, MessageCode.Name messageCode, URI targetUri,
+    public CoapRequestCreationTest(int messageType, int messageCode, URI targetUri,
                                    InetAddress proxyAddress, int messageID, byte[] token) throws Exception {
 
         this.messageType = messageType;
@@ -89,7 +89,7 @@ public class CoapRequestCreationTest extends AbstractCoapTest{
         this.token = token;
 
         log.debug("Create CoAP Request: (Type) " + messageType + ", (Code) " + messageCode);
-        log.debug("Create CoAP Request: (Type) " + messageType.getNumber() + ", (Code) " + messageCode.getNumber());
+        log.debug("Create CoAP Request: (Type) " + messageType + ", (Code) " + messageCode);
         this.coapRequest = new CoapRequest(messageType, messageCode, targetUri);
 
 
@@ -97,12 +97,12 @@ public class CoapRequestCreationTest extends AbstractCoapTest{
 
     @Test
     public void testMessageTypeName(){
-        assertEquals("Message types do not match, ", coapRequest.getMessageTypeName(), messageType);
+        assertEquals("Message types do not match, ", coapRequest.getMessageType(), messageType);
     }
 
     @Test
     public void testMessageType(){
-        assertEquals("Message type numbers do not match, ", coapRequest.getMessageType(), messageType.getNumber());
+        assertEquals("Message type numbers do not match, ", coapRequest.getMessageType(), messageType);
     }
 
     @After

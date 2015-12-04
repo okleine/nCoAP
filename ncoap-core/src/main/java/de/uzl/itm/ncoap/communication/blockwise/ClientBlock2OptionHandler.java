@@ -79,7 +79,6 @@ public class ClientBlock2OptionHandler extends AbstractCoapChannelHandler implem
 
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-
         LOG.debug("INBOUND: {}", coapMessage);
         if(coapMessage instanceof CoapResponse) {
             handleIncomingCoapResponse((CoapResponse) coapMessage, remoteSocket);
@@ -89,8 +88,7 @@ public class ClientBlock2OptionHandler extends AbstractCoapChannelHandler implem
 
 
     @Override
-    public boolean handleOutboundCoapMessage(CoapMessage coapMessage,
-            InetSocketAddress remoteSocket) {
+    public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         LOG.debug("OUTBOUND: {}", coapMessage);
         return !(coapMessage instanceof CoapRequest && !addCoapRequest(remoteSocket, (CoapRequest) coapMessage));
     }

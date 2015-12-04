@@ -140,13 +140,6 @@ public class CoapServer extends AbstractCoapApplication {
         // set the webresource manager
         this.requestDispatcher = getChannel().getPipeline().get(RequestDispatcher.class);
         this.requestDispatcher.registerWellKnownCoreResource();
-//        this.requestDispatcher.setChannel(this.getChannel());
-//
-//        notFoundHandler.setRequestDispatcher(requestDispatcher);
-//
-//        ServerObservationHandler handler = getChannel().getPipeline().get(ServerObservationHandler.class);
-//        ChannelHandlerContext context = getChannel().getPipeline().getContext(handler);
-//        handler.setChannelHandlerContext(context);
     }
     
 

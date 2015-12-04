@@ -27,18 +27,13 @@ package de.uzl.itm.ncoap.application.server.webresource;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
-
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.EmptyLinkAttribute;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.LinkAttribute;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.LongLinkAttribute;
-import de.uzl.itm.ncoap.application.server.webresource.linkformat.StringLinkAttribute;
-import de.uzl.itm.ncoap.message.options.OptionValue;
+import de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +42,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static de.uzl.itm.ncoap.message.MessageCode.*;
 /**
 * The .well-known/core resource is a standard webresource to be provided by every CoAP webserver as defined in
 * the CoAP protocol draft. It provides a list of all available services on the server in CoRE Link Format.
@@ -68,15 +64,15 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
     }
 
     /**
-     * The .well-known/core resource only allows requests with {@link MessageCode.Name#GET}. Any other code
-     * returns a {@link CoapResponse} with {@link MessageCode.Name#METHOD_NOT_ALLOWED_405}.
+     * The .well-known/core resource only allows requests with {@link MessageCode#GET}. Any other code
+     * returns a {@link CoapResponse} with {@link MessageCode#METHOD_NOT_ALLOWED_405}.
      *
-     * In case of a request with {@link @link MessageCode.Name#GET} it returns a {@link CoapResponse} with
-     * {@link MessageCode.Name#CONTENT_205} and with a payload listing all paths to the available resources
+     * In case of a request with {@link @link MessageCode#GET} it returns a {@link CoapResponse} with
+     * {@link MessageCode#CONTENT_205} and with a payload listing all paths to the available resources
      * (i.e. {@link Webresource} instances}).
      *
      * <b>Note:</b> The payload is always formatted in {@link de.uzl.itm.ncoap.message.options.ContentFormat#APP_LINK_FORMAT}, possibly contained
-     * {@link OptionValue.Name#ACCEPT} options in inbound {@link CoapRequest}s are ignored!
+     * {@link de.uzl.itm.ncoap.message.options.Option#ACCEPT} options in inbound {@link CoapRequest}s are ignored!
      *
      * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
      *                       the list of available services in CoRE link format.
@@ -84,79 +80,67 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
      * @param remoteEndpoint The address of the sender of the request
      *
      * @throws Exception Implementing classes may throw any {@link Exception}. Thrown {@link Exception}s cause the
-     * framework to send a {@link CoapResponse} with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} to the
+     * framework to send a {@link CoapResponse} with {@link MessageCode#INTERNAL_SERVER_ERROR_500} to the
      * client.
      */
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteEndpoint) throws Exception{
+        InetSocketAddress remoteEndpoint) throws Exception{
 
-        CoapResponse coapResponse;
-
-        if(!(coapRequest.getMessageCodeName() == MessageCode.Name.GET)){
-            coapResponse = CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
-                    MessageCode.Name.METHOD_NOT_ALLOWED_405, "GET is the only allowed method!");
+        if(!(coapRequest.getMessageCode() == GET)) {
+            responseFuture.set(CoapResponse.createErrorResponse(
+                coapRequest.getMessageType(), METHOD_NOT_ALLOWED_405, "GET is the only allowed method!"
+            ));
+        } else {
+            processCoapGetRequest(responseFuture, coapRequest);
         }
-
-        else{
-            coapResponse = processCoapGetRequest(coapRequest);
-        }
-
-        responseFuture.set(coapResponse);
     }
 
 
-    private CoapResponse processCoapGetRequest(CoapRequest coapRequest){
+    private void processCoapGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest){
         try{
-            LinkAttribute filterAttribute = createLinkAttributeFromQuery(coapRequest.getUriQuery());
-
-            CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageTypeName(),
-                    MessageCode.Name.CONTENT_205);
-
+            LinkAttribute filterAttribute = LinkAttribute.createFromUriQuery(coapRequest.getUriQuery());
+            CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
             byte[] content = getSerializedResourceStatus(filterAttribute);
-
             coapResponse.setContent(content, ContentFormat.APP_LINK_FORMAT);
             coapResponse.setEtag(this.etag);
+            responseFuture.set(coapResponse);
 
-            return coapResponse;
-        }
-
-        catch(IllegalArgumentException ex){
-
-            return CoapResponse.createErrorResponse(coapRequest.getMessageTypeName(),
-                    MessageCode.Name.BAD_REQUEST_400, ex.getMessage());
+        } catch(IllegalArgumentException ex){
+            responseFuture.set(CoapResponse.createErrorResponse(
+                coapRequest.getMessageType(), BAD_REQUEST_400, ex.getMessage()
+            ));
         }
     }
 
 
-    private LinkAttribute createLinkAttributeFromQuery(String queryParameter) throws IllegalArgumentException{
-
-        if(!queryParameter.equals("")){
-            String[] param = queryParameter.split("=");
-
-            if(param.length != 2)
-                throw new IllegalArgumentException("Could not parse query " + queryParameter);
-
-            LinkAttribute linkAttribute;
-            int attributeType = LinkAttribute.getAttributeType(param[0]);
-
-            if(attributeType == LinkAttribute.STRING_ATTRIBUTE)
-                linkAttribute = new StringLinkAttribute(param[0], param[1]);
-
-            else if(attributeType == LinkAttribute.LONG_ATTRIBUTE)
-                linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
-
-            else if(attributeType == LinkAttribute.EMPTY_ATTRIBUTE)
-                linkAttribute = new EmptyLinkAttribute(param[0]);
-
-            else
-                throw new IllegalArgumentException("This should never happen!");
-
-            return linkAttribute;
-        }
-
-        return null;
-    }
+//    private LinkAttribute createLinkAttributeFromQuery(String queryParameter) throws IllegalArgumentException {
+//
+//        if(!queryParameter.equals("")){
+//            String[] param = queryParameter.split("=");
+//
+//            if(param.length != 2) {
+//                throw new IllegalArgumentException("Could not parse query " + queryParameter);
+//            }
+//
+//            LinkAttribute linkAttribute;
+//            LinkAttribute.Type attributeType = LinkAttribute.getAttributeType(param[0]);
+//
+//            if(STRING.equals(attributeType)) {
+//                linkAttribute = new StringLinkAttribute(param[0], param[1]);
+//            } else if(LONG.equals(attributeType)) {
+//                linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
+//            } else if(EMPTY.equals(attributeType)) {
+//                linkAttribute = new EmptyLinkAttribute(param[0]);
+//            } else {
+//                throw new IllegalArgumentException("This should never happen!");
+//            }
+//
+//            return linkAttribute;
+//        }
+//
+//        return null;
+//    }
 
 
     @SuppressWarnings("unchecked")

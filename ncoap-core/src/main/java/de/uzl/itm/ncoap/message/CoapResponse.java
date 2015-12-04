@@ -35,23 +35,25 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
 
+import static de.uzl.itm.ncoap.message.options.Option.*;
+import static de.uzl.itm.ncoap.message.MessageType.*;
 
 /**
  * <p>Instances of {@link CoapResponse} are created by an instance of
  * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} to answer requests.</p>
  *
- * <p><b>Note:</b> The given {@link MessageType.Name} (one of
- * {@link de.uzl.itm.ncoap.message.MessageType.Name#CON} or
- * {@link de.uzl.itm.ncoap.message.MessageType.Name#NON}) may be changed
+ * <p><b>Note:</b> The given {@link MessageType} (one of
+ * {@link de.uzl.itm.ncoap.message.MessageType#CON} or
+ * {@link de.uzl.itm.ncoap.message.MessageType#NON}) may be changed
  * by the framework before it is sent to the other CoAP endpoints. Such a change might e.g. happen if this
  * {@link CoapResponse} was created with
- * {@link de.uzl.itm.ncoap.message.MessageType.Name#CON} to answer a
+ * {@link de.uzl.itm.ncoap.message.MessageType#CON} to answer a
  * {@link CoapRequest} with
- * {@link de.uzl.itm.ncoap.message.MessageType.Name#CON} and the framework did not yet send an empty
- * {@link CoapMessage} with {@link MessageType.Name#ACK}. Then the framework will
+ * {@link de.uzl.itm.ncoap.message.MessageType#CON} and the framework did not yet send an empty
+ * {@link CoapMessage} with {@link MessageType#ACK}. Then the framework will
  * ensure the {@link MessageType} of this
  * {@link CoapResponse} to be set to
- * {@link de.uzl.itm.ncoap.message.MessageType.Name#ACK} to make it a piggy-backed response.</p>
+ * {@link de.uzl.itm.ncoap.message.MessageType#ACK} to make it a piggy-backed response.</p>
  *
  * @author Oliver Kleine
  */
@@ -60,24 +62,6 @@ public class CoapResponse extends CoapMessage {
     private static Logger log = LoggerFactory.getLogger(CoapResponse.class.getName());
 
     private static final String NO_ERRROR_CODE = "Code no. %s is no error code!";
-
-    /**
-     * Creates a new instance of {@link CoapResponse}
-     *
-     * @param messageType <p>the {@link de.uzl.itm.ncoap.message.MessageType.Name}
-     *                    (one of {@link de.uzl.itm.ncoap.message.MessageType.Name#CON} or
-     *                    {@link de.uzl.itm.ncoap.message.MessageType.Name#NON}).</p>
-     *
-     *                    <p><b>Note:</b> the {@link MessageType} might be changed by
-     *                    the framework (see class description).</p>
-     *
-     * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
-     *
-     * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
-     */
-    public CoapResponse(MessageType.Name messageType, MessageCode.Name messageCode) throws IllegalArgumentException {
-        this(messageType.getNumber(), messageCode.getNumber());
-    }
 
 
     /**
@@ -88,7 +72,7 @@ public class CoapResponse extends CoapMessage {
      *                    <p><b>Note:</b> the {@link MessageType} might be changed by
      *                    the framework (see class description).</p>
      *
-     * @param messageCode the {@link MessageCode.Name} for this
+     * @param messageCode the {@link MessageCode} for this
      * {@link CoapResponse}
      *
      * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
@@ -102,26 +86,26 @@ public class CoapResponse extends CoapMessage {
 
 
     /**
-     * Creates a new instance of {@link CoapResponse} with {@link MessageCode.Name#INTERNAL_SERVER_ERROR_500} and
+     * Creates a new instance of {@link CoapResponse} with {@link MessageCode#INTERNAL_SERVER_ERROR_500} and
      * the stacktrace of the given {@link Throwable} as payload (this is particularly useful for debugging). Basically,
      * this can be considered a shortcut to create error responses.
      *
-     * @param messageType <p>the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     *                    {@link MessageType.Name#NON}).</p>
+     * @param messageType <p>the {@link MessageType} (one of {@link MessageType#CON} or
+     *                    {@link MessageType#NON}).</p>
      *
      *                    <p><b>Note:</b> the {@link MessageType} might be changed by
      *                    the framework (see class description).</p>
-     * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
+     * @param messageCode the {@link MessageCode} for this {@link CoapResponse}
      *
      * @return a new instance of {@link CoapResponse} with the {@link Throwable#getMessage} as content (payload).
      *
      * @throws java.lang.IllegalArgumentException if at least one of the given arguments causes an error
      */
-    public static CoapResponse createErrorResponse(MessageType.Name messageType, MessageCode.Name messageCode,
-                                                   String content) throws IllegalArgumentException{
+    public static CoapResponse createErrorResponse(int messageType, int messageCode, String content)
+        throws IllegalArgumentException{
 
-        if(!MessageCode.isErrorMessage(messageCode.getNumber())){
-            throw new IllegalArgumentException(String.format(NO_ERRROR_CODE, messageCode.toString()));
+        if(!MessageCode.isErrorMessage(messageCode)){
+            throw new IllegalArgumentException(String.format(NO_ERRROR_CODE, MessageCode.asString(messageCode)));
         }
 
         CoapResponse errorResponse = new CoapResponse(messageType, messageCode);
@@ -135,19 +119,19 @@ public class CoapResponse extends CoapMessage {
      * the stacktrace of the given {@link Throwable} as payload (this is particularly useful for debugging). Basically,
      * this can be considered a shortcut to create error responses.
      *
-     * @param messageType <p>the {@link MessageType.Name} (one of {@link MessageType.Name#CON} or
-     *                    {@link MessageType.Name#NON}).</p>
+     * @param messageType <p>the {@link MessageType} (one of {@link MessageType#CON} or
+     *                    {@link MessageType#NON}).</p>
      *
      *                    <p><b>Note:</b> the {@link MessageType} might be changed by the
      *                    framework (see class description).</p>
-     * @param messageCode the {@link MessageCode.Name} for this {@link CoapResponse}
+     * @param messageCode the {@link MessageCode} for this {@link CoapResponse}
      *
      * @return a new instance of {@link CoapResponse} with the {@link Throwable#getMessage} as content (payload).
      *
      * @throws java.lang.IllegalArgumentException if the given message code does not refer to an error
      */
-    public static CoapResponse createErrorResponse(MessageType.Name messageType, MessageCode.Name messageCode,
-                                                   Throwable throwable) throws IllegalArgumentException{
+    public static CoapResponse createErrorResponse(int messageType, int messageCode, Throwable throwable)
+        throws IllegalArgumentException{
 
         StringWriter stringWriter = new StringWriter();
         throwable.printStackTrace(new PrintWriter(stringWriter));
@@ -161,8 +145,7 @@ public class CoapResponse extends CoapMessage {
 
 
     /**
-     * Sets the {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#ETAG} of this
-     * {@link CoapResponse}.
+     * Sets the {@link de.uzl.itm.ncoap.message.options.Option#ETAG} of this {@link CoapResponse}.
      *
      * @param etag the byte array that is supposed to represent the ETAG of the content returned by
      *             {@link #getContent()}.
@@ -170,7 +153,7 @@ public class CoapResponse extends CoapMessage {
      * @throws IllegalArgumentException if the given byte array is invalid to be considered an ETAG
      */
     public void setEtag(byte[] etag) throws IllegalArgumentException {
-        this.addOpaqueOption(OptionValue.Name.ETAG, etag);
+        this.addOpaqueOption(ETAG, etag);
     }
 
     /**
@@ -179,8 +162,8 @@ public class CoapResponse extends CoapMessage {
      * @return the byte array representing the ETAG of the content returned by {@link #getContent()}
      */
     public byte[] getEtag(){
-        if(options.containsKey(OptionValue.Name.ETAG))
-            return ((OpaqueOptionValue) options.get(OptionValue.Name.ETAG).iterator().next()).getDecodedValue();
+        if(options.containsKey(ETAG))
+            return ((OpaqueOptionValue) options.get(ETAG).iterator().next()).getDecodedValue();
         else
             return null;
     }
@@ -218,14 +201,14 @@ public class CoapResponse extends CoapMessage {
      *
      * @throws java.lang.IllegalArgumentException if at least one of the options to be added is not valid. Previously
      * to throwing the exception possibly contained options of
-     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#LOCATION_PATH} and
-     * {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#LOCATION_QUERY} are removed from this
+     * {@link de.uzl.itm.ncoap.message.options.Option#LOCATION_PATH} and
+     * {@link de.uzl.itm.ncoap.message.options.Option#LOCATION_QUERY} are removed from this
      * {@link CoapResponse}.
      */
     public void setLocationURI(URI locationURI) throws IllegalArgumentException {
 
-        options.removeAll(OptionValue.Name.LOCATION_PATH);
-        options.removeAll(OptionValue.Name.LOCATION_QUERY);
+        options.removeAll(LOCATION_PATH);
+        options.removeAll(LOCATION_QUERY);
 
         String locationPath = locationURI.getRawPath();
         String locationQuery = locationURI.getRawQuery();
@@ -237,17 +220,17 @@ public class CoapResponse extends CoapMessage {
                     locationPath = locationPath.substring(1);
 
                 for(String pathComponent : locationPath.split("/"))
-                    this.addStringOption(OptionValue.Name.LOCATION_PATH, pathComponent);
+                    this.addStringOption(LOCATION_PATH, pathComponent);
             }
 
             if(locationQuery != null){
                 for(String queryComponent : locationQuery.split("&"))
-                    this.addStringOption(OptionValue.Name.LOCATION_QUERY, queryComponent);
+                    this.addStringOption(LOCATION_QUERY, queryComponent);
             }
         }
         catch(IllegalArgumentException ex){
-            options.removeAll(OptionValue.Name.LOCATION_PATH);
-            options.removeAll(OptionValue.Name.LOCATION_QUERY);
+            options.removeAll(LOCATION_PATH);
+            options.removeAll(LOCATION_QUERY);
             throw ex;
         }
     }
@@ -265,16 +248,16 @@ public class CoapResponse extends CoapMessage {
         //Reconstruct path
         StringBuilder locationPath = new StringBuilder();
 
-        if(options.containsKey(OptionValue.Name.LOCATION_PATH)){
-            for (OptionValue optionValue : options.get(OptionValue.Name.LOCATION_PATH))
+        if(options.containsKey(LOCATION_PATH)){
+            for (OptionValue optionValue : options.get(LOCATION_PATH))
                 locationPath.append("/").append(((StringOptionValue) optionValue).getDecodedValue());
         }
 
-       //Reconstruct query
+        //Reconstruct query
         StringBuilder locationQuery = new StringBuilder();
 
-        if(options.containsKey(OptionValue.Name.LOCATION_QUERY)){
-            Iterator<OptionValue> queryComponentIterator = options.get(OptionValue.Name.LOCATION_QUERY).iterator();
+        if(options.containsKey(LOCATION_QUERY)){
+            Iterator<OptionValue> queryComponentIterator = options.get(LOCATION_QUERY).iterator();
             locationQuery.append(((StringOptionValue) queryComponentIterator.next()).getDecodedValue());
             while(queryComponentIterator.hasNext())
                 locationQuery.append("&")
@@ -296,8 +279,8 @@ public class CoapResponse extends CoapMessage {
      */
     public void setMaxAge(long maxAge){
         try{
-            this.options.removeAll(OptionValue.Name.MAX_AGE);
-            this.addUintOption(OptionValue.Name.MAX_AGE, maxAge);
+            this.options.removeAll(MAX_AGE);
+            this.addUintOption(MAX_AGE, maxAge);
         }
         catch (IllegalArgumentException e) {
             log.error("This should never happen.", e);
@@ -313,8 +296,8 @@ public class CoapResponse extends CoapMessage {
      * exists, this method returns {@link de.uzl.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
      */
     public long getMaxAge(){
-        if(options.containsKey(OptionValue.Name.MAX_AGE))
-            return ((UintOptionValue) options.get(OptionValue.Name.MAX_AGE).iterator().next()).getDecodedValue();
+        if(options.containsKey(MAX_AGE))
+            return ((UintOptionValue) options.get(MAX_AGE).iterator().next()).getDecodedValue();
         else
             return OptionValue.MAX_AGE_DEFAULT;
     }

@@ -22,14 +22,14 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.application.server.webresource.linkformat;
+package de.uzl.itm.ncoap.application.linkformat;
 
-import java.util.HashMap;
-import java.util.Map;
+import static de.uzl.itm.ncoap.application.linkformat.LinkAttribute.Type.STRING;
 
 /**
- * A {@link StringLinkAttribute} is a {@link LinkAttribute} with values of type string
- * ({@link LinkAttribute#STRING_ATTRIBUTE}).
+ * A {@link de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute} is a
+ * {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute} with values of type string
+ * ({@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute.Type#STRING}).
  *
  * @author Oliver Kleine
  */
@@ -45,24 +45,8 @@ public class StringLinkAttribute extends LinkAttribute<String> {
      */
     public static final String INTERFACE = "if";
 
-    private static Map<String, AttributeProperties> ATTRIBUTES = new HashMap<>();
-
-    public static Map<String, AttributeProperties> getAttributes(){
-        return StringLinkAttribute.ATTRIBUTES;
-    }
-
-
     /**
-     * This is method is just for internal use withiin the nCoAP framework
-     */
-    public static void initialize(){
-        ATTRIBUTES.put(RESOURCE_TYPE, new AttributeProperties(true, STRING_ATTRIBUTE));
-        ATTRIBUTES.put(INTERFACE, new AttributeProperties(false, STRING_ATTRIBUTE));
-    }
-
-    /**
-     * Creates a new instance of
-     * {@link StringLinkAttribute}
+     * Creates a new instance of {@link de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute}
      *
      * @param key the key of the attribute (see static constants for supported keys)
      * @param value the attributes value
@@ -70,7 +54,7 @@ public class StringLinkAttribute extends LinkAttribute<String> {
     public StringLinkAttribute(String key, String value) {
         super(key, value);
 
-        if(LinkAttribute.getAttributeType(key) != LinkAttribute.STRING_ATTRIBUTE){
+        if(!STRING.equals(LinkAttribute.getAttributeType(key))) {
             throw new IllegalArgumentException(
                     "Given attribute key \"" + key + "\" does not refer to a string attribute."
             );
