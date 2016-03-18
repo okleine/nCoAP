@@ -20,10 +20,10 @@
     <url>https://github.com/okleine/nCoAP</url>
 
     <modules>
-      <module>ncoap-core</module>
-      <module>ncoap-simple-client</module>
-      <module>ncoap-simple-server</module>
-      <module>ncoap-simple-endpoint</module>
+        <module>ncoap-core</module>
+        <module>ncoap-simple-client</module>
+        <module>ncoap-simple-server</module>
+        <module>ncoap-simple-endpoint</module>
         <module>ncoap-performance-test-client</module>
         <module>ncoap-performance-test-server</module>
     </modules>

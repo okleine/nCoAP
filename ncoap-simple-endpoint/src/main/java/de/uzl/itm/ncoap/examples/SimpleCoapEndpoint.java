@@ -47,7 +47,7 @@ public class SimpleCoapEndpoint extends CoapEndpoint {
 
     public void sendRequest(ClientCallback callback) throws Exception {
         URI remoteResource = new URI("coap://coap.me:5683/test");
-        CoapRequest request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, remoteResource);
+        CoapRequest request = new CoapRequest(MessageType.CON, MessageCode.GET, remoteResource);
 
         sendCoapRequest(request, callback, new InetSocketAddress(InetAddress.getByName("coap.me"), 5683));
     }

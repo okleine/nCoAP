@@ -65,7 +65,7 @@ public class SimpleCoapClient extends CoapClient {
 
     private ClientCmdLineArgumentsWrapper arguments;
 
-    private SimpleCallback responseProcessor;
+    private SimpleCallback callback;
 
     /**
      * Creates a new instance of {@link SimpleCoapClient}.
@@ -86,9 +86,9 @@ public class SimpleCoapClient extends CoapClient {
 
         boolean useProxy = arguments.getProxyAddress() != null;
 
-        MessageType.Name messageType = arguments.isNon() ? MessageType.Name.NON : MessageType.Name.CON;
+        int messageType = arguments.isNon() ? MessageType.NON : MessageType.CON;
 
-        CoapRequest coapRequest = new CoapRequest(messageType, MessageCode.Name.GET, webserviceURI, useProxy);
+        CoapRequest coapRequest = new CoapRequest(messageType, MessageCode.GET, webserviceURI, useProxy);
 
         //Observe or not?
         if(arguments.isObserve())
@@ -104,13 +104,14 @@ public class SimpleCoapClient extends CoapClient {
                     arguments.getProxyPort());
 
         //Create the response processor
-        if(arguments.isObserve())
-            responseProcessor = new SimpleObservationCallback(arguments.getMaxUpdates());
-        else
-            responseProcessor = new SimpleCallback();
+        if(arguments.isObserve()) {
+            callback = new SimpleObservationCallback(arguments.getMaxUpdates());
+        } else {
+            callback = new SimpleCallback();
+        }
 
         //Send the CoAP request
-        this.sendCoapRequest(coapRequest, responseProcessor, recipient);
+        this.sendCoapRequest(coapRequest, recipient, callback);
     }
 
 
@@ -136,10 +137,10 @@ public class SimpleCoapClient extends CoapClient {
             return true;
 
         //Check message count or transmission timeout
-        int responseCount = responseProcessor.getResponseCount();
+        int responseCount = callback.getResponseCount();
         int awaitedResponses = arguments.isObserve() ? arguments.getMaxUpdates() : 1;
 
-        return !(responseCount < awaitedResponses && !responseProcessor.isTimedOut());
+        return !(responseCount < awaitedResponses && !callback.isTimedOut());
     }
 
 
@@ -167,16 +168,17 @@ public class SimpleCoapClient extends CoapClient {
         //Start the client
         //final SimpleCoapClient client = new SimpleCoapClient(arguments);
 
-        CoapClient client = new CoapClient(6000, 8, 8);
+        CoapClient client = new CoapClient("Simple CoAP Client", 6000);
 
-        URI uri = new URI("coap", null, "coap.me", 5683, "/.well-known/core", null, null);
-        CoapRequest request = new CoapRequest(MessageType.Name.CON, MessageCode.Name.GET, uri);
-        request.setObserve(0);
-        request.setEndpointID1();
+        URI uri = new URI("coap", null, "vs0.inf.ethz.ch", 5683, "/.well-known/core", null, null);
+        CoapRequest request = new CoapRequest(MessageType.CON, MessageCode.GET, uri);
+//        request.setObserve(0);
+//        request.setEndpointID1();
 
-        client.sendCoapRequest(request, new ClientCallback() {
+        client.sendCoapRequest(request, new InetSocketAddress("vs0.inf.ethz.ch", 5683), new ClientCallback() {
             @Override
             public void processCoapResponse(CoapResponse coapResponse) {
+                System.out.println("BLOCK NO.:" + coapResponse.getBlock2Number());
                 String content = coapResponse.getContent().toString(CoapMessage.CHARSET);
                 System.out.println("RECEIVED: " + content);
 
@@ -201,7 +203,12 @@ public class SimpleCoapClient extends CoapClient {
             public void processMiscellaneousError(final String description) {
                 System.out.println("ERROR: " + description);
             }
-        }, new InetSocketAddress("coap.me", 5683));
+
+            @Override
+            public void processResponseBlockReceived(long number) {
+                System.out.println("BLOCK " + number + " received.");
+            }
+        });
 
 
         Thread.sleep(90000);

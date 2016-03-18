@@ -22,38 +22,54 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.communication.events;
-
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
-
-import java.net.InetSocketAddress;
+package de.uzl.itm.ncoap.communication.blockwise;
 
 /**
- * Created by olli on 07.09.15.
+ * Created by olli on 09.02.16.
  */
-public class PartialContentReceivedEvent extends AbstractMessageExchangeEvent {
+public enum BlockSize {
+    UNBOUND(-1, -1),
+    SIZE_16(0, 16),
+    SIZE_32(1, 32),
+    SIZE_64(2, 64),
+    SIZE_128(3, 128),
+    SIZE_256(4, 256),
+    SIZE_512(5, 512),
+    SIZE_1024(6, 1024);
 
-    private long block2Number;
-    private final long blockSize;
+    private int encodedSize;
+    private int decodedSize;
 
-    public PartialContentReceivedEvent(InetSocketAddress remoteEndpoint, Token token, long block2Number,
-            long blockSize) {
-
-        super(remoteEndpoint, token);
-        this.block2Number = block2Number;
-        this.blockSize = blockSize;
+    BlockSize(int encodedSize, int decodedSize) {
+        this.encodedSize = encodedSize;
+        this.decodedSize = decodedSize;
     }
 
-    public long getBlock2Number() {
-        return block2Number;
+    public int getEncodedSize(){
+        return this.encodedSize;
     }
 
-
-    public long getBlockSize() {
-        return blockSize;
+    public int getDecodedSize() {
+        return this.decodedSize;
     }
 
-    public interface Handler {
-        public void handleEvent(PartialContentReceivedEvent event);
+    public static BlockSize getBlockSize(long encodedSize) throws IllegalArgumentException{
+        if (encodedSize == 0) {
+            return SIZE_16;
+        } else if(encodedSize == 1) {
+            return SIZE_32;
+        } else if(encodedSize == 2) {
+            return SIZE_64;
+        } else if(encodedSize == 3) {
+            return SIZE_128;
+        } else if(encodedSize == 4) {
+            return SIZE_256;
+        } else if(encodedSize == 5) {
+            return SIZE_512;
+        } else if(encodedSize == 6) {
+            return SIZE_1024;
+        } else {
+            throw new IllegalArgumentException("Unsupported encoded blocksize: " + encodedSize);
+        }
     }
 }

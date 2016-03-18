@@ -24,6 +24,7 @@
  */
 package de.uzl.itm.ncoap.message;
 
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +50,6 @@ public class CoapRequest extends CoapMessage {
     private static final String NO_REQUEST_CODE = "Message code %d is not a request code!";
     private static final String URI_SCHEME = "URI scheme must be set to \"coap\" (but given URI is: %s)!";
     private static final String URI_FRAGMENT = "URI must not have a fragment (but given URI is: %s)!";
-
-
 
     /**
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
@@ -493,26 +492,26 @@ public class CoapRequest extends CoapMessage {
      * method invocation) or <code>false</code> if the option is not set, e.g. because that option has no meaning with
      * the message code of this {@link CoapRequest}.
      *
-     * @param num The relative number of the block sent or requested
-     * @param m Whether more blocks are following;
-     * @param szx The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
+     * @param number The relative number of the block sent or requested
+     * @param more Whether more blocks are following;
+     * @param size The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
+     *
+*      @throws IllegalArgumentException if the block number is greater than 1048575 (2^20 - 1)
      */
-    public void setBlock2(long num, boolean m, long szx) throws IllegalArgumentException{
+    public void setBlock2(long number, boolean more, BlockSize size) throws IllegalArgumentException{
         try {
             this.removeOptions(BLOCK_2);
-            num = (num & 0xFFFFF) << 4;
-            long more = ((m) ? 1 : 0) << 3;
-            szx = szx & 7;
-            if (szx >= 7) {
-                throw new IllegalArgumentException("SZX can only assume values between 0 and 6!");
+            if(number > 1048575) {
+                throw new IllegalArgumentException("Max. BlockNo. is 1048575");
             }
-            this.addUintOption(BLOCK_2, num + more + szx);
-        }
-        catch (IllegalArgumentException e){
+            //long more = ((more) ? 1 : 0) << 3;
+            this.addUintOption(BLOCK_2, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + size.getEncodedSize());
+        } catch (IllegalArgumentException e){
             this.removeOptions(BLOCK_2);
             log.error("This should never happen.", e);
         }
     }
+
 
     /**
      * Returns <code>true</code> if the observing option is set on this

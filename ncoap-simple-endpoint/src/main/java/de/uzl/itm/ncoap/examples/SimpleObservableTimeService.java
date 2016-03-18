@@ -26,10 +26,10 @@ package de.uzl.itm.ncoap.examples;
 
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
-import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.application.linkformat.LongLinkAttribute;
 import de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute;
+import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
+import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
@@ -138,13 +138,11 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                    InetSocketAddress remoteAddress) {
         try{
-            if(coapRequest.getMessageCodeName() == MessageCode.Name.GET){
+            if(coapRequest.getMessageCode() == MessageCode.GET){
                 processGet(responseFuture, coapRequest);
-            }
-
-            else {
-                CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageTypeName(),
-                        MessageCode.Name.METHOD_NOT_ALLOWED_405);
+            } else {
+                CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(),
+                        MessageCode.METHOD_NOT_ALLOWED_405);
                 String message = "Service does not allow " + coapRequest.getMessageCodeName() + " requests.";
                 coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
                 responseFuture.set(coapResponse);
@@ -183,7 +181,7 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
         //requests accept option(s)) is offered by the Webservice then set payload and content format option
         //accordingly
         if(resourceStatus != null){
-            coapResponse = new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.CONTENT_205);
+            coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
             coapResponse.setContent(resourceStatus.getContent(), contentFormat);
 
             coapResponse.setEtag(resourceStatus.getEtag());
@@ -197,7 +195,7 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
         //requests accept option(s)) is offered by the Webservice then set the code of the response to
         //400 BAD REQUEST and set a payload with a proper explanation
         else{
-            coapResponse = new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.NOT_ACCEPTABLE_406);
+            coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.NOT_ACCEPTABLE_406);
 
             StringBuilder payload = new StringBuilder();
             payload.append("Requested content format(s) (from requests ACCEPT option) not available: ");
@@ -219,7 +217,6 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
         log.info("Shutdown service " + getUriPath() + ".");
         boolean futureCanceled = this.periodicUpdateFuture.cancel(true);
         log.info("Future canceled: " + futureCanceled);
-        super.shutdown();
     }
 
 

@@ -89,6 +89,7 @@ public abstract class CoapMessage {
     protected SetMultimap<Integer, OptionValue> options;
     private ChannelBuffer content;
 
+
     /**
      * Creates a new instance of {@link CoapMessage}.
      *
@@ -622,8 +623,7 @@ public abstract class CoapMessage {
         try {
             this.removeOptions(ENDPOINT_ID_1);
             this.addOpaqueOption(ENDPOINT_ID_1, value);
-        }
-        catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e){
             this.removeOptions(ENDPOINT_ID_1);
             log.error("This should never happen.", e);
         }
@@ -632,11 +632,11 @@ public abstract class CoapMessage {
 
     /**
      * Returns the {@link de.uzl.itm.ncoap.communication.identification.EndpointID} contained in this message as
-     * {@link de.uzl.itm.ncoap.message.options.Option.Name#ENDPOINT_ID_2} or <code>null</code> if no such
+     * {@link de.uzl.itm.ncoap.message.options.Option#ENDPOINT_ID_2} or <code>null</code> if no such
      * option is present
      *
      * @return the {@link de.uzl.itm.ncoap.communication.identification.EndpointID} contained in this message as
-     * {@link de.uzl.itm.ncoap.message.options.Option.Name#ENDPOINT_ID_2} or <code>null</code> if no such
+     * {@link de.uzl.itm.ncoap.message.options.Option#ENDPOINT_ID_2} or <code>null</code> if no such
      * option is present
      */
     public byte[] getEndpointID2(){
@@ -650,19 +650,18 @@ public abstract class CoapMessage {
 
 
     /**
-     * Sets the {@link de.uzl.itm.ncoap.message.options.Option.Name#ENDPOINT_ID_2} with the given byte array.
+     * Sets the {@link de.uzl.itm.ncoap.message.options.Option#ENDPOINT_ID_2} with the given byte array.
      *
      * <b>Note:</b> This method is intended for internal use. The given value is likely to be replaced or removed by the
      * framework during outbound message processing!
      *
-     * @param value the {@link de.uzl.itm.ncoap.message.options.Option.Name#ENDPOINT_ID_1} option value
+     * @param value the {@link de.uzl.itm.ncoap.message.options.Option#ENDPOINT_ID_1} option value
      */
     public void setEndpointID2(byte[] value){
         try {
             this.removeOptions(ENDPOINT_ID_2);
             this.addOpaqueOption(ENDPOINT_ID_2, value);
-        }
-        catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             this.removeOptions(ENDPOINT_ID_2);
             log.error("This should never happen.", e);
         }
@@ -679,8 +678,9 @@ public abstract class CoapMessage {
      */
     public void setContent(ChannelBuffer content) throws IllegalArgumentException {
 
-        if(!(MessageCode.allowsContent(this.messageCode)) && content.readableBytes() > 0)
+        if(!(MessageCode.allowsContent(this.messageCode)) && content.readableBytes() > 0) {
             throw new IllegalArgumentException(String.format(DOES_NOT_ALLOW_CONTENT, this.getMessageCodeName()));
+        }
 
         this.content = content;
     }
@@ -701,8 +701,7 @@ public abstract class CoapMessage {
         try {
             this.addUintOption(CONTENT_FORMAT, contentFormat);
             setContent(content);
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             this.content = ChannelBuffers.EMPTY_BUFFER;
             this.removeOptions(CONTENT_FORMAT);
             throw e;
@@ -750,7 +749,8 @@ public abstract class CoapMessage {
 
 
     /**
-     * Returns a {@link Multimap} with the option numbers as keys and {@link de.uzl.itm.ncoap.message.options.OptionValue}s as values.
+     * Returns a {@link Multimap} with the option numbers as keys and
+     * {@link de.uzl.itm.ncoap.message.options.OptionValue}s as values.
      * The returned multimap does not contain options with default values.
      *
      * @return a {@link Multimap} with the option numbers as keys and {@link de.uzl.itm.ncoap.message.options.OptionValue}s as values.
@@ -759,6 +759,9 @@ public abstract class CoapMessage {
         return this.options;
     }
 
+    public void setAllOptions (SetMultimap<Integer, OptionValue> options) {
+        this.options = options;
+    }
 
     /**
      * Returns a {@link Set<de.uzl.itm.ncoap.message.options.OptionValue>} containing the options that are explicitly set in this {@link CoapMessage}. The

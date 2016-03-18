@@ -27,6 +27,7 @@ package de.uzl.itm.ncoap.communication.dispatching.client;
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
+import de.uzl.itm.ncoap.communication.events.client.ResponseBlockReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
@@ -56,9 +57,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Oliver Kleine
  */
 public class ResponseDispatcher extends AbstractCoapChannelHandler implements RemoteServerSocketChangedEvent.Handler,
-        EmptyAckReceivedEvent.Handler, ResetReceivedEvent.Handler, PartialContentReceivedEvent.Handler,
-        MessageIDAssignedEvent.Handler, MessageRetransmittedEvent.Handler, TransmissionTimeoutEvent.Handler,
-        NoMessageIDAvailableEvent.Handler, MiscellaneousErrorEvent.Handler, TokenReleasedEvent.Handler{
+        EmptyAckReceivedEvent.Handler, ResetReceivedEvent.Handler, MessageIDAssignedEvent.Handler,
+        MessageRetransmittedEvent.Handler, TransmissionTimeoutEvent.Handler, NoMessageIDAvailableEvent.Handler,
+        MiscellaneousErrorEvent.Handler, TokenReleasedEvent.Handler, ResponseBlockReceivedEvent.Handler{
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -147,17 +148,17 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
     }
 
 
-    @Override
-    public void handleEvent(PartialContentReceivedEvent event) {
-        InetSocketAddress remoteSocket = event.getRemoteSocket();
-        Token token = event.getToken();
-        ClientCallback callback = getCallback(remoteSocket, token);
-        if(callback != null) {
-            callback.processReset();
-        } else {
-            log.warn("No callback found for block reception (remote socket: \"{}\", token: {}", remoteSocket, token);
-        }
-    }
+//    @Override
+//    public void handleEvent(PartialContentReceivedEvent event) {
+//        InetSocketAddress remoteSocket = event.getRemoteSocket();
+//        Token token = event.getToken();
+//        ClientCallback callback = getCallback(remoteSocket, token);
+//        if(callback != null) {
+//            callback.processReset();
+//        } else {
+//            log.warn("No callback found for block reception (remote socket: \"{}\", token: {}", remoteSocket, token);
+//        }
+//    }
 
 
     @Override
@@ -208,6 +209,19 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         } else {
             log.warn("No callback found for timeout (remote socket: \"{}\", token: {}, message ID: {})",
                 new Object[]{remoteSocket, token, event.getMessageID()});
+        }
+    }
+
+    @Override
+    public void handleEvent(ResponseBlockReceivedEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = getCallback(remoteSocket, token);
+        if(callback != null) {
+            long blockNumber = event.getBlockNumber();
+            callback.processResponseBlockReceived(blockNumber);
+        } else {
+            log.warn("No callback found for partial response (remote socket: \"{}\", token: {})", remoteSocket, token);
         }
     }
 
@@ -336,8 +350,12 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         Token token = coapResponse.getToken();
         ClientCallback callback = getCallback(remoteSocket, token);
 
-        if (callback != null) {
-            // callback found
+        if (callback == null) {
+            log.warn("No callback found for CoAP response (from {}): {}", remoteSocket, coapResponse);
+        } else if(!coapResponse.isLastBlock2()) {
+            callback.processCoapResponse(coapResponse);
+            log.debug("Callback found for token {} from {}.", token, remoteSocket);
+        } else {
             if (coapResponse.isErrorResponse() || !coapResponse.isUpdateNotification()) {
                 removeCallback(remoteSocket, token);
                 log.debug("Callback removed because inbound response was no update notification!");
@@ -347,12 +365,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
             if (coapResponse.isUpdateNotification() && !callback.continueObservation()) {
                 removeCallback(remoteSocket, token);
             }
-
-            //Process the CoAP response
             log.debug("Callback found for token {} from {}.", token, remoteSocket);
-
-        } else {
-            log.warn("No callback found for CoAP response (from {}): {}", remoteSocket, coapResponse);
         }
     }
 

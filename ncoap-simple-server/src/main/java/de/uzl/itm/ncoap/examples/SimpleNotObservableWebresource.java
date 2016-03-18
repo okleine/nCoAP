@@ -78,7 +78,7 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                    InetSocketAddress remoteEndpoint) throws Exception {
 
-        if(coapRequest.getMessageCodeName() != MessageCode.Name.GET)
+        if(coapRequest.getMessageCode() != MessageCode.GET)
             setMethodNotAllowedResponse(responseFuture, coapRequest);
 
         else
@@ -90,22 +90,22 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
     public void processCoapGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest){
         //create resource status
         WrappedResourceStatus resourceStatus;
-        if(coapRequest.getAcceptedContentFormats().isEmpty())
+        if(coapRequest.getAcceptedContentFormats().isEmpty()) {
             resourceStatus = getWrappedResourceStatus(DEFAULT_CONTENT_FORMAT);
-
-        else
+        } else {
             resourceStatus = getWrappedResourceStatus(coapRequest.getAcceptedContentFormats());
+        }
 
         //create CoAP response
         CoapResponse coapResponse;
         if(resourceStatus == null){
-            coapResponse = new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.NOT_ACCEPTABLE_406);
+            coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.NOT_ACCEPTABLE_406);
             coapResponse.setContent("None of the accepted content formats is supported!".getBytes(CoapMessage.CHARSET),
                     ContentFormat.TEXT_PLAIN_UTF8);
         }
 
         else{
-            coapResponse = new CoapResponse(coapRequest.getMessageTypeName(), MessageCode.Name.CONTENT_205);
+            coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
             coapResponse.setContent(resourceStatus.getContent(), resourceStatus.getContentFormat());
             coapResponse.setEtag(resourceStatus.getEtag());
             coapResponse.setMaxAge(resourceStatus.getMaxAge());
@@ -118,8 +118,7 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
     public void setMethodNotAllowedResponse(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest)
         throws Exception{
 
-        CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageTypeName(),
-                MessageCode.Name.METHOD_NOT_ALLOWED_405);
+        CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.METHOD_NOT_ALLOWED_405);
 
         coapResponse.setContent("Only method GET is allowed!".getBytes(CoapMessage.CHARSET),
                 ContentFormat.TEXT_PLAIN_UTF8);

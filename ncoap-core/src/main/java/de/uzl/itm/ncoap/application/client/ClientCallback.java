@@ -26,6 +26,8 @@
 package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.message.CoapResponse;
+import org.jboss.netty.buffer.ChannelBuffer;
+import de.uzl.itm.ncoap.message.options.Option;
 
 import java.net.InetSocketAddress;
 
@@ -113,6 +115,20 @@ public abstract class ClientCallback {
      * <b>Note:</b> to somehow handle re-tranmissions this method is to be overridden.
      */
     public void processRetransmission() {
+        //to be overridden by extending classes
+    }
+
+    /**
+     * This method is called by the framework upon every reception of a response with a BLOCK2 option that indicates
+     * that there are more blocks to come.
+     *
+     * <b>Note:</b> Invocation of this method has rather "informal" character. Once all blocks where received, the
+     * framework invokes {@link #processCoapResponse(CoapResponse)} with the full payload included in the
+     * {@link CoapResponse}.
+     *
+     * @param block2Number the block number of this partial payload
+     */
+    public void processResponseBlockReceived(long block2Number) {
         //to be overridden by extending classes
     }
 
