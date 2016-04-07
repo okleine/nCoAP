@@ -26,14 +26,13 @@
 package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
-import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.Channels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +54,11 @@ public class CoapClient extends AbstractCoapApplication {
 
 //    public static final int RECEIVE_BUFFER_SIZE = 65536;
 
+    public static final String DEFAULT_NAME = "CoAP Client";
+
     private ResponseDispatcher responseDispatcher;
     private static Logger LOG = LoggerFactory.getLogger(CoapClient.class.getName());
+
 
     /**
      * Creates a new instance of {@link CoapClient}.
@@ -65,108 +67,47 @@ public class CoapClient extends AbstractCoapApplication {
      * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
      *             arbitrary port)
      * @param ioThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
-     *                        if the given number is smaller then 4, the application will use 4 threads.
-     *
-     * @param maxTokenLength the maximum length of
-     *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s to be created by
-     *                       the {@link TokenFactory}. The minimum length is <code>0</code>, the maximum length
-     *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
-     *                       message exchanges with one server (see {@link TokenFactory} for details).
+     *                  if the given number is smaller then 4, the application will use 4 threads.
      */
-    @Deprecated
-    public CoapClient(String name, int port, int ioThreads, int maxTokenLength) {
-
+    public CoapClient(String name, int port, int ioThreads) {
         super(name, ioThreads);
 
-        if (maxTokenLength < 0 || maxTokenLength > 8)
-            throw new IllegalArgumentException("Token length must be between 0 and 8 (both inclusive)");
-
-        InetSocketAddress socketAddress = new InetSocketAddress(port);
-        startApplication(
-            new CoapClientChannelPipelineFactory(this.getExecutor(), maxTokenLength), socketAddress
-        );
+        InetSocketAddress localSocket = new InetSocketAddress(port);
+        ClientChannelPipelineFactory factory = new ClientChannelPipelineFactory(this.getExecutor());
+        startApplication(factory, localSocket);
 
         this.responseDispatcher = getChannel().getPipeline().get(ResponseDispatcher.class);
     }
 
 
     /**
-     * Creates a new instance.
-     *
-     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int, int)} with
-     * <code>"CoAP Client"</code> as parameter name.
-     *
-     * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
-     *             arbitrary port)
-     * @param numberOfThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
-     *                        if the given number is smaller then 4, the application will use 4 threads.
-     *
-     * @param maxTokenLength the maximum length of
-     *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s to be created by
-     *                       the {@link TokenFactory}. The minimum length is <code>0</code>, the maximum length
-     *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
-     *                       message exchanges with one server (see {@link TokenFactory} for details).
-     */
-    @Deprecated
-    public CoapClient(int port, int numberOfThreads, int maxTokenLength){
-        this("CoAP Client", port, numberOfThreads, maxTokenLength);
-    }
-
-
-    /**
-     * Creates a new instance of {@link CoapClient} with default parameters.
-     * 
-     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int)} with
-     * parameters <code>name = "CoAP Client"</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>.
+     * Creates a new instance of {@link CoapClient} with default parameters, i.e. a random port number and
+     * <code>Runtime.getRuntime().availableProcessors() * 2</code> as number of I/O-Threads.
      */
     public CoapClient(){
-        this("CoAP Client", 0, 8);
+        this(DEFAULT_NAME);
     }
 
     /**
-     * Creates a new instance of {@link CoapClient}.
+     * Creates a new instance of {@link CoapClient} with default parameters, i.e. a random port number and
+     * <code>Runtime.getRuntime().availableProcessors() * 2</code> as number of I/O-Threads.
      *
-     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int)} with
-     * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>.
+     * @param name The name of the client instance (for logging purposes only)
      */
     public CoapClient(String name){
-        this(name, 0, 8);
+        this(name, 0);
     }
 
     /**
-     * Creates a new instance of {@link CoapClient}.
-     *
-     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int, int)} with
-     * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>, and
-     * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>.
+     * Creates a new instance of {@link CoapClient} with default parameters, i.e.
+     * <code>Runtime.getRuntime().availableProcessors() * 2</code> as number of I/O-Threads.
      *
      * @param name the name of the application (used for logging purposes)
      * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
      *             arbitrary port)
      */
     public CoapClient(String name, int port){
-        this(name, port, Runtime.getRuntime().availableProcessors() * 2, 8);
-    }
-
-    /**
-     * Creates a new instance of {@link CoapClient}.
-     *
-     * Invocation of this constructor has the same effect as {@link #CoapClient(String, int, int, int)} with
-     * parameters <code>name = name</code>, <code>port = 0</code>, <code>maxTokenLength = 8</code>, and
-     * <code>numberOfThreads = Runtime.getRuntime().availableProcessors() * 2)</code>.
-     *
-     * @param name the name of the application (used for logging purposes)
-     * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
-     *             arbitrary port)
-     * @param maxTokenLength the maximum length of
-     *                       {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s to be created by
-     *                       the {@link TokenFactory}. The minimum length is <code>0</code>, the maximum length
-     *                       (and default value) is <code>8</code>. This can be used to limit the amount of parallel
-     *                       message exchanges with one server (see {@link TokenFactory} for details).
-     */
-    @Deprecated
-    public CoapClient(String name, int port, int maxTokenLength){
-        this(name, port, Runtime.getRuntime().availableProcessors() * 2, maxTokenLength);
+        this(name, port, Runtime.getRuntime().availableProcessors() * 2);
     }
 
 
@@ -186,7 +127,6 @@ public class CoapClient extends AbstractCoapApplication {
      * @param remoteEndpoint the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
     public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteEndpoint, ClientCallback callback){
-
         this.responseDispatcher.sendCoapRequest(coapRequest, remoteEndpoint, callback);
     }
 
@@ -212,8 +152,7 @@ public class CoapClient extends AbstractCoapApplication {
      * @param remoteEndpoint the desired recipient of the CoAP PING message
      */
     public void sendCoapPing(InetSocketAddress remoteEndpoint, ClientCallback callback){
-        ResponseDispatcher callbackManager = getChannel().getPipeline().get(ResponseDispatcher.class);
-        callbackManager.sendCoapPing(remoteEndpoint, callback);
+        this.responseDispatcher.sendCoapPing(remoteEndpoint, callback);
     }
 
 

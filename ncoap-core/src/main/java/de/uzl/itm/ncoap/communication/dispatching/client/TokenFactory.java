@@ -25,12 +25,10 @@
 
 package de.uzl.itm.ncoap.communication.dispatching.client;
 
-import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -65,7 +63,7 @@ public class TokenFactory {
      * {@link Token#getBytes()} is not longer than the given
      * maximum length.
      */
-    public TokenFactory(int maxTokenLength){
+    public TokenFactory(){
         this.lock = new ReentrantReadWriteLock();
         this.activeTokens = new TreeSet<>();
         this.random = new Random(System.currentTimeMillis());
@@ -88,60 +86,57 @@ public class TokenFactory {
 
 
     public synchronized boolean releaseToken(Token token){
-        try{
+        try {
             this.lock.readLock().lock();
             if(!this.activeTokens.contains(token)){
-                log.error("Could not pass pack (unknown) Token ({})", token);
+                log.error("Could not release (unknown) Token ({})", token);
                 return false;
             }
-        }
-        finally {
+        } finally {
             this.lock.readLock().unlock();
         }
 
         try{
             this.lock.writeLock().lock();
-            if(this.activeTokens.remove(token)){
-                log.info("Passed back Token ({})", token);
+            if(this.activeTokens.remove(token)) {
+                log.info("Released Token ({})", token);
                 return true;
-            }
-            else{
-                log.error("Could not pass pack Token ({})", token);
+            } else {
+                log.error("Could not release Token ({})", token);
                 return false;
             }
-        }
-        finally {
+        } finally {
             this.lock.writeLock().unlock();
         }
     }
 
 
-    private static Token getSuccessor(Token token){
-
-        boolean allBitsSet = true;
-
-        //Check if all bits in the given byte array are set to 1
-        for(byte b : token.getBytes()){
-            if(b != -1){
-                allBitsSet = false;
-                break;
-            }
-        }
-
-        if(allBitsSet){
-            //make e.g. ([00000000], [00000000]) the successor of ([11111111])
-            if(token.getBytes().length < Token.MAX_LENGTH){
-                return new Token(new byte[token.getBytes().length + 1]);
-            }
-
-            //make [00000000] the successor of the byte array with 8 [11111111] bytes
-            else{
-                return new Token(new byte[1]);
-            }
-        }
-
-        long tmp = Longs.fromByteArray(Bytes.concat(new byte[8-token.getBytes().length], token.getBytes())) + 1;
-        byte[] result = Longs.toByteArray(tmp);
-        return new Token(Arrays.copyOfRange(result, 8 - token.getBytes().length, 8));
-    }
+//    private static Token getSuccessor(Token token){
+//
+//        boolean allBitsSet = true;
+//
+//        //Check if all bits in the given byte array are set to 1
+//        for(byte b : token.getBytes()){
+//            if(b != -1){
+//                allBitsSet = false;
+//                break;
+//            }
+//        }
+//
+//        if(allBitsSet){
+//            //make e.g. ([00000000], [00000000]) the successor of ([11111111])
+//            if(token.getBytes().length < Token.MAX_LENGTH){
+//                return new Token(new byte[token.getBytes().length + 1]);
+//            }
+//
+//            //make [00000000] the successor of the byte array with 8 [11111111] bytes
+//            else{
+//                return new Token(new byte[1]);
+//            }
+//        }
+//
+//        long tmp = Longs.fromByteArray(Bytes.concat(new byte[8-token.getBytes().length], token.getBytes())) + 1;
+//        byte[] result = Longs.toByteArray(tmp);
+//        return new Token(Arrays.copyOfRange(result, 8 - token.getBytes().length, 8));
+//    }
 }

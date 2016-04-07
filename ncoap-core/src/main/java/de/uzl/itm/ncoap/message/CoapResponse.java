@@ -24,6 +24,7 @@
  */
 package de.uzl.itm.ncoap.message;
 
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.observing.ResourceStatusAge;
 import de.uzl.itm.ncoap.message.options.*;
 import org.slf4j.Logger;
@@ -177,6 +178,31 @@ public class CoapResponse extends CoapMessage {
         this.setObserve(System.currentTimeMillis() % ResourceStatusAge.MODULUS);
     }
 
+    /**
+     * Sets the BLOCK2 option in this {@link CoapRequest} and returns
+     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
+     * method invocation) or <code>false</code> if the option is not set, e.g. because that option has no meaning with
+     * the message code of this {@link CoapRequest}.
+     *
+     * @param number The relative number of the block sent or requested
+     * @param more Whether more blocks are following;
+     * @param size The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
+     *
+     *      @throws IllegalArgumentException if the block number is greater than 1048575 (2^20 - 1)
+     */
+    public void setBlock2(long number, boolean more, BlockSize size) throws IllegalArgumentException{
+        try {
+            this.removeOptions(BLOCK_2);
+            if(number > 1048575) {
+                throw new IllegalArgumentException("Max. BlockNo. is 1048575");
+            }
+            //long more = ((more) ? 1 : 0) << 3;
+            this.addUintOption(BLOCK_2, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + size.getEncodedSize());
+        } catch (IllegalArgumentException e){
+            this.removeOptions(BLOCK_2);
+            log.error("This should never happen.", e);
+        }
+    }
 
     /**
      * Returns <code>true</code> if this {@link CoapResponse} is an update

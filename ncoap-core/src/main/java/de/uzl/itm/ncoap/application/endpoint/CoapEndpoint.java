@@ -75,7 +75,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
         super(applicationName, Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
 
         CoapEndpointChannelPipelineFactory pipelineFactory = new CoapEndpointChannelPipelineFactory(
-                this.getExecutor(), new TokenFactory(8), notFoundHandler
+                this.getExecutor(), new TokenFactory(), notFoundHandler
         );
 
         startApplication(pipelineFactory, localSocket);

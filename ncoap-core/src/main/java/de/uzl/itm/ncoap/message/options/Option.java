@@ -270,7 +270,6 @@ public abstract class Option {
                         .put(ETAG, MULTIPLE)
                         .put(OBSERVE, ONCE)
                         .put(BLOCK_2, ONCE)
-                        .put(BLOCK_1, ONCE)
                         .put(ENDPOINT_ID_1, ONCE)
                         .build()
         );
@@ -370,6 +369,10 @@ public abstract class Option {
                         .build()
         );
 
+        OCCURENCE_CONSTRAINTS.row(CONTINUE_231).putAll(ImmutableMap.<Integer, Occurence>builder()
+                        .put(BLOCK_1, ONCE)
+                        .build()
+        );
 
         // Client ERROR Responses (4.x)
         OCCURENCE_CONSTRAINTS.row(BAD_REQUEST_400).putAll(ImmutableMap.<Integer, Occurence>builder()
@@ -421,6 +424,11 @@ public abstract class Option {
                         .build()
         );
 
+        OCCURENCE_CONSTRAINTS.row(REQUEST_ENTITY_INCOMPLETE_408).putAll(ImmutableMap.<Integer, Occurence>builder()
+                        .put(CONTENT_FORMAT, ONCE)
+                        .build()
+        );
+
         OCCURENCE_CONSTRAINTS.row(PRECONDITION_FAILED_412).putAll(ImmutableMap.<Integer, Occurence>builder()
                         .put(MAX_AGE, ONCE)
                         .put(CONTENT_FORMAT, ONCE)
@@ -432,6 +440,7 @@ public abstract class Option {
                         .put(MAX_AGE, ONCE)
                         .put(CONTENT_FORMAT, ONCE)
                         .put(SIZE_1, ONCE)
+                        .put(BLOCK_1, ONCE)
                         .put(ENDPOINT_ID_2, ONCE)
                         .build()
         );

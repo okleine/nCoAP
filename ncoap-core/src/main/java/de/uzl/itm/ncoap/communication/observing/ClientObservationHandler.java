@@ -78,39 +78,22 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
         final CoapResponse coapResponse = (CoapResponse) coapMessage;
         Token token = coapResponse.getToken();
 
-//        if(!coapResponse.isUpdateNotification() || coapResponse.isErrorResponse()){
-//            //Current response is NO update notification or is an error response (which SHOULD implicate the first)
-//            if(observations.contains(remoteSocket, token)){
-//                LOG.info("Stop observation (remote address: {}, token: {}) due to received response: {}",
-//                        new Object[]{remoteSocket, token, coapResponse});
-//
-//                stopObservation(remoteSocket, token);
-//            }
-//        } else {
-//            if(!observations.contains(remoteSocket, token)){
-//                //current response is update notification but there is no matching observation
-//                LOG.warn("No observation found for update notification (remote endpoint: {}, token: {}). Send RESET!",
-//                        remoteSocket, token);
-//                //sendReset(coapMessage.getMessageID(), remoteSocket);
-//                return false;
-//            } else
-            if(coapResponse.isUpdateNotification() && !coapResponse.isErrorResponse()) {
-                //Current response is (non-error) update notification and there is a suitable observation
-                ResourceStatusAge latestStatusAge = observations.get(remoteSocket, token);
+        if(coapResponse.isUpdateNotification() && !coapResponse.isErrorResponse()) {
+            //Current response is (non-error) update notification and there is a suitable observation
+            ResourceStatusAge latestStatusAge = observations.get(remoteSocket, token);
 
-                //Get status age from newly received update notification
-                long receivedSequenceNo = coapResponse.getObserve();
-                ResourceStatusAge receivedStatusAge = new ResourceStatusAge(receivedSequenceNo, System.currentTimeMillis());
+            //Get status age from newly received update notification
+            long receivedSequenceNo = coapResponse.getObserve();
+            ResourceStatusAge receivedStatusAge = new ResourceStatusAge(receivedSequenceNo, System.currentTimeMillis());
 
-                if(ResourceStatusAge.isReceivedStatusNewer(latestStatusAge, receivedStatusAge)){
-                    updateStatusAge(remoteSocket, token, receivedStatusAge);
-                } else {
-                    LOG.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
-                            receivedStatusAge, latestStatusAge);
-                    return false;
-                }
+            if(ResourceStatusAge.isReceivedStatusNewer(latestStatusAge, receivedStatusAge)){
+                updateStatusAge(remoteSocket, token, receivedStatusAge);
+            } else {
+                LOG.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
+                        receivedStatusAge, latestStatusAge);
+                return false;
             }
-//        }
+        }
 
         return true;
     }
@@ -141,12 +124,6 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
         stopObservation(remoteSocket, token);
         LOG.debug("Next update notification from \"{}\" with token {} will cause a RST.", remoteSocket, token);
     }
-
-
-//    @Override
-//    public void handleEvent(ResetReceivedEvent event) {
-//        stopObservation(event.getRemoteSocket(), event.getToken());
-//    }
 
 
     @Override

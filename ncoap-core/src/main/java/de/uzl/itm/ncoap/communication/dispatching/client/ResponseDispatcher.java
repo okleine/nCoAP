@@ -27,6 +27,7 @@ package de.uzl.itm.ncoap.communication.dispatching.client;
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.events.client.ResponseBlockReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
@@ -34,6 +35,7 @@ import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -251,10 +253,28 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         getExecutor().submit(new WriteCoapMessageTask(coapRequest, remoteSocket, callback));
     }
 
+//    /**
+//     * This method is called by the {@link de.uzl.itm.ncoap.application.client.CoapClient} or by the
+//     * {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint} to send a request to a remote endpoint (server).
+//     *
+//     * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be sent
+//     * @param remoteSocket the {@link java.net.InetSocketAddress} of the recipient
+//     * @param callback the {@link de.uzl.itm.ncoap.application.client.ClientCallback} to be
+//     * called upon reception of a response or any kind of
+//     * {@link de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent}.
+//     */
+//    public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteSocket, ClientCallback callback,
+//                                BlockSize block1Size, BlockSize block2Size) {
+//        getExecutor().submit(
+//                new WriteCoapMessageTask(coapRequest, remoteSocket, callback, block1Size, block2Size)
+//        );
+//    }
 
     public void sendCoapPing(InetSocketAddress remoteSocket, ClientCallback callback) {
         final CoapMessage coapPing = CoapMessage.createPing(CoapMessage.UNDEFINED_MESSAGE_ID);
-        getExecutor().submit(new WriteCoapMessageTask(coapPing, remoteSocket, callback));
+        getExecutor().submit(
+                new WriteCoapMessageTask(coapPing, remoteSocket, callback)
+        );
     }
 
 
@@ -382,8 +402,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         private final InetSocketAddress remoteSocket;
         private final ClientCallback callback;
 
-        public WriteCoapMessageTask(CoapMessage coapMessage, InetSocketAddress remoteSocket,
-                                    ClientCallback callback) {
+        public WriteCoapMessageTask(CoapMessage coapMessage, InetSocketAddress remoteSocket, ClientCallback callback) {
 
             this.coapMessage = coapMessage;
             this.remoteSocket = remoteSocket;
@@ -403,7 +422,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
                     // no other PING for the same remote socket...
                     this.coapMessage.setToken(emptyToken);
                 }
-            } else if (this.coapMessage.isRequest() && this.coapMessage.getObserve() == 1) {
+            } else if (this.coapMessage.getMessageCode() == MessageCode.GET && this.coapMessage.getObserve() == 1) {
                 // request to stop an ongoing observation
                 Token token = this.coapMessage.getToken();
                 if (getCallback(this.remoteSocket, token) == null) {

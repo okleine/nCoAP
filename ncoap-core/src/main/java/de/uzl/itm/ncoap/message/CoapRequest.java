@@ -26,6 +26,7 @@ package de.uzl.itm.ncoap.message;
 
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.options.*;
+import jdk.nashorn.internal.ir.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,9 @@ public class CoapRequest extends CoapMessage {
     private static final String NO_REQUEST_CODE = "Message code %d is not a request code!";
     private static final String URI_SCHEME = "URI scheme must be set to \"coap\" (but given URI is: %s)!";
     private static final String URI_FRAGMENT = "URI must not have a fragment (but given URI is: %s)!";
+
+//    private BlockSize block1Size;
+//    private BlockSize block2Size;
 
     /**
      * Creates a new {@link CoapRequest} instance and uses the given parameters to create an appropriate header
@@ -109,6 +113,9 @@ public class CoapRequest extends CoapMessage {
 
         if(!MessageCode.isRequest(messageCode))
             throw new IllegalArgumentException(String.format(NO_REQUEST_CODE, messageCode));
+
+//        this.block1Size = BlockSize.UNBOUND;
+//        this.block2Size = BlockSize.UNBOUND;
     }
 
     /**
@@ -206,10 +213,10 @@ public class CoapRequest extends CoapMessage {
         this.removeOptions(IF_MATCH);
 
         try{
-            for(byte[] etag : etags)
+            for(byte[] etag : etags) {
                 this.addOpaqueOption(IF_MATCH, etag);
-        }
-        catch (IllegalArgumentException e) {
+            }
+        } catch (IllegalArgumentException e) {
             this.removeOptions(IF_MATCH);
             throw e;
         }
@@ -264,10 +271,10 @@ public class CoapRequest extends CoapMessage {
         this.removeOptions(ETAG);
 
         try{
-            for(byte[] etag : etags)
+            for(byte[] etag : etags) {
                 this.addOpaqueOption(ETAG, etag);
-        }
-        catch(IllegalArgumentException e){
+            }
+        } catch(IllegalArgumentException e) {
             this.removeOptions(ETAG);
             throw e;
         }
@@ -486,28 +493,63 @@ public class CoapRequest extends CoapMessage {
         return null;
     }
 
+    public void setPreferedBlock2Size(BlockSize size) {
+        this.setBlock2(0, size.getEncodedSize());
+    }
+
     /**
+     * <b>Note: This method is for internal use only! Use {@link #setPreferedBlock2Size(BlockSize)} instead.</b>
+     *
      * Sets the BLOCK2 option in this {@link CoapRequest} and returns
      * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
      * method invocation) or <code>false</code> if the option is not set, e.g. because that option has no meaning with
      * the message code of this {@link CoapRequest}.
      *
-     * @param number The relative number of the block sent or requested
-     * @param more Whether more blocks are following;
-     * @param size The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
+     * @param number The number of the requested block
+     * @param szx The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
      *
 *      @throws IllegalArgumentException if the block number is greater than 1048575 (2^20 - 1)
      */
-    public void setBlock2(long number, boolean more, BlockSize size) throws IllegalArgumentException{
+    public void setBlock2(long number, long szx) throws IllegalArgumentException{
         try {
             this.removeOptions(BLOCK_2);
-            if(number > 1048575) {
-                throw new IllegalArgumentException("Max. BlockNo. is 1048575");
+            if(number > 1048575 || !(BlockSize.isValid(szx))) {
+                String error = "Invalid value for BLOCK2 option (NUM: " + number + ", SZX: " + szx + ")";
+                throw new IllegalArgumentException(error);
             }
-            //long more = ((more) ? 1 : 0) << 3;
-            this.addUintOption(BLOCK_2, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + size.getEncodedSize());
+            this.addUintOption(BLOCK_2, ((number & 0xFFFFF) << 4) + szx);
+        } catch (IllegalArgumentException e) {
+            log.error("This should never happen.", e);
+        }
+    }
+
+    public void setPreferedBlock1Size(BlockSize size) {
+        this.setBlock1(0, false, size.getEncodedSize());
+    }
+
+    /**
+     * <b>Note: This method is for internal use only! Use {@link #setPreferedBlock1Size(BlockSize)} instead.</b>
+     *
+     * Sets the BLOCK1 option in this {@link CoapRequest} and returns
+     * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
+     * method invocation) or <code>false</code> if the option is not set, e.g. because that option has no meaning with
+     * the message code of this {@link CoapRequest}.
+     *
+     * @param number The number of the block contained in this request
+     * @param more Whether more blocks are following;
+     * @param szx The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
+     *
+     * @throws IllegalArgumentException if the block number is greater than 1048575 (2^20 - 1)
+     */
+    public void setBlock1(long number, boolean more, long szx) throws IllegalArgumentException{
+        try {
+            this.removeOptions(BLOCK_1);
+            if(number > 1048575 || !(BlockSize.isValid(szx))) {
+                String error = "Invalid value for BLOCK1 option (NUM: " + number + ", SZX: " + szx + ")";
+                throw new IllegalArgumentException(error);
+            }
+            this.addUintOption(BLOCK_1, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + szx);
         } catch (IllegalArgumentException e){
-            this.removeOptions(BLOCK_2);
             log.error("This should never happen.", e);
         }
     }

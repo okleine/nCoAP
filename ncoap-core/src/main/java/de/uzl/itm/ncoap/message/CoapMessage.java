@@ -27,6 +27,7 @@ package de.uzl.itm.ncoap.message;
 import com.google.common.base.Supplier;
 import com.google.common.collect.*;
 import com.google.common.primitives.Longs;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -124,7 +125,6 @@ public abstract class CoapMessage {
 
         log.debug("Created CoAP message: {}", this);
     }
-
 
     /**
      * Creates a new instance of {@link CoapMessage}. Invocation of this constructor has the same effect as
@@ -285,9 +285,9 @@ public abstract class CoapMessage {
         //Add new option to option list
         byte[] byteValue = Longs.toByteArray(value);
         int index = 0;
-        while(index < byteValue.length && byteValue[index] == 0)
+        while(index < byteValue.length && byteValue[index] == 0) {
             index++;
-
+        }
         UintOptionValue option = new UintOptionValue(optionNumber, Arrays.copyOfRange(byteValue, index, byteValue.length));
         addOption(optionNumber, option);
 
@@ -362,10 +362,10 @@ public abstract class CoapMessage {
         }
     }
 
-    private static long extractBits(final long l, final int nrBits, final int offset){
-        final long rightShifted = l >>> offset;
-        final long mask = (1L << nrBits) - 1L;
-        return rightShifted & mask;
+    private static long extractBits(final long value, final int bits, final int offset){
+        final long shifted = value >>> offset;
+        final long masked = (1L << bits) - 1L;
+        return shifted & masked;
     }
 
 
@@ -534,7 +534,7 @@ public abstract class CoapMessage {
      * {@link de.uzl.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
      * this {@link CoapRequest}.
      */
-    public long getBlock2Number(){
+    public long getBlock2Number() {
         if(!options.containsKey(BLOCK_2)) {
             return UintOptionValue.UNDEFINED;
         } else {
@@ -575,7 +575,7 @@ public abstract class CoapMessage {
      * {@link de.uzl.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
      * this {@link CoapRequest}.
      */
-    public long getBlock2EncodedSize(){
+    public long getBlock2SZX(){
         if(!options.containsKey(BLOCK_2)) {
             return UintOptionValue.UNDEFINED;
         } else {
@@ -584,6 +584,65 @@ public abstract class CoapMessage {
         }
     }
 
+
+    /**
+     * Returns the sequence number of the block1 option or
+     * {@link de.uzl.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link CoapRequest}.
+     *
+     * @return the sequence number of the block1 option or
+     * {@link de.uzl.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link CoapRequest}.
+     */
+    public long getBlock1Number(){
+        if(!options.containsKey(BLOCK_1)) {
+            return UintOptionValue.UNDEFINED;
+        } else {
+            return (long) options.get(BLOCK_1).iterator().next().getDecodedValue() >> 4;
+        }
+    }
+
+
+    /**
+     * Returns <code>true</code> if
+     * <ul>
+     *  <li>the BLOCK1 option is present and its value indicates that there are no more blocks to come (should be
+     *  always <code>false</code> for {@link CoapRequest}s or
+     *  </li>
+     *  <li>if there is no BLOCK1 option present.</li>
+     * </ul>
+     *
+     * @return <code>true</code> if there are no more blocks expected.
+     */
+    public boolean isLastBlock1(){
+        if(!options.containsKey(BLOCK_1)) {
+            return true;
+        } else {
+            long m = (long) options.get(BLOCK_1).iterator().next().getDecodedValue();
+            return (extractBits(m, 1, 3) == 0);
+        }
+    }
+
+
+    /**
+     * Returns encoded block size of the block1 option (i.e. the 'szx' portion) or
+     * {@link de.uzl.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link CoapRequest}.
+     *
+     * With szx as the returned value the actual blocksize is <code>2^(szx + 4)</code> bytes.
+     *
+     * @return the block size of the block1 option or
+     * {@link de.uzl.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
+     * this {@link CoapRequest}.
+     */
+    public long getBlock1SZX(){
+        if(!options.containsKey(BLOCK_1)) {
+            return UintOptionValue.UNDEFINED;
+        } else {
+            long value = (long) options.get(BLOCK_1).iterator().next().getDecodedValue();
+            return extractBits(value, 3, 0);
+        }
+    }
 
     /**
      * Returns the {@link de.uzl.itm.ncoap.communication.identification.EndpointID} contained in this message as
@@ -744,9 +803,12 @@ public abstract class CoapMessage {
      * @return Returns the messages content.
      */
     public ChannelBuffer getContent(){
-        return content;
+        return this.content;
     }
 
+    public long getContentLength() {
+        return this.content.readableBytes();
+    }
 
     /**
      * Returns a {@link Multimap} with the option numbers as keys and
@@ -772,7 +834,7 @@ public abstract class CoapMessage {
      *
      * @return a {@link Set<de.uzl.itm.ncoap.message.options.OptionValue>} containing the options that are explicitly set in this {@link CoapMessage}.
      */
-    public Set<OptionValue> getOptions(int optionNumber){
+    public Set<OptionValue> getOptions(int optionNumber) {
         return this.options.get(optionNumber);
     }
 

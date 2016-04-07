@@ -111,6 +111,11 @@ public abstract class MessageCode {
     public static final int CONTENT_205 = 69;
 
     /**
+     * Corresponds to Response Code 95
+     */
+    public static final int CONTINUE_231 = 95;
+
+    /**
      * Corresponds to Response Code 128
      */
     public static final int BAD_REQUEST_400 = 128;
@@ -144,6 +149,11 @@ public abstract class MessageCode {
      * Corresponds to Response Code 134
      */
     public static final int NOT_ACCEPTABLE_406 = 134;
+
+    /**
+     * Corresponds to Response Code 136
+     */
+    public static final int REQUEST_ENTITY_INCOMPLETE_408 = 136;
 
     /**
      * Corresponds to Response Code 140
@@ -203,6 +213,7 @@ public abstract class MessageCode {
             .put(VALID_203, "VALID (" + VALID_203 + ")")
             .put(CHANGED_204, "CHANGED (" + CHANGED_204 + ")")
             .put(CONTENT_205, "CONTENT (" + CONTENT_205 + ")")
+            .put(CONTINUE_231, "CONTINUE (" + CONTINUE_231 + ")")
             .put(BAD_REQUEST_400, "BAD REQUEST (" + BAD_REQUEST_400 + ")")
             .put(UNAUTHORIZED_401, "UNAUTHORIZED (" + UNAUTHORIZED_401 + ")")
             .put(BAD_OPTION_402, "BAD OPTION (" + BAD_OPTION_402 + ")")
@@ -210,6 +221,7 @@ public abstract class MessageCode {
             .put(NOT_FOUND_404, "NOT FOUND (" + NOT_FOUND_404 + ")")
             .put(METHOD_NOT_ALLOWED_405, "METHOD NOT ALLOWED (" + METHOD_NOT_ALLOWED_405 + ")")
             .put(NOT_ACCEPTABLE_406, "NOT ACCEPTABLE (" + NOT_ACCEPTABLE_406 + ")")
+            .put(REQUEST_ENTITY_INCOMPLETE_408, "REQUEST ENTITY INCOMPLETE (" + REQUEST_ENTITY_INCOMPLETE_408 + ")")
             .put(PRECONDITION_FAILED_412, "PRECONDITION FAILED (" + PRECONDITION_FAILED_412 + ")")
             .put(REQUEST_ENTITY_TOO_LARGE_413, "REQUEST ENTITY TOO LARGE (" + REQUEST_ENTITY_TOO_LARGE_413 + ")")
             .put(UNSUPPORTED_CONTENT_FORMAT_415, "UNSUPPORTED CONTENT FORMAT (" + UNSUPPORTED_CONTENT_FORMAT_415 + ")")

@@ -175,4 +175,10 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
             });
         }
     }
+
+    protected ChannelFuture sendCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
+        ChannelFuture future = Channels.future(getContext().getChannel());
+        Channels.write(getContext(), future, coapMessage, remoteSocket);
+        return future;
+    }
 }

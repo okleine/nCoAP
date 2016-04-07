@@ -45,7 +45,7 @@ public class TestCallback extends ClientCallback {
     private Set<Long> emptyRSTs;
     private Set<Long> transmissions;
     private Set<Long> transmissionTimeouts;
-
+    private Set<Long> responseBlockReceptions;
 
     public TestCallback(){
         this.coapResponses = Collections.synchronizedSortedMap(
@@ -55,6 +55,7 @@ public class TestCallback extends ClientCallback {
         this.emptyRSTs = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
         this.transmissions = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
         this.transmissionTimeouts = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
+        this.responseBlockReceptions = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
     }
 
 
@@ -95,6 +96,13 @@ public class TestCallback extends ClientCallback {
         log.info("Received RST!");
     }
 
+    @Override
+    public void processResponseBlockReceived(long block2number) {
+        long actualTime = System.currentTimeMillis();
+        this.responseBlockReceptions.add(actualTime);
+        log.info("Received response block #{}", block2number);
+    }
+
     /**
      * Returns a {@link SortedMap} containing all received {@link CoapResponse} instances as values and their reception
      * timestamps as key.
@@ -124,5 +132,9 @@ public class TestCallback extends ClientCallback {
 
     public Set<Long> getTransmissionTimeouts(){
         return this.transmissionTimeouts;
+    }
+
+    public Set<Long> getResponseBlockReceptions() {
+        return this.responseBlockReceptions;
     }
 }

@@ -28,7 +28,7 @@ package de.uzl.itm.ncoap.communication.blockwise;
  * Created by olli on 09.02.16.
  */
 public enum BlockSize {
-    UNBOUND(-1, -1),
+//    UNBOUND(-1, -1),
     SIZE_16(0, 16),
     SIZE_32(1, 32),
     SIZE_64(2, 64),
@@ -39,6 +39,9 @@ public enum BlockSize {
 
     private int encodedSize;
     private int decodedSize;
+
+    private static final int SZX_MIN = 0;
+    private static final int SZX_MAX = 6;
 
     BlockSize(int encodedSize, int decodedSize) {
         this.encodedSize = encodedSize;
@@ -53,23 +56,31 @@ public enum BlockSize {
         return this.decodedSize;
     }
 
-    public static BlockSize getBlockSize(long encodedSize) throws IllegalArgumentException{
-        if (encodedSize == 0) {
+    public static int getDecodedSize(long szx) {
+        return getBlockSize(szx).getDecodedSize();
+    }
+
+    public static boolean isValid(long szx) {
+        return !(szx < SZX_MIN) && !(szx > SZX_MAX);
+    }
+
+    public static BlockSize getBlockSize(long szx) throws IllegalArgumentException{
+        if (szx == 0) {
             return SIZE_16;
-        } else if(encodedSize == 1) {
+        } else if(szx == 1) {
             return SIZE_32;
-        } else if(encodedSize == 2) {
+        } else if(szx == 2) {
             return SIZE_64;
-        } else if(encodedSize == 3) {
+        } else if(szx == 3) {
             return SIZE_128;
-        } else if(encodedSize == 4) {
+        } else if(szx == 4) {
             return SIZE_256;
-        } else if(encodedSize == 5) {
+        } else if(szx == 5) {
             return SIZE_512;
-        } else if(encodedSize == 6) {
+        } else if(szx == 6) {
             return SIZE_1024;
         } else {
-            throw new IllegalArgumentException("Unsupported encoded blocksize: " + encodedSize);
+            throw new IllegalArgumentException("Unsupported SZX value (Block Option): " + szx);
         }
     }
 }
