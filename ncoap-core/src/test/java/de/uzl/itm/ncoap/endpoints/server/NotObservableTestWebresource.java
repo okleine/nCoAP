@@ -26,7 +26,7 @@
 package de.uzl.itm.ncoap.endpoints.server;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.application.server.webresource.NotObservableWebresource;
+import de.uzl.itm.ncoap.application.server.resource.NotObservableWebresource;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
@@ -45,7 +45,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import static org.junit.Assert.fail;
 
 /**
-* Simple implementation of {@link de.uzl.itm.ncoap.application.server.webresource.NotObservableWebresource} to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s.
+* Simple implementation of {@link de.uzl.itm.ncoap.application.server.resource.NotObservableWebresource} to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s.
 *
 * @author Oliver Kleine
 */
@@ -64,8 +64,8 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
     private long pretendedProcessingTimeForRequests;
 
     /**
-     * @param path the path of this {@link de.uzl.itm.ncoap.application.server.webresource.NotObservableWebresource} URI
-     * @param initialStatus the initial status of this {@link de.uzl.itm.ncoap.application.server.webresource.NotObservableWebresource}
+     * @param path the path of this {@link de.uzl.itm.ncoap.application.server.resource.NotObservableWebresource} URI
+     * @param initialStatus the initial status of this {@link de.uzl.itm.ncoap.application.server.resource.NotObservableWebresource}
      * @param lifetimeSeconds the lifetime of the initial status in seconds
      * @param pretendedProcessingTimeForRequests the time to delay the processing of inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s (to
      *                                           simulate long processing time)

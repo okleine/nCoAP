@@ -37,10 +37,10 @@ public interface RequestConsumer {
 
     /**
      * This method is invoked by the framework on inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s with {@link de.uzl.itm.ncoap.message.MessageCode.Name#PUT} if
-     * there is no {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered at the path given as {@link de.uzl.itm.ncoap.message.CoapRequest#getUriPath()}.
+     * there is no {@link de.uzl.itm.ncoap.application.server.resource.Webresource} registered at the path given as {@link de.uzl.itm.ncoap.message.CoapRequest#getUriPath()}.
      *
      * @param responseFuture the {@link com.google.common.util.concurrent.SettableFuture} to be set with a proper {@link de.uzl.itm.ncoap.message.CoapResponse} to indicate
-     *                       whether there was a new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} created or not.
+     *                       whether there was a new {@link de.uzl.itm.ncoap.application.server.resource.Webresource} created or not.
      *
      * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be processed
      *

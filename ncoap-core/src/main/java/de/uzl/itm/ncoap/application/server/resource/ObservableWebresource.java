@@ -23,54 +23,78 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uzl.itm.ncoap.application.server.webresource;
+package de.uzl.itm.ncoap.application.server.resource;
 
-import com.google.common.collect.*;
-import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
+import com.google.common.collect.LinkedHashMultimap;
+import de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute;
 import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Observable;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
-
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static de.uzl.itm.ncoap.message.options.OptionValue.MAX_AGE_DEFAULT;
+
 /**
-* This is the abstract class to be extended by classes to represent a not observable resource.The generic type T
-* means, that the object that holds the resourceStatus of the resource is of type T.
+* This is the abstract class to be extended by classes to represent an observable resource. The generic type T
+* means, that the object that holds the status of the resource is of type T.
 *
 * Example: Assume, you want to realize a not observable service representing a temperature with limited accuracy
-* (integer values). Then, your service class could e.g. extend {@link NotObservableWebresource <Integer>}.
+* (integer values). Then, your service class should extend {@link ObservableWebresource<Integer>}.
 *
 * @author Oliver Kleine, Stefan Hüske
 */
-public abstract class NotObservableWebresource<T> implements Webresource<T> {
+public abstract class ObservableWebresource<T> extends Observable implements Webresource<T> {
 
-    private static Logger LOG = LoggerFactory.getLogger(NotObservableWebresource.class.getName());
+    private static Logger log = LoggerFactory.getLogger(ObservableWebresource.class.getName());
+
+    public static final boolean SHUTDOWN = true;
+    public static final boolean UPDATE = false;
 
     private RequestDispatcher requestDispatcher;
-
-    private String path;
-
+    private String uriPath;
     private LinkedHashMultimap<String, LinkAttribute> linkAttributes;
 
-    private ReadWriteLock readWriteLock;
-
-    private T resourceStatus;
-    private long resourceStatusExpiryDate;
+    private T status;
+    private long statusExpiryDate;
+    private ReentrantReadWriteLock statusLock;
 
     private ScheduledExecutorService executor;
 
-    protected NotObservableWebresource(String servicePath, T initialStatus, long lifetimeSeconds,
-                                       ScheduledExecutorService executor){
-        this.path = servicePath;
-        this.linkAttributes = LinkedHashMultimap.create();
 
-        this.readWriteLock = new ReentrantReadWriteLock(false);
+    /**
+     * Using this constructor is the same as
+     * {@link #ObservableWebresource(String, Object, long, java.util.concurrent.ScheduledExecutorService)}
+     * with parameter <code>lifetimeSeconds</code> set to
+     * {@link de.uzl.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
+     *
+     * @param uriPath the uriPath this {@link ObservableWebresource} is registered at.
+     * @param initialStatus the initial status of this {@link ObservableWebresource}.
+     */
+    protected ObservableWebresource(String uriPath, T initialStatus, ScheduledExecutorService executor){
+        this(uriPath, initialStatus, MAX_AGE_DEFAULT, executor);
+        this.setLinkAttribute(new EmptyLinkAttribute(EmptyLinkAttribute.OBSERVABLE));
+    }
+
+
+    /**
+     * @param uriPath the uriPath this {@link ObservableWebresource} is registered at.
+     * @param initialStatus the initial status of this {@link ObservableWebresource}.
+     * @param lifetime the number of seconds the initial status may be considered fresh, i.e. cachable by
+     *                        proxies or clients.
+     */
+    protected ObservableWebresource(String uriPath, T initialStatus, long lifetime, ScheduledExecutorService executor){
+        this.uriPath = uriPath;
+        this.linkAttributes = LinkedHashMultimap.create();
+        this.statusLock = new ReentrantReadWriteLock();
         this.executor = executor;
-        setResourceStatus(initialStatus, lifetimeSeconds);
+        setResourceStatus(initialStatus, lifetime);
     }
 
 
@@ -84,6 +108,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
         this.linkAttributes.put(linkAttribute.getKey(), linkAttribute);
     }
+
 
     @Override
     public boolean removeLinkAttribute(String attributeKey){
@@ -102,27 +127,21 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
 
     @Override
-    public final void setRequestDispatcher(RequestDispatcher requestDispatcher){
+    public void setRequestDispatcher(RequestDispatcher requestDispatcher){
         this.requestDispatcher = requestDispatcher;
     }
 
 
     @Override
-    public final RequestDispatcher getRequestDispatcher(){
+    public RequestDispatcher getRequestDispatcher(){
         return this.requestDispatcher;
     }
 
 
     @Override
     public final String getUriPath() {
-        return this.path;
+        return this.uriPath;
     }
-
-
-//    @Override
-//    public final void setExecutor(ScheduledExecutorService executorService){
-//        this.scheduledExecutorService = executorService;
-//    }
 
 
     @Override
@@ -132,36 +151,54 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
 
     /**
-     * This method is the one and only recommended way to change the status.
+     * {@inheritDoc}
      *
-     * Invocation of this method write-locks the resource status, i.e. concurrent invocations of
-     * {@link #getWrappedResourceStatus(long)} or this method wait for this method to
-     * finish, i.e. to unlock the write-lock. This is e.g. to avoid inconsistencies between the content and
-     * {@link de.uzl.itm.ncoap.message.options.Option#ETAG}, resp. {@link de.uzl.itm.ncoap.message.options.Option#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such
-     * inconsistencies could happen in case of a resource update between calls of e.g.
-     * {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)}, resp. {@link #getMaxAge()}.
-     *
-     * @param resourceStatus the new status of the resource
-     * @param lifetimeSeconds the number of seconds this status is valid, i.e. cachable by clients or proxies.
+     * <p><b>Note: </b>Do not use this method for status retrieval when processing an inbound
+     * {@link de.uzl.itm.ncoap.message.CoapRequest}. Use
+     * {@link #getWrappedResourceStatus(java.util.Set)} instead to avoid synchronization issues. However,
+     * this method is safely called within {@link #getWrappedResourceStatus(java.util.Set)}.</p>
      */
     @Override
-    public final void setResourceStatus(T resourceStatus, long lifetimeSeconds){
-        try{
-            readWriteLock.writeLock().lock();
-            this.resourceStatus = resourceStatus;
-            this.resourceStatusExpiryDate = System.currentTimeMillis() + (lifetimeSeconds * 1000);
-            updateEtag(resourceStatus);
-
-            LOG.debug("New status of {} set (expires in {} seconds).", this.path, lifetimeSeconds);
-        }
-        finally {
-            readWriteLock.writeLock().unlock();
-        }
+    public final T getResourceStatus(){
+        return this.status;
     }
 
+
+    @Override
+    public synchronized final void setResourceStatus(final T status, final long lifetime){
+        this.executor.submit(new Runnable(){
+
+            @Override
+            public void run() {
+                try{
+                    statusLock.writeLock().lock();
+
+                    ObservableWebresource.this.status = status;
+                    ObservableWebresource.this.statusExpiryDate = System.currentTimeMillis() + (lifetime * 1000);
+                    ObservableWebresource.this.updateEtag(status);
+
+                    log.debug("New status of {} successfully set (expires in {} seconds).",
+                            ObservableWebresource.this.getUriPath(), lifetime);
+
+                    setChanged();
+                    notifyObservers(UPDATE);
+                }
+                catch(Exception ex){
+                    log.error("Exception while setting new resource status for \"{}\"!",
+                            ObservableWebresource.this.getUriPath(), ex);
+                }
+
+                finally {
+                    statusLock.writeLock().unlock();
+                }
+            }
+        });
+    }
+
+
     /**
-     * This method is the one and only recommended way to retrieve the actual resource status that is used
-     * for a {@link de.uzl.itm.ncoap.message.CoapResponse} to answer an inbound {@link de.uzl.itm.ncoap.message.CoapRequest}.
+     * This method and {@link #getWrappedResourceStatus(java.util.Set)} are the only recommended way to retrieve
+     * the actual resource status that is used for a {@link de.uzl.itm.ncoap.message.CoapResponse} to answer an inbound {@link de.uzl.itm.ncoap.message.CoapRequest}.
      *
      * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
@@ -171,7 +208,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      * resp. {@link #getMaxAge()}.
      *
      * However, concurrent invocations of this method are possible, as the resources read-lock can be locked multiple
-     * times in parallel.
+     * times in parallel and {@link #setResourceStatus(Object, long)} waits for all read-locks to be released.
      *
      * @param contentFormat the number representing the desired content format of the serialized resource status
      *
@@ -180,7 +217,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      */
     public final WrappedResourceStatus getWrappedResourceStatus(long contentFormat){
         try{
-            this.readWriteLock.readLock().lock();
+            this.statusLock.readLock().lock();
 
             byte[] serializedResourceStatus = getSerializedResourceStatus(contentFormat);
 
@@ -192,9 +229,10 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
                         this.getEtag(contentFormat), this.getMaxAge());
         }
         finally {
-            this.readWriteLock.readLock().unlock();
+            this.statusLock.readLock().unlock();
         }
     }
+
 
     /**
      * This method and {@link #getWrappedResourceStatus(long)} are the only recommended ways to retrieve
@@ -223,7 +261,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
     @Override
     public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
         try{
-            this.readWriteLock.readLock().lock();
+            this.statusLock.readLock().lock();
 
             WrappedResourceStatus result = null;
 
@@ -237,22 +275,30 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
             return result;
         }
         finally {
-            this.readWriteLock.readLock().unlock();
+            this.statusLock.readLock().unlock();
         }
     }
 
 
-    @Override
-    public final T getResourceStatus(){
-        return this.resourceStatus;
-    }
+    /**
+     * This method is invoked by the framework for every observer after every resource update. Classes that extend
+     * {@link ObservableWebresource} may implement this method just by returning one of
+     * {@link de.uzl.itm.ncoap.message.MessageType#CON} or {@link de.uzl.itm.ncoap.message.MessageType#NON}.
+     * However, this method also gives {@link ObservableWebresource}s the opportunity
+     * to e.g. distinguish between observers or have some other arbitrary logic...
+     *
+     * @param remoteSocket the remote CoAP endpoints that observes this {@link ObservableWebresource}
+     *
+     * @return the message type for the next update notification for the observer identified by the given parameters
+     */
+    public abstract boolean isUpdateNotificationConfirmable(InetSocketAddress remoteSocket);
 
 
     /**
      * Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies
      * or clients. The returned number is calculated using the parameter <code>lifetimeSeconds</code> on
      * invocation of {@link #setResourceStatus(Object, long)} or
-     * {@link #NotObservableWebresource(String, Object, long, java.util.concurrent.ScheduledExecutorService)}
+     * {@link #ObservableWebresource(String, Object, long, ScheduledExecutorService)}
      * (which internally invokes {@link #setResourceStatus(Object, long)}).
      *
      * If the number of seconds passed after the last invocation of {@link #setResourceStatus(Object, long)} is larger
@@ -263,27 +309,36 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      */
     @Override
     public final long getMaxAge(){
-        return Math.max(this.resourceStatusExpiryDate - System.currentTimeMillis(), 0) / 1000;
+        return Math.max(this.statusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
 
 
-//    @Override
-//    public int hashCode(){
-//        return this.getUriPath().hashCode();
-//    }
-//
-//
-//    @Override
-//    public boolean equals(Object object){
-//        if(object == null)
-//            return false;
-//
-//        if(!(object instanceof String || object instanceof Webservice))
-//            return false;
-//
-//        if(object instanceof String)
-//            return (this.getUriPath().equals(object));
-//
-//        return (this.getUriPath().equals(((Webservice) object).getUriPath()));
-//    }
+    /**
+     * <p>This method is called by the nCoAP framework within the unregistration process of this
+     * {@link de.uzl.itm.ncoap.application.server.resource.ObservableWebresource} instance.</p>
+     *
+     * <p><b>Important:</b> Make sure to invoke <code>super.shutdown()</code> if you override this method in an extending
+     * class.</p>
+     *
+     * <p><b>Note:</b> Do NOT INVOKE this method directly! Use
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer#
+     *  shutdownWebresource(de.uzl.itm.ncoap.application.server.webresource.Webresource)
+     * } or
+     * {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint#
+     *  shutdownWebresource(de.uzl.itm.ncoap.application.server.webresource.Webresource)
+     * }
+     * to shutdown a resource!</p>
+     */
+    @Override
+    public void shutdown() {
+        getExecutor().submit(new Runnable() {
+            @Override
+            public void run() {
+                log.warn("Shutdown service \"{}\"!", getUriPath());
+                statusLock.writeLock().lock();
+                setChanged();
+                notifyObservers(SHUTDOWN);
+            }
+        });
+    }
 }

@@ -28,7 +28,6 @@ package de.uzl.itm.ncoap.communication.dispatching.server;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
-import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import org.slf4j.Logger;
@@ -41,13 +40,13 @@ import static de.uzl.itm.ncoap.message.MessageCode.NOT_FOUND_404;
 /**
  * <p>Instances of {@link NotFoundHandler} are invoked to handle
  * inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s that targets a not (yet?) existing
- * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}. Instances may e.g. create and
- * register or update {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s upon reception
+ * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}. Instances may e.g. create and
+ * register or update {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s upon reception
  * of a POST or PUT request.</p>
  *
  * <p>The framework calls the method {@link #processCoapRequest(SettableFuture, de.uzl.itm.ncoap.message.CoapRequest, InetSocketAddress)} for
  * inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s if the addressed
- * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} does NOT exist.</p>
+ * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} does NOT exist.</p>
  *
  * @author Oliver Kleine
  */
@@ -59,10 +58,10 @@ public abstract class NotFoundHandler implements RequestConsumer{
 
     /**
      * This method is invoked by the framework to set the {@link RequestDispatcher} that is supposed to be used to
-     * register newly created {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances.
+     * register newly created {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instances.
      *
      * @param requestDispatcher the {@link RequestDispatcher} that is supposed to be used to register newly created
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances.
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instances.
      */
     public final void setRequestDispatcher(RequestDispatcher requestDispatcher){
         this.requestDispatcher = requestDispatcher;
@@ -72,7 +71,7 @@ public abstract class NotFoundHandler implements RequestConsumer{
     /**
      * Returns the {@link RequestDispatcher} for this CoAP
      * server. The {@link RequestDispatcher} instance can be
-     * e.g. used to register new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s
+     * e.g. used to register new {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s
      * using {@link RequestDispatcher
      * #registerWebresource(Webservice)}.
      *
@@ -91,7 +90,7 @@ public abstract class NotFoundHandler implements RequestConsumer{
      * {@link NotFoundHandler}. The default
      * {@link NotFoundHandler} does not create new instances
      * or updates or deletes existing instances of
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} but sets the given
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} but sets the given
      * {@link com.google.common.util.concurrent.SettableFuture} with a
      * {@link de.uzl.itm.ncoap.message.CoapResponse} with
      * {@link de.uzl.itm.ncoap.message.MessageCode#NOT_FOUND_404}.

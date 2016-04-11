@@ -26,8 +26,8 @@ package de.uzl.itm.ncoap.examples;
 
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
-import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
+import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
+import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.application.linkformat.LongLinkAttribute;
 import de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute;
 import de.uzl.itm.ncoap.message.options.ContentFormat;

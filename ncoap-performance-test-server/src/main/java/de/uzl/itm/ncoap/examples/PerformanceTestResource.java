@@ -25,8 +25,8 @@
 package de.uzl.itm.ncoap.examples;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.application.server.webresource.NotObservableWebresource;
-import de.uzl.itm.ncoap.application.server.webresource.WrappedResourceStatus;
+import de.uzl.itm.ncoap.application.server.resource.NotObservableWebresource;
+import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 

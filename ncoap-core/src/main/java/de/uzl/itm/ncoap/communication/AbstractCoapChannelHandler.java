@@ -71,17 +71,20 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
             ((MessageRetransmittedEvent.Handler) this).handleEvent((MessageRetransmittedEvent) message);
         } else if (message instanceof MiscellaneousErrorEvent && this instanceof MiscellaneousErrorEvent.Handler) {
             ((MiscellaneousErrorEvent.Handler) this).handleEvent((MiscellaneousErrorEvent) message);
-        } else if (message instanceof RemoteServerSocketChangedEvent && this instanceof RemoteServerSocketChangedEvent.Handler) {
+        } else if (message instanceof RemoteServerSocketChangedEvent &&
+                this instanceof RemoteServerSocketChangedEvent.Handler) {
             ((RemoteServerSocketChangedEvent.Handler) this).handleEvent((RemoteServerSocketChangedEvent) message);
-        } else if (message instanceof RemoteClientSocketChangedEvent && this instanceof RemoteClientSocketChangedEvent.Handler) {
+        } else if (message instanceof RemoteClientSocketChangedEvent &&
+                this instanceof RemoteClientSocketChangedEvent.Handler) {
             ((RemoteClientSocketChangedEvent.Handler) this).handleEvent((RemoteClientSocketChangedEvent) message);
-        }else if (message instanceof ResetReceivedEvent && this instanceof ResetReceivedEvent.Handler) {
+        } else if (message instanceof ResetReceivedEvent && this instanceof ResetReceivedEvent.Handler) {
             ((ResetReceivedEvent.Handler) this).handleEvent((ResetReceivedEvent) message);
         } else if (message instanceof TransmissionTimeoutEvent && this instanceof TransmissionTimeoutEvent.Handler) {
             ((TransmissionTimeoutEvent.Handler) this).handleEvent((TransmissionTimeoutEvent) message);
         } else if (message instanceof ObserverAcceptedEvent && this instanceof ObserverAcceptedEvent.Handler) {
             ((ObserverAcceptedEvent.Handler) this).handleEvent((ObserverAcceptedEvent) message);
-        } else if (message instanceof ResponseBlockReceivedEvent && this instanceof ResponseBlockReceivedEvent.Handler) {
+        } else if (message instanceof ResponseBlockReceivedEvent &&
+                this instanceof ResponseBlockReceivedEvent.Handler) {
             ((ResponseBlockReceivedEvent.Handler) this).handleEvent((ResponseBlockReceivedEvent) message);
         }
 

@@ -585,6 +585,15 @@ public abstract class CoapMessage {
     }
 
 
+    public long getBlock2Size() {
+        long block2szx = getBlock2SZX();
+        if(block2szx != UintOptionValue.UNDEFINED) {
+            return UintOptionValue.UNDEFINED;
+        } else {
+            return BlockSize.getBlockSize(block2szx).getDecodedSize();
+        }
+    }
+
     /**
      * Returns the sequence number of the block1 option or
      * {@link de.uzl.itm.ncoap.message.options.UintOptionValue#UNDEFINED} if there is no such option present in
@@ -644,6 +653,15 @@ public abstract class CoapMessage {
         }
     }
 
+    public long getBlock1Size() {
+        long block1szx = getBlock1SZX();
+        if(block1szx == UintOptionValue.UNDEFINED) {
+            return UintOptionValue.UNDEFINED;
+        } else {
+            return BlockSize.getBlockSize(block1szx).getDecodedSize();
+        }
+    }
+    
     /**
      * Returns the {@link de.uzl.itm.ncoap.communication.identification.EndpointID} contained in this message as
      * {@link de.uzl.itm.ncoap.message.options.Option#ENDPOINT_ID_1} or <code>null</code> if no such
@@ -806,7 +824,7 @@ public abstract class CoapMessage {
         return this.content;
     }
 
-    public long getContentLength() {
+    public int getContentLength() {
         return this.content.readableBytes();
     }
 

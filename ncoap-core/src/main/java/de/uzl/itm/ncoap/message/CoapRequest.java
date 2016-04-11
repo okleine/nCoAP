@@ -549,7 +549,7 @@ public class CoapRequest extends CoapMessage {
                 throw new IllegalArgumentException(error);
             }
             this.addUintOption(BLOCK_1, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + szx);
-        } catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             log.error("This should never happen.", e);
         }
     }

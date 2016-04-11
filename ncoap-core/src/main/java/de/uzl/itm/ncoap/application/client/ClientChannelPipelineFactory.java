@@ -26,9 +26,8 @@
 package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
-import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock1OptionHandler;
-import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2OptionHandler;
+import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock1Handler;
+import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler;
@@ -62,8 +61,8 @@ public class ClientChannelPipelineFactory extends CoapChannelPipelineFactory {
         addChannelHandler(new ClientIdentificationHandler(executor));
         addChannelHandler(new ClientOutboundReliabilityHandler(executor, new MessageIDFactory(executor)));
         addChannelHandler(new ClientInboundReliabilityHandler(executor));
-        addChannelHandler(new ClientBlock2OptionHandler(executor));
-        addChannelHandler(new ClientBlock1OptionHandler(executor));
+        addChannelHandler(new ClientBlock2Handler(executor));
+        addChannelHandler(new ClientBlock1Handler(executor));
         addChannelHandler(new ClientObservationHandler(executor));
         addChannelHandler(new ResponseDispatcher(executor, new TokenFactory()));
     }

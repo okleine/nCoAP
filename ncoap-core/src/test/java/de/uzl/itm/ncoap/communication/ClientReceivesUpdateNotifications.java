@@ -26,7 +26,7 @@
 package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.client.CoapClient;
-import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
+import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
 import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;

@@ -23,7 +23,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package de.uzl.itm.ncoap.application.server.webresource;
+package de.uzl.itm.ncoap.application.server.resource;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;

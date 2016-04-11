@@ -26,7 +26,7 @@
 package de.uzl.itm.ncoap.communication.observe;
 
 import de.uzl.itm.ncoap.application.server.CoapServer;
-import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
+import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;

@@ -32,7 +32,6 @@ import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
-import org.jboss.netty.channel.socket.InternetProtocolFamily;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
@@ -123,7 +122,7 @@ public abstract class AbstractCoapApplication {
      * Returns the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
      * {@link de.uzl.itm.ncoap.application.server.CoapServer} to handle tasks, e.g. write and
      * receive messages. The returned {@link java.util.concurrent.ScheduledExecutorService} may also be used by
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s to handle inbound
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s to handle inbound
      * {@link de.uzl.itm.ncoap.message.CoapRequest}s
      *
      * @return the {@link java.util.concurrent.ScheduledExecutorService} which is used by this

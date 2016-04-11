@@ -37,11 +37,10 @@ import java.net.URISyntaxException;
 import java.util.Iterator;
 
 import static de.uzl.itm.ncoap.message.options.Option.*;
-import static de.uzl.itm.ncoap.message.MessageType.*;
 
 /**
  * <p>Instances of {@link CoapResponse} are created by an instance of
- * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} to answer requests.</p>
+ * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} to answer requests.</p>
  *
  * <p><b>Note:</b> The given {@link MessageType} (one of
  * {@link de.uzl.itm.ncoap.message.MessageType#CON} or
@@ -171,7 +170,7 @@ public class CoapResponse extends CoapMessage {
 
     /**
      * Sets the observe option to a proper value automatically. This method is to be invoked by instances of
-     * {@link de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource} if an inbound
+     * {@link de.uzl.itm.ncoap.application.server.resource.ObservableWebresource} if an inbound
      * {@link CoapRequest} to start a new observation is accepted.
      */
     public void setObserve(){
@@ -194,12 +193,26 @@ public class CoapResponse extends CoapMessage {
         try {
             this.removeOptions(BLOCK_2);
             if(number > 1048575) {
-                throw new IllegalArgumentException("Max. BlockNo. is 1048575");
+                throw new IllegalArgumentException("Max. BLOCK2NUM is 1048575");
             }
             //long more = ((more) ? 1 : 0) << 3;
             this.addUintOption(BLOCK_2, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + size.getEncodedSize());
         } catch (IllegalArgumentException e){
             this.removeOptions(BLOCK_2);
+            log.error("This should never happen.", e);
+        }
+    }
+
+    public void setBlock1(long number, long szx) throws IllegalArgumentException{
+        try {
+            this.removeOptions(BLOCK_1);
+            if(number > 1048575) {
+                throw new IllegalArgumentException("Max. BLOCK1NUM is 1048575");
+            }
+            //long more = ((more) ? 1 : 0) << 3;
+            this.addUintOption(BLOCK_1, ((number & 0xFFFFF) << 4) + (1 << 3) + szx);
+        } catch (IllegalArgumentException e){
+            this.removeOptions(BLOCK_1);
             log.error("This should never happen.", e);
         }
     }
@@ -253,8 +266,7 @@ public class CoapResponse extends CoapMessage {
                 for(String queryComponent : locationQuery.split("&"))
                     this.addStringOption(LOCATION_QUERY, queryComponent);
             }
-        }
-        catch(IllegalArgumentException ex){
+        } catch(IllegalArgumentException ex) {
             options.removeAll(LOCATION_PATH);
             options.removeAll(LOCATION_QUERY);
             throw ex;
@@ -304,11 +316,10 @@ public class CoapResponse extends CoapMessage {
      * @param maxAge the value for the Max-Age option to be set
      */
     public void setMaxAge(long maxAge){
-        try{
+        try {
             this.options.removeAll(MAX_AGE);
             this.addUintOption(MAX_AGE, maxAge);
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             log.error("This should never happen.", e);
         }
     }
@@ -322,9 +333,23 @@ public class CoapResponse extends CoapMessage {
      * exists, this method returns {@link de.uzl.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
      */
     public long getMaxAge(){
-        if(options.containsKey(MAX_AGE))
+        if(options.containsKey(MAX_AGE)) {
             return ((UintOptionValue) options.get(MAX_AGE).iterator().next()).getDecodedValue();
-        else
+        } else {
             return OptionValue.MAX_AGE_DEFAULT;
+        }
+    }
+
+    public void setSize1(long size1) throws IllegalArgumentException{
+        this.options.removeAll(SIZE_1);
+        this.addUintOption(SIZE_1, size1);
+    }
+
+    public long getSize1() {
+        if(options.containsKey(SIZE_1)) {
+            return ((UintOptionValue) options.get(SIZE_1).iterator().next()).getDecodedValue();
+        } else {
+            return UintOptionValue.UNDEFINED;
+        }
     }
 }

@@ -30,7 +30,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
-import de.uzl.itm.ncoap.application.server.webresource.Webresource;
+import de.uzl.itm.ncoap.application.server.resource.Webresource;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
@@ -154,14 +154,14 @@ public class CoapEndpoint extends AbstractCoapApplication {
     }
 
     /**
-     * Registers a new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} at this
+     * Registers a new {@link de.uzl.itm.ncoap.application.server.resource.Webresource} at this
      * {@link de.uzl.itm.ncoap.application.server.CoapServer}.
      *
-     * @param webresource the {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instance to
+     * @param webresource the {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instance to
      *                   be registered
      *
      * @throws java.lang.IllegalArgumentException if there was already a
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered with the same path
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} registered with the same path
      */
     public void registerWebresource(Webresource webresource) throws IllegalArgumentException{
         this.getRequestDispatcher().registerWebresource(webresource);
@@ -181,7 +181,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
 
     /**
      * Gracefully shuts down the server by sequentially shutting down all its components, i.e. the registered
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s and the
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s and the
      * {@link org.jboss.netty.channel.socket.DatagramChannel} to write and receive messages.
      */
     public ListenableFuture<Void> shutdown(){

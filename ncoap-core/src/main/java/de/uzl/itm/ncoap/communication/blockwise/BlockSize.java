@@ -28,7 +28,7 @@ package de.uzl.itm.ncoap.communication.blockwise;
  * Created by olli on 09.02.16.
  */
 public enum BlockSize {
-//    UNBOUND(-1, -1),
+    UNBOUND(-1, 65536),
     SIZE_16(0, 16),
     SIZE_32(1, 32),
     SIZE_64(2, 64),

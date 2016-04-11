@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events.server;
 
-import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
+import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
 

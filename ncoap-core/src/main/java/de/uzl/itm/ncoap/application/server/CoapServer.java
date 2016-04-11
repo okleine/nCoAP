@@ -30,7 +30,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
-import de.uzl.itm.ncoap.application.server.webresource.Webresource;
+import de.uzl.itm.ncoap.application.server.resource.Webresource;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import org.jboss.netty.channel.*;
@@ -41,9 +42,9 @@ import java.net.InetSocketAddress;
 
 
 /**
-* An instance of {@link CoapServer} is the component to enable instances of {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} to
+* An instance of {@link CoapServer} is the component to enable instances of {@link de.uzl.itm.ncoap.application.server.resource.Webresource} to
 * communicate with the outside world, i.e. the Internet. Once a {@link CoapServer} was instanciated
-* one can register {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances and by this means make them available at their specified path.
+* one can register {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instances and by this means make them available at their specified path.
 *
 * Each instance of {@link CoapServer} is automatically bound to a local port to listen at for
 * inbound requests.
@@ -83,7 +84,7 @@ public class CoapServer extends AbstractCoapApplication {
     public CoapServer(int serverPort){
         this(new InetSocketAddress(serverPort));
     }
-    
+
     
     /**
      * <p>Creates a new instance of {@link CoapServer}</p>
@@ -95,7 +96,7 @@ public class CoapServer extends AbstractCoapApplication {
      * @param localSocket the socket address for the server to listen at
      */
     public CoapServer(InetSocketAddress localSocket){
-        this(NotFoundHandler.getDefault(), localSocket);
+        this(NotFoundHandler.getDefault(), localSocket, BlockSize.UNBOUND);
     }
 
 
@@ -118,7 +119,7 @@ public class CoapServer extends AbstractCoapApplication {
      * @param serverPort the port number for the server to listen at (holds for all IP addresses of the server)
      */
     public CoapServer(NotFoundHandler notFoundHandler, int serverPort){
-        this(notFoundHandler, new InetSocketAddress(serverPort));
+        this(notFoundHandler, new InetSocketAddress(serverPort), BlockSize.UNBOUND);
     }
     
 
@@ -128,12 +129,12 @@ public class CoapServer extends AbstractCoapApplication {
      * @param notFoundHandler to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s for unknown resources
      * @param localSocket the socket address for the server to listen at
      */
-    public CoapServer(NotFoundHandler notFoundHandler, InetSocketAddress localSocket){
+    public CoapServer(NotFoundHandler notFoundHandler, InetSocketAddress localSocket, BlockSize defaultBlock1Size){
 
         super("CoAP Server", Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
 
         CoapServerChannelPipelineFactory pipelineFactory =
-                new CoapServerChannelPipelineFactory(this.getExecutor(), notFoundHandler);
+                new CoapServerChannelPipelineFactory(this.getExecutor(), notFoundHandler, defaultBlock1Size);
 
         startApplication(pipelineFactory, localSocket);
         
@@ -145,14 +146,14 @@ public class CoapServer extends AbstractCoapApplication {
 
 
     /**
-     * Registers a new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} at this
+     * Registers a new {@link de.uzl.itm.ncoap.application.server.resource.Webresource} at this
      * {@link CoapServer}.
      *
-     * @param webresource the {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instance to
+     * @param webresource the {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instance to
      *                   be registered
      *
      * @throws java.lang.IllegalArgumentException if there was already a
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered with the same path
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} registered with the same path
      */
     public void registerWebresource(Webresource webresource) throws IllegalArgumentException{
         this.getRequestDispatcher().registerWebresource(webresource);
@@ -169,7 +170,7 @@ public class CoapServer extends AbstractCoapApplication {
 
     /**
      * Gracefully shuts down the server by sequentially shutting down all its components, i.e. the registered
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource}s and the
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s and the
      * {@link org.jboss.netty.channel.socket.DatagramChannel} to write and receive messages.
      */
     public ListenableFuture<Void> shutdown(){

@@ -49,15 +49,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * Created by olli on 07.12.15.
  */
-public class ClientBlock1OptionHandler extends AbstractCoapChannelHandler implements TokenReleasedEvent.Handler,
+public class ClientBlock1Handler extends AbstractCoapChannelHandler implements TokenReleasedEvent.Handler,
         RemoteServerSocketChangedEvent.Handler {
 
-    private static Logger LOG = LoggerFactory.getLogger(ClientBlock1OptionHandler.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(ClientBlock1Handler.class.getName());
 
     private HashBasedTable<InetSocketAddress, Token, Block1Helper> block1helpers;
     private ReentrantReadWriteLock lock;
 
-    public ClientBlock1OptionHandler(ScheduledExecutorService executorService) {
+    public ClientBlock1Handler(ScheduledExecutorService executorService) {
         super(executorService);
         this.block1helpers = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
@@ -104,7 +104,12 @@ public class ClientBlock1OptionHandler extends AbstractCoapChannelHandler implem
             this.lock.readLock().lock();
             Block1Helper helper = this.block1helpers.get(remoteSocket, token);
             if (helper != null) {
-                return helper.getCoapRequestWithPayloadBlock(block1num, block1szx);
+                if(helper.getBlock1SZX() > block1szx) {
+                    int oldSize = BlockSize.getDecodedSize(helper.getBlock1SZX());
+                    int newSize = BlockSize.getDecodedSize(block1szx);
+                    block1num =  oldSize * block1num / newSize;
+                }
+                return helper.getCoapRequestWithPayloadBlock(block1num , block1szx);
             } else {
                 return null;
             }
@@ -156,7 +161,7 @@ public class ClientBlock1OptionHandler extends AbstractCoapChannelHandler implem
         try {
             this.lock.writeLock().lock();
             if(this.block1helpers.remove(remoteSocket, token) == null) {
-                LOG.error("Could not remove BLOCK1 helper (Remote Socket: {}, Token: {})", remoteSocket, token);
+                LOG.debug("No BLOCK1 helper found to be removed (Remote Socket: {}, Token: {})", remoteSocket, token);
             } else {
                 LOG.debug("Successfully removed BLOCK1 helper (Remote Socket: {}, Token: {})", remoteSocket, token);
             }
@@ -198,6 +203,7 @@ public class ClientBlock1OptionHandler extends AbstractCoapChannelHandler implem
 
     private class Block1Helper {
 
+        private long block1szx;
         private CoapRequest coapRequest;
         private ChannelBuffer completePayload;
         private long block2szx;
@@ -209,21 +215,27 @@ public class ClientBlock1OptionHandler extends AbstractCoapChannelHandler implem
             if(this.block2szx != UintOptionValue.UNDEFINED) {
                 this.coapRequest.removeOptions(Option.BLOCK_2);
             }
+            this.block1szx = coapRequest.getBlock1SZX();
+        }
+
+        public long getBlock1SZX() {
+            return this.block1szx;
         }
 
         public CoapRequest getCoapRequestWithPayloadBlock(long block1num, long block1szx) {
 
-            BlockSize size = BlockSize.getBlockSize(block1szx);
+            this.block1szx = block1szx;
+            int block1Size = BlockSize.getDecodedSize(block1szx);
 
             //set block 1 option and proper payload
-            int startIndex = (int) block1num * size.getDecodedSize();
+            int startIndex = (int) block1num * block1Size;
             int remaining = completePayload.readableBytes() - startIndex;
-            boolean block1more = (remaining > size.getDecodedSize());
-            this.coapRequest.setBlock1(block1num, block1more, size.getEncodedSize());
+            boolean block1more = (remaining > block1Size);
+            this.coapRequest.setBlock1(block1num, block1more, block1szx);
 
             //set the payload block
             if(block1more) {
-                this.coapRequest.setContent(this.completePayload.slice(startIndex, size.getDecodedSize()));
+                this.coapRequest.setContent(this.completePayload.slice(startIndex, block1Size));
             } else {
                 this.coapRequest.setContent(this.completePayload.slice(startIndex, remaining));
                 if(this.block2szx != UintOptionValue.UNDEFINED) {

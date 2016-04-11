@@ -33,7 +33,7 @@ import static de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute.*;
 import static de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute.*;
 
 /**
- * Each {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} can be enriched with
+ * Each {@link de.uzl.itm.ncoap.application.server.resource.Webresource} can be enriched with
  * {@link LinkAttribute}s to provide additional information about its
  * capabilities in terms of offered content formats, observability, etc...
  *

@@ -29,9 +29,9 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.application.server.webresource.ObservableWebresource;
-import de.uzl.itm.ncoap.application.server.webresource.Webresource;
-import de.uzl.itm.ncoap.application.server.webresource.WellKnownCoreResource;
+import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
+import de.uzl.itm.ncoap.application.server.resource.Webresource;
+import de.uzl.itm.ncoap.application.server.resource.WellKnownCoreResource;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.client.Token;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
@@ -39,7 +39,6 @@ import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.Option;
-import de.uzl.itm.ncoap.message.options.OptionValue;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +56,8 @@ import static de.uzl.itm.ncoap.message.MessageCode.*;
 * by {@link de.uzl.itm.ncoap.application.server.CoapServerChannelPipelineFactory}. It is responsible to dispatch inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s, i.e.
 *
 * <ul>
-*     <li>invoke the method {@link de.uzl.itm.ncoap.application.server.webresource.Webresource#processCoapRequest(SettableFuture, de.uzl.itm.ncoap.message.CoapRequest, InetSocketAddress)} of
-*     the addressed {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instance (if it exists) or</li>
+*     <li>invoke the method {@link de.uzl.itm.ncoap.application.server.resource.Webresource#processCoapRequest(SettableFuture, de.uzl.itm.ncoap.message.CoapRequest, InetSocketAddress)} of
+*     the addressed {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instance (if it exists) or</li>
 *     <li>invoke the method
 *     {@link NotFoundHandler#processCoapRequest(SettableFuture, de.uzl.itm.ncoap.message.CoapRequest, InetSocketAddress)} if the
 *     inbound {@link de.uzl.itm.ncoap.message.CoapRequest} addresses a service that does not (yet) exist.
@@ -68,14 +67,14 @@ import static de.uzl.itm.ncoap.message.MessageCode.*;
 * Upon invocation of the method it awaits a proper {@link de.uzl.itm.ncoap.message.CoapResponse} and sends that response downstream, i.e.
 * in the direction of the local socket, i.e. to the client that sent the {@link de.uzl.itm.ncoap.message.CoapRequest}.
 *
-* However, the {@link RequestDispatcher} is aware of all registered {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances and is thus to be
-* used to register new {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances, e.g. while processing an inbound {@link de.uzl.itm.ncoap.message.CoapRequest} with
-* {@link de.uzl.itm.ncoap.message.MessageCode#POST}. That is why all {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances can reference their
-* {@link RequestDispatcher} via {@link de.uzl.itm.ncoap.application.server.webresource.Webresource#getRequestDispatcher()}.
+* However, the {@link RequestDispatcher} is aware of all registered {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instances and is thus to be
+* used to register new {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instances, e.g. while processing an inbound {@link de.uzl.itm.ncoap.message.CoapRequest} with
+* {@link de.uzl.itm.ncoap.message.MessageCode#POST}. That is why all {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instances can reference their
+* {@link RequestDispatcher} via {@link de.uzl.itm.ncoap.application.server.resource.Webresource#getRequestDispatcher()}.
 *
 * Last but not least it checks whether the {@link de.uzl.itm.ncoap.message.options.Option#IF_NONE_MATCH} is set on inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s
 * and sends a {@link de.uzl.itm.ncoap.message.CoapResponse} with {@link de.uzl.itm.ncoap.message.MessageCode#PRECONDITION_FAILED_412} if the option was set but the
-* addressed {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} already exists.
+* addressed {@link de.uzl.itm.ncoap.application.server.resource.Webresource} already exists.
 *
 * @author Oliver Kleine
 */
@@ -92,7 +91,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
 
     /**
      * @param notFoundHandler Instance of {@link NotFoundHandler} to deal with inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s with
-     *                          {@link de.uzl.itm.ncoap.message.MessageCode#PUT} if the addresses {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} does not exist.
+     *                          {@link de.uzl.itm.ncoap.message.MessageCode#PUT} if the addresses {@link de.uzl.itm.ncoap.application.server.resource.Webresource} does not exist.
      *
      * @param executor the {@link ScheduledExecutorService} to process the task to send a {@link de.uzl.itm.ncoap.message.CoapResponse}
      *                        and
@@ -205,8 +204,8 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
      * listening port and by this means free the port. All blocked or bound external resources are released.
      *
      * Prior to doing so this methods removes all registered
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instances from the server, i.e.
-     * invokes the {@link de.uzl.itm.ncoap.application.server.webresource.Webresource#shutdown()} method of all registered services.
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instances from the server, i.e.
+     * invokes the {@link de.uzl.itm.ncoap.application.server.resource.Webresource#shutdown()} method of all registered services.
      */
     public ListenableFuture<Void> shutdown() {
         this.shutdown = true;
@@ -230,10 +229,10 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
 
 
     /**
-     * Shut down the {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instance registered at the
+     * Shut down the {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instance registered at the
      * given path from the server
      *
-     * @param uriPath the path of the {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instance to
+     * @param uriPath the path of the {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instance to
      * be shut down
      */
     public void shutdownWebresource(final String uriPath) {
@@ -255,10 +254,10 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
      * It is not possible to register multiple webServices at a single path. If a new service is registered at the
      * server with a path from another already registered service, then the new service replaces the old one.
      *
-     * @param webresource A {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} instance to be registered at the server
+     * @param webresource A {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instance to be registered at the server
      *
      * @throws java.lang.IllegalArgumentException if there was already a
-     * {@link de.uzl.itm.ncoap.application.server.webresource.Webresource} registered with the same path
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} registered with the same path
      */
     public final void registerWebresource(final Webresource webresource) throws IllegalArgumentException{
         if(registeredServices.containsKey(webresource.getUriPath())){

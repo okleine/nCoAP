@@ -53,27 +53,25 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * the full payload was received (as indicated by the M part of the (final) response option).
  *
  * The full payload (the cumulative blocks) is then set as the payload of the latest response. Only this response
- * (with full payload) is sent further upstream. Thus, from the
+ * (with full payload) is sent further upstream, i.e. to be processed by the
+ * {@link de.uzl.itm.ncoap.application.client.ClientCallback}. Thus, from the
  * {@link de.uzl.itm.ncoap.application.client.ClientCallback}s perspective there is virtually no
  * difference between a blockwise transfer and a large payload in a single response.
  *
  * @author Oliver Kleine
  */
-public class ClientBlock2OptionHandler extends AbstractCoapChannelHandler implements TokenReleasedEvent.Handler,
+public class ClientBlock2Handler extends AbstractCoapChannelHandler implements TokenReleasedEvent.Handler,
         RemoteServerSocketChangedEvent.Handler {
 
-    private static Logger LOG = LoggerFactory.getLogger(ClientBlock2OptionHandler.class.getName());
-
-//    private HashBasedTable<InetSocketAddress, Token, CoapRequest> openRequests;
-//    private HashBasedTable<InetSocketAddress, Token, ChannelBuffer> partialResponses;
+    private static Logger LOG = LoggerFactory.getLogger(ClientBlock2Handler.class.getName());
 
     private HashBasedTable<InetSocketAddress, Token, Block2Helper> block2helpers;
     private ReentrantReadWriteLock lock;
 
     /**
-     * Creates a new instance of {@link ClientBlock2OptionHandler}.
+     * Creates a new instance of {@link ClientBlock2Handler}.
      */
-    public ClientBlock2OptionHandler(ScheduledExecutorService executor){
+    public ClientBlock2Handler(ScheduledExecutorService executor){
         super(executor);
         this.block2helpers = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
@@ -178,7 +176,7 @@ public class ClientBlock2OptionHandler extends AbstractCoapChannelHandler implem
         try {
             this.lock.writeLock().lock();
             if(this.block2helpers.remove(remoteSocket, token) == null) {
-                LOG.error("Could not remove BLOCK2 helper (Remote Socket: {}, Token: {})", remoteSocket, token);
+                LOG.debug("No BLOCK2 helper found to be removed (Remote Socket: {}, Token: {})", remoteSocket, token);
             } else {
                 LOG.debug("Successfully removed BLOCK2 helper (Remote Socket: {}, Token: {})", remoteSocket, token);
             }

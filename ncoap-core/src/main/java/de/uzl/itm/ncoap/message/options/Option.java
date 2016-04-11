@@ -350,6 +350,7 @@ public abstract class Option {
         );
 
         OCCURENCE_CONSTRAINTS.row(CHANGED_204).putAll(ImmutableMap.<Integer, Occurence>builder()
+                        .put(ETAG, ONCE)
                         .put(CONTENT_FORMAT, ONCE)
                         .put(BLOCK_2, ONCE)
                         .put(BLOCK_1, ONCE)
