@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events.server;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
 
 import java.net.InetSocketAddress;
@@ -40,7 +40,7 @@ public class RemoteClientSocketChangedEvent extends AbstractMessageExchangeEvent
      * Creates a new instance of {@link de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent}
      *
      * @param remoteSocket the remote endpoint that caused this event
-     * @param token        the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the exchange
+     * @param token        the {@link Token} of the exchange
      *                       that caused this event
      */
     public RemoteClientSocketChangedEvent(InetSocketAddress remoteSocket, InetSocketAddress previous, Token token) {

@@ -28,7 +28,7 @@ package de.uzl.itm.ncoap.communication.reliability.inbound;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;

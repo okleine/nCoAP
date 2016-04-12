@@ -26,7 +26,6 @@ package de.uzl.itm.ncoap.message;
 
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.options.*;
-import jdk.nashorn.internal.ir.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -494,7 +493,7 @@ public class CoapRequest extends CoapMessage {
     }
 
     public void setPreferedBlock2Size(BlockSize size) {
-        this.setBlock2(0, size.getEncodedSize());
+        this.setBlock2(0, size.getSzx());
     }
 
     /**
@@ -524,7 +523,7 @@ public class CoapRequest extends CoapMessage {
     }
 
     public void setPreferedBlock1Size(BlockSize size) {
-        this.setBlock1(0, false, size.getEncodedSize());
+        this.setBlock1(0, false, size.getSzx());
     }
 
     /**

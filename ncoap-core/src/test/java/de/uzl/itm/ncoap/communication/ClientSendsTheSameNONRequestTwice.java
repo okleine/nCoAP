@@ -26,7 +26,7 @@
 package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.server.CoapServer;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;

@@ -26,7 +26,7 @@ package de.uzl.itm.ncoap.communication.events;
 
 import java.net.InetSocketAddress;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 /**
  * Instances are sent upstream by the
@@ -42,7 +42,7 @@ public class MessageRetransmittedEvent extends AbstractMessageTransferEvent {
      *
      * @param remoteEndpoint the desired recipient of the retransmitted message
      * @param messageID the message ID of the retransmitted message
-     * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the retransmitted
+     * @param token the {@link Token} of the retransmitted
      *              message
      */
     public MessageRetransmittedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {

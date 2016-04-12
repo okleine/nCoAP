@@ -124,8 +124,9 @@ public abstract class OptionValue<T>{
         CHARACTERISTICS.put( URI_QUERY,       new Characteristics( STRING,  0,  255 ));
         CHARACTERISTICS.put( ACCEPT,          new Characteristics( UINT,    0,    2 ));
         CHARACTERISTICS.put( LOCATION_QUERY,  new Characteristics( STRING,  0,  255 ));
-        CHARACTERISTICS.put( BLOCK_2,          new Characteristics( UINT,    0,    3 ));
-        CHARACTERISTICS.put( BLOCK_1,          new Characteristics( UINT,    0,    3 ));
+        CHARACTERISTICS.put( BLOCK_2,         new Characteristics( UINT,    0,    3 ));
+        CHARACTERISTICS.put( BLOCK_1,         new Characteristics( UINT,    0,    3 ));
+        CHARACTERISTICS.put( SIZE_2,          new Characteristics( UINT,    0,    4 ));
         CHARACTERISTICS.put( PROXY_URI,       new Characteristics( STRING,  1, 1034 ));
         CHARACTERISTICS.put( PROXY_SCHEME,    new Characteristics( STRING,  1,  255 ));
         CHARACTERISTICS.put( SIZE_1,          new Characteristics( UINT,    0,    4 ));

@@ -28,7 +28,7 @@ import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;

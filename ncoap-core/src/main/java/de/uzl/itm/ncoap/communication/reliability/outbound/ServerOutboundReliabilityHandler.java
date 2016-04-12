@@ -25,7 +25,7 @@
 package de.uzl.itm.ncoap.communication.reliability.outbound;
 
 import com.google.common.collect.HashBasedTable;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;

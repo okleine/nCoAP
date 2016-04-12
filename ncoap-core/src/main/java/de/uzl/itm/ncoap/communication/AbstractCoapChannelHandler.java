@@ -104,6 +104,7 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
 
         if(me.getMessage() instanceof CoapMessage) {
             if (!handleOutboundCoapMessage((CoapMessage) message, (InetSocketAddress) me.getRemoteAddress())) {
+                me.getFuture().cancel();
                 return;
             }
         }
@@ -181,7 +182,11 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
 
     protected ChannelFuture sendCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         ChannelFuture future = Channels.future(getContext().getChannel());
-        Channels.write(getContext(), future, coapMessage, remoteSocket);
+        sendCoapMessage(coapMessage, remoteSocket, future);
         return future;
+    }
+
+    protected void sendCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket, ChannelFuture future) {
+        Channels.write(getContext(), future, coapMessage, remoteSocket);
     }
 }

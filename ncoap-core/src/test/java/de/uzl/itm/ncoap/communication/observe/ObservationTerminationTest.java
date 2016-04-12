@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication.observe;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;

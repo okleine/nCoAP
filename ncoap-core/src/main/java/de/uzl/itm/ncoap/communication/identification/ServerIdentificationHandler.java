@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.identification;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;

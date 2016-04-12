@@ -25,7 +25,7 @@
 package de.uzl.itm.ncoap.message;
 
 import de.uzl.itm.ncoap.AbstractCoapTest;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import org.junit.Assert;
 import org.junit.Test;

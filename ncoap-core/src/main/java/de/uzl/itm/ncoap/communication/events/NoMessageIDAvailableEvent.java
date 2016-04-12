@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 import java.net.InetSocketAddress;
 

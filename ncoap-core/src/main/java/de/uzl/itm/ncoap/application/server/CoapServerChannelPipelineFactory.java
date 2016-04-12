@@ -28,6 +28,7 @@ package de.uzl.itm.ncoap.application.server;
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock1Handler;
+import de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock2Handler;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.communication.identification.ServerIdentificationHandler;
@@ -56,13 +57,14 @@ public class CoapServerChannelPipelineFactory extends CoapChannelPipelineFactory
      *                        unknown {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s.
      */
     public CoapServerChannelPipelineFactory(ScheduledExecutorService executor, NotFoundHandler notFoundHandler,
-                                            BlockSize defaultBlock1Size){
+                                            BlockSize maxBlock1Size, BlockSize maxBlock2Size){
 
         super(executor);
         addChannelHandler(new ServerIdentificationHandler(executor));
         addChannelHandler(new ServerOutboundReliabilityHandler(executor, new MessageIDFactory(executor)));
         addChannelHandler(new ServerInboundReliabilityHandler(executor));
-        addChannelHandler(new ServerBlock1Handler(executor, defaultBlock1Size));
+        addChannelHandler(new ServerBlock1Handler(executor, maxBlock1Size));
+        addChannelHandler(new ServerBlock2Handler(executor, maxBlock2Size));
         addChannelHandler(new ServerObservationHandler(executor));
         addChannelHandler(new RequestDispatcher(notFoundHandler, executor));
     }

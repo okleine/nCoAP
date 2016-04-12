@@ -97,10 +97,12 @@ public class TestCallback extends ClientCallback {
     }
 
     @Override
-    public void processResponseBlockReceived(long block2number) {
+    public void processResponseBlockReceived(long receivedLength, long expectedLength) {
         long actualTime = System.currentTimeMillis();
         this.responseBlockReceptions.add(actualTime);
-        log.info("Received response block #{}", block2number);
+        log.info("Received response block #{} (now: {}/{} bytes received.)", new Object[]{
+                this.responseBlockReceptions.size(), receivedLength, expectedLength
+        });
     }
 
     /**

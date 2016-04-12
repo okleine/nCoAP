@@ -38,7 +38,7 @@ import static de.uzl.itm.ncoap.message.MessageCode.*;
  */
 public abstract class Option {
 
-    public static enum Occurence {
+    public enum Occurence {
         NONE, ONCE, MULTIPLE
     }
 
@@ -123,6 +123,11 @@ public abstract class Option {
     public static final int BLOCK_1 = 27;
 
     /**
+     * Corresponds to option number 28
+     */
+    public static final int SIZE_2 = 28;
+
+    /**
      * Corresponds to option number 35
      */
     public static final int PROXY_URI = 35;
@@ -180,26 +185,27 @@ public abstract class Option {
     private static HashMap<Integer, String> OPTIONS = new HashMap<>();
     static {
         OPTIONS.putAll(ImmutableMap.<Integer, String>builder()
-            .put(IF_MATCH, "IF MATCH (" + IF_MATCH + ")")
-            .put(URI_HOST, "URI HOST (" + URI_HOST + ")")
-            .put(ETAG, "ETAG (" + ETAG + ")")
-            .put(IF_NONE_MATCH, "IF NONE MATCH (" + IF_NONE_MATCH + ")")
-            .put(OBSERVE, "OBSERVE (" + OBSERVE + ")")
-            .put(URI_PORT, "URI PORT (" + URI_PORT + ")")
-            .put(LOCATION_PATH, "LOCATION PATH (" + LOCATION_PATH + ")")
-            .put(URI_PATH, "URI PATH (" + URI_PATH + ")")
-            .put(CONTENT_FORMAT, "CONTENT FORMAT (" + CONTENT_FORMAT + ")")
-            .put(MAX_AGE, "MAX AGE (" + MAX_AGE + ")")
-            .put(URI_QUERY, "URI QUERY (" + URI_QUERY + ")")
-            .put(ACCEPT, "ACCEPT (" + ACCEPT + ")")
-            .put(LOCATION_QUERY, "LOCATION QUERY (" + LOCATION_QUERY + ")")
-            .put(BLOCK_2, "BLOCK 2 (" + BLOCK_2 + ")")
-            .put(BLOCK_1, "BLOCK 1 (" + BLOCK_1 + ")")
-            .put(PROXY_URI, "PROXY URI (" + PROXY_URI + ")")
-            .put(PROXY_SCHEME, "PROXY SCHEME (" + PROXY_SCHEME + ")")
-            .put(SIZE_1, "SIZE 1 (" + SIZE_1 + ")")
-            .put(ENDPOINT_ID_1, "ENDPOINT ID 1 (" + ENDPOINT_ID_1 + ")")
-            .put(ENDPOINT_ID_2, "ENDPOINT ID 2 (" + ENDPOINT_ID_2 + ")")
+            .put(IF_MATCH,        "IF MATCH (" + IF_MATCH + ")")
+            .put(URI_HOST,        "URI HOST (" + URI_HOST + ")")
+            .put(ETAG,            "ETAG (" + ETAG + ")")
+            .put(IF_NONE_MATCH,   "IF NONE MATCH (" + IF_NONE_MATCH + ")")
+            .put(OBSERVE,         "OBSERVE (" + OBSERVE + ")")
+            .put(URI_PORT,        "URI PORT (" + URI_PORT + ")")
+            .put(LOCATION_PATH,   "LOCATION PATH (" + LOCATION_PATH + ")")
+            .put(URI_PATH,        "URI PATH (" + URI_PATH + ")")
+            .put(CONTENT_FORMAT,  "CONTENT FORMAT (" + CONTENT_FORMAT + ")")
+            .put(MAX_AGE,         "MAX AGE (" + MAX_AGE + ")")
+            .put(URI_QUERY,       "URI QUERY (" + URI_QUERY + ")")
+            .put(ACCEPT,          "ACCEPT (" + ACCEPT + ")")
+            .put(LOCATION_QUERY,  "LOCATION QUERY (" + LOCATION_QUERY + ")")
+            .put(BLOCK_2,         "BLOCK 2 (" + BLOCK_2 + ")")
+            .put(BLOCK_1,         "BLOCK 1 (" + BLOCK_1 + ")")
+            .put(SIZE_2,          "SIZE 2 (" + SIZE_2 + ")")
+            .put(PROXY_URI,       "PROXY URI (" + PROXY_URI + ")")
+            .put(PROXY_SCHEME,    "PROXY SCHEME (" + PROXY_SCHEME + ")")
+            .put(SIZE_1,          "SIZE 1 (" + SIZE_1 + ")")
+            .put(ENDPOINT_ID_1,   "ENDPOINT ID 1 (" + ENDPOINT_ID_1 + ")")
+            .put(ENDPOINT_ID_2,   "ENDPOINT ID 2 (" + ENDPOINT_ID_2 + ")")
             .build()
         );
     }
@@ -241,18 +247,6 @@ public abstract class Option {
         return MUTUAL_EXCLUSIONS.get(firstOptionNumber).contains(secondOptionNumber);
     }
 
-//    /**
-//     * Returns <code>true</code> if and only if the co-existence of both options is not allowed in a single
-//     * message. As this method checks for mutual exclusion, the order of the given arguments has no impact on the
-//     * result.
-//     *
-//     * @param firstOption  the first {@link de.uzl.itm.ncoap.message.options.Option.Name}
-//     * @param secondOption the second {@link de.uzl.itm.ncoap.message.options.Option.Name}
-//     * @return <code>true</code> if the co-existence of the given option numbers is not allowed in a single message
-//     */
-//    public static boolean mutuallyExcludes(Option.Name firstOption, Option.Name secondOption) {
-//        return mutuallyExcludes(firstOption, secondOption);
-//    }
 
     private static final HashBasedTable<Integer, Integer, Option.Occurence> OCCURENCE_CONSTRAINTS
             = HashBasedTable.create();
@@ -270,6 +264,7 @@ public abstract class Option {
                         .put(ETAG, MULTIPLE)
                         .put(OBSERVE, ONCE)
                         .put(BLOCK_2, ONCE)
+                        .put(SIZE_2, ONCE)
                         .put(ENDPOINT_ID_1, ONCE)
                         .build()
         );
@@ -285,6 +280,8 @@ public abstract class Option {
                         .put(CONTENT_FORMAT, ONCE)
                         .put(BLOCK_2, ONCE)
                         .put(BLOCK_1, ONCE)
+                        .put(SIZE_2, ONCE)
+                        .put(SIZE_1, ONCE)
                         .put(ENDPOINT_ID_1, ONCE)
                         .build()
         );
@@ -302,6 +299,8 @@ public abstract class Option {
                         .put(IF_NONE_MATCH, ONCE)
                         .put(BLOCK_2, ONCE)
                         .put(BLOCK_1, ONCE)
+                        .put(SIZE_2, ONCE)
+                        .put(SIZE_1, ONCE)
                         .put(ENDPOINT_ID_1, ONCE)
                         .build()
         );
@@ -327,6 +326,7 @@ public abstract class Option {
                         .put(CONTENT_FORMAT, ONCE)
                         .put(BLOCK_2, ONCE)
                         .put(BLOCK_1, ONCE)
+                        .put(SIZE_2, ONCE)
                         .put(ENDPOINT_ID_2, ONCE)
                         .build()
         );
@@ -335,6 +335,7 @@ public abstract class Option {
                         .put(CONTENT_FORMAT, ONCE)
                         .put(BLOCK_2, ONCE)
                         .put(BLOCK_1, ONCE)
+                        .put(SIZE_2, ONCE)
                         .put(ENDPOINT_ID_2, ONCE)
                         .build()
         );
@@ -354,6 +355,7 @@ public abstract class Option {
                         .put(CONTENT_FORMAT, ONCE)
                         .put(BLOCK_2, ONCE)
                         .put(BLOCK_1, ONCE)
+                        .put(SIZE_2, ONCE)
                         .put(ENDPOINT_ID_2, ONCE)
                         .build()
         );
@@ -365,6 +367,7 @@ public abstract class Option {
                         .put(ETAG, ONCE)
                         .put(BLOCK_2, ONCE)
                         .put(BLOCK_1, ONCE)
+                        .put(SIZE_2, ONCE)
                         .put(ENDPOINT_ID_1, ONCE)
                         .put(ENDPOINT_ID_2, ONCE)
                         .build()
@@ -440,8 +443,8 @@ public abstract class Option {
         OCCURENCE_CONSTRAINTS.row(REQUEST_ENTITY_TOO_LARGE_413).putAll(ImmutableMap.<Integer, Occurence>builder()
                         .put(MAX_AGE, ONCE)
                         .put(CONTENT_FORMAT, ONCE)
-                        .put(SIZE_1, ONCE)
                         .put(BLOCK_1, ONCE)
+                        .put(SIZE_1, ONCE)
                         .put(ENDPOINT_ID_2, ONCE)
                         .build()
         );

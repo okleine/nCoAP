@@ -25,8 +25,7 @@
 package de.uzl.itm.ncoap.communication.reliability.outbound;
 
 import com.google.common.collect.*;
-import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.message.*;
 import org.jboss.netty.channel.ChannelFuture;

@@ -26,7 +26,7 @@
 package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.client.CoapClient;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.message.MessageCode;

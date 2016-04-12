@@ -27,7 +27,8 @@ package de.uzl.itm.ncoap.communication.dispatching.client;
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.communication.events.client.BlockwiseResponseTransferFailedEvent;
 import de.uzl.itm.ncoap.communication.events.client.ResponseBlockReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
@@ -61,7 +62,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class ResponseDispatcher extends AbstractCoapChannelHandler implements RemoteServerSocketChangedEvent.Handler,
         EmptyAckReceivedEvent.Handler, ResetReceivedEvent.Handler, MessageIDAssignedEvent.Handler,
         MessageRetransmittedEvent.Handler, TransmissionTimeoutEvent.Handler, NoMessageIDAvailableEvent.Handler,
-        MiscellaneousErrorEvent.Handler, TokenReleasedEvent.Handler, ResponseBlockReceivedEvent.Handler{
+        MiscellaneousErrorEvent.Handler, TokenReleasedEvent.Handler, ResponseBlockReceivedEvent.Handler,
+        BlockwiseResponseTransferFailedEvent.Handler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -220,10 +222,22 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         Token token = event.getToken();
         ClientCallback callback = getCallback(remoteSocket, token);
         if(callback != null) {
-            long blockNumber = event.getBlockNumber();
-            callback.processResponseBlockReceived(blockNumber);
+            callback.processResponseBlockReceived(event.getReceivedLength(), event.getExpectedLength());
         } else {
             log.warn("No callback found for partial response (remote socket: \"{}\", token: {})", remoteSocket, token);
+        }
+    }
+
+    @Override
+    public void handleEvent(BlockwiseResponseTransferFailedEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = removeCallback(remoteSocket, token);
+        if(callback != null) {
+            callback.processBlockwiseResponseTransferFailed();
+        } else {
+            log.warn("No callback found for blockwise response transfer failure (remote socket: \"{}\", token: \"{}\")",
+                remoteSocket, token);
         }
     }
 

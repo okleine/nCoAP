@@ -27,13 +27,12 @@ package de.uzl.itm.ncoap.communication.reliability.inbound;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
-import de.uzl.itm.ncoap.message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 import java.net.InetSocketAddress;
 
@@ -46,7 +46,7 @@ public class MiscellaneousErrorEvent extends AbstractMessageTransferEvent {
      *                       event
      * @param messageID the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
      *                  that caused this event
-     * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
+     * @param token the {@link Token} of the
      *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
      * @param description a human readable description of the error that caused this event
      */

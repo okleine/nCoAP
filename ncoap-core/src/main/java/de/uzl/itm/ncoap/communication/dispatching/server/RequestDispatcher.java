@@ -33,12 +33,14 @@ import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.Webresource;
 import de.uzl.itm.ncoap.application.server.resource.WellKnownCoreResource;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.Option;
+import de.uzl.itm.ncoap.message.options.UintOptionValue;
 import org.jboss.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,11 +123,11 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         final SettableFuture<CoapResponse> responseFuture = SettableFuture.create();
 
         //Look up web service instance to handle the request
-        final Webresource webresource = registeredServices.get(coapRequest.getUriPath());
+        final Webresource webresource = this.registeredServices.get(coapRequest.getUriPath());
         if(webresource == null) {
             // the requested Webservice DOES NOT exist
             try {
-                notFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocket);
+                this.notFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocket);
             } catch(Exception ex){
                 responseFuture.setException(ex);
             }
@@ -275,10 +277,6 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         }
     }
 
-//    public Channel getChannel(){
-//        return this.channel;
-//    }
-
 
     private class ResponseCallback implements FutureCallback<CoapResponse> {
 
@@ -299,6 +297,10 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         public void onSuccess(final CoapResponse coapResponse) {
             coapResponse.setMessageID(coapRequest.getMessageID());
             coapResponse.setToken(coapRequest.getToken());
+
+            if(this.coapRequest.getBlock2Szx() != UintOptionValue.UNDEFINED) {
+                coapResponse.setPreferedBlock2Size(BlockSize.getBlockSize(this.coapRequest.getBlock2Szx()));
+            }
 
             if (coapResponse.isUpdateNotification()) {
                 if (webresource instanceof ObservableWebresource && coapRequest.getObserve() == 0) {

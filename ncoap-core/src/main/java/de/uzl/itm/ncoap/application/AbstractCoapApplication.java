@@ -59,9 +59,8 @@ public abstract class AbstractCoapApplication {
 
         this.applicationName = applicationName;
 
-
         ThreadFactory threadFactory =
-                new ThreadFactoryBuilder().setNameFormat(applicationName + " I/O worker #%d").build();
+                new ThreadFactoryBuilder().setNameFormat(applicationName + " I/O Worker #%d").build();
 
         ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
             @Override
@@ -94,11 +93,6 @@ public abstract class AbstractCoapApplication {
             }
         }
     }
-
-
-//    protected void startApplication(CoapChannelPipelineFactory pipelineFactory, int port){
-//        this.startApplication(pipelineFactory, new InetSocketAddress(port));
-//    }
 
     /**
      * Returns the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this

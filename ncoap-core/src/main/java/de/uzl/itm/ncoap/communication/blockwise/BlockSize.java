@@ -24,6 +24,9 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise;
 
+import de.uzl.itm.ncoap.message.options.UintOptionValue;
+import jdk.nashorn.internal.ir.Block;
+
 /**
  * Created by olli on 09.02.16.
  */
@@ -40,6 +43,7 @@ public enum BlockSize {
     private int encodedSize;
     private int decodedSize;
 
+    public static final int UNDEFINED = -1;
     private static final int SZX_MIN = 0;
     private static final int SZX_MAX = 6;
 
@@ -48,24 +52,37 @@ public enum BlockSize {
         this.decodedSize = decodedSize;
     }
 
-    public int getEncodedSize(){
+    public int getSzx(){
         return this.encodedSize;
     }
 
-    public int getDecodedSize() {
+    public int getSize() {
         return this.decodedSize;
     }
 
-    public static int getDecodedSize(long szx) {
-        return getBlockSize(szx).getDecodedSize();
+    public static int getSize(long szx) {
+        return getBlockSize(szx).getSize();
     }
 
     public static boolean isValid(long szx) {
         return !(szx < SZX_MIN) && !(szx > SZX_MAX);
     }
 
+
+    public static long min(long szx1, long szx2) {
+        if(szx1 == BlockSize.UNDEFINED) {
+            return szx2;
+        } else if (szx2 == BlockSize.UNDEFINED) {
+            return szx1;
+        } else {
+            return Math.min(szx1, szx2);
+        }
+    }
+
     public static BlockSize getBlockSize(long szx) throws IllegalArgumentException{
-        if (szx == 0) {
+        if (szx == BlockSize.UNDEFINED) {
+            return BlockSize.UNBOUND;
+        } else if (szx == 0) {
             return SIZE_16;
         } else if(szx == 1) {
             return SIZE_32;

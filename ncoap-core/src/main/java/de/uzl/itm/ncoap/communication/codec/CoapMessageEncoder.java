@@ -72,7 +72,7 @@
 package de.uzl.itm.ncoap.communication.codec;
 
 import com.google.common.primitives.Ints;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.MessageCode;
@@ -95,6 +95,8 @@ import java.net.InetSocketAddress;
  */
 public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
+    private static Logger LOG = LoggerFactory.getLogger(CoapMessageEncoder.class.getName());
+
     /**
      * The maximum option delta (65804)
      */
@@ -106,70 +108,67 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     public static final int MAX_OPTION_LENGTH = 65804;
 
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
-
-
     @Override
-    public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
+    public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent event) throws Exception {
 
-        if (!(evt instanceof MessageEvent) || !(((MessageEvent) evt).getMessage() instanceof CoapMessage)) {
-            ctx.sendDownstream(evt);
+        if (!(event instanceof MessageEvent) || !(((MessageEvent) event).getMessage() instanceof CoapMessage)) {
+            ctx.sendDownstream(event);
             return;
         }
 
-        InetSocketAddress remoteEndpoint = (InetSocketAddress) ((MessageEvent) evt).getRemoteAddress();
-        CoapMessage coapMessage = (CoapMessage) ((MessageEvent) evt).getMessage();
+        InetSocketAddress remoteEndpoint = (InetSocketAddress) ((MessageEvent) event).getRemoteAddress();
+        CoapMessage coapMessage = (CoapMessage) ((MessageEvent) event).getMessage();
 
-        try{
-            Channels.write(ctx, evt.getFuture(), encode(coapMessage), remoteEndpoint);
-        }
-        catch(Exception ex){
-            evt.getFuture().setFailure(ex);
-            sendInternalEncodingFailedMessage(ctx, remoteEndpoint, coapMessage.getMessageID(), coapMessage.getToken(),
-                    ex);
+        try {
+            ChannelBuffer encodedMessage = encode(coapMessage);
+            Channels.write(ctx, event.getFuture(), encodedMessage, remoteEndpoint);
+        } catch(Exception ex) {
+            event.getFuture().setFailure(ex);
+            int messageID = coapMessage.getMessageID();
+            Token token = coapMessage.getToken();
+            sendInternalEncodingFailedMessage(ctx, remoteEndpoint, messageID, token, ex);
         }
     }
 
 
     protected ChannelBuffer encode(CoapMessage coapMessage) throws OptionCodecException {
-        log.info("CoapMessage to be encoded: {}", coapMessage);
+        LOG.info("CoapMessage to be encoded: {}", coapMessage);
 
-
-        //Start encoding
+        // start encoding
         ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer(0);
 
-        //Encode HEADER and TOKEN
+        // encode HEADER and TOKEN
         encodeHeader(encodedMessage, coapMessage);
-        log.debug("Encoded length of message (after HEADER + TOKEN): {}", encodedMessage.readableBytes());
+        LOG.debug("Encoded length of message (after HEADER + TOKEN): {}", encodedMessage.readableBytes());
 
         if(coapMessage.getMessageCode() == MessageCode.EMPTY){
             encodedMessage = ChannelBuffers.wrappedBuffer(Ints.toByteArray(encodedMessage.getInt(0) & 0xF0FFFFFF));
             return encodedMessage;
         }
 
-
-        if(coapMessage.getAllOptions().size() == 0 && coapMessage.getContent().readableBytes() == 0)
+        if(coapMessage.getAllOptions().size() == 0 && coapMessage.getContent().readableBytes() == 0) {
             return encodedMessage;
+        }
 
-
+        // encode OPTIONS (if any)
         encodeOptions(encodedMessage, coapMessage);
+        LOG.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
 
-        log.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
-
-        if(coapMessage.getContent().readableBytes() > 0){
-            //Add END-OF-OPTIONS marker only if there is payload
+        // encode payload (if any)
+        if(coapMessage.getContent().readableBytes() > 0) {
+            // add END-OF-OPTIONS marker only if there is payload
             encodedMessage.writeByte(255);
 
-            //Add CONTENT
+            // add payload
             encodedMessage = ChannelBuffers.wrappedBuffer(encodedMessage, coapMessage.getContent());
-            log.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
+            LOG.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
         }
 
         return encodedMessage;
     }
 
 
-    protected void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage){
+    protected void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage) {
 
         byte[] token = coapMessage.getToken().getBytes();
 
@@ -181,18 +180,18 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
         buffer.writeInt(encodedHeader);
 
-        if(log.isDebugEnabled()){
+        if(LOG.isDebugEnabled()){
             String binary = Integer.toBinaryString(encodedHeader);
             while(binary.length() < 32){
                 binary = "0" + binary;
             }
-            log.debug("Encoded Header: {}", binary);
+            LOG.debug("Encoded Header: {}", binary);
         }
 
         //Write token
-        if(token.length > 0)
+        if(token.length > 0) {
             buffer.writeBytes(token);
-
+        }
     }
 
 
@@ -201,8 +200,8 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
         //Encode options one after the other and append buf option to the buf
         int previousOptionNumber = 0;
 
-        for(int optionNumber : coapMessage.getAllOptions().keySet()){
-            for(OptionValue optionValue : coapMessage.getOptions(optionNumber)){
+        for(int optionNumber : coapMessage.getAllOptions().keySet()) {
+            for(OptionValue optionValue : coapMessage.getOptions(optionNumber)) {
                 encodeOption(buffer, optionNumber, optionValue, previousOptionNumber);
                 previousOptionNumber = optionNumber;
             }
@@ -215,9 +214,8 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
         //The previous option number must be smaller or equal to the actual one
         if(prevNumber > optionNumber){
-            log.error("Previous option no. ({}) must not be larger then current option no ({})",
+            LOG.error("Previous option no. ({}) must not be larger then current option no ({})",
                     prevNumber, optionNumber);
-
             throw new OptionCodecException(optionNumber);
         }
 
@@ -225,78 +223,57 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
         int optionDelta = optionNumber - prevNumber;
         int optionLength = optionValue.getValue().length;
 
-        if(optionLength > MAX_OPTION_LENGTH){
-            log.error("Option no. {} exceeds maximum option length (actual: {}, max: {}).",
+        if(optionLength > MAX_OPTION_LENGTH) {
+            LOG.error("Option no. {} exceeds maximum option length (actual: {}, max: {}).",
                     new Object[]{optionNumber, optionLength, MAX_OPTION_LENGTH});
 
             throw new OptionCodecException(optionNumber);
         }
 
-
-        if(optionDelta > MAX_OPTION_DELTA){
-            log.error("Option delta exceeds maximum option delta (actual: {}, max: {})", optionDelta, MAX_OPTION_DELTA);
+        if(optionDelta > MAX_OPTION_DELTA) {
+            LOG.error("Option delta exceeds maximum option delta (actual: {}, max: {})", optionDelta, MAX_OPTION_DELTA);
             throw new OptionCodecException(optionNumber);
         }
 
-
-        //option delta < 13
-        if(optionDelta < 13){
-
-            if(optionLength < 13){
+        if(optionDelta < 13) {
+            //option delta < 13
+            if(optionLength < 13) {
                 buffer.writeByte(((optionDelta & 0xFF) << 4) | (optionLength & 0xFF));
-            }
-
-            else if (optionLength < 269){
+            } else if (optionLength < 269) {
                 buffer.writeByte(((optionDelta << 4) & 0xFF) | (13 & 0xFF));
                 buffer.writeByte((optionLength - 13) & 0xFF);
-            }
-
-            else{
+            } else {
                 buffer.writeByte(((optionDelta << 4) & 0xFF) | (14 & 0xFF));
                 buffer.writeByte(((optionLength - 269) & 0xFF00) >>> 8);
                 buffer.writeByte((optionLength - 269) & 0xFF);
             }
-        }
-
-        //13 <= option delta < 269
-        else if(optionDelta < 269){
-
+        } else if(optionDelta < 269) {
+            //13 <= option delta < 269
             if(optionLength < 13){
                 buffer.writeByte(((13 & 0xFF) << 4) | (optionLength & 0xFF));
                 buffer.writeByte((optionDelta - 13) & 0xFF);
-            }
-
-            else if (optionLength < 269){
+            } else if (optionLength < 269) {
                 buffer.writeByte(((13 & 0xFF) << 4) | (13 & 0xFF));
                 buffer.writeByte((optionDelta - 13) & 0xFF);
                 buffer.writeByte((optionLength - 13) & 0xFF);
-            }
-
-            else{
+            } else {
                 buffer.writeByte((13 & 0xFF) << 4 | (14 & 0xFF));
                 buffer.writeByte((optionDelta - 13) & 0xFF);
                 buffer.writeByte(((optionLength - 269) & 0xFF00) >>> 8);
                 buffer.writeByte((optionLength - 269) & 0xFF);
             }
-        }
-
-        //269 <= option delta < 65805
-        else{
-
-            if(optionLength < 13){
+        } else {
+            //269 <= option delta < 65805
+            if(optionLength < 13) {
                 buffer.writeByte(((14 & 0xFF) << 4) | (optionLength & 0xFF));
                 buffer.writeByte(((optionDelta - 269) & 0xFF00) >>> 8);
                 buffer.writeByte((optionDelta - 269) & 0xFF);
-            }
-
-            else if (optionLength < 269){
+            } else if (optionLength < 269) {
                 buffer.writeByte(((14 & 0xFF) << 4) | (13 & 0xFF));
                 buffer.writeByte(((optionDelta - 269) & 0xFF00) >>> 8);
                 buffer.writeByte((optionDelta - 269) & 0xFF);
                 buffer.writeByte((optionLength - 13) & 0xFF);
-            }
-
-            else{
+            } else {
                 buffer.writeByte(((14 & 0xFF) << 4) | (14 & 0xFF));
                 buffer.writeByte(((optionDelta - 269) & 0xFF00) >>> 8);
                 buffer.writeByte((optionDelta - 269) & 0xFF);
@@ -307,8 +284,8 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
         //Write option value
         buffer.writeBytes(optionValue.getValue());
-        log.debug("Encoded option no {} with value {}", optionNumber, optionValue.getDecodedValue());
-        log.debug("Encoded message length is now: {}", buffer.readableBytes());
+        LOG.debug("Encoded option no {} with value {}", optionNumber, optionValue.getDecodedValue());
+        LOG.debug("Encoded message length is now: {}", buffer.readableBytes());
     }
 
 

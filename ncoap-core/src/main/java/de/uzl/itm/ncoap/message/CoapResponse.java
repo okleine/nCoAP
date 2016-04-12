@@ -177,6 +177,10 @@ public class CoapResponse extends CoapMessage {
         this.setObserve(System.currentTimeMillis() % ResourceStatusAge.MODULUS);
     }
 
+    public void setPreferedBlock2Size(BlockSize size) {
+        this.setBlock2(0, false, size.getSzx());
+    }
+
     /**
      * Sets the BLOCK2 option in this {@link CoapRequest} and returns
      * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
@@ -185,18 +189,18 @@ public class CoapResponse extends CoapMessage {
      *
      * @param number The relative number of the block sent or requested
      * @param more Whether more blocks are following;
-     * @param size The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
+     * @param szx The block size (can assume values between 0 and 6, the actual block size is then 2^(szx + 4)).
      *
      *      @throws IllegalArgumentException if the block number is greater than 1048575 (2^20 - 1)
      */
-    public void setBlock2(long number, boolean more, BlockSize size) throws IllegalArgumentException{
+    public void setBlock2(long number, boolean more, long szx) throws IllegalArgumentException{
         try {
             this.removeOptions(BLOCK_2);
             if(number > 1048575) {
                 throw new IllegalArgumentException("Max. BLOCK2NUM is 1048575");
             }
             //long more = ((more) ? 1 : 0) << 3;
-            this.addUintOption(BLOCK_2, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + size.getEncodedSize());
+            this.addUintOption(BLOCK_2, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + szx);
         } catch (IllegalArgumentException e){
             this.removeOptions(BLOCK_2);
             log.error("This should never happen.", e);
@@ -337,19 +341,6 @@ public class CoapResponse extends CoapMessage {
             return ((UintOptionValue) options.get(MAX_AGE).iterator().next()).getDecodedValue();
         } else {
             return OptionValue.MAX_AGE_DEFAULT;
-        }
-    }
-
-    public void setSize1(long size1) throws IllegalArgumentException{
-        this.options.removeAll(SIZE_1);
-        this.addUintOption(SIZE_1, size1);
-    }
-
-    public long getSize1() {
-        if(options.containsKey(SIZE_1)) {
-            return ((UintOptionValue) options.get(SIZE_1).iterator().next()).getDecodedValue();
-        } else {
-            return UintOptionValue.UNDEFINED;
         }
     }
 }

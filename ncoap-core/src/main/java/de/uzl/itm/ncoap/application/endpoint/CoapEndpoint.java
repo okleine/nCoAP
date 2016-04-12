@@ -32,6 +32,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
 import de.uzl.itm.ncoap.application.server.resource.Webresource;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
@@ -70,25 +71,19 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * to deal with requests that are addressed to resources that do not (yet) exist.
      * @param localSocket the local {@link java.net.InetSocketAddress} to listen at for incoming messages
      */
-    public CoapEndpoint(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket){
+    public CoapEndpoint(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket,
+                        BlockSize maxBlock1Size, BlockSize maxBlock2Size){
 
         super(applicationName, Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
 
         CoapEndpointChannelPipelineFactory pipelineFactory = new CoapEndpointChannelPipelineFactory(
-                this.getExecutor(), new TokenFactory(), notFoundHandler
+                this.getExecutor(), new TokenFactory(), notFoundHandler, maxBlock1Size, maxBlock2Size
         );
 
         startApplication(pipelineFactory, localSocket);
 
         // retrieve the request dispatcher (server component)
         this.requestDispatcher = getChannel().getPipeline().get(RequestDispatcher.class);
-//        this.requestDispatcher.setChannel(this.getChannel());
-//        notFoundHandler.setRequestDispatcher(requestDispatcher);
-//
-//        // set the context for the servers observation handler
-//        ServerObservationHandler handler = getChannel().getPipeline().get(ServerObservationHandler.class);
-//        ChannelHandlerContext context = getChannel().getPipeline().getContext(handler);
-//        handler.setChannelHandlerContext(context);
 
         // retrieve the response dispatcher (client component)
         this.responseDispatcher = getChannel().getPipeline().get(ResponseDispatcher.class);
@@ -104,9 +99,12 @@ public class CoapEndpoint extends AbstractCoapApplication {
      * @param localSocket the local {@link java.net.InetSocketAddress} to listen at for incoming messages
      */
     public CoapEndpoint(NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
-        this("COAP ENDPOINT", notFoundHandler, localSocket);
+        this("COAP ENDPOINT", notFoundHandler, localSocket, BlockSize.UNBOUND, BlockSize.UNBOUND);
     }
 
+    public CoapEndpoint(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
+        this(applicationName, notFoundHandler, localSocket, BlockSize.UNBOUND, BlockSize.UNBOUND);
+    }
 
     /**
      * Sends a {@link de.uzl.itm.ncoap.message.CoapRequest} to the given remote endpoints, i.e. CoAP server or

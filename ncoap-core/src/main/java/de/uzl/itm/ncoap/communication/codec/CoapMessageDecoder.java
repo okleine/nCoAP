@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.codec;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.*;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -38,7 +38,7 @@ import static de.uzl.itm.ncoap.message.MessageType.*;
 import static de.uzl.itm.ncoap.message.MessageCode.*;
 
 /**
- * A {@link CoapMessageDecoder} de-serializes inbound messages. Please note the following:
+ * The {@link CoapMessageDecoder} deserializes inbound messages. Please note the following:
  * <ul>
  *     <li>
  *          If the inbound message is a {@link de.uzl.itm.ncoap.message.CoapResponse} then malformed or unknown options
@@ -74,7 +74,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
     @Override
     public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
 
-        if(evt instanceof ExceptionEvent){
+        if(evt instanceof ExceptionEvent) {
             exceptionCaught(ctx, (ExceptionEvent) evt);
             return;
         }
@@ -90,8 +90,9 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         InetSocketAddress remoteEndpoint = (InetSocketAddress) messageEvent.getRemoteAddress();
         CoapMessage coapMessage = decode(remoteEndpoint, (ChannelBuffer) messageEvent.getMessage());
 
-        if(coapMessage != null)
+        if(coapMessage != null) {
             Channels.fireMessageReceived(ctx, coapMessage, remoteEndpoint);
+        }
     }
 
 
@@ -101,12 +102,10 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
 
         //Decode the Message Header which must have a length of exactly 4 bytes
-        if(buffer.readableBytes() < 4){
+        if(buffer.readableBytes() < 4) {
             String message = "Encoded CoAP messages MUST have min. 4 bytes. This has " + buffer.readableBytes() + "!";
             throw new HeaderDecodingException(CoapMessage.UNDEFINED_MESSAGE_ID, remoteEndpoint, message);
         }
-
-
 
         //Decode the header values
         int encodedHeader = buffer.readInt();
@@ -121,27 +120,22 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 new Object[]{messageType, tokenLength, messageCode, messageID});
 
         //Check whether the protocol version is supported (=1)
-        if(version != CoapMessage.PROTOCOL_VERSION){
+        if(version != CoapMessage.PROTOCOL_VERSION) {
             String message = "CoAP version (" + version + ") is other than \"1\"!";
             throw new HeaderDecodingException(messageID, remoteEndpoint, message);
         }
 
-
-
         //Check whether TKL indicates a not allowed token length
-        if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH){
+        if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH) {
             String message = "TKL value (" + tokenLength + ") is larger than 8!";
             throw new HeaderDecodingException(messageID, remoteEndpoint, message);
         }
 
-
-
         //Check whether there are enough unread bytes left to read the token
-        if(buffer.readableBytes() < tokenLength){
+        if(buffer.readableBytes() < tokenLength) {
             String message = "TKL value is " + tokenLength + " but only " + buffer.readableBytes() + " bytes left!";
             throw new HeaderDecodingException(messageID, remoteEndpoint, message);
         }
-
 
         //Handle empty message (ignore everything but the first 4 bytes)
         if(messageCode == EMPTY) {
@@ -212,32 +206,28 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         int previousOptionNumber = 0;
         int firstByte = buffer.readByte() & 0xFF;
 
-        while(firstByte != 0xFF && buffer.readableBytes() > 0){
+        while(firstByte != 0xFF && buffer.readableBytes() >= 0){
             log.debug("First byte: {} ({})", toBinaryString(firstByte), firstByte);
             int optionDelta =   (firstByte & 0xF0) >>> 4;
             int optionLength =   firstByte & 0x0F;
             log.debug("temp. delta: {}, temp. length {}", optionDelta, optionLength);
 
-            if(optionDelta == 13)
+            if(optionDelta == 13) {
                 optionDelta += buffer.readByte() & 0xFF;
-
-            else if(optionDelta == 14)
+            } else if(optionDelta == 14) {
                 optionDelta = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
-
-            else
-
-            if(optionLength == 13){
-                optionLength += buffer.readByte() & 0xFF;
+            } else {
+                if (optionLength == 13) {
+                    optionLength += buffer.readByte() & 0xFF;
+                } else if (optionLength == 14) {
+                    optionLength = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
+                }
             }
 
-            else if(optionLength == 14)
-                optionLength = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
-
-
-            log.debug("Previous option: {}, Option delta: {}", previousOptionNumber, optionDelta);
+            log.info("Previous option: {}, Option delta: {}", previousOptionNumber, optionDelta);
 
             int actualOptionNumber = previousOptionNumber + optionDelta;
-            log.debug("Decode option no. {} with length of {} bytes.", actualOptionNumber, optionLength);
+            log.info("Decode option no. {} with length of {} bytes.", actualOptionNumber, optionLength);
 
             try {
                 byte[] optionValue = new byte[optionLength];
@@ -266,32 +256,29 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                         throw new RuntimeException("This should never happen!");
                 }
 
-            }
-
-            //failed option creation leads to an illegal argument exception
-            catch (IllegalArgumentException e) {
-
+            } catch (IllegalArgumentException e) {
+                //failed option creation leads to an illegal argument exception
                 log.warn("Exception while decoding option!", e);
 
-                //Malformed options in responses are silently ignored...
-                if(MessageCode.isResponse(coapMessage.getMessageCode()))
+                if(MessageCode.isResponse(coapMessage.getMessageCode())) {
+                    //Malformed options in responses are silently ignored...
                     log.warn("Silently ignore malformed option no. {} in inbound response.", actualOptionNumber);
-                
-                //Critical malformed options in requests cause an exception
-                else if(Option.isCritical(actualOptionNumber))
+                } else if(Option.isCritical(actualOptionNumber)) {
+                    //Critical malformed options in requests cause an exception
                     throw new OptionCodecException(actualOptionNumber);
-                
-                //Not critical malformed options in requests are silently ignored... 
-                else
+                } else {
+                    //Not critical malformed options in requests are silently ignored...
                     log.warn("Silently ignore elective option no. {} in inbound request.", actualOptionNumber);
-                
-
+                }
             }
 
             previousOptionNumber = actualOptionNumber;
 
-            if(buffer.readableBytes() > 0)
+            if(buffer.readableBytes() > 0) {
                 firstByte = buffer.readByte() & 0xFF;
+            } else {
+                firstByte = 0xFF;
+            }
 
             log.debug("{} readable bytes remaining.", buffer.readableBytes());
         }
@@ -308,10 +295,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         if(cause instanceof HeaderDecodingException){
             HeaderDecodingException ex = (HeaderDecodingException) cause;
 
-            if (ex.getMessageID() != CoapMessage.UNDEFINED_MESSAGE_ID)
+            if (ex.getMessageID() != CoapMessage.UNDEFINED_MESSAGE_ID) {
                 writeReset(ctx, ex.getMessageID(), ex.getRemoteEndpoint());
-            else
+            } else {
                 log.warn("Ignore inbound message with malformed header...");
+            }
         } else if(cause instanceof OptionCodecException) {
             OptionCodecException ex = (OptionCodecException) cause;
             int messageType = ex.getMessageType() == CON ? ACK : NON;
@@ -345,13 +333,12 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
     private static String toBinaryString(int byteValue){
         StringBuilder buffer = new StringBuilder(8);
 
-        //int actualValue = byteValue & 0xFF;
-
-        for(int i = 7; i >= 0; i--){
-            if((byteValue & (int) Math.pow(2, i)) > 0)
+        for(int i = 7; i >= 0; i--) {
+            if((byteValue & (int) Math.pow(2, i)) > 0) {
                 buffer.append("1");
-            else
+            } else {
                 buffer.append("0");
+            }
         }
 
         return buffer.toString();

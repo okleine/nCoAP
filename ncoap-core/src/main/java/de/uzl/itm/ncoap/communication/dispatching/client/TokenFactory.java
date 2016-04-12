@@ -26,6 +26,7 @@
 package de.uzl.itm.ncoap.communication.dispatching.client;
 
 import com.google.common.primitives.Longs;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

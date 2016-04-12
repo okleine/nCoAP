@@ -48,7 +48,7 @@
 */
 package de.uzl.itm.ncoap.communication.events;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 import java.net.InetSocketAddress;
 
@@ -65,7 +65,7 @@ public class ResetReceivedEvent extends AbstractMessageTransferEvent {
      *
      * @param remoteEndpoint the socket address of the remote endpoint that sent the RST
      * @param messageID the message ID that was contained in the received RST message
-     * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the confirmed message
+     * @param token the {@link Token} of the confirmed message
      */
     public ResetReceivedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token){
         super(remoteEndpoint, messageID, token);

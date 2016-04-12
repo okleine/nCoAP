@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 import java.net.InetSocketAddress;
 
@@ -44,7 +44,7 @@ public abstract class AbstractMessageTransferEvent extends AbstractMessageExchan
      *                       event
      * @param messageID the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
      *                  that caused this event
-     * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
+     * @param token the {@link Token} of the
      *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
      */
     public AbstractMessageTransferEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {

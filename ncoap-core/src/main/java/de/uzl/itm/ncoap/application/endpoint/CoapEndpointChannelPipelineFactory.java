@@ -26,6 +26,12 @@ package de.uzl.itm.ncoap.application.endpoint;
 
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
 //import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
+import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock1Handler;
+import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler;
+import de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock1Handler;
+import de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock2Handler;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
@@ -56,13 +62,13 @@ public class CoapEndpointChannelPipelineFactory extends CoapChannelPipelineFacto
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to be used to handle I/O
      *
      * @param tokenFactory the {@link de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory} which is to be
-     * used to create {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s
+     * used to create {@link Token}s
      *
      * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler} to handle
      * incoming requests for unknown {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s.
      */
     public CoapEndpointChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory,
-            NotFoundHandler notFoundHandler){
+                             NotFoundHandler notFoundHandler, BlockSize maxBlock1Size, BlockSize maxBlock2Size){
 
         super(executor);
         MessageIDFactory factory = new MessageIDFactory(executor);
@@ -74,13 +80,16 @@ public class CoapEndpointChannelPipelineFactory extends CoapChannelPipelineFacto
         // client specific handlers
         addChannelHandler(new ClientOutboundReliabilityHandler(executor, factory));
         addChannelHandler(new ClientInboundReliabilityHandler(executor));
-//        addChannelHandler(new ClientBlock2Handler(executor));
+        addChannelHandler(new ClientBlock2Handler(executor));
+        addChannelHandler(new ClientBlock1Handler(executor));
         addChannelHandler(new ClientObservationHandler(executor));
         addChannelHandler(new ResponseDispatcher(executor, tokenFactory));
 
         // server specific handlers
         addChannelHandler(new ServerOutboundReliabilityHandler(executor, factory));
         addChannelHandler(new ServerInboundReliabilityHandler(executor));
+        addChannelHandler(new ServerBlock1Handler(executor, maxBlock1Size));
+        addChannelHandler(new ServerBlock2Handler(executor, maxBlock2Size));
         addChannelHandler(new ServerObservationHandler(executor));
         addChannelHandler(new RequestDispatcher(notFoundHandler, executor));
     }

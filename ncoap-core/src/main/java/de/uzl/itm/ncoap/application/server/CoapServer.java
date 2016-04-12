@@ -96,7 +96,7 @@ public class CoapServer extends AbstractCoapApplication {
      * @param localSocket the socket address for the server to listen at
      */
     public CoapServer(InetSocketAddress localSocket){
-        this(NotFoundHandler.getDefault(), localSocket, BlockSize.UNBOUND);
+        this(NotFoundHandler.getDefault(), localSocket, BlockSize.UNBOUND, BlockSize.UNBOUND);
     }
 
 
@@ -119,7 +119,7 @@ public class CoapServer extends AbstractCoapApplication {
      * @param serverPort the port number for the server to listen at (holds for all IP addresses of the server)
      */
     public CoapServer(NotFoundHandler notFoundHandler, int serverPort){
-        this(notFoundHandler, new InetSocketAddress(serverPort), BlockSize.UNBOUND);
+        this(notFoundHandler, new InetSocketAddress(serverPort), BlockSize.UNBOUND, BlockSize.UNBOUND);
     }
     
 
@@ -129,12 +129,13 @@ public class CoapServer extends AbstractCoapApplication {
      * @param notFoundHandler to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s for unknown resources
      * @param localSocket the socket address for the server to listen at
      */
-    public CoapServer(NotFoundHandler notFoundHandler, InetSocketAddress localSocket, BlockSize defaultBlock1Size){
+    public CoapServer(NotFoundHandler notFoundHandler, InetSocketAddress localSocket, BlockSize maxBlock1Size,
+                      BlockSize maxBlock2Size){
 
         super("CoAP Server", Math.max(Runtime.getRuntime().availableProcessors() * 2, 8));
 
         CoapServerChannelPipelineFactory pipelineFactory =
-                new CoapServerChannelPipelineFactory(this.getExecutor(), notFoundHandler, defaultBlock1Size);
+                new CoapServerChannelPipelineFactory(this.getExecutor(), notFoundHandler, maxBlock1Size, maxBlock2Size);
 
         startApplication(pipelineFactory, localSocket);
         

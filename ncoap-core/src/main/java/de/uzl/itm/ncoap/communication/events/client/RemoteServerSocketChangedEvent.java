@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events.client;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
 
 
@@ -43,7 +43,7 @@ public class RemoteServerSocketChangedEvent extends AbstractMessageExchangeEvent
      * @param remoteSocket the remote endpoint of the
      *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
      *                       event
-     * @param token          the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
+     * @param token          the {@link Token} of the
      *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
      */
     public RemoteServerSocketChangedEvent(InetSocketAddress remoteSocket, InetSocketAddress previous, Token token) {

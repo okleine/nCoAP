@@ -112,7 +112,7 @@ public abstract class ClientCallback {
      * {@link de.uzl.itm.ncoap.message.CoapRequest} corresponding to this
      * {@link ClientCallback}, i.e. up to 4 times.
      *
-     * <b>Note:</b> to somehow handle re-tranmissions this method is to be overridden.
+     * <b>Note:</b> to somehow handle retransmissions this method is to be overridden.
      */
     public void processRetransmission() {
         //to be overridden by extending classes
@@ -126,12 +126,23 @@ public abstract class ClientCallback {
      * framework invokes {@link #processCoapResponse(CoapResponse)} with the full payload included in the
      * {@link CoapResponse}.
      *
-     * @param block2Number the block number of this partial payload
+     * @param receivedLength the number of bytes received so far
+     * @param expectedLength the number of bytes expected for the complete representation
      */
-    public void processResponseBlockReceived(long block2Number) {
+    public void processResponseBlockReceived(long receivedLength, long expectedLength) {
         //to be overridden by extending classes
     }
 
+
+    /**
+     * This method is called by the framework if the blockwise response transfer failed for any reason, mostly because
+     * the representation of the requested resource (i.e. its ETAG) changed during the blockwise transfer.
+     *
+     * <b>Note:</b> to somehow handle this event this method must be overridden
+     */
+    public void processBlockwiseResponseTransferFailed() {
+        //to be overridden by extending classes
+    }
     /**
      * This method is called by the framework if the {@link de.uzl.itm.ncoap.message.CoapRequest} corresponding
      * to this {@link ClientCallback} was confirmed with an empty ACK.

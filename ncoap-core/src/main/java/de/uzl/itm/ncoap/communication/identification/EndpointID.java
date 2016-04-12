@@ -27,7 +27,7 @@ package de.uzl.itm.ncoap.communication.identification;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLongs;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 import java.util.Arrays;
 

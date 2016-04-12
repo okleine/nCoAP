@@ -27,7 +27,7 @@ package de.uzl.itm.ncoap.communication.blockwise.client;
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -84,10 +84,11 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        LOG.debug("Sent CoAP request (BLOCK): {}", nextRequest);
+                        if(future.isSuccess()) {
+                            LOG.debug("Sent CoAP request: {}", nextRequest);
+                        }
                     }
                 });
-
             } else {
                 LOG.warn("No blockwise outbound request found (Remote Socket: {}, Token: {})", remoteSocket, token);
             }
@@ -105,8 +106,8 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
             Block1Helper helper = this.block1helpers.get(remoteSocket, token);
             if (helper != null) {
                 if(helper.getBlock1SZX() > block1szx) {
-                    int oldSize = BlockSize.getDecodedSize(helper.getBlock1SZX());
-                    int newSize = BlockSize.getDecodedSize(block1szx);
+                    int oldSize = BlockSize.getSize(helper.getBlock1SZX());
+                    int newSize = BlockSize.getSize(block1szx);
                     block1num =  oldSize * block1num / newSize;
                 }
                 return helper.getCoapRequestWithPayloadBlock(block1num , block1szx);
@@ -211,11 +212,14 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
         private Block1Helper(CoapRequest coapRequest) {
             this.coapRequest = coapRequest;
             this.completePayload = coapRequest.getContent();
-            this.block2szx = coapRequest.getBlock2SZX();
+            this.block2szx = coapRequest.getBlock2Szx();
             if(this.block2szx != UintOptionValue.UNDEFINED) {
                 this.coapRequest.removeOptions(Option.BLOCK_2);
             }
             this.block1szx = coapRequest.getBlock1SZX();
+
+            // set size 1 option (size of complete payload in bytes)
+            this.coapRequest.setSize1(coapRequest.getContentLength());
         }
 
         public long getBlock1SZX() {
@@ -225,9 +229,9 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
         public CoapRequest getCoapRequestWithPayloadBlock(long block1num, long block1szx) {
 
             this.block1szx = block1szx;
-            int block1Size = BlockSize.getDecodedSize(block1szx);
+            int block1Size = BlockSize.getSize(block1szx);
 
-            //set block 1 option and proper payload
+            // set block 1 option and proper payload
             int startIndex = (int) block1num * block1Size;
             int remaining = completePayload.readableBytes() - startIndex;
             boolean block1more = (remaining > block1Size);

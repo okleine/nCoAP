@@ -25,7 +25,7 @@
 
 package de.uzl.itm.ncoap.communication.codec;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 import java.net.InetSocketAddress;
 import de.uzl.itm.ncoap.message.options.OptionValue;
@@ -38,7 +38,7 @@ import de.uzl.itm.ncoap.message.options.OptionValue;
  *
  * @author Oliver Kleine
  */
-public class OptionCodecException extends Exception{
+public class OptionCodecException extends Exception {
 
     private static final String message = "Unsupported critical option (No. %d)";
 

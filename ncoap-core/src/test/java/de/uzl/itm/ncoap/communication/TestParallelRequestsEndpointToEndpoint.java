@@ -26,6 +26,8 @@
 package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.endpoint.CoapEndpoint;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
+import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
@@ -67,29 +69,30 @@ public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunic
     @Override
     public void setupLogging() throws Exception {
         Logger.getLogger(TestCallback.class.getName()).setLevel(Level.DEBUG);
-
+        //Logger.getLogger(CoapMessageDecoder.class.getName()).setLevel(Level.INFO);
         Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
     @Override
     public void setupComponents() throws Exception {
 
-        server = new CoapEndpoint(NotFoundHandler.getDefault(), new InetSocketAddress(5683));
+        server = new CoapEndpoint("SERVER EP", NotFoundHandler.getDefault(), new InetSocketAddress(5683));
         serverSocket = new InetSocketAddress("localhost", server.getPort());
 
         //Add different webservices to server
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
-            server.registerWebresource(new NotObservableTestWebresource("/service" + (i + 1),
-                    "This is the status of service " + (i + 1), 0, 0, server.getExecutor()));
+            server.registerWebresource(new NotObservableTestWebresource("/resource" + (i + 1),
+                    "This is the status of /resource" + (i + 1), 0, 0, server.getExecutor()));
         }
 
         //Create client, callbacks and requests
-        client = new CoapEndpoint(NotFoundHandler.getDefault(), new InetSocketAddress(5684));
+        client = new CoapEndpoint("CLIENT EP", NotFoundHandler.getDefault(), new InetSocketAddress(5684));
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
             clientCallbacks[i] = new TestCallback();
             requests[i] =  new CoapRequest(MessageType.CON, MessageCode.GET,
-                    new URI("coap://localhost:" + server.getPort() + "/service" + (i+1)));
+                    new URI("coap://localhost:" + server.getPort() + "/resource" + (i+1)));
+            requests[i].setPreferedBlock2Size(BlockSize.SIZE_16);
         }
     }
 
@@ -116,7 +119,7 @@ public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunic
             CoapResponse coapResponse = clientCallbacks[i].getCoapResponses().values().iterator().next();
 
             assertEquals("Response Processor " + (i+1) + " received wrong message content",
-                    "This is the status of service " + (i+1),
+                    "This is the status of /resource" + (i+1),
                     coapResponse.getContent().toString(Charset.forName("UTF-8"))
             );
         }

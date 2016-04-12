@@ -3,7 +3,7 @@ package de.uzl.itm.ncoap.communication.blockwise.server;
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
@@ -25,14 +25,14 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
 
     private static Logger LOG = LoggerFactory.getLogger(ServerBlock1Handler.class.getName());
 
-    private HashBasedTable<InetSocketAddress, Token, ChannelBuffer> previousRequestBlocks;
+    private HashBasedTable<InetSocketAddress, Token, ChannelBuffer> receivedRequestBlocks;
     private ReentrantReadWriteLock lock;
-    private BlockSize defaultBlock1Size;
+    private BlockSize maxBlock1Size;
 
-    public ServerBlock1Handler(ScheduledExecutorService executor, BlockSize defaultBlock1Size){
+    public ServerBlock1Handler(ScheduledExecutorService executor, BlockSize maxBlock1Size){
         super(executor);
-        this.defaultBlock1Size = defaultBlock1Size;
-        this.previousRequestBlocks = HashBasedTable.create();
+        this.maxBlock1Size = maxBlock1Size;
+        this.receivedRequestBlocks = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
     }
 
@@ -41,8 +41,8 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
         if(coapMessage instanceof CoapRequest) {
             if (coapMessage.getBlock1SZX() != UintOptionValue.UNDEFINED) {
                 return handleInboundCoapRequestWithBlock1((CoapRequest) coapMessage, remoteSocket);
-            } else if (this.defaultBlock1Size != BlockSize.UNBOUND &&
-                    coapMessage.getContentLength() > this.defaultBlock1Size.getDecodedSize()) {
+            } else if (this.maxBlock1Size != BlockSize.UNBOUND &&
+                    coapMessage.getContentLength() > this.maxBlock1Size.getSize()) {
                 // request content is larger than maximum block size
                 sendRequestEntityTooLarge((CoapRequest) coapMessage, remoteSocket);
                 return false;
@@ -75,17 +75,17 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
         try {
             this.lock.writeLock().lock();
 
-            // lookup previous blocks and append actual block
+            // lookup previously received blocks and append actual block
             Token token = coapRequest.getToken();
-            ChannelBuffer previousBlocks = this.previousRequestBlocks.get(remoteSocket, token);
-            if(previousBlocks == null) {
-                previousBlocks = coapRequest.getContent();
+            ChannelBuffer receivedBlocks = this.receivedRequestBlocks.get(remoteSocket, token);
+            if(receivedBlocks == null) {
+                receivedBlocks = coapRequest.getContent();
             } else {
-                previousBlocks = ChannelBuffers.wrappedBuffer(previousBlocks, coapRequest.getContent());
+                receivedBlocks = ChannelBuffers.wrappedBuffer(receivedBlocks, coapRequest.getContent());
             }
-            this.previousRequestBlocks.put(remoteSocket, token, previousBlocks);
+            this.receivedRequestBlocks.put(remoteSocket, token, receivedBlocks);
 
-            return previousBlocks;
+            return receivedBlocks;
         } finally {
             this.lock.writeLock().unlock();
         }
@@ -95,7 +95,7 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
     private void removeRequestBlocks(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.writeLock().lock();
-            if(this.previousRequestBlocks.remove(remoteSocket, token) != null) {
+            if(this.receivedRequestBlocks.remove(remoteSocket, token) != null) {
                 LOG.debug("Removed previous request blocks (remote socket: {}, token: {})", remoteSocket, token);
             } else {
                 LOG.warn("No previous request blocks found (remote socket: {}, token: {})", remoteSocket, token);
@@ -113,8 +113,8 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
         coapResponse.setMessageID(coapRequest.getMessageID());
 
         // set options and content (error message)
-        coapResponse.setSize1(this.defaultBlock1Size.getDecodedSize());
-        String message = "Try blockwise request transfer (" + this.defaultBlock1Size.getDecodedSize() + " per block)";
+        coapResponse.setBlock1(coapRequest.getBlock1Number(), this.maxBlock1Size.getSize());
+        String message = "Try blockwise request transfer (" + this.maxBlock1Size.getSize() + " per block)";
         coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 
         // send response
@@ -130,7 +130,7 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
     private boolean containsExpectedBlock(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
         try {
             this.lock.readLock().lock();
-            ChannelBuffer previousBlocks = this.previousRequestBlocks.get(remoteSocket, coapRequest.getToken());
+            ChannelBuffer previousBlocks = this.receivedRequestBlocks.get(remoteSocket, coapRequest.getToken());
             if(previousBlocks == null) {
                 return true;
             } else {
@@ -148,7 +148,7 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
     }
 
     private void sendEntityIncompleteResponse(CoapRequest coapRequest, final InetSocketAddress remoteSocket,
-                                              int previousBytes) {
+                                              int receivedBytes) {
 
         final CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(),
                 MessageCode.REQUEST_ENTITY_INCOMPLETE_408);
@@ -157,7 +157,7 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
 
         String message = "BLOCK1 option out of sequence (NUM: " + coapRequest.getBlock1Number() +
                 ", SZX: " + coapRequest.getBlock1SZX() + " (i.e. " + coapRequest.getBlock1Size() + " byte)" +
-                ", previously received " + previousBytes + " byte)";
+                ", previously received " + receivedBytes + " byte)";
         coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 
         // send response
@@ -175,10 +175,10 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
         coapResponse.setToken(coapRequest.getToken());
         coapResponse.setMessageID(coapRequest.getMessageID());
 
-        if(defaultBlock1Size == null || defaultBlock1Size.getEncodedSize() > coapRequest.getBlock1SZX()) {
+        if(maxBlock1Size == null || maxBlock1Size.getSzx() > coapRequest.getBlock1SZX()) {
             coapResponse.setBlock1(coapRequest.getBlock1Number(), coapRequest.getBlock1SZX());
         } else {
-            coapResponse.setBlock1(coapRequest.getBlock1Number(), defaultBlock1Size.getEncodedSize());
+            coapResponse.setBlock1(coapRequest.getBlock1Number(), maxBlock1Size.getSzx());
         }
 
         // send response
@@ -186,7 +186,7 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                LOG.warn("Sent CONTINUE response to {}: {}", remoteSocket, coapResponse);
+                LOG.debug("Sent CONTINUE response to {}: {}", remoteSocket, coapResponse);
             }
         });
     }

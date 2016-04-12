@@ -28,6 +28,7 @@ package de.uzl.itm.ncoap.communication.identification;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,10 +42,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The TokenFactory generates endpointIDs to match inbound responses with open requests and enable the
  * {@link de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher} to invoke the correct callback method.
  *
- * The CoAP specification makes no assumptions how to interpret the bytes returned by {@link de.uzl.itm.ncoap.communication.dispatching.client.Token#getBytes()()}, i.e.
- * a {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} instances where {@link de.uzl.itm.ncoap.communication.dispatching.client.Token#getBytes()} returns an empty byte array is different from a
- * {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} where {@link de.uzl.itm.ncoap.communication.dispatching.client.Token#getBytes()} returns a byte array containing one "zero byte" (all bits set to 0).
- * Furthermore, both of these {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s differ from another {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} that is backed by a byte array
+ * The CoAP specification makes no assumptions how to interpret the bytes returned by {@link Token#getBytes()()}, i.e.
+ * a {@link Token} instances where {@link Token#getBytes()} returns an empty byte array is different from a
+ * {@link Token} where {@link Token#getBytes()} returns a byte array containing one "zero byte" (all bits set to 0).
+ * Furthermore, both of these {@link Token}s differ from another {@link Token} that is backed by a byte array
  * containing two "zero bytes" and so on...
  *
  * This leads to 257 (<code>(2^8) + 1</code>) different endpointIDs for a maximum endpointID length of 1 or 65793 different
@@ -63,8 +64,8 @@ public class EndpointIDFactory {
 
     /**
      * Creates a new instance of {@link de.uzl.itm.ncoap.communication.identification.EndpointIDFactory}
-     * producing {@link de.uzl.itm.ncoap.communication.dispatching.client.Token}s where the length of
-     * {@link de.uzl.itm.ncoap.communication.dispatching.client.Token#getBytes()} is not longer than the given
+     * producing {@link Token}s where the length of
+     * {@link Token#getBytes()} is not longer than the given
      * maximum length.
      */
     public EndpointIDFactory(){

@@ -27,7 +27,7 @@ package de.uzl.itm.ncoap.communication.codec;
 
 import com.google.common.collect.Lists;
 import de.uzl.itm.ncoap.AbstractCoapTest;
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.codec.tools.CoapTestDecoder;
 import de.uzl.itm.ncoap.communication.codec.tools.CoapTestEncoder;
 import de.uzl.itm.ncoap.message.MessageCode;

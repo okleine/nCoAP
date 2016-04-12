@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events.client;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
 
 import java.net.InetSocketAddress;
@@ -34,16 +34,26 @@ import java.net.InetSocketAddress;
  */
 public class ResponseBlockReceivedEvent extends AbstractMessageExchangeEvent {
 
-    private long blockNumber;
+    private long receivedLength;
+    private long expectedLength;
 
-    public ResponseBlockReceivedEvent(InetSocketAddress remoteEndpoint, Token token, long blockNumber) {
+    public ResponseBlockReceivedEvent(InetSocketAddress remoteEndpoint, Token token, long receivedLength,
+                                      long expectedLength) {
         super(remoteEndpoint, token);
-        this.blockNumber = blockNumber;
+        this.receivedLength = receivedLength;
+        this.expectedLength = expectedLength;
     }
 
-    public long getBlockNumber() {
-        return blockNumber;
+
+    public long getReceivedLength() {
+        return receivedLength;
     }
+
+
+    public long getExpectedLength() {
+        return expectedLength;
+    }
+
 
     public interface Handler {
         void handleEvent(ResponseBlockReceivedEvent event);

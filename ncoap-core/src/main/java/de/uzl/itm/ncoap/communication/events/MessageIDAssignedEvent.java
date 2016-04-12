@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 import java.net.InetSocketAddress;
 
@@ -43,7 +43,7 @@ public class MessageIDAssignedEvent extends AbstractMessageTransferEvent {
      *                       assigned a message ID
      * @param messageID the message ID that was assigned to a new
      *                  {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
-     * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the
+     * @param token the {@link Token} of the
      *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that was assigned an ID
      */
     public MessageIDAssignedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {

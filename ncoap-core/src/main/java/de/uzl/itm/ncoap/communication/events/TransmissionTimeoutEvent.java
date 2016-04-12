@@ -24,7 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.events;
 
-import de.uzl.itm.ncoap.communication.dispatching.client.Token;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 import java.net.InetSocketAddress;
 
@@ -43,7 +43,7 @@ public class TransmissionTimeoutEvent extends AbstractMessageTransferEvent {
      * @param remoteEndpoint the remote endpoint that did not confirm the reception of a reliable message
      * @param messageID the message ID of the timed out
      *                  {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer}
-     * @param token the {@link de.uzl.itm.ncoap.communication.dispatching.client.Token} of the timed out
+     * @param token the {@link Token} of the timed out
      *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer}
      */
     public TransmissionTimeoutEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
