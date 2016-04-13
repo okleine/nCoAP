@@ -74,7 +74,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
     @Override
     public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
 
-        if(evt instanceof ExceptionEvent) {
+        if (evt instanceof ExceptionEvent) {
             exceptionCaught(ctx, (ExceptionEvent) evt);
             return;
         }
@@ -90,7 +90,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         InetSocketAddress remoteEndpoint = (InetSocketAddress) messageEvent.getRemoteAddress();
         CoapMessage coapMessage = decode(remoteEndpoint, (ChannelBuffer) messageEvent.getMessage());
 
-        if(coapMessage != null) {
+        if (coapMessage != null) {
             Channels.fireMessageReceived(ctx, coapMessage, remoteEndpoint);
         }
     }
@@ -102,7 +102,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
 
         //Decode the Message Header which must have a length of exactly 4 bytes
-        if(buffer.readableBytes() < 4) {
+        if (buffer.readableBytes() < 4) {
             String message = "Encoded CoAP messages MUST have min. 4 bytes. This has " + buffer.readableBytes() + "!";
             throw new HeaderDecodingException(CoapMessage.UNDEFINED_MESSAGE_ID, remoteEndpoint, message);
         }
@@ -120,31 +120,31 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 new Object[]{messageType, tokenLength, messageCode, messageID});
 
         //Check whether the protocol version is supported (=1)
-        if(version != CoapMessage.PROTOCOL_VERSION) {
+        if (version != CoapMessage.PROTOCOL_VERSION) {
             String message = "CoAP version (" + version + ") is other than \"1\"!";
             throw new HeaderDecodingException(messageID, remoteEndpoint, message);
         }
 
         //Check whether TKL indicates a not allowed token length
-        if(tokenLength > CoapMessage.MAX_TOKEN_LENGTH) {
+        if (tokenLength > CoapMessage.MAX_TOKEN_LENGTH) {
             String message = "TKL value (" + tokenLength + ") is larger than 8!";
             throw new HeaderDecodingException(messageID, remoteEndpoint, message);
         }
 
         //Check whether there are enough unread bytes left to read the token
-        if(buffer.readableBytes() < tokenLength) {
+        if (buffer.readableBytes() < tokenLength) {
             String message = "TKL value is " + tokenLength + " but only " + buffer.readableBytes() + " bytes left!";
             throw new HeaderDecodingException(messageID, remoteEndpoint, message);
         }
 
         //Handle empty message (ignore everything but the first 4 bytes)
-        if(messageCode == EMPTY) {
+        if (messageCode == EMPTY) {
 
-            if(messageType == ACK) {
+            if (messageType == ACK) {
                 return CoapMessage.createEmptyAcknowledgement(messageID);
-            } else if(messageType == RST) {
+            } else if (messageType == RST) {
                 return CoapMessage.createEmptyReset(messageID);
-            } else if(messageType == CON) {
+            } else if (messageType == CON) {
                 return CoapMessage.createPing(messageID);
             } else {
                 //There is no empty NON message defined, so send a RST
@@ -159,7 +159,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         //Handle non-empty messages (CON, NON or ACK)
         CoapMessage coapMessage;
 
-        if(MessageCode.isRequest(messageCode)) {
+        if (MessageCode.isRequest(messageCode)) {
             coapMessage = new CoapRequest(messageType, messageCode);
         } else {
             coapMessage = new CoapResponse(messageType, messageCode);
@@ -170,7 +170,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         coapMessage.setToken(new Token(token));
 
         //Decode and set the options
-        if(buffer.readableBytes() > 0){
+        if (buffer.readableBytes() > 0) {
             try {
                 setOptions(coapMessage, buffer);
             } catch (OptionCodecException ex) {
@@ -206,15 +206,15 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         int previousOptionNumber = 0;
         int firstByte = buffer.readByte() & 0xFF;
 
-        while(firstByte != 0xFF && buffer.readableBytes() >= 0){
+        while(firstByte != 0xFF && buffer.readableBytes() >= 0) {
             log.debug("First byte: {} ({})", toBinaryString(firstByte), firstByte);
             int optionDelta =   (firstByte & 0xF0) >>> 4;
             int optionLength =   firstByte & 0x0F;
             log.debug("temp. delta: {}, temp. length {}", optionDelta, optionLength);
 
-            if(optionDelta == 13) {
+            if (optionDelta == 13) {
                 optionDelta += buffer.readByte() & 0xFF;
-            } else if(optionDelta == 14) {
+            } else if (optionDelta == 14) {
                 optionDelta = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
             } else {
                 if (optionLength == 13) {
@@ -233,37 +233,40 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 byte[] optionValue = new byte[optionLength];
                 buffer.readBytes(optionValue);
 
-                switch(OptionValue.getType(actualOptionNumber)){
-
-                    case EMPTY:
-                        coapMessage.addOption(actualOptionNumber, new EmptyOptionValue(actualOptionNumber));
+                switch(OptionValue.getType(actualOptionNumber)) {
+                    case EMPTY: {
+                        EmptyOptionValue value = new EmptyOptionValue(actualOptionNumber);
+                        coapMessage.addOption(actualOptionNumber, value);
                         break;
-
-                    case OPAQUE:
-                        coapMessage.addOption(actualOptionNumber, new OpaqueOptionValue(actualOptionNumber, optionValue));
+                    }
+                    case OPAQUE: {
+                        OpaqueOptionValue value = new OpaqueOptionValue(actualOptionNumber, optionValue);
+                        coapMessage.addOption(actualOptionNumber, value);
                         break;
-
-                    case STRING:
-                        coapMessage.addOption(actualOptionNumber, new StringOptionValue(actualOptionNumber, optionValue));
+                    }
+                    case STRING: {
+                        StringOptionValue value = new StringOptionValue(actualOptionNumber, optionValue);
+                        coapMessage.addOption(actualOptionNumber, value);
                         break;
-
-                    case UINT:
-                        coapMessage.addOption(actualOptionNumber, new UintOptionValue(actualOptionNumber, optionValue));
+                    }
+                    case UINT: {
+                        UintOptionValue value = new UintOptionValue(actualOptionNumber, optionValue);
+                        coapMessage.addOption(actualOptionNumber, value);
                         break;
-
-                    default:
+                    }
+                    default: {
                         log.error("This should never happen!");
                         throw new RuntimeException("This should never happen!");
+                    }
                 }
-
             } catch (IllegalArgumentException e) {
                 //failed option creation leads to an illegal argument exception
                 log.warn("Exception while decoding option!", e);
 
-                if(MessageCode.isResponse(coapMessage.getMessageCode())) {
+                if (MessageCode.isResponse(coapMessage.getMessageCode())) {
                     //Malformed options in responses are silently ignored...
                     log.warn("Silently ignore malformed option no. {} in inbound response.", actualOptionNumber);
-                } else if(Option.isCritical(actualOptionNumber)) {
+                } else if (Option.isCritical(actualOptionNumber)) {
                     //Critical malformed options in requests cause an exception
                     throw new OptionCodecException(actualOptionNumber);
                 } else {
@@ -274,9 +277,10 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
             previousOptionNumber = actualOptionNumber;
 
-            if(buffer.readableBytes() > 0) {
+            if (buffer.readableBytes() > 0) {
                 firstByte = buffer.readByte() & 0xFF;
             } else {
+                // this is necessary if there is no payload and the last option is empty (e.g. UintOption with value 0)
                 firstByte = 0xFF;
             }
 
@@ -288,11 +292,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent){
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent) {
         Throwable cause = exceptionEvent.getCause();
 
         //Invalid Header Exceptions cause a RST
-        if(cause instanceof HeaderDecodingException){
+        if (cause instanceof HeaderDecodingException) {
             HeaderDecodingException ex = (HeaderDecodingException) cause;
 
             if (ex.getMessageID() != CoapMessage.UNDEFINED_MESSAGE_ID) {
@@ -300,7 +304,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             } else {
                 log.warn("Ignore inbound message with malformed header...");
             }
-        } else if(cause instanceof OptionCodecException) {
+        } else if (cause instanceof OptionCodecException) {
             OptionCodecException ex = (OptionCodecException) cause;
             int messageType = ex.getMessageType() == CON ? ACK : NON;
 
@@ -312,7 +316,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
     }
 
-    private void writeReset(ChannelHandlerContext ctx, int messageID, InetSocketAddress remoteEndpoint){
+    private void writeReset(ChannelHandlerContext ctx, int messageID, InetSocketAddress remoteEndpoint) {
         CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
         Channels.write(ctx, Channels.future(ctx.getChannel()), resetMessage, remoteEndpoint);
     }
@@ -330,11 +334,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
 
 
-    private static String toBinaryString(int byteValue){
+    private static String toBinaryString(int byteValue) {
         StringBuilder buffer = new StringBuilder(8);
 
         for(int i = 7; i >= 0; i--) {
-            if((byteValue & (int) Math.pow(2, i)) > 0) {
+            if ((byteValue & (int) Math.pow(2, i)) > 0) {
                 buffer.append("1");
             } else {
                 buffer.append("0");

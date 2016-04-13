@@ -46,7 +46,7 @@
                     <execution>
                         <configuration>
                             <mainClass>
-                                de.uzl.itm.ncoap.examples.SimpleCoapServer
+                                de.uzl.itm.ncoap.examples.server.SimpleCoapServer
                             </mainClass>
                             <!-- Optional -->
                             <onejarVersion>0.97</onejarVersion>

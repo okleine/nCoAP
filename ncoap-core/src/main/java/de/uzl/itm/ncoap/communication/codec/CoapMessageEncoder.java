@@ -141,12 +141,12 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
         encodeHeader(encodedMessage, coapMessage);
         LOG.debug("Encoded length of message (after HEADER + TOKEN): {}", encodedMessage.readableBytes());
 
-        if(coapMessage.getMessageCode() == MessageCode.EMPTY){
+        if (coapMessage.getMessageCode() == MessageCode.EMPTY) {
             encodedMessage = ChannelBuffers.wrappedBuffer(Ints.toByteArray(encodedMessage.getInt(0) & 0xF0FFFFFF));
             return encodedMessage;
         }
 
-        if(coapMessage.getAllOptions().size() == 0 && coapMessage.getContent().readableBytes() == 0) {
+        if (coapMessage.getAllOptions().size() == 0 && coapMessage.getContent().readableBytes() == 0) {
             return encodedMessage;
         }
 
@@ -155,7 +155,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
         LOG.debug("Encoded length of message (after OPTIONS): {}", encodedMessage.readableBytes());
 
         // encode payload (if any)
-        if(coapMessage.getContent().readableBytes() > 0) {
+        if (coapMessage.getContent().readableBytes() > 0) {
             // add END-OF-OPTIONS marker only if there is payload
             encodedMessage.writeByte(255);
 
@@ -180,16 +180,16 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
         buffer.writeInt(encodedHeader);
 
-        if(LOG.isDebugEnabled()){
+        if (LOG.isDebugEnabled()) {
             String binary = Integer.toBinaryString(encodedHeader);
-            while(binary.length() < 32){
+            while(binary.length() < 32) {
                 binary = "0" + binary;
             }
             LOG.debug("Encoded Header: {}", binary);
         }
 
         //Write token
-        if(token.length > 0) {
+        if (token.length > 0) {
             buffer.writeBytes(token);
         }
     }
@@ -213,7 +213,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
             throws OptionCodecException {
 
         //The previous option number must be smaller or equal to the actual one
-        if(prevNumber > optionNumber){
+        if (prevNumber > optionNumber) {
             LOG.error("Previous option no. ({}) must not be larger then current option no ({})",
                     prevNumber, optionNumber);
             throw new OptionCodecException(optionNumber);
@@ -223,21 +223,21 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
         int optionDelta = optionNumber - prevNumber;
         int optionLength = optionValue.getValue().length;
 
-        if(optionLength > MAX_OPTION_LENGTH) {
+        if (optionLength > MAX_OPTION_LENGTH) {
             LOG.error("Option no. {} exceeds maximum option length (actual: {}, max: {}).",
                     new Object[]{optionNumber, optionLength, MAX_OPTION_LENGTH});
 
             throw new OptionCodecException(optionNumber);
         }
 
-        if(optionDelta > MAX_OPTION_DELTA) {
+        if (optionDelta > MAX_OPTION_DELTA) {
             LOG.error("Option delta exceeds maximum option delta (actual: {}, max: {})", optionDelta, MAX_OPTION_DELTA);
             throw new OptionCodecException(optionNumber);
         }
 
-        if(optionDelta < 13) {
+        if (optionDelta < 13) {
             //option delta < 13
-            if(optionLength < 13) {
+            if (optionLength < 13) {
                 buffer.writeByte(((optionDelta & 0xFF) << 4) | (optionLength & 0xFF));
             } else if (optionLength < 269) {
                 buffer.writeByte(((optionDelta << 4) & 0xFF) | (13 & 0xFF));
@@ -247,9 +247,9 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
                 buffer.writeByte(((optionLength - 269) & 0xFF00) >>> 8);
                 buffer.writeByte((optionLength - 269) & 0xFF);
             }
-        } else if(optionDelta < 269) {
+        } else if (optionDelta < 269) {
             //13 <= option delta < 269
-            if(optionLength < 13){
+            if (optionLength < 13) {
                 buffer.writeByte(((13 & 0xFF) << 4) | (optionLength & 0xFF));
                 buffer.writeByte((optionDelta - 13) & 0xFF);
             } else if (optionLength < 269) {
@@ -264,7 +264,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
             }
         } else {
             //269 <= option delta < 65805
-            if(optionLength < 13) {
+            if (optionLength < 13) {
                 buffer.writeByte(((14 & 0xFF) << 4) | (optionLength & 0xFF));
                 buffer.writeByte(((optionDelta - 269) & 0xFF00) >>> 8);
                 buffer.writeByte((optionDelta - 269) & 0xFF);
@@ -290,7 +290,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
 
     private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint,
-                                                   int messageID, Token token, Throwable cause){
+                                                   int messageID, Token token, Throwable cause) {
 
         MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteEndpoint, messageID, token,
                 cause.getMessage());

@@ -96,12 +96,12 @@ public class CoapRequestCreationTest extends AbstractCoapTest{
     }
 
     @Test
-    public void testMessageTypeName(){
+    public void testMessageTypeName() {
         assertEquals("Message types do not match, ", coapRequest.getMessageType(), messageType);
     }
 
     @Test
-    public void testMessageType(){
+    public void testMessageType() {
         assertEquals("Message type numbers do not match, ", coapRequest.getMessageType(), messageType);
     }
 

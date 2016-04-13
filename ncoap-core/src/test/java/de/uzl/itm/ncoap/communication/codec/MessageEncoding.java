@@ -101,14 +101,14 @@
 //                           long token) throws Exception{
 //
 //        this.encoder = new CoapTestEncoder();
-//        if(MessageCode.isRequest(messageCode.getNumber())){
-//            if(proxy != null)
+//        if (MessageCode.isRequest(messageCode.getNumber())) {
+//            if (proxy != null)
 //                this.coapMessage = new CoapRequest(messageType, messageCode, targetUri, proxy);
 //            else
 //                this.coapMessage = new CoapRequest(messageType, messageCode, targetUri);
 //        }
 //
-//        else if(MessageCode.Name.isResponse(messageCode)){
+//        else if (MessageCode.Name.isResponse(messageCode)) {
 //            this.coapMessage = new CoapResponse(messageCode);
 //        }
 //

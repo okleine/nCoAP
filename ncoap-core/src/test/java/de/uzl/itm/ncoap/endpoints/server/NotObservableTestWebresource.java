@@ -71,7 +71,7 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
      *                                           simulate long processing time)
      */
     public NotObservableTestWebresource(String path, String initialStatus, long lifetimeSeconds,
-                                        long pretendedProcessingTimeForRequests, ScheduledExecutorService executor){
+                                        long pretendedProcessingTimeForRequests, ScheduledExecutorService executor) {
 
         super(path, initialStatus, lifetimeSeconds, executor);
         this.pretendedProcessingTimeForRequests = pretendedProcessingTimeForRequests;
@@ -96,7 +96,7 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
     }
 
 
-    private void delay(){
+    private void delay() {
         //Simulate a potentially long processing time
         try {
             Thread.sleep(pretendedProcessingTimeForRequests);
@@ -113,14 +113,14 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
         log.info("HANDLE INBOUND REQUEST (Resource: \"" + getUriPath() + "\")");
 
         //Delay the inbound requests
-        if(this.pretendedProcessingTimeForRequests > 0) {
+        if (this.pretendedProcessingTimeForRequests > 0) {
             delay();
         }
 
         Long contentFormat = determineResponseContentFormat(coapRequest);
 
         //create error response if content could not be created
-        if(contentFormat == null){
+        if (contentFormat == null) {
             CoapResponse coapResponse =
                     new CoapResponse(coapRequest.getMessageType(), MessageCode.BAD_REQUEST_400);
 
@@ -141,18 +141,18 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
     }
 
 
-    private Long determineResponseContentFormat(CoapRequest coapRequest){
+    private Long determineResponseContentFormat(CoapRequest coapRequest) {
         Iterator<Long> acceptedContentFormats = coapRequest.getAcceptedContentFormats().iterator();
 
         Long contentFormat = null;
 
-        if(!acceptedContentFormats.hasNext()){
+        if (!acceptedContentFormats.hasNext()) {
             contentFormat  = DEFAULT_CONTENT_FORMAT;
         }
 
-        while(contentFormat == null && acceptedContentFormats.hasNext()){
+        while(contentFormat == null && acceptedContentFormats.hasNext()) {
             long candidate = acceptedContentFormats.next();
-            if(supportedContentFormats.contains(candidate)){
+            if (supportedContentFormats.contains(candidate)) {
                 contentFormat = candidate;
             }
         }
@@ -163,10 +163,10 @@ public class NotObservableTestWebresource extends NotObservableWebresource<Strin
 
     @Override
     public byte[] getSerializedResourceStatus(long contentFormat) {
-        if(contentFormat == ContentFormat.TEXT_PLAIN_UTF8)
+        if (contentFormat == ContentFormat.TEXT_PLAIN_UTF8)
             return getResourceStatus().getBytes(Charset.forName("UTF-8"));
 
-        if(contentFormat == ContentFormat.APP_XML)
+        if (contentFormat == ContentFormat.APP_XML)
             return ("<status>" + getResourceStatus() + "</status>").getBytes(Charset.forName("UTF-8"));
 
         return null;

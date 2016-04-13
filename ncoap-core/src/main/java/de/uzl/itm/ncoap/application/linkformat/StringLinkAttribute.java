@@ -54,7 +54,7 @@ public class StringLinkAttribute extends LinkAttribute<String> {
     public StringLinkAttribute(String key, String value) {
         super(key, value);
 
-        if(!STRING.equals(LinkAttribute.getAttributeType(key))) {
+        if (!STRING.equals(LinkAttribute.getAttributeType(key))) {
             throw new IllegalArgumentException(
                     "Given attribute key \"" + key + "\" does not refer to a string attribute."
             );
@@ -68,7 +68,7 @@ public class StringLinkAttribute extends LinkAttribute<String> {
 
     @Override
     public boolean equals(Object object) {
-        if(!(object instanceof StringLinkAttribute))
+        if (!(object instanceof StringLinkAttribute))
             return false;
 
         StringLinkAttribute other = (StringLinkAttribute) object;

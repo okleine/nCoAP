@@ -58,7 +58,7 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
     private ReentrantReadWriteLock lock;
 
 
-    protected AbstractIdentificationHandler(ScheduledExecutorService executor){
+    protected AbstractIdentificationHandler(ScheduledExecutorService executor) {
         super(executor);
         this.assignedByMe1 = HashBasedTable.create();
         this.assignedByMe2 = HashBasedTable.create();
@@ -72,7 +72,7 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
         return this.factory;
     }
 
-    protected void addToAssignedToMe(InetSocketAddress remoteSocket, Token token, byte[] endpointID){
+    protected void addToAssignedToMe(InetSocketAddress remoteSocket, Token token, byte[] endpointID) {
         try{
             lock.writeLock().lock();
             this.assignedToMe.put(remoteSocket, token,  endpointID);
@@ -84,7 +84,7 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
     }
 
 
-    protected byte[] getFromAssignedToMe(InetSocketAddress remoteSocket, Token token){
+    protected byte[] getFromAssignedToMe(InetSocketAddress remoteSocket, Token token) {
         try{
             lock.readLock().lock();
             return this.assignedToMe.get(remoteSocket, token);
@@ -94,10 +94,10 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
         }
     }
 
-    protected void removeFromAssignedToMe(InetSocketAddress remoteSocket, Token token){
+    protected void removeFromAssignedToMe(InetSocketAddress remoteSocket, Token token) {
         try{
             lock.readLock().lock();
-            if(!this.assignedToMe.contains(remoteSocket, token)){
+            if (!this.assignedToMe.contains(remoteSocket, token)) {
                 return;
             }
         }
@@ -115,7 +115,7 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
         }
     }
 
-    protected InetSocketAddress getFromAssignedByMe(EndpointID endpointID, Token token){
+    protected InetSocketAddress getFromAssignedByMe(EndpointID endpointID, Token token) {
         try{
             lock.readLock().lock();
             return this.assignedByMe1.get(endpointID, token);
@@ -125,7 +125,7 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
         }
     }
 
-    protected EndpointID getFromAssignedByMe(InetSocketAddress remoteSocket, Token token){
+    protected EndpointID getFromAssignedByMe(InetSocketAddress remoteSocket, Token token) {
         try{
             lock.readLock().lock();
             return this.assignedByMe2.get(remoteSocket, token);
@@ -136,10 +136,10 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
     }
 
 
-    protected void removeFromAssignedByMe(InetSocketAddress remoteSocket, Token token, boolean releaseEndpointID){
+    protected void removeFromAssignedByMe(InetSocketAddress remoteSocket, Token token, boolean releaseEndpointID) {
         try {
             lock.readLock().lock();
-            if(!this.assignedByMe2.contains(remoteSocket, token)){
+            if (!this.assignedByMe2.contains(remoteSocket, token)) {
                 return;
             }
         }
@@ -163,7 +163,7 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
         }
     }
 
-    protected void addToAssignedByMe(InetSocketAddress remoteSocket, Token token, EndpointID endpointID){
+    protected void addToAssignedByMe(InetSocketAddress remoteSocket, Token token, EndpointID endpointID) {
         try {
             this.lock.writeLock().lock();
             this.assignedByMe1.put(endpointID, token, remoteSocket);
@@ -175,12 +175,12 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
         }
     }
 
-    protected boolean updateAssignedByMe(EndpointID endpointID, Token token, InetSocketAddress remoteSocket){
+    protected boolean updateAssignedByMe(EndpointID endpointID, Token token, InetSocketAddress remoteSocket) {
 
         try {
             this.lock.readLock().lock();
             InetSocketAddress previousRemoteSocket = getFromAssignedByMe(endpointID, token);
-            if(remoteSocket.equals(previousRemoteSocket)){
+            if (remoteSocket.equals(previousRemoteSocket)) {
                 return false;
             }
         }
@@ -191,7 +191,7 @@ public abstract class AbstractIdentificationHandler extends AbstractCoapChannelH
         try {
             lock.writeLock().lock();
             InetSocketAddress previousRemoteSocket = getFromAssignedByMe(endpointID, token);
-            if(remoteSocket.equals(previousRemoteSocket)){
+            if (remoteSocket.equals(previousRemoteSocket)) {
                 return false;
             }
 

@@ -60,7 +60,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
     /**
      * Creates a new instance of {@link de.uzl.itm.ncoap.communication.observing.ClientObservationHandler}
      */
-    public ClientObservationHandler(ScheduledExecutorService executor){
+    public ClientObservationHandler(ScheduledExecutorService executor) {
         super(executor);
         this.observations = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
@@ -69,14 +69,14 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, final InetSocketAddress remoteSocket) {
 
-        if(!(coapMessage instanceof CoapResponse)) {
+        if (!(coapMessage instanceof CoapResponse)) {
             return true;
         }
 
         final CoapResponse coapResponse = (CoapResponse) coapMessage;
         Token token = coapResponse.getToken();
 
-        if(coapResponse.isUpdateNotification() && !coapResponse.isErrorResponse()) {
+        if (coapResponse.isUpdateNotification() && !coapResponse.isErrorResponse()) {
             //Current response is (non-error) update notification and there is a suitable observation
             ResourceStatusAge latestStatusAge = observations.get(remoteSocket, token);
 
@@ -84,7 +84,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
             long receivedSequenceNo = coapResponse.getObserve();
             ResourceStatusAge receivedStatusAge = new ResourceStatusAge(receivedSequenceNo, System.currentTimeMillis());
 
-            if(ResourceStatusAge.isReceivedStatusNewer(latestStatusAge, receivedStatusAge)){
+            if (ResourceStatusAge.isReceivedStatusNewer(latestStatusAge, receivedStatusAge)) {
                 updateStatusAge(remoteSocket, token, receivedStatusAge);
             } else {
                 LOG.warn("Received update notification ({}) is older than latest ({}). IGNORE!",
@@ -101,7 +101,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
 
         if (coapMessage instanceof CoapRequest && coapMessage.getObserve() != UintOptionValue.UNDEFINED) {
             Token token = coapMessage.getToken();
-            if(coapMessage.getObserve() == 0){
+            if (coapMessage.getObserve() == 0) {
                 LOG.debug("Add observation (remote endpoint: {}, token: {})", remoteSocket, token);
                 startObservation(remoteSocket, token);
             } else {
@@ -131,7 +131,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
         try{
             lock.readLock().lock();
             ResourceStatusAge statusAge = this.observations.get(previousSocket, token);
-            if(statusAge == null){
+            if (statusAge == null) {
                 LOG.info("No observation found for updated socket (token: {}, old socket: {}).", token, previousSocket);
                 return;
             }
@@ -143,7 +143,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
         try{
             lock.writeLock().lock();
             ResourceStatusAge statusAge = this.observations.remove(previousSocket, token);
-            if(statusAge == null){
+            if (statusAge == null) {
                 LOG.info("No observation found with token {} for updated socket (old: {}, new: {}).",
                         new Object[]{token, previousSocket, remoteSocket});
             } else {
@@ -163,10 +163,10 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
 //    }
 
 
-    private void startObservation(InetSocketAddress remoteEndpoint, Token token){
+    private void startObservation(InetSocketAddress remoteEndpoint, Token token) {
         try{
             this.lock.readLock().lock();
-            if(this.observations.contains(remoteEndpoint, token)){
+            if (this.observations.contains(remoteEndpoint, token)) {
                 LOG.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
                 return;
@@ -178,7 +178,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
 
         try{
             this.lock.writeLock().lock();
-            if(this.observations.contains(remoteEndpoint, token)){
+            if (this.observations.contains(remoteEndpoint, token)) {
                 LOG.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
                         remoteEndpoint, token);
             }
@@ -194,7 +194,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
     }
 
 
-    private void updateStatusAge(InetSocketAddress remoteEndpoint, Token token, ResourceStatusAge age){
+    private void updateStatusAge(InetSocketAddress remoteEndpoint, Token token, ResourceStatusAge age) {
         try{
             this.lock.writeLock().lock();
             this.observations.put(remoteEndpoint, token, age);
@@ -206,10 +206,10 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
         }
     }
 
-    private ResourceStatusAge stopObservation(InetSocketAddress remoteEndpoint, Token token){
+    private ResourceStatusAge stopObservation(InetSocketAddress remoteEndpoint, Token token) {
         try{
             this.lock.readLock().lock();
-            if(!this.observations.contains(remoteEndpoint, token)){
+            if (!this.observations.contains(remoteEndpoint, token)) {
                 LOG.debug("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
                 return null;
             }
@@ -221,7 +221,7 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
         try{
             this.lock.writeLock().lock();
             ResourceStatusAge age = this.observations.remove(remoteEndpoint, token);
-            if(age == null){
+            if (age == null) {
                 LOG.warn("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
             }
             else{

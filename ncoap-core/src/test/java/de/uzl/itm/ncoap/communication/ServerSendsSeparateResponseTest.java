@@ -158,7 +158,7 @@ public class ServerSendsSeparateResponseTest extends AbstractCoapCommunicationTe
     }
 
     @Test
-    public void testClientReceivedEmptyAck(){
+    public void testClientReceivedEmptyAck() {
         assertEquals("Wrong number of empty ACKs!", 1, clientCallback.getEmptyACKs().size());
     }
 

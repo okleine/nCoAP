@@ -25,6 +25,7 @@
 
 package de.uzl.itm.ncoap.application.client;
 
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import org.jboss.netty.buffer.ChannelBuffer;
 import de.uzl.itm.ncoap.message.options.Option;
@@ -70,7 +71,7 @@ public abstract class ClientCallback {
      * is to be canceled (next update notification will cause a RST being send to the remote endpoint). Default,
      * (i.e. if not overridden), is <code>true</code>, i.e. observations stops after first update notification.
      */
-    public boolean continueObservation(){
+    public boolean continueObservation() {
         return false;
     }
 
@@ -133,6 +134,9 @@ public abstract class ClientCallback {
         //to be overridden by extending classes
     }
 
+    public void processContinueResponseReceived(BlockSize block1Size) {
+        // to be overridden by extending classes
+    }
 
     /**
      * This method is called by the framework if the blockwise response transfer failed for any reason, mostly because
@@ -143,13 +147,14 @@ public abstract class ClientCallback {
     public void processBlockwiseResponseTransferFailed() {
         //to be overridden by extending classes
     }
+
     /**
      * This method is called by the framework if the {@link de.uzl.itm.ncoap.message.CoapRequest} corresponding
      * to this {@link ClientCallback} was confirmed with an empty ACK.
      *
      * <b>Note:</b> to somehow handle the reception of an empty ACK this method is to be overridden.
      */
-    public void processEmptyAcknowledgement(){
+    public void processEmptyAcknowledgement() {
         //to be overridden by extending classes
     }
 
@@ -175,7 +180,7 @@ public abstract class ClientCallback {
      * @param messageID the message ID that was assigned to the {@link de.uzl.itm.ncoap.message.CoapRequest}
      *                  that is associated with this callback
      */
-    public void processMessageIDAssignment(int messageID){
+    public void processMessageIDAssignment(int messageID) {
         //to be overridden by extending classes
     }
 
@@ -195,7 +200,7 @@ public abstract class ClientCallback {
 //     * @param token the {@link Token} that was assigned to the
 //     *              {@link de.uzl.itm.ncoap.message.CoapRequest} that is associated with this callback
 //     */
-//    public void processTokenAssignment(Token token){
+//    public void processTokenAssignment(Token token) {
 //        //to be overridden by extending classes
 //    }
 

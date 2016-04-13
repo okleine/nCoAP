@@ -73,7 +73,7 @@ public class MessageIDFactory extends Observable {
      * @param executor the {@link ScheduledExecutorService} to provide the thread for operations to
      *                        provide available message IDs
      */
-    public MessageIDFactory(ScheduledExecutorService executor){
+    public MessageIDFactory(ScheduledExecutorService executor) {
         this.executor = executor;
         this.allocations = TreeMultimap.create(Ordering.arbitrary(), Ordering.natural());
         this.lock = new ReentrantReadWriteLock();
@@ -94,12 +94,12 @@ public class MessageIDFactory extends Observable {
      * @return the message ID to be used for outgoing messages or
      * {@link de.uzl.itm.ncoap.message.CoapMessage#UNDEFINED_MESSAGE_ID} if all IDs are in use.
      */
-    public int getNextMessageID(final InetSocketAddress remoteEndpoint, final Token token){
+    public int getNextMessageID(final InetSocketAddress remoteEndpoint, final Token token) {
 
         try{
             lock.readLock().lock();
 
-            if(this.allocations.get(remoteEndpoint).size() == MODULUS){
+            if (this.allocations.get(remoteEndpoint).size() == MODULUS) {
                 log.warn("No more message IDs available for remote endpoint {}.", remoteEndpoint);
                 return CoapMessage.UNDEFINED_MESSAGE_ID;
             }
@@ -112,7 +112,7 @@ public class MessageIDFactory extends Observable {
             lock.writeLock().lock();
 
             final SortedSet<Integer> allocations = this.allocations.get(remoteEndpoint);
-            if(allocations.size() == MODULUS){
+            if (allocations.size() == MODULUS) {
                 log.warn("No more message IDs available for remote endpoint {}.", remoteEndpoint);
                 return CoapMessage.UNDEFINED_MESSAGE_ID;
             }
@@ -141,7 +141,7 @@ public class MessageIDFactory extends Observable {
     private void releaseMessageID(InetSocketAddress remoteSocket, int messageID, Token token) {
         try{
             lock.writeLock().lock();
-            if(this.allocations.remove(remoteSocket, messageID)) {
+            if (this.allocations.remove(remoteSocket, messageID)) {
                 log.info("Released message ID \"{}\" (Remote Socket: \"{}\", Token: {}",
                         new Object[]{(messageID % MODULUS), remoteSocket, token});
             }
@@ -155,7 +155,7 @@ public class MessageIDFactory extends Observable {
 
 
 
-    public void shutdown(){
+    public void shutdown() {
         try{
             lock.writeLock().lock();
             this.allocations.clear();
@@ -218,7 +218,7 @@ public class MessageIDFactory extends Observable {
 //                lock.writeLock().lock();
 //                ArrayDeque<AllocationRetirementTask> tasks = usedMessageIDs.get(remoteEndpoint);
 //                tasks.remove(this);
-//                if(tasks.size() == 0){
+//                if (tasks.size() == 0) {
 //                    usedMessageIDs.remove(remoteEndpoint);
 //                }
 //            } finally {

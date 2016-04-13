@@ -1,3 +1,27 @@
+/**
+ * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * All rights reserved
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package de.uzl.itm.ncoap.communication.blockwise.server;
 
 import com.google.common.collect.HashBasedTable;
@@ -31,7 +55,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
     private static Logger LOG = LoggerFactory.getLogger(ServerBlock2Handler.class.getName());
 
     private BlockSize maxBlock2Size;
-    private HashBasedTable<InetSocketAddress, Token, Block2Helper> block2Helpers;
+    private HashBasedTable<InetSocketAddress, Token, ServerBlock2Helper> block2Helpers;
     private ReentrantReadWriteLock lock;
 
     public ServerBlock2Handler(ScheduledExecutorService executor, BlockSize maxBlock2Size) {
@@ -41,10 +65,9 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         this.lock = new ReentrantReadWriteLock();
     }
 
-
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if(coapMessage instanceof CoapRequest && coapMessage.getBlock2Szx() != BlockSize.UNDEFINED) {
+        if (coapMessage instanceof CoapRequest && coapMessage.getBlock2Szx() != BlockSize.UNDEFINED) {
             return handleInboundCoapRequestWithBlock2((CoapRequest) coapMessage, remoteSocket);
         } else {
             return true;
@@ -54,35 +77,26 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
 
     private boolean handleInboundCoapRequestWithBlock2(CoapRequest coapRequest, final InetSocketAddress remoteSocket) {
 
-        Block2Helper helper = this.getBlock2Helper(remoteSocket, coapRequest.getToken());
-        if(helper == null && coapRequest.getBlock2Number() > 0) {
-            sendPreconditionFailed(coapRequest, remoteSocket);
+        ServerBlock2Helper helper = this.getBlock2Helper(remoteSocket, coapRequest.getToken());
+
+        if (helper == null && coapRequest.getBlock2Number() > 0) {
+            writePreconditionFailedResponse(coapRequest, remoteSocket);
             return false;
-        }
-        else if (helper != null && coapRequest.getBlock2Number() > 0){
-            // determine actual BLOCK 2 number according to (new) BLOCK 2 szx
-            long block2Num = helper.getBlock2Szx() == BlockSize.UNDEFINED ? coapRequest.getBlock2Number() :
-                getNextBlockNumber(coapRequest.getBlock2Number(), helper.getBlock2Szx(), coapRequest.getBlock2Szx());
+        } else if (helper != null && coapRequest.getBlock2Number() > 0) {
+            // determine next BLOCK 2 number according to (possibly changed) BLOCK 2 SZX
+            long block2Num;
+            if (helper.getBlock2Szx() == BlockSize.UNDEFINED || helper.getBlock2Szx() == coapRequest.getBlock2Szx()) {
+                block2Num =  coapRequest.getBlock2Number();
+            } else {
+                BlockSize oldSize = BlockSize.getBlockSize(helper.getBlock2Szx());
+                BlockSize newSize = BlockSize.getBlockSize(coapRequest.getBlock2Szx());
+                block2Num = oldSize.getSize() * coapRequest.getBlock2Number() / newSize.getSize();
+            }
             long block2Szx = coapRequest.getBlock2Szx();
 
-            // create response with representation portion
+            // send response with next representation portion
             int messageID = coapRequest.getMessageID();
-            final CoapResponse coapResponse = helper.getResponseWithPayloadBlock(messageID, block2Num, block2Szx);
-            coapResponse.setMessageID(coapRequest.getMessageID());
-
-            ChannelFuture future = sendCoapMessage(coapResponse, remoteSocket);
-            future.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    LOG.debug("Sent response to {}: {}", remoteSocket, coapResponse);
-                }
-            });
-
-            // delete blockwise transfer after last block
-            if(coapResponse.isLastBlock2()) {
-                this.removeHelper(remoteSocket, coapResponse.getToken());
-            }
-
+            helper.writeResponseWithPayloadBlock(messageID, block2Num, block2Szx);
             return false;
         } else {
             return true;
@@ -90,7 +104,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
     }
 
 
-    private void sendPreconditionFailed(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
+    private void writePreconditionFailedResponse(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
         final CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), PRECONDITION_FAILED_412);
         coapResponse.setToken(coapRequest.getToken());
         coapResponse.setMessageID(coapRequest.getMessageID());
@@ -107,7 +121,8 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         });
     }
 
-    private Block2Helper getBlock2Helper(InetSocketAddress remoteSocket, Token token) {
+
+    private ServerBlock2Helper getBlock2Helper(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
             return this.block2Helpers.get(remoteSocket, token);
@@ -116,9 +131,10 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         }
     }
 
+
     @Override
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if(coapMessage instanceof CoapResponse) {
+        if (coapMessage instanceof CoapResponse) {
             // set the BLOCK 2 option if necessary and not yet present
             if (coapMessage.getContentLength() > this.maxBlock2Size.getSize() &&
                     coapMessage.getBlock2Szx() == UintOptionValue.UNDEFINED) {
@@ -137,34 +153,28 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
 
 
     private void handleOutboundCoapResponseWithBlock2(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
-        if(coapResponse.getBlock2Size() > this.maxBlock2Size.getSize()) {
+        if (coapResponse.getBlock2Size() > this.maxBlock2Size.getSize()) {
             coapResponse.setPreferedBlock2Size(this.maxBlock2Size);
         }
 
-        Block2Helper helper = addHelper(coapResponse, remoteSocket);
-        long block2Szx = BlockSize.min(coapResponse.getBlock2Szx(), helper.getBlock2Szx());
-        int messageID = coapResponse.getMessageID();
+        ServerBlock2Helper helper = addHelper(coapResponse, remoteSocket);
+        try {
+            long block2Szx = BlockSize.min(coapResponse.getBlock2Szx(), helper.getBlock2Szx());
+            int messageID = coapResponse.getMessageID();
 
-        final CoapResponse firstBlock = helper.getResponseWithPayloadBlock(messageID, 0L, block2Szx);
-        ChannelFuture future = sendCoapMessage(firstBlock, remoteSocket);
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                LOG.debug("Sent response block #{}: {}", firstBlock.getBlock2Number(), firstBlock);
-            }
-        });
-
-        if(firstBlock.isLastBlock2()) {
-            this.removeHelper(remoteSocket, firstBlock.getToken());
+            helper.writeResponseWithPayloadBlock(messageID, 0L, block2Szx);
+        } catch (IllegalArgumentException ex) {
+            LOG.error("This should never happen!", ex);
+            throw ex;
         }
     }
 
 
-    private Block2Helper addHelper(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
+    private ServerBlock2Helper addHelper(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
         try {
             this.lock.writeLock().lock();
             // add new response to be sent blockwise
-            Block2Helper helper = new Block2Helper(coapResponse);
+            ServerBlock2Helper helper = new ServerBlock2Helper(coapResponse, remoteSocket);
             this.block2Helpers.put(remoteSocket, coapResponse.getToken(), helper);
             return helper;
         } finally {
@@ -176,7 +186,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         try {
             this.lock.writeLock().lock();
             // remove response to be sent blockwise
-            if(this.block2Helpers.remove(remoteSocket, token) != null) {
+            if (this.block2Helpers.remove(remoteSocket, token) != null) {
                 LOG.debug("Removed response blocks (remote socket: {}, token: {})", remoteSocket, token);
             } else {
                 LOG.warn("Could not remove response blocks (remote socket: {}, token: {})", remoteSocket, token);
@@ -186,28 +196,21 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         }
     }
 
-    private static long getNextBlockNumber(long acknowledgedNumber, long oldSZX, long newSZX) {
-        return getNextBlockNumber(acknowledgedNumber, BlockSize.getBlockSize(oldSZX), BlockSize.getBlockSize(newSZX));
-    }
-
-    private static long getNextBlockNumber(long acknowledgedNumber, BlockSize oldSize, BlockSize newSize) {
-        return oldSize.getSize() * acknowledgedNumber / newSize.getSize();
-    }
-
-    private class Block2Helper {
+    private class ServerBlock2Helper {
 
         private long block2Szx;
         private CoapResponse coapResponse;
         private ChannelBuffer completeRepresentation;
+        private InetSocketAddress remoteSocket;
 
-
-        public Block2Helper(CoapResponse coapResponse) {
+        public ServerBlock2Helper(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
+            this.remoteSocket = remoteSocket;
             this.coapResponse = coapResponse;
             this.completeRepresentation = coapResponse.getContent();
 
             // determine initial BLOCK 2 size
             long block2Szx = coapResponse.getBlock2Szx();
-            if(block2Szx == UintOptionValue.UNDEFINED || block2Szx >= maxBlock2Size.getSzx()) {
+            if (block2Szx == UintOptionValue.UNDEFINED || block2Szx >= maxBlock2Size.getSzx()) {
                 this.block2Szx = maxBlock2Size.getSzx();
             } else {
                 this.block2Szx = block2Szx;
@@ -221,7 +224,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
             return this.block2Szx;
         }
 
-        public CoapResponse getResponseWithPayloadBlock(int messageID, long block2Num, long block2Szx) {
+        public void writeResponseWithPayloadBlock(int messageID, long block2Num, long block2Szx) {
 
             this.coapResponse.setMessageID(messageID);
 
@@ -233,13 +236,24 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
             this.coapResponse.setBlock2(block2Num, block2more, block2Szx);
 
             //set the payload block
-            if(block2more) {
+            if (block2more) {
                 this.coapResponse.setContent(this.completeRepresentation.slice(startIndex, block2Size));
             } else {
                 this.coapResponse.setContent(this.completeRepresentation.slice(startIndex, remaining));
             }
 
-            return coapResponse;
+            ChannelFuture future = sendCoapMessage(coapResponse, remoteSocket);
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    LOG.debug("Sent response to {}: {}", remoteSocket, coapResponse);
+                }
+            });
+
+            // delete blockwise transfer after last block
+            if (coapResponse.isLastBlock2()) {
+                removeHelper(remoteSocket, coapResponse.getToken());
+            }
         }
     }
 }

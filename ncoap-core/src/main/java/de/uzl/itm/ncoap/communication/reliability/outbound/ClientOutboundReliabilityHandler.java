@@ -63,7 +63,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
      *                 reliable message transfer
      */
-    public ClientOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory){
+    public ClientOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory) {
         super(executor, factory);
         this.transfers1 = HashBasedTable.create();
         this.transfers2 = HashBasedTable.create();
@@ -73,7 +73,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     @Override
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if(coapMessage instanceof CoapRequest) {
+        if (coapMessage instanceof CoapRequest) {
             return handleOutboundCoapMessage2(coapMessage, remoteSocket);
         } else if (coapMessage.isPing()) {
             return handleOutboundCoapMessage2(coapMessage, remoteSocket);
@@ -85,7 +85,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if(coapMessage instanceof CoapResponse) {
+        if (coapMessage instanceof CoapResponse) {
             return handleInboundCoapResponse((CoapResponse) coapMessage, remoteSocket);
         } else if (coapMessage.getMessageCode() == MessageCode.EMPTY) {
             return handleInboundEmptyMessage(coapMessage, remoteSocket);
@@ -100,7 +100,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
         int messageID = assignMessageID(coapRequest, remoteSocket);
         Token token = coapRequest.getToken();
-        if(messageID == CoapMessage.UNDEFINED_MESSAGE_ID){
+        if (messageID == CoapMessage.UNDEFINED_MESSAGE_ID) {
             LOG.info("No message ID available for \"{}\" (ID pool exhausted).", remoteSocket);
             triggerEvent(new NoMessageIDAvailableEvent(remoteSocket, token), false);
             return false;
@@ -110,7 +110,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
         }
 
         addTransfer(remoteSocket, coapRequest.getMessageID(), coapRequest.getToken());
-        if(coapRequest.getMessageType() == MessageType.CON) {
+        if (coapRequest.getMessageType() == MessageType.CON) {
             scheduleRetransmission(coapRequest, remoteSocket, 1);
         }
         return true;
@@ -119,13 +119,13 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     private boolean handleInboundEmptyMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         int messageType = coapMessage.getMessageType();
-        if(messageType == MessageType.CON) {
+        if (messageType == MessageType.CON) {
             // incoming PINGs are handled by the inbound reliability handler
             return true;
         } else {
             int messageID = coapMessage.getMessageID();
             Token token = removeTransfer(remoteSocket, messageID);
-            if(token == null) {
+            if (token == null) {
                 return true;
             } else if (messageType == MessageType.ACK) {
                 LOG.info("Received empty ACK from \"{}\" for token {} (Message ID: {}).",
@@ -149,9 +149,9 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
         int messageType = coapResponse.getMessageType();
 
-        if(messageType == MessageType.ACK) {
+        if (messageType == MessageType.ACK) {
             Token token = removeTransfer(remoteSocket, coapResponse.getMessageID());
-            if(token == null) {
+            if (token == null) {
                 LOG.warn("Received ACK response for unknown request (remote socket \"{}\", message ID: {})",
                     remoteSocket, coapResponse.getMessageID()
                 );
@@ -159,7 +159,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
         } else {
             Token token = coapResponse.getToken();
             Integer messageID = removeTransfer(remoteSocket, token);
-            if(messageID != null) {
+            if (messageID != null) {
                 LOG.info("Received response for request (remote socket \"{}\", message ID: {})",
                         remoteSocket, messageID
                 );
@@ -168,10 +168,10 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
         return true;
     }
 
-//    private int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteSocket){
+//    private int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 //        int messageID = this.messageIDFactory.getNextMessageID(remoteSocket, coapMessage.getToken());
 //
-//        if(!(messageID == CoapMessage.UNDEFINED_MESSAGE_ID)){
+//        if (!(messageID == CoapMessage.UNDEFINED_MESSAGE_ID)) {
 //            coapMessage.setMessageID(messageID);
 //            LOG.debug("Message ID set to {}.", messageID);
 //
@@ -201,7 +201,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
     private Integer removeTransfer(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
-            if(this.transfers2.get(remoteSocket, token) == null) {
+            if (this.transfers2.get(remoteSocket, token) == null) {
                 return null;
             }
         } finally {
@@ -221,7 +221,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
     private Token removeTransfer(InetSocketAddress remoteSocket, int messageID) {
         try {
             this.lock.readLock().lock();
-            if(this.transfers1.get(remoteSocket, messageID) == null) {
+            if (this.transfers1.get(remoteSocket, messageID) == null) {
                 return null;
             }
         } finally {
@@ -248,11 +248,11 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     @Override
     public void update(Observable o, Object arg) {
-        if(arg instanceof MessageIDFactory.ReleasedMessageID) {
+        if (arg instanceof MessageIDFactory.ReleasedMessageID) {
             InetSocketAddress remoteSocket = ((MessageIDFactory.ReleasedMessageID) arg).getRemoteSocket();
             int messageID = ((MessageIDFactory.ReleasedMessageID) arg).getMessageID();
 
-            if(removeTransfer(remoteSocket, messageID) != null) {
+            if (removeTransfer(remoteSocket, messageID) != null) {
                 // there was an ongoing outbound transfer (i.e. CON with no ACK or NON with no response)
                 Token token = ((MessageIDFactory.ReleasedMessageID) arg).getToken();
                 LOG.warn("Transmission timed out (remote socket: \"{}\", token: {}, message ID: {})",
@@ -281,7 +281,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
         @Override
         public void run() {
-            if(needsRetransmission(remoteSocket, coapRequest.getMessageID())) {
+            if (needsRetransmission(remoteSocket, coapRequest.getMessageID())) {
                 // retransmit message
                 ChannelFuture future = Channels.future(getContext().getChannel());
                 Channels.write(getContext(), future, coapRequest, remoteSocket);
@@ -299,7 +299,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
                     }
                 });
 
-                if(retransmissionNo < MAX_RETRANSMISSIONS) {
+                if (retransmissionNo < MAX_RETRANSMISSIONS) {
                     scheduleRetransmission(coapRequest, remoteSocket, retransmissionNo + 1);
                     LOG.debug("Scheduled next retransmission to \"{}\" (Message ID: {})",
                         remoteSocket, coapRequest.getMessageID()

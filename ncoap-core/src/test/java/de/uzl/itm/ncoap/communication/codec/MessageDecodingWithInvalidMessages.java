@@ -78,7 +78,7 @@ public class MessageDecodingWithInvalidMessages extends AbstractCoapTest{
 
 
     public MessageDecodingWithInvalidMessages(byte[] encodedMessage, Class<Exception> expectedExceptionClass,
-                                              String expectedMessage){
+                                              String expectedMessage) {
         this.encodedMessageBuffer = ChannelBuffers.wrappedBuffer(encodedMessage);
         exception.expect(expectedExceptionClass);
         exception.expectMessage(expectedMessage);

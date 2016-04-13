@@ -48,7 +48,7 @@ public class EndpointID implements Comparable<EndpointID>{
      * @throws IllegalArgumentException if the length of the given byte array is larger than 8
      */
     public EndpointID(byte[] bytes) {
-        if(bytes.length > MAX_LENGTH){
+        if (bytes.length > MAX_LENGTH) {
             throw new IllegalArgumentException("Maximum endpoint ID length is 4 (but given length was " +
                     bytes.length + ")");
         }
@@ -59,7 +59,7 @@ public class EndpointID implements Comparable<EndpointID>{
      * Returns the byte array this {@link Token} instance wraps
      * @return the byte array this {@link Token} instance wraps
      */
-    public byte[] getBytes(){
+    public byte[] getBytes() {
         return this.bytes;
     }
 
@@ -68,23 +68,23 @@ public class EndpointID implements Comparable<EndpointID>{
      * @return a representation of the token in form of a HEX string or "<EMPTY>" for tokens of length 0
      */
     @Override
-    public String toString(){
+    public String toString() {
         String tmp = Token.bytesToHex(getBytes());
 
-        if(tmp.length() == 0)
+        if (tmp.length() == 0)
             return "<EMPTY>";
         else
             return "0x" + tmp;
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return Arrays.hashCode(bytes);
     }
 
     @Override
-    public boolean equals(Object object){
-        if(object == null || (!(object instanceof EndpointID)))
+    public boolean equals(Object object) {
+        if (object == null || (!(object instanceof EndpointID)))
             return false;
 
         EndpointID other = (EndpointID) object;
@@ -94,13 +94,13 @@ public class EndpointID implements Comparable<EndpointID>{
     @Override
     public int compareTo(EndpointID other) {
 
-        if(other.equals(this))
+        if (other.equals(this))
             return 0;
 
-        if(this.getBytes().length < other.getBytes().length)
+        if (this.getBytes().length < other.getBytes().length)
             return -1;
 
-        if(this.getBytes().length > other.getBytes().length)
+        if (this.getBytes().length > other.getBytes().length)
             return 1;
 
         return UnsignedLongs.compare(Longs.fromByteArray(Bytes.concat(this.getBytes(), new byte[8])),

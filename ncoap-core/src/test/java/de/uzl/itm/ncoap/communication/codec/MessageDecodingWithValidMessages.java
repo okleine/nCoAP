@@ -80,7 +80,7 @@ public class MessageDecodingWithValidMessages extends AbstractCoapTest {
     private CoapMessage actual;
 
 
-    public MessageDecodingWithValidMessages(byte[] encodedMessage, CoapMessage expected){
+    public MessageDecodingWithValidMessages(byte[] encodedMessage, CoapMessage expected) {
         this.expected = expected;
         this.encodedMessageBuffer = ChannelBuffers.wrappedBuffer(encodedMessage);
     }
@@ -93,22 +93,22 @@ public class MessageDecodingWithValidMessages extends AbstractCoapTest {
 
 
     @Test
-    public void testProtocolVersion(){
+    public void testProtocolVersion() {
         assertEquals(expected.getProtocolVersion(), actual.getProtocolVersion());
     }
 
     @Test
-    public void testMessageTyoe(){
+    public void testMessageTyoe() {
         assertEquals(expected.getMessageType(), actual.getMessageType());
     }
 
     @Test
-    public void testMessageCode(){
+    public void testMessageCode() {
         assertEquals(expected.getMessageCode(), actual.getMessageCode());
     }
 
     @Test
-    public void testMessageID(){
+    public void testMessageID() {
         assertEquals(expected.getMessageID(), actual.getMessageID());
     }
 

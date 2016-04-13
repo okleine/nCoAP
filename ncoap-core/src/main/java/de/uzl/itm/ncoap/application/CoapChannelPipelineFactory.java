@@ -49,7 +49,7 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
     private Set<ChannelHandler> channelHandlers;
 
 
-    protected CoapChannelPipelineFactory(ScheduledExecutorService executor){
+    protected CoapChannelPipelineFactory(ScheduledExecutorService executor) {
         this.channelHandlers = new LinkedHashSet<>();
 
         addChannelHandler(new ExecutionHandler(executor));
@@ -58,7 +58,7 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
      }
 
 
-    protected void addChannelHandler(ChannelHandler channelHandler){
+    protected void addChannelHandler(ChannelHandler channelHandler) {
         this.channelHandlers.add(channelHandler);
     }
 
@@ -70,7 +70,7 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
     public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = Channels.pipeline();
 
-        for(ChannelHandler handler : this.channelHandlers){
+        for(ChannelHandler handler : this.channelHandlers) {
             String handlerName = handler.getClass().getSimpleName();
             pipeline.addLast(handler.getClass().getSimpleName(), handler);
             LOG.debug("Added Handler to Pipeline: {}.", handlerName);
@@ -89,7 +89,7 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
 //     * @return the {@link org.jboss.netty.channel.ChannelHandler} instance which is part of each pipeline created
 //     * using this factory (or <code>null</code> if no such handler exists).
 //     */
-//    public ChannelHandler getChannelHandler(String name){
+//    public ChannelHandler getChannelHandler(String name) {
 //        return handler.get(name);
 //    }
 

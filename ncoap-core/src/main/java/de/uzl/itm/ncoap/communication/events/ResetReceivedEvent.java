@@ -67,14 +67,14 @@ public class ResetReceivedEvent extends AbstractMessageTransferEvent {
      * @param messageID the message ID that was contained in the received RST message
      * @param token the {@link Token} of the confirmed message
      */
-    public ResetReceivedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token){
+    public ResetReceivedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
         super(remoteEndpoint, messageID, token);
     }
 
 
 
     @Override
-    public String toString(){
+    public String toString() {
         return "EMPTY RST (from  " + this.getRemoteSocket() + " for message ID " + this.getMessageID() + " with token "
                 + this.getToken() + ")";
     }

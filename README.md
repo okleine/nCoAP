@@ -41,7 +41,7 @@ To use the latest protocol implementation release add the following to your pom.
     <dependency>
         <groupId>de.uniluebeck.itm</groupId>
         <artifactId>ncoap-core</artifactId>
-        <version>1.8.2</version>
+        <version>1.8.3-SNAPSHOT</version>
     </dependency>
 ...
 </dependencies>
@@ -67,4 +67,4 @@ write such applications using ncoap.
 
 ### Documentation
 
-The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.2
+The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.3-SNAPSHOT

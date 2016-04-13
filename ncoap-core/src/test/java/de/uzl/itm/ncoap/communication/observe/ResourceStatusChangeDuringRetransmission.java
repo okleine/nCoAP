@@ -145,20 +145,20 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
     }
 
     @Test
-    public void testEndpointReceivedSevenMessages(){
+    public void testEndpointReceivedSevenMessages() {
         assertEquals("Client Endpoint received wrong number of messages!",
                 7, clientEndpoint.getReceivedCoapMessages().size());
     }
 
     @Test
-    public void testFirstMessage(){
+    public void testFirstMessage() {
         CoapMessage coapMessage = clientEndpoint.getReceivedMessage(0);
         assertEquals("Wrong message type!", MessageType.ACK, coapMessage.getMessageType());
     }
 
     @Test
-    public void testAscendingSequenceNumbers(){
-        for(int i = 1; i < 6; i++){
+    public void testAscendingSequenceNumbers() {
+        for(int i = 1; i < 6; i++) {
             CoapResponse previous = (CoapResponse) clientEndpoint.getReceivedMessage(i-1);
             CoapResponse actual = (CoapResponse) clientEndpoint.getReceivedMessage(i);
 
@@ -173,15 +173,15 @@ public class ResourceStatusChangeDuringRetransmission extends AbstractCoapCommun
     }
 
     @Test
-    public void testResponseContent(){
-        for(int i = 0; i < 6; i++){
+    public void testResponseContent() {
+        for(int i = 0; i < 6; i++) {
             CoapResponse response = (CoapResponse) clientEndpoint.getReceivedMessage(i);
             String content = response.getContent().toString(CoapMessage.CHARSET);
 
             String expected;
-            if(i == 0)
+            if (i == 0)
                 expected = "Status #1";
-            else if(i > 0 && i < 4)
+            else if (i > 0 && i < 4)
                 expected = "Status #2";
             else
                 expected = "Status #3";

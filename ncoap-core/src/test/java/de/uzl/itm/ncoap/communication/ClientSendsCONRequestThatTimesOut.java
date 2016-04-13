@@ -143,7 +143,7 @@ public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunication
 
 
     @Test
-    public void testNumberOfReceivedRequests(){
+    public void testNumberOfReceivedRequests() {
         int expected = 5;
         int actual = testEndpoint.getReceivedCoapMessages().size();
         assertEquals("Endpoint received wrong number of requests!", expected, actual);
@@ -151,11 +151,11 @@ public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunication
 
 
     @Test
-    public void testAllRequestsAreEqual(){
+    public void testAllRequestsAreEqual() {
         SortedMap<Long, CoapMessage> receivedMessages = testEndpoint.getReceivedCoapMessages();
         CoapMessage firstMessage = receivedMessages.get(receivedMessages.firstKey());
 
-        for(CoapMessage message : receivedMessages.values()){
+        for(CoapMessage message : receivedMessages.values()) {
             assertEquals("Received requests did not equal.", firstMessage, message);
         }
     }
@@ -169,7 +169,7 @@ public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunication
      * 4th retransmission should be received after 30 - 45 sec
      */
     @Test
-    public void testRetransmissionsWereSentInTime(){
+    public void testRetransmissionsWereSentInTime() {
 
         int expectedMessages = 4;
 
@@ -183,7 +183,7 @@ public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunication
         };
 
         int i = -1;
-        while(transmissionIterator.hasNext()){
+        while(transmissionIterator.hasNext()) {
             i += 1;
             long actualDelay = transmissionIterator.next() - timeRequestSent;
 
@@ -202,7 +202,7 @@ public class ClientSendsCONRequestThatTimesOut extends AbstractCoapCommunication
      * notification (5000) plus a tolerance of 2000.
      */
     @Test
-    public void testClientReceivesTimeoutNotification(){
+    public void testClientReceivesTimeoutNotification() {
         assertFalse("Client did not receive a timeout notification at all.",
                 callback.getTransmissionTimeouts().isEmpty());
 

@@ -36,9 +36,9 @@ public abstract class AbstractCoapTest {
 
     private static boolean isLoggingConfigured = false;
 
-    protected AbstractCoapTest(){
+    protected AbstractCoapTest() {
         try{
-            if(!isLoggingConfigured){
+            if (!isLoggingConfigured) {
                 initializeLogging();
                 setupLogging();
                 isLoggingConfigured = true;
@@ -50,9 +50,9 @@ public abstract class AbstractCoapTest {
     }
 
 
-    protected static void initializeLogging(){
+    protected static void initializeLogging() {
 
-        if(!isLoggingConfigured){
+        if (!isLoggingConfigured) {
             Logger.getRootLogger().removeAllAppenders();
 
             //asynchronous appender

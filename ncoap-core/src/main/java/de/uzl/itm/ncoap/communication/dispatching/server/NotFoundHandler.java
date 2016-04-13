@@ -63,7 +63,7 @@ public abstract class NotFoundHandler implements RequestConsumer{
      * @param requestDispatcher the {@link RequestDispatcher} that is supposed to be used to register newly created
      * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instances.
      */
-    public final void setRequestDispatcher(RequestDispatcher requestDispatcher){
+    public final void setRequestDispatcher(RequestDispatcher requestDispatcher) {
         this.requestDispatcher = requestDispatcher;
     }
 
@@ -78,7 +78,7 @@ public abstract class NotFoundHandler implements RequestConsumer{
      * @return the {@link RequestDispatcher} for this CoAP
      * server.
      */
-    protected RequestDispatcher getRequestDispatcher(){
+    protected RequestDispatcher getRequestDispatcher() {
         return this.requestDispatcher;
     }
 
@@ -97,7 +97,7 @@ public abstract class NotFoundHandler implements RequestConsumer{
      *
      * @return a new default {@link NotFoundHandler} instance
      */
-    public static NotFoundHandler getDefault(){
+    public static NotFoundHandler getDefault() {
 
         return new NotFoundHandler() {
 

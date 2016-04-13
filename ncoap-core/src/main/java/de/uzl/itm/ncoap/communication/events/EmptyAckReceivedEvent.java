@@ -66,7 +66,7 @@ public class EmptyAckReceivedEvent extends AbstractMessageTransferEvent {
      * @param messageID the message ID of the message whose reception was confirmed with this empty ACK
      * @param token the token of the confirmed message
      */
-    public EmptyAckReceivedEvent(InetSocketAddress remoteSocket, int messageID, Token token){
+    public EmptyAckReceivedEvent(InetSocketAddress remoteSocket, int messageID, Token token) {
         super(remoteSocket, messageID, token);
     }
 
@@ -76,7 +76,7 @@ public class EmptyAckReceivedEvent extends AbstractMessageTransferEvent {
 //    }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "EMPTY ACK (from  " + this.getRemoteSocket() + " for message ID " + this.getMessageID() + " with token "
                 + this.getToken() + ")";
     }

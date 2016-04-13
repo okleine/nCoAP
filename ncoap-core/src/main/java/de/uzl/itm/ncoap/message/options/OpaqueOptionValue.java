@@ -58,7 +58,7 @@ public class OpaqueOptionValue extends OptionValue<byte[]> {
 
     @Override
     public boolean equals(Object object) {
-        if(!(object instanceof OpaqueOptionValue))
+        if (!(object instanceof OpaqueOptionValue))
             return false;
 
         OpaqueOptionValue other = (OpaqueOptionValue) object;
@@ -73,7 +73,7 @@ public class OpaqueOptionValue extends OptionValue<byte[]> {
      * @return a {@link String} representation of this options value
      */
     @Override
-    public String toString(){
+    public String toString() {
         return toHexString(this.value);
     }
 
@@ -86,8 +86,8 @@ public class OpaqueOptionValue extends OptionValue<byte[]> {
      *
      * @return a {@link String} representation of this options value
      */
-    public static String toHexString(byte[] bytes){
-        if(bytes.length == 0)
+    public static String toHexString(byte[] bytes) {
+        if (bytes.length == 0)
             return "<empty>";
         else
             return "0x" + bytesToHex(bytes);

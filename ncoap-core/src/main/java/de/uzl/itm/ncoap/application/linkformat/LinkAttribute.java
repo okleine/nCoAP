@@ -68,7 +68,7 @@ public abstract class LinkAttribute<T> {
 
         this.key = attributeKey;
 
-        if(!ATTRIBUTES.containsKey(attributeKey)) {
+        if (!ATTRIBUTES.containsKey(attributeKey)) {
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
         } else {
             this.value = value;
@@ -101,8 +101,8 @@ public abstract class LinkAttribute<T> {
     public abstract boolean equals(Object object);
 
 
-    public static boolean allowsMultipleValues(String attributeKey){
-        if(!ATTRIBUTES.containsKey(attributeKey))
+    public static boolean allowsMultipleValues(String attributeKey) {
+        if (!ATTRIBUTES.containsKey(attributeKey))
             throw new IllegalArgumentException("Unknown link attribute: \"" + attributeKey + "\"");
 
         return ATTRIBUTES.get(attributeKey).permitMultipleValues();
@@ -120,21 +120,21 @@ public abstract class LinkAttribute<T> {
      */
     public static LinkAttribute createFromUriQuery(String queryParameter) throws IllegalArgumentException {
 
-        if(!queryParameter.equals("")){
+        if (!queryParameter.equals("")) {
             String[] param = queryParameter.split("=");
 
-            if(param.length != 2) {
+            if (param.length != 2) {
                 throw new IllegalArgumentException("Could not parse query " + queryParameter);
             }
 
             LinkAttribute linkAttribute;
             LinkAttribute.Type attributeType = LinkAttribute.getAttributeType(param[0]);
 
-            if(STRING.equals(attributeType)) {
+            if (STRING.equals(attributeType)) {
                 linkAttribute = new StringLinkAttribute(param[0], param[1]);
-            } else if(LONG.equals(attributeType)) {
+            } else if (LONG.equals(attributeType)) {
                 linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
-            } else if(EMPTY.equals(attributeType)) {
+            } else if (EMPTY.equals(attributeType)) {
                 linkAttribute = new EmptyLinkAttribute(param[0]);
             } else {
                 throw new IllegalArgumentException("Unknown link attribute key (\"" + param[0] + "\")");
@@ -156,7 +156,7 @@ public abstract class LinkAttribute<T> {
      * -1 for unknown attributes.
      */
     public static Type getAttributeType(String attributeKey) throws IllegalArgumentException{
-        if(ATTRIBUTES.containsKey(attributeKey)) {
+        if (ATTRIBUTES.containsKey(attributeKey)) {
             return ATTRIBUTES.get(attributeKey).getAttributeType();
         } else {
             return Type.UNKNOWN;
@@ -164,7 +164,7 @@ public abstract class LinkAttribute<T> {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "Link Attribute (key: " + this.getKey() + ", value: " + this.getValue() + ")";
     }
 
@@ -174,16 +174,16 @@ public abstract class LinkAttribute<T> {
         private Type attributeType;
 
 
-        AttributeProperties(boolean multipleValues, Type attributeType){
+        AttributeProperties(boolean multipleValues, Type attributeType) {
             this.multipleValues = multipleValues;
             this.attributeType = attributeType;
         }
 
-        public boolean permitMultipleValues(){
+        public boolean permitMultipleValues() {
             return multipleValues;
         }
 
-        public Type getAttributeType(){
+        public Type getAttributeType() {
             return this.attributeType;
         }
     }

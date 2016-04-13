@@ -29,6 +29,7 @@ import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
+import de.uzl.itm.ncoap.communication.events.client.ContinueResponseReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -54,18 +55,18 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
 
     private static Logger LOG = LoggerFactory.getLogger(ClientBlock1Handler.class.getName());
 
-    private HashBasedTable<InetSocketAddress, Token, Block1Helper> block1helpers;
+    private HashBasedTable<InetSocketAddress, Token, ClientBlock1Helper> block1Helpers;
     private ReentrantReadWriteLock lock;
 
     public ClientBlock1Handler(ScheduledExecutorService executorService) {
         super(executorService);
-        this.block1helpers = HashBasedTable.create();
+        this.block1Helpers = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
     }
 
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if (coapMessage instanceof CoapResponse && coapMessage.getBlock1SZX() != UintOptionValue.UNDEFINED) {
+        if (coapMessage instanceof CoapResponse && coapMessage.getBlock1Szx() != UintOptionValue.UNDEFINED) {
             return handleInboundCoapResponseWithBlock1((CoapResponse) coapMessage, remoteSocket);
         } else {
             return true;
@@ -73,55 +74,65 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
     }
 
     private boolean handleInboundCoapResponseWithBlock1(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
-        if(coapResponse.getMessageCode() == MessageCode.CONTINUE_231) {
+        if (coapResponse.getMessageCode() == MessageCode.CONTINUE_231) {
             Token token = coapResponse.getToken();
-            long block1num = coapResponse.getBlock1Number() + 1;
-            long block1szx = coapResponse.getBlock1SZX();
-            final CoapRequest nextRequest = getCoapRequestWithPayloadBlock(remoteSocket, token, block1num, block1szx);
-            if(nextRequest != null) {
-                nextRequest.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
-                ChannelFuture future = sendCoapMessage(nextRequest, remoteSocket);
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if(future.isSuccess()) {
-                            LOG.debug("Sent CoAP request: {}", nextRequest);
-                        }
-                    }
-                });
+            ClientBlock1Helper helper = this.getBlock1Helper(remoteSocket, token);
+
+            // trigger event for successful request block delivery
+            triggerEvent(new ContinueResponseReceivedEvent(remoteSocket, token, helper.getblock1Szx()), false);
+
+            // determine next BLOCK 1 number according to (possibly changed) BLOCK 1 SZX
+            long block1Num;
+            if (helper.getblock1Szx() == coapResponse.getBlock1Szx()) {
+                block1Num = coapResponse.getBlock1Number() + 1;
             } else {
-                LOG.warn("No blockwise outbound request found (Remote Socket: {}, Token: {})", remoteSocket, token);
+                int oldSize = BlockSize.getSize(helper.getblock1Szx());
+                int newSize = BlockSize.getSize(coapResponse.getBlock1Szx());
+                block1Num = oldSize * (coapResponse.getBlock1Number() + 1) / newSize;
             }
+
+            long block1Szx = coapResponse.getBlock1Szx();
+
+            // write next request block
+            helper.writeCoapRequestWithPayloadBlock(block1Num, block1Szx);
             return false;
         } else {
             return true;
         }
     }
 
-    private CoapRequest getCoapRequestWithPayloadBlock(InetSocketAddress remoteSocket, Token token, long block1num,
-                                                       long block1szx) {
-
+    private ClientBlock1Helper getBlock1Helper(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
-            Block1Helper helper = this.block1helpers.get(remoteSocket, token);
-            if (helper != null) {
-                if(helper.getBlock1SZX() > block1szx) {
-                    int oldSize = BlockSize.getSize(helper.getBlock1SZX());
-                    int newSize = BlockSize.getSize(block1szx);
-                    block1num =  oldSize * block1num / newSize;
-                }
-                return helper.getCoapRequestWithPayloadBlock(block1num , block1szx);
-            } else {
-                return null;
-            }
+            return this.block1Helpers.get(remoteSocket, token);
         } finally {
             this.lock.readLock().unlock();
         }
     }
 
+//    private void writeCoapRequestWithPayloadBlock(ClientBlock1Helper helper, long block1Num, long block1Szx) {
+//
+//        try {
+//            this.lock.readLock().lock();
+//            ClientBlock1Helper helper = this.block1Helpers.get(remoteSocket, token);
+//            if (helper != null) {
+//                if (helper.getblock1Szx() > block1Szx) {
+//                    int oldSize = BlockSize.getSize(helper.getblock1Szx());
+//                    int newSize = BlockSize.getSize(block1Szx);
+//                    block1Num =  oldSize * block1Num / newSize;
+//                }
+//                return helper.getCoapRequestWithPayloadBlock(block1Num , block1Szx);
+//            } else {
+//                return null;
+//            }
+//        } finally {
+//            this.lock.readLock().unlock();
+//        }
+//    }
+
     @Override
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if(coapMessage instanceof CoapRequest && coapMessage.getBlock1SZX() != UintOptionValue.UNDEFINED) {
+        if (coapMessage instanceof CoapRequest && coapMessage.getBlock1Szx() != UintOptionValue.UNDEFINED) {
             handleOutboundCoapRequestWithBlock1((CoapRequest) coapMessage, remoteSocket);
             return false;
         } else {
@@ -131,27 +142,27 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
 
     private void handleOutboundCoapRequestWithBlock1(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
         // add new request to be sent blockwise
-        Block1Helper helper = addHelper(coapRequest, remoteSocket);
+        ClientBlock1Helper helper = addHelper(coapRequest, remoteSocket);
 
         // send first block
-        final CoapRequest firstBlock = helper.getCoapRequestWithPayloadBlock(0L, coapRequest.getBlock1SZX());
-        ChannelFuture future = sendCoapMessage(firstBlock, remoteSocket);
-        future.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                LOG.debug("Sent CoAP request (BLOCK): {}", firstBlock);
-            }
-        });
+        helper.writeCoapRequestWithPayloadBlock(0L, coapRequest.getBlock1Szx());
+//        ChannelFuture future = sendCoapMessage(firstBlock, remoteSocket);
+//        future.addListener(new ChannelFutureListener() {
+//            @Override
+//            public void operationComplete(ChannelFuture future) throws Exception {
+//                LOG.debug("Sent CoAP request (BLOCK): {}", firstBlock);
+//            }
+//        });
 
     }
 
-    private Block1Helper addHelper(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
+    private ClientBlock1Helper addHelper(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
 
         try {
             this.lock.writeLock().lock();
-            Block1Helper block1helper = new Block1Helper(coapRequest);
-            this.block1helpers.put(remoteSocket, coapRequest.getToken(), block1helper);
-            return block1helper;
+            ClientBlock1Helper clientBlock1Helper = new ClientBlock1Helper(coapRequest, remoteSocket);
+            this.block1Helpers.put(remoteSocket, coapRequest.getToken(), clientBlock1Helper);
+            return clientBlock1Helper;
         } finally {
             this.lock.writeLock().unlock();
         }
@@ -161,7 +172,7 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
     private void removeHelper(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.writeLock().lock();
-            if(this.block1helpers.remove(remoteSocket, token) == null) {
+            if (this.block1Helpers.remove(remoteSocket, token) == null) {
                 LOG.debug("No BLOCK1 helper found to be removed (Remote Socket: {}, Token: {})", remoteSocket, token);
             } else {
                 LOG.debug("Successfully removed BLOCK1 helper (Remote Socket: {}, Token: {})", remoteSocket, token);
@@ -178,7 +189,7 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
         Token token = event.getToken();
         try {
             this.lock.readLock().lock();
-            if(!this.block1helpers.contains(previous, token)) {
+            if (!this.block1Helpers.contains(previous, token)) {
                 return;
             }
         } finally {
@@ -188,8 +199,8 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
         InetSocketAddress actual = event.getRemoteSocket();
         try {
             this.lock.writeLock().lock();
-            Block1Helper helper = this.block1helpers.remove(previous, token);
-            this.block1helpers.put(event.getRemoteSocket(), token, helper);
+            ClientBlock1Helper helper = this.block1Helpers.remove(previous, token);
+            this.block1Helpers.put(event.getRemoteSocket(), token, helper);
             LOG.debug("Successfully updated remote socket (previous: {}, actual: {})", previous, actual);
         } finally {
             this.lock.writeLock().unlock();
@@ -202,52 +213,62 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
     }
 
 
-    private class Block1Helper {
+    private class ClientBlock1Helper {
 
-        private long block1szx;
+        private long block1Szx;
+        private long block2Szx;
+        private InetSocketAddress remoteSocket;
         private CoapRequest coapRequest;
         private ChannelBuffer completePayload;
-        private long block2szx;
 
-        private Block1Helper(CoapRequest coapRequest) {
+
+        private ClientBlock1Helper(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
+            this.remoteSocket = remoteSocket;
             this.coapRequest = coapRequest;
             this.completePayload = coapRequest.getContent();
-            this.block2szx = coapRequest.getBlock2Szx();
-            if(this.block2szx != UintOptionValue.UNDEFINED) {
+            this.block2Szx = coapRequest.getBlock2Szx();
+            if (this.block2Szx != UintOptionValue.UNDEFINED) {
                 this.coapRequest.removeOptions(Option.BLOCK_2);
             }
-            this.block1szx = coapRequest.getBlock1SZX();
+            this.block1Szx = coapRequest.getBlock1Szx();
 
             // set size 1 option (size of complete payload in bytes)
             this.coapRequest.setSize1(coapRequest.getContentLength());
         }
 
-        public long getBlock1SZX() {
-            return this.block1szx;
+        public long getblock1Szx() {
+            return this.block1Szx;
         }
 
-        public CoapRequest getCoapRequestWithPayloadBlock(long block1num, long block1szx) {
+        public void writeCoapRequestWithPayloadBlock(long block1Num, long block1Szx) {
 
-            this.block1szx = block1szx;
-            int block1Size = BlockSize.getSize(block1szx);
+            this.block1Szx = block1Szx;
+            int block1Size = BlockSize.getSize(block1Szx);
 
             // set block 1 option and proper payload
-            int startIndex = (int) block1num * block1Size;
+            int startIndex = (int) block1Num * block1Size;
             int remaining = completePayload.readableBytes() - startIndex;
-            boolean block1more = (remaining > block1Size);
-            this.coapRequest.setBlock1(block1num, block1more, block1szx);
+            boolean block1More = (remaining > block1Size);
+            this.coapRequest.setBlock1(block1Num, block1More, block1Szx);
 
             //set the payload block
-            if(block1more) {
+            if (block1More) {
                 this.coapRequest.setContent(this.completePayload.slice(startIndex, block1Size));
             } else {
                 this.coapRequest.setContent(this.completePayload.slice(startIndex, remaining));
-                if(this.block2szx != UintOptionValue.UNDEFINED) {
-                    this.coapRequest.setBlock2(0L, this.block2szx);
+                if (this.block2Szx != UintOptionValue.UNDEFINED) {
+                    this.coapRequest.setBlock2(0L, this.block2Szx);
                 }
             }
 
-            return coapRequest;
+            this.coapRequest.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
+            ChannelFuture future = sendCoapMessage(this.coapRequest, this.remoteSocket);
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    LOG.debug("Sent to \"{}\": {}", remoteSocket, coapRequest);
+                }
+            });
         }
     }
 }

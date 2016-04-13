@@ -95,7 +95,7 @@ public class EndpointIDRepeatedInResponseTest extends AbstractCoapCommunicationT
     }
 
     @Test
-    public void testEndpointIDsMatch(){
+    public void testEndpointIDsMatch() {
         assertArrayEquals("IDs do not match", coapRequest.getEndpointID1(), coapResponse.getEndpointID2());
     }
 }

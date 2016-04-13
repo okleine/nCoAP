@@ -122,19 +122,19 @@ public class CoapRequestUriOptionsTest extends AbstractCoapTest{
     }
 
     @Test
-    public void testUriPathOptions(){
+    public void testUriPathOptions() {
         assertEquals(expectedUriPath, coapRequest.getUriPath());
     }
 
 
     @Test
-    public void testUriPortOption(){
+    public void testUriPortOption() {
         assertEquals(expectedUriPort, coapRequest.getUriPort());
     }
 
 
     @Test
-    public void testUriQueryOptions(){
+    public void testUriQueryOptions() {
         assertEquals(expectedUriQuery, coapRequest.getUriQuery());
     }
 

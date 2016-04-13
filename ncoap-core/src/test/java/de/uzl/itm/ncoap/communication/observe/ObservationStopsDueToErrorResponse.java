@@ -95,7 +95,7 @@ public class ObservationStopsDueToErrorResponse extends AbstractCoapCommunicatio
     }
 
     @Test
-    public void test(){
+    public void test() {
         // TODO
     }
 }

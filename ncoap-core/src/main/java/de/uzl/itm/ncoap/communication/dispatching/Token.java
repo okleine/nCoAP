@@ -55,8 +55,8 @@ public class Token implements Comparable<Token>{
      *
      * @throws java.lang.IllegalArgumentException if the length of the given byte array is larger than 8
      */
-    public Token(byte[] token){
-        if(token.length > 8)
+    public Token(byte[] token) {
+        if (token.length > 8)
             throw new IllegalArgumentException("Maximum token length is 8 (but given length was " + token.length + ")");
 
         this.token = token;
@@ -66,7 +66,7 @@ public class Token implements Comparable<Token>{
      * Returns the byte array this {@link Token} instance wraps
      * @return the byte array this {@link Token} instance wraps
      */
-    public byte[] getBytes(){
+    public byte[] getBytes() {
         return this.token;
     }
 
@@ -76,10 +76,10 @@ public class Token implements Comparable<Token>{
      * @return a representation of the token in form of a HEX string or "<EMPTY>" for tokens of length 0
      */
     @Override
-    public String toString(){
+    public String toString() {
         String tmp = bytesToHex(getBytes());
 
-        if(tmp.length() == 0)
+        if (tmp.length() == 0)
             return "<EMPTY>";
         else
             return "0x" + tmp;
@@ -97,8 +97,8 @@ public class Token implements Comparable<Token>{
     }
 
     @Override
-    public boolean equals(Object object){
-        if(object == null || (!(object instanceof Token)))
+    public boolean equals(Object object) {
+        if (object == null || (!(object instanceof Token)))
             return false;
 
         Token other = (Token) object;
@@ -107,7 +107,7 @@ public class Token implements Comparable<Token>{
 
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return Arrays.hashCode(token);
     }
 
@@ -115,13 +115,13 @@ public class Token implements Comparable<Token>{
     @Override
     public int compareTo(Token other) {
 
-        if(other.equals(this))
+        if (other.equals(this))
             return 0;
 
-        if(this.getBytes().length < other.getBytes().length)
+        if (this.getBytes().length < other.getBytes().length)
             return -1;
 
-        if(this.getBytes().length > other.getBytes().length)
+        if (this.getBytes().length > other.getBytes().length)
             return 1;
 
         return UnsignedLongs.compare(Longs.fromByteArray(Bytes.concat(this.getBytes(), new byte[8])),

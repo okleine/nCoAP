@@ -109,18 +109,18 @@ public class DummyEndpoint extends SimpleChannelHandler {
     }
 
 
-    public int getPort(){
+    public int getPort() {
         return channel.getLocalAddress().getPort();
     }
 
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        if(!receptionEnabled){
+        if (!receptionEnabled) {
             return;
         }
 
-        if((e.getMessage() instanceof CoapMessage)) {
+        if ((e.getMessage() instanceof CoapMessage)) {
             receivedCoapMessages.put(System.currentTimeMillis(), (CoapMessage) e.getMessage());
             log.info("Received #{} (from {}): {}.",
                     new Object[]{getReceivedCoapMessages().size(), e.getRemoteAddress(), e.getMessage()});
@@ -140,7 +140,7 @@ public class DummyEndpoint extends SimpleChannelHandler {
 
         Iterator<Long> receptionTimes = this.receivedCoapMessages.keySet().iterator();
 
-        for(int i = 0; i < index; i++){
+        for(int i = 0; i < index; i++) {
             receptionTimes.next();
         }
 
@@ -156,7 +156,7 @@ public class DummyEndpoint extends SimpleChannelHandler {
         try{
             this.executor.schedule(new TransmissionTask(coapMessage, remoteAddress), 0, TimeUnit.MILLISECONDS);
         }
-        catch(Exception ex){
+        catch(Exception ex) {
             log.error("EXCEPTION!", ex);
         }
     }
@@ -184,7 +184,7 @@ public class DummyEndpoint extends SimpleChannelHandler {
      * Shuts the client down by closing the datagramChannel which includes to unbind the datagramChannel from a listening port and
      * by this means free the port. All blocked or bound external resources are released.
      */
-    public void shutdown(){
+    public void shutdown() {
         //Close the datagram datagramChannel (includes unbind)
         ChannelFuture future = channel.close();
 

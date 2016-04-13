@@ -64,7 +64,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
     private ScheduledExecutorService executor;
 
     protected NotObservableWebresource(String servicePath, T initialStatus, long lifetimeSeconds,
-                                       ScheduledExecutorService executor){
+                                       ScheduledExecutorService executor) {
         this.path = servicePath;
         this.linkAttributes = LinkedHashMultimap.create();
 
@@ -75,10 +75,10 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
 
     @Override
-    public void setLinkAttribute(LinkAttribute linkAttribute){
-        if(this.linkAttributes.containsKey(linkAttribute.getKey())){
+    public void setLinkAttribute(LinkAttribute linkAttribute) {
+        if (this.linkAttributes.containsKey(linkAttribute.getKey())) {
 
-            if(!LinkAttribute.allowsMultipleValues(linkAttribute.getKey()))
+            if (!LinkAttribute.allowsMultipleValues(linkAttribute.getKey()))
                 removeLinkAttribute(linkAttribute.getKey());
         }
 
@@ -86,29 +86,29 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
     }
 
     @Override
-    public boolean removeLinkAttribute(String attributeKey){
+    public boolean removeLinkAttribute(String attributeKey) {
         return !this.linkAttributes.removeAll(attributeKey).isEmpty();
     }
 
     @Override
-    public boolean hasLinkAttribute(LinkAttribute linkAttribute){
+    public boolean hasLinkAttribute(LinkAttribute linkAttribute) {
         return this.linkAttributes.get(linkAttribute.getKey()).contains(linkAttribute);
     }
 
     @Override
-    public Collection<LinkAttribute> getLinkAttributes(){
+    public Collection<LinkAttribute> getLinkAttributes() {
         return this.linkAttributes.values();
     }
 
 
     @Override
-    public final void setRequestDispatcher(RequestDispatcher requestDispatcher){
+    public final void setRequestDispatcher(RequestDispatcher requestDispatcher) {
         this.requestDispatcher = requestDispatcher;
     }
 
 
     @Override
-    public final RequestDispatcher getRequestDispatcher(){
+    public final RequestDispatcher getRequestDispatcher() {
         return this.requestDispatcher;
     }
 
@@ -120,13 +120,13 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
 
 //    @Override
-//    public final void setExecutor(ScheduledExecutorService executorService){
+//    public final void setExecutor(ScheduledExecutorService executorService) {
 //        this.scheduledExecutorService = executorService;
 //    }
 
 
     @Override
-    public ScheduledExecutorService getExecutor(){
+    public ScheduledExecutorService getExecutor() {
         return this.executor;
     }
 
@@ -145,7 +145,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      * @param lifetimeSeconds the number of seconds this status is valid, i.e. cachable by clients or proxies.
      */
     @Override
-    public final void setResourceStatus(T resourceStatus, long lifetimeSeconds){
+    public final void setResourceStatus(T resourceStatus, long lifetimeSeconds) {
         try{
             readWriteLock.writeLock().lock();
             this.resourceStatus = resourceStatus;
@@ -178,13 +178,13 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      * @return a {@link WrappedResourceStatus} if the content format was supported or <code>null</code> if the
      * resource status could not be serialized to the desired content format.
      */
-    public final WrappedResourceStatus getWrappedResourceStatus(long contentFormat){
+    public final WrappedResourceStatus getWrappedResourceStatus(long contentFormat) {
         try{
             this.readWriteLock.readLock().lock();
 
             byte[] serializedResourceStatus = getSerializedResourceStatus(contentFormat);
 
-            if(serializedResourceStatus == null)
+            if (serializedResourceStatus == null)
                 return null;
 
             else
@@ -221,16 +221,16 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      * <code>null</code> if the resource status could not be serialized to any accepted content format.
      */
     @Override
-    public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
+    public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats) {
         try{
             this.readWriteLock.readLock().lock();
 
             WrappedResourceStatus result = null;
 
-            for(long contentFormat : contentFormats){
+            for(long contentFormat : contentFormats) {
                 result = getWrappedResourceStatus(contentFormat);
 
-                if(result != null)
+                if (result != null)
                     break;
             }
 
@@ -243,7 +243,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
 
     @Override
-    public final T getResourceStatus(){
+    public final T getResourceStatus() {
         return this.resourceStatus;
     }
 
@@ -262,26 +262,26 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
      * or clients.
      */
     @Override
-    public final long getMaxAge(){
+    public final long getMaxAge() {
         return Math.max(this.resourceStatusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
 
 
 //    @Override
-//    public int hashCode(){
+//    public int hashCode() {
 //        return this.getUriPath().hashCode();
 //    }
 //
 //
 //    @Override
-//    public boolean equals(Object object){
-//        if(object == null)
+//    public boolean equals(Object object) {
+//        if (object == null)
 //            return false;
 //
-//        if(!(object instanceof String || object instanceof Webservice))
+//        if (!(object instanceof String || object instanceof Webservice))
 //            return false;
 //
-//        if(object instanceof String)
+//        if (object instanceof String)
 //            return (this.getUriPath().equals(object));
 //
 //        return (this.getUriPath().equals(((Webservice) object).getUriPath()));

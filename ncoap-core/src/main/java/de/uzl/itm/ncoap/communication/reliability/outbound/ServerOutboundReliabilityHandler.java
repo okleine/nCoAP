@@ -69,7 +69,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
      *                 reliable message transfer
      */
-    public ServerOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory){
+    public ServerOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory) {
         super(executor, factory);
         this.transfers1 = HashBasedTable.create();
         this.transfers2 = HashBasedTable.create();
@@ -81,8 +81,8 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
 
     @Override
-    public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket){
-        if(coapMessage instanceof CoapResponse) {
+    public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
+        if (coapMessage instanceof CoapResponse) {
             return handleOutboundCoapResponse((CoapResponse) coapMessage, remoteSocket);
         } else {
             return true;
@@ -101,11 +101,11 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     @Override
     public void update(Observable o, Object arg) {
-        if(arg instanceof MessageIDFactory.ReleasedMessageID) {
+        if (arg instanceof MessageIDFactory.ReleasedMessageID) {
             InetSocketAddress remoteSocket = ((MessageIDFactory.ReleasedMessageID) arg).getRemoteSocket();
             Token token = ((MessageIDFactory.ReleasedMessageID) arg).getToken();
             CoapResponse coapResponse = removeTransfer(remoteSocket, token);
-            if(coapResponse != null && coapResponse.getMessageType() == MessageType.CON) {
+            if (coapResponse != null && coapResponse.getMessageType() == MessageType.CON) {
                 // there was an ongoing outbound transfer
                 int messageID = coapResponse.getMessageID();
                 LOG.warn("Transmission timed out (remote socket: \"{}\", token: {}, message ID: {})",
@@ -121,7 +121,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     private boolean handleInboundEmptyMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         int messageType = coapMessage.getMessageType();
-        if(messageType == MessageType.CON) {
+        if (messageType == MessageType.CON) {
             // incoming PINGs are handled by the inbound reliability handler
             return true;
         } else {
@@ -142,8 +142,8 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
     private boolean handleOutboundCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
 
         // update update notifications (i.e. send as next retransmission)
-        if(coapResponse.isUpdateNotification() && coapResponse.getMessageType() != MessageType.ACK) {
-            if(updateRetransmission(remoteSocket, coapResponse)){
+        if (coapResponse.isUpdateNotification() && coapResponse.getMessageType() != MessageType.ACK) {
+            if (updateRetransmission(remoteSocket, coapResponse)) {
                 return false;
             } else {
                 coapResponse.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
@@ -153,9 +153,9 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         int messageID = coapResponse.getMessageID();
 
         // set a new message ID if necessary
-        if(messageID == CoapMessage.UNDEFINED_MESSAGE_ID){
+        if (messageID == CoapMessage.UNDEFINED_MESSAGE_ID) {
             messageID = this.assignMessageID(coapResponse, remoteSocket);
-            if(messageID == CoapMessage.UNDEFINED_MESSAGE_ID){
+            if (messageID == CoapMessage.UNDEFINED_MESSAGE_ID) {
                 return false;
             }
         }
@@ -163,7 +163,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         int messageType = coapResponse.getMessageType();
         if (messageType == MessageType.CON || messageType == MessageType.NON) {
             this.addTransfer(remoteSocket, coapResponse);
-            if(coapResponse.getMessageType() == MessageType.CON) {
+            if (coapResponse.getMessageType() == MessageType.CON) {
                 scheduleRetransmission(remoteSocket, coapResponse.getToken(), 1);
             }
         }
@@ -172,10 +172,10 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
 
 
-//    private int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteSocket){
+//    private int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 //        int messageID = this.messageIDFactory.getNextMessageID(remoteSocket, coapMessage.getToken());
 //
-//        if(!(messageID == CoapMessage.UNDEFINED_MESSAGE_ID)){
+//        if (!(messageID == CoapMessage.UNDEFINED_MESSAGE_ID)) {
 //            coapMessage.setMessageID(messageID);
 //            LOG.debug("Message ID set to {}.", messageID);
 //
@@ -205,7 +205,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
     private Token removeTransfer(InetSocketAddress remoteSocket, int messageID) {
         try {
             this.lock.readLock().lock();
-            if(this.transfers1.get(remoteSocket, messageID) == null) {
+            if (this.transfers1.get(remoteSocket, messageID) == null) {
                 return null;
             }
         } finally {
@@ -215,7 +215,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         try {
             this.lock.writeLock().lock();
             Token token = this.transfers1.remove(remoteSocket, messageID);
-            if(token != null) {
+            if (token != null) {
                 this.transfers2.remove(remoteSocket, token);
             }
             return token;
@@ -228,7 +228,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
     private CoapResponse removeTransfer(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
-            if(this.transfers2.get(remoteSocket,token) == null) {
+            if (this.transfers2.get(remoteSocket,token) == null) {
                 return null;
             }
         } finally {
@@ -238,7 +238,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         try {
             this.lock.writeLock().lock();
             CoapResponse coapResponse = this.transfers2.remove(remoteSocket, token);
-            if(coapResponse != null) {
+            if (coapResponse != null) {
                 this.transfers1.remove(remoteSocket, coapResponse.getMessageID());
             }
             return coapResponse;
@@ -247,12 +247,12 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         }
     }
 
-    private boolean updateRetransmission(InetSocketAddress remoteSocket, CoapResponse updatedResponse){
+    private boolean updateRetransmission(InetSocketAddress remoteSocket, CoapResponse updatedResponse) {
         Token token = updatedResponse.getToken();
         try{
             //update the update notification to be retransmitted
             lock.readLock().lock();
-            if(this.transfers2.get(remoteSocket, token) == null){
+            if (this.transfers2.get(remoteSocket, token) == null) {
                 return false;
             }
         } finally {
@@ -262,7 +262,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         try{
             lock.writeLock().lock();
             CoapResponse previousResponse = this.transfers2.remove(remoteSocket, token);
-            if(previousResponse == null){
+            if (previousResponse == null) {
                 return false;
             } else {
                 int messageID = previousResponse.getMessageID();
@@ -303,8 +303,8 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
             final CoapResponse coapResponse = getCoapResponse(this.remoteSocket, this.token);
 
-            if(!(coapResponse == null)) {
-                if(coapResponse.isUpdateNotification()) {
+            if (!(coapResponse == null)) {
+                if (coapResponse.isUpdateNotification()) {
                     coapResponse.setObserve();
                 }
 
@@ -314,7 +314,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if(future.isSuccess()) {
+                        if (future.isSuccess()) {
                             LOG.info("Retransmitted...");
                         } else {
                             LOG.error("Retransmission failed...");
@@ -322,7 +322,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
                     }
                 });
 
-                if(retransmissionNo < MAX_RETRANSMISSIONS) {
+                if (retransmissionNo < MAX_RETRANSMISSIONS) {
                     scheduleRetransmission(remoteSocket, coapResponse.getToken(), retransmissionNo + 1);
                     LOG.debug("Scheduled next retransmission to \"{}\" (Message ID: {})",
                             remoteSocket, coapResponse.getMessageID()

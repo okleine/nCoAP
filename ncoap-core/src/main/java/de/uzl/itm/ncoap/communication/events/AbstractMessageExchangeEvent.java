@@ -38,7 +38,7 @@ public abstract class AbstractMessageExchangeEvent{
     private final Token token;
 
 
-    public AbstractMessageExchangeEvent(InetSocketAddress remoteEndpoint, Token token){
+    public AbstractMessageExchangeEvent(InetSocketAddress remoteEndpoint, Token token) {
         this.remoteEndpoint = remoteEndpoint;
         this.token = token;
     }

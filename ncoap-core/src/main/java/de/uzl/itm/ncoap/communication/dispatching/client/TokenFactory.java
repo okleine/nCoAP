@@ -64,7 +64,7 @@ public class TokenFactory {
      * {@link Token#getBytes()} is not longer than the given
      * maximum length.
      */
-    public TokenFactory(){
+    public TokenFactory() {
         this.lock = new ReentrantReadWriteLock();
         this.activeTokens = new TreeSet<>();
         this.random = new Random(System.currentTimeMillis());
@@ -86,10 +86,10 @@ public class TokenFactory {
     }
 
 
-    public synchronized boolean releaseToken(Token token){
+    public synchronized boolean releaseToken(Token token) {
         try {
             this.lock.readLock().lock();
-            if(!this.activeTokens.contains(token)){
+            if (!this.activeTokens.contains(token)) {
                 log.error("Could not release (unknown) Token ({})", token);
                 return false;
             }
@@ -99,7 +99,7 @@ public class TokenFactory {
 
         try{
             this.lock.writeLock().lock();
-            if(this.activeTokens.remove(token)) {
+            if (this.activeTokens.remove(token)) {
                 log.info("Released Token ({})", token);
                 return true;
             } else {
@@ -112,21 +112,21 @@ public class TokenFactory {
     }
 
 
-//    private static Token getSuccessor(Token token){
+//    private static Token getSuccessor(Token token) {
 //
 //        boolean allBitsSet = true;
 //
 //        //Check if all bits in the given byte array are set to 1
-//        for(byte b : token.getBytes()){
-//            if(b != -1){
+//        for(byte b : token.getBytes()) {
+//            if (b != -1) {
 //                allBitsSet = false;
 //                break;
 //            }
 //        }
 //
-//        if(allBitsSet){
+//        if (allBitsSet) {
 //            //make e.g. ([00000000], [00000000]) the successor of ([11111111])
-//            if(token.getBytes().length < Token.MAX_LENGTH){
+//            if (token.getBytes().length < Token.MAX_LENGTH) {
 //                return new Token(new byte[token.getBytes().length + 1]);
 //            }
 //

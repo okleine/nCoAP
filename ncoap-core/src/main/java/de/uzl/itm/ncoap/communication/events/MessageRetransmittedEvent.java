@@ -55,7 +55,7 @@ public class MessageRetransmittedEvent extends AbstractMessageTransferEvent {
 //    }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "MESSAGE RETRANSMITTED (to  " + this.getRemoteSocket() + " with message ID " + this.getMessageID()
                 + " and token " + this.getToken() + ")";
     }

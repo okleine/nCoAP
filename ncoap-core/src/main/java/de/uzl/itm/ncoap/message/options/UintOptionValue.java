@@ -73,7 +73,7 @@ public class UintOptionValue extends OptionValue<Long> {
 
     @Override
     public boolean equals(Object object) {
-        if(!(object instanceof UintOptionValue))
+        if (!(object instanceof UintOptionValue))
             return false;
 
         UintOptionValue other = (UintOptionValue) object;
@@ -81,7 +81,7 @@ public class UintOptionValue extends OptionValue<Long> {
     }
 
 
-    public static byte[] shortenValue(byte[] value){
+    public static byte[] shortenValue(byte[] value) {
         int index = 0;
         while(index < value.length - 1 && value[index] == 0)
             index++;

@@ -55,7 +55,7 @@ public class ClientChannelPipelineFactory extends CoapChannelPipelineFactory {
      *
      * @param executor The {@link ScheduledExecutorService} to provide the thread(s) for I/O operations
      */
-    public ClientChannelPipelineFactory(ScheduledExecutorService executor){
+    public ClientChannelPipelineFactory(ScheduledExecutorService executor) {
 
         super(executor);
         addChannelHandler(new ClientIdentificationHandler(executor));

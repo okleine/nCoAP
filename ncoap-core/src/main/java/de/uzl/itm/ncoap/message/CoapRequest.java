@@ -87,7 +87,7 @@ public class CoapRequest extends CoapMessage {
 
         this(messageType, messageCode);
 
-        if(useProxy)
+        if (useProxy)
             setProxyURIOption(targetUri);
         else
             setTargetUriOptions(targetUri);
@@ -107,10 +107,10 @@ public class CoapRequest extends CoapMessage {
     public CoapRequest(int messageType, int messageCode) throws IllegalArgumentException {
         super(messageType, messageCode);
 
-        if(messageType < CON || messageType > NON)
+        if (messageType < CON || messageType > NON)
             throw new IllegalArgumentException(String.format(NO_REQUEST_TYPE, messageType));
 
-        if(!MessageCode.isRequest(messageCode))
+        if (!MessageCode.isRequest(messageCode))
             throw new IllegalArgumentException(String.format(NO_REQUEST_CODE, messageCode));
 
 //        this.block1Size = BlockSize.UNBOUND;
@@ -135,22 +135,22 @@ public class CoapRequest extends CoapMessage {
 
         //URI must be absolute and thus contain a scheme part (must be one of "coap" or "coaps")
         String scheme = targetUri.getScheme();
-        if(scheme == null)
+        if (scheme == null)
             throw new IllegalArgumentException(String.format(URI_SCHEME, targetUri.toString()));
 
         scheme = scheme.toLowerCase(Locale.ENGLISH);
-        if(!(scheme.equals("coap")))
+        if (!(scheme.equals("coap")))
             throw new IllegalArgumentException(String.format(URI_SCHEME, targetUri.toString()));
 
         //Target URI must not have fragment part
-        if(targetUri.getFragment() != null)
+        if (targetUri.getFragment() != null)
             throw new IllegalArgumentException(String.format(URI_FRAGMENT, targetUri.toString()));
 
         //Create target URI options
-        if(!(OptionValue.isDefaultValue(URI_HOST, targetUri.getHost().getBytes(CoapMessage.CHARSET))))
+        if (!(OptionValue.isDefaultValue(URI_HOST, targetUri.getHost().getBytes(CoapMessage.CHARSET))))
             addUriHostOption(targetUri.getHost());
 
-        if(targetUri.getPort() != -1 && targetUri.getPort() != OptionValue.URI_PORT_DEFAULT)
+        if (targetUri.getPort() != -1 && targetUri.getPort() != OptionValue.URI_PORT_DEFAULT)
             addUriPortOption(targetUri.getPort());
 
         addUriPathOptions(targetUri.getPath());
@@ -160,8 +160,8 @@ public class CoapRequest extends CoapMessage {
 
 
     private void addUriQueryOptions(String uriQuery) throws IllegalArgumentException {
-        if(uriQuery != null){
-            for(String queryComponent : uriQuery.split("&")){
+        if (uriQuery != null) {
+            for(String queryComponent : uriQuery.split("&")) {
                 this.addStringOption(URI_QUERY, queryComponent);
                 log.debug("Added URI query option for {}", queryComponent);
             }
@@ -170,15 +170,15 @@ public class CoapRequest extends CoapMessage {
 
     
     private void addUriPathOptions(String uriPath) throws IllegalArgumentException {
-        if(uriPath != null){
+        if (uriPath != null) {
             //Path must not start with "/" to be further processed
-            if(uriPath.startsWith("/"))
+            if (uriPath.startsWith("/"))
                 uriPath = uriPath.substring(1);
 
-            if("".equals(uriPath))
+            if ("".equals(uriPath))
                 return;
 
-            for(String pathComponent : uriPath.split("/")){
+            for(String pathComponent : uriPath.split("/")) {
                 this.addStringOption(URI_PATH, pathComponent);
                 log.debug("Added URI path option for {}", pathComponent);
             }
@@ -187,7 +187,7 @@ public class CoapRequest extends CoapMessage {
 
 
     private void addUriPortOption(int uriPort) throws IllegalArgumentException {
-        if(uriPort > 0 && uriPort != OptionValue.URI_PORT_DEFAULT)
+        if (uriPort > 0 && uriPort != OptionValue.URI_PORT_DEFAULT)
             this.addUintOption(URI_PORT, uriPort);
     }
 
@@ -228,7 +228,7 @@ public class CoapRequest extends CoapMessage {
      * @return a {@link java.util.Set<>} containing the values of the If-Match options. If no such option is present in
      * this {@link CoapRequest} the returned set is empty.
      */
-    public Set<byte[]> getIfMatch(){
+    public Set<byte[]> getIfMatch() {
 
         Set<OptionValue> ifMatchOptionValues = options.get(IF_MATCH);
         Set<byte[]> result = new HashSet<>(ifMatchOptionValues.size());
@@ -246,9 +246,9 @@ public class CoapRequest extends CoapMessage {
      * @return the value of the URI host option or <code>null</code> if the URI
      * host option is not present in this {@link CoapRequest}.
      */
-    public String getUriHost(){
+    public String getUriHost() {
 
-        if(options.containsKey(URI_HOST))
+        if (options.containsKey(URI_HOST))
             return ((StringOptionValue) options.get(URI_HOST).iterator().next()).getDecodedValue();
 
         return null;
@@ -286,7 +286,7 @@ public class CoapRequest extends CoapMessage {
      * @return  a {@link Set} containing the values of the ETAG options that are present in this
      * {@link CoapRequest}. If there is no such option, then the returned set is empty.
      */
-    public Set<byte[]> getEtags(){
+    public Set<byte[]> getEtags() {
         Set<byte[]> result = new HashSet<>();
 
         for (OptionValue optionValue : options.get(ETAG))
@@ -304,14 +304,14 @@ public class CoapRequest extends CoapMessage {
      * @return <code>true</code> if the option is set after method returned or <code>false</code> otherwise.
      */
     public boolean setIfNonMatch() {
-        if(options.containsKey(IF_NONE_MATCH))
+        if (options.containsKey(IF_NONE_MATCH))
             return true;
 
         try{
             this.addEmptyOption(IF_NONE_MATCH);
             return true;
         }
-        catch(IllegalArgumentException e){
+        catch(IllegalArgumentException e) {
             return false;
         }
     }
@@ -323,7 +323,7 @@ public class CoapRequest extends CoapMessage {
       * @return <code>true</code> if the If-Non-Match option is present or <code>false</code> if there is
      * no such option present in this {@link CoapRequest}.
      */
-    public boolean isIfNonMatchSet(){
+    public boolean isIfNonMatchSet() {
         return options.containsKey(IF_NONE_MATCH);
     }
 
@@ -335,8 +335,8 @@ public class CoapRequest extends CoapMessage {
      * @return the value of the URI port option or {@link OptionValue#URI_PORT_DEFAULT} if the URI port option is not
      * present in this {@link CoapRequest}.
      */
-    public long getUriPort(){
-        if(options.containsKey(URI_PORT))
+    public long getUriPort() {
+        if (options.containsKey(URI_PORT))
             return ((UintOptionValue) options.get(URI_PORT).iterator().next()).getDecodedValue();
 
         return OptionValue.URI_PORT_DEFAULT;
@@ -350,11 +350,11 @@ public class CoapRequest extends CoapMessage {
      * @return the full path of the request URI reconstructed from the URI path options present in this
      * {@link CoapRequest}.
      */
-    public String getUriPath(){
+    public String getUriPath() {
         String result = "/";
 
         Iterator<OptionValue> iterator = options.get(URI_PATH).iterator();
-        if(iterator.hasNext())
+        if (iterator.hasNext())
             result += ((StringOptionValue) iterator.next()).getDecodedValue();
 
         while(iterator.hasNext())
@@ -370,10 +370,10 @@ public class CoapRequest extends CoapMessage {
      * @return the full query of the request URI reconstructed from the URI query options present in this
      * {@link CoapRequest} or the empty string ("") if no such option is present.
      */
-    public String getUriQuery(){
+    public String getUriQuery() {
         String result = "";
 
-        if(options.containsKey(URI_QUERY)){
+        if (options.containsKey(URI_QUERY)) {
 
             Iterator<OptionValue> iterator = options.get(URI_QUERY).iterator();
             result += (((StringOptionValue) iterator.next()).getDecodedValue());
@@ -398,14 +398,14 @@ public class CoapRequest extends CoapMessage {
      * @return the value of the qiven query parameter from the contained values of {@link Option#URI_QUERY}
      * or <code>null</code> if no such {@link Option#URI_QUERY} is present.
      */
-    public String getUriQueryParameterValue(String parameter){
-        if(!parameter.endsWith("="))
+    public String getUriQueryParameterValue(String parameter) {
+        if (!parameter.endsWith("="))
             parameter += "=";
 
-        for(OptionValue optionValue : options.get(URI_QUERY)){
+        for(OptionValue optionValue : options.get(URI_QUERY)) {
             String value = ((StringOptionValue) optionValue).getDecodedValue();
 
-            if(value.startsWith(parameter))
+            if (value.startsWith(parameter))
                 return value.substring(parameter.length());
         }
 
@@ -445,7 +445,7 @@ public class CoapRequest extends CoapMessage {
      *
      * @return a {@link Set<Long>} containing the numbers representing the accepted content formats.
      */
-    public Set<Long> getAcceptedContentFormats(){
+    public Set<Long> getAcceptedContentFormats() {
         Set<Long> result = new HashSet<>();
 
         for(OptionValue optionValue : options.get(ACCEPT))
@@ -471,12 +471,12 @@ public class CoapRequest extends CoapMessage {
      * URI host, URI port, URI path, and URI query options is invalid.
      */
     public URI getProxyURI() throws URISyntaxException {
-        if(options.containsKey(PROXY_URI)){
+        if (options.containsKey(PROXY_URI)) {
             OptionValue proxyUriOptionValue = options.get(PROXY_URI).iterator().next();
             return new URI(((StringOptionValue) proxyUriOptionValue).getDecodedValue());
         }
 
-        if(options.get(PROXY_SCHEME).size() == 1){
+        if (options.get(PROXY_SCHEME).size() == 1) {
             OptionValue proxySchemeOptionValue = options.get(PROXY_SCHEME).iterator().next();
             String scheme = ((StringOptionValue) proxySchemeOptionValue).getDecodedValue();
             String uriHost = getUriHost();
@@ -512,7 +512,7 @@ public class CoapRequest extends CoapMessage {
     public void setBlock2(long number, long szx) throws IllegalArgumentException{
         try {
             this.removeOptions(BLOCK_2);
-            if(number > 1048575 || !(BlockSize.isValid(szx))) {
+            if (number > 1048575 || !(BlockSize.isValid(szx))) {
                 String error = "Invalid value for BLOCK2 option (NUM: " + number + ", SZX: " + szx + ")";
                 throw new IllegalArgumentException(error);
             }
@@ -543,7 +543,7 @@ public class CoapRequest extends CoapMessage {
     public void setBlock1(long number, boolean more, long szx) throws IllegalArgumentException{
         try {
             this.removeOptions(BLOCK_1);
-            if(number > 1048575 || !(BlockSize.isValid(szx))) {
+            if (number > 1048575 || !(BlockSize.isValid(szx))) {
                 String error = "Invalid value for BLOCK1 option (NUM: " + number + ", SZX: " + szx + ")";
                 throw new IllegalArgumentException(error);
             }
@@ -561,7 +561,7 @@ public class CoapRequest extends CoapMessage {
      * @return <code>true</code> if the observing option is set on this
      * {@link CoapRequest} or <code>false</code> otherwise.
      */
-    public boolean isObservationRequest(){
+    public boolean isObservationRequest() {
         return(!options.get(OBSERVE).isEmpty());
     }
 }

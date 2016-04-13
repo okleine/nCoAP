@@ -236,7 +236,7 @@ public abstract class MessageCode {
     }
 //        private int number;
 //
-//        private Name(int number){
+//        private Name(int number) {
 //            this.number = number;
 //            MESSAGE_CODES.put(number, this);
 //        }
@@ -256,8 +256,8 @@ public abstract class MessageCode {
 //         * @return the {@link Name} corresponding to the given number or {@link Name#UNKNOWN} if no such {@link Name}
 //         * exists.
 //         */
-//        public static Name getName(int number){
-//            if(MESSAGE_CODES.containsKey(number))
+//        public static Name getName(int number) {
+//            if (MESSAGE_CODES.containsKey(number))
 //                return MESSAGE_CODES.get(number);
 //            else
 //                return Name.UNKNOWN;
@@ -277,7 +277,7 @@ public abstract class MessageCode {
      * @return <code>true</code> if the given number corresponds to a valid
      * {@link MessageCode} and <code>false</code> otherwise
      */
-    public static boolean isMessageCode(int number){
+    public static boolean isMessageCode(int number) {
         return MESSAGE_CODES.containsKey(number);
     }
 
@@ -290,7 +290,7 @@ public abstract class MessageCode {
      * @return <code>true</code> in case of a request code, <code>false</code> otherwise.
      *
      */
-    public static boolean isRequest(int messageCode){
+    public static boolean isRequest(int messageCode) {
         return (messageCode > 0 && messageCode < 5);
     }
 
@@ -302,7 +302,7 @@ public abstract class MessageCode {
 //     * @return <code>true</code> in case of a request code, <code>false</code> otherwise.
 //     *
 //     */
-//    public static boolean isRequest(MessageCode.Name messageCode){
+//    public static boolean isRequest(MessageCode.Name messageCode) {
 //        return isRequest(messageCode.getNumber());
 //    }
 
@@ -314,7 +314,7 @@ public abstract class MessageCode {
      * @return <code>true</code> in case of a response code, <code>false</code> otherwise.
      *
      */
-    public static boolean isResponse(int messageCode){
+    public static boolean isResponse(int messageCode) {
         return messageCode >= 5;
     }
 
@@ -326,7 +326,7 @@ public abstract class MessageCode {
 //     * @return <code>true</code> in case of a response code, <code>false</code> otherwise.
 //     *
 //     */
-//    public static boolean isResponse(MessageCode.Name messageCode){
+//    public static boolean isResponse(MessageCode.Name messageCode) {
 //        return isResponse(messageCode.getNumber());
 //    }
 
@@ -337,7 +337,7 @@ public abstract class MessageCode {
      * @return <code>true</code> in case of an error response code, <code>false</code> otherwise.
      *
      */
-    public static boolean isErrorMessage(int codeNumber){
+    public static boolean isErrorMessage(int codeNumber) {
         return (codeNumber >= 128);
     }
 
@@ -345,7 +345,7 @@ public abstract class MessageCode {
      * This method indicates whether a message may contain payload
      * @return <code>true</code> if payload is allowed, <code>false</code> otherwise
      */
-    public static boolean allowsContent(int codeNumber){
+    public static boolean allowsContent(int codeNumber) {
         return !(codeNumber == GET || codeNumber == DELETE);
     }
 

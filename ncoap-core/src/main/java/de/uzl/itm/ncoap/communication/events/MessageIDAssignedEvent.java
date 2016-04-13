@@ -53,7 +53,7 @@ public class MessageIDAssignedEvent extends AbstractMessageTransferEvent {
 
 
     @Override
-    public String toString(){
+    public String toString() {
         return "MESSAGE ID " + this.getMessageID() + " ASSIGNED (remote endpoint: " + this.getRemoteSocket() +
                 ", token: " + this.getToken() + ")";
     }

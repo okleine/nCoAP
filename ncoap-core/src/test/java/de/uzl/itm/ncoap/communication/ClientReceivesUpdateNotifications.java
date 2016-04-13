@@ -151,7 +151,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
     }
 
     @Test
-    public void testFirstMessage(){
+    public void testFirstMessage() {
         Iterator<Long> receptionTimes = clientCallback.getCoapResponses().keySet().iterator();
 
         CoapResponse response = clientCallback.getCoapResponses().get(receptionTimes.next());
@@ -163,7 +163,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
     }
 
     @Test
-    public void testSecondMessage(){
+    public void testSecondMessage() {
         Iterator<Long> receptionTimes = clientCallback.getCoapResponses().keySet().iterator();
         receptionTimes.next();
 
@@ -176,7 +176,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
     }
 
     @Test
-    public void testThirdMessage(){
+    public void testThirdMessage() {
         Iterator<Long> receptionTimes = clientCallback.getCoapResponses().keySet().iterator();
         receptionTimes.next();
         receptionTimes.next();
@@ -190,7 +190,7 @@ public class ClientReceivesUpdateNotifications extends AbstractCoapCommunication
     private class SpecificClientCallback extends TestCallback {
 
         @Override
-        public boolean continueObservation(){
+        public boolean continueObservation() {
             return true;
         }
     }

@@ -73,7 +73,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to provide the threads to execute the
      *                 tasks for reliability.
      */
-    public ServerInboundReliabilityHandler(ScheduledExecutorService executor){
+    public ServerInboundReliabilityHandler(ScheduledExecutorService executor) {
         super(executor);
         this.unprocessedRequests = HashBasedTable.create();
         this.scheduledEmptyAcknowledgements = HashBasedTable.create();
@@ -124,11 +124,11 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
         int messageType = coapRequest.getMessageType();
         int messageID = coapRequest.getMessageID();
 
-        if(!addUnprocessedRequest(remoteSocket, messageID, coapRequest.getToken())) {
+        if (!addUnprocessedRequest(remoteSocket, messageID, coapRequest.getToken())) {
             LOG.info("Duplicate Request received from \"{}\" (message ID: {})", remoteSocket, messageID);
             if (messageType == MessageType.CON) {
                 ScheduledFuture future = getFromScheduledEmptyAcknowledgements(remoteSocket, messageID);
-                if(future == null || future.isDone()) {
+                if (future == null || future.isDone()) {
                     LOG.debug("Duplicate was CON. Send immediate empty ACK...");
                     sendEmptyACK(messageID, remoteSocket);
                 } else {
@@ -139,7 +139,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
             }
             return false;
         } else {
-            if(messageType == MessageType.CON) {
+            if (messageType == MessageType.CON) {
                 scheduleEmptyAcknowledgement(remoteSocket, messageID);
             }
             return true;
@@ -173,7 +173,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
     private void removeUnprocessedRequest(InetSocketAddress remoteSocket, int messageID, Token token) {
         try {
             this.lock.readLock().lock();
-            if(!token.equals(this.unprocessedRequests.get(remoteSocket, messageID))){
+            if (!token.equals(this.unprocessedRequests.get(remoteSocket, messageID))) {
                 return;
             }
         } finally {
@@ -196,7 +196,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
 
         try {
             this.lock.readLock().lock();
-            if(this.scheduledEmptyAcknowledgements.contains(remoteSocket, messageID)) {
+            if (this.scheduledEmptyAcknowledgements.contains(remoteSocket, messageID)) {
                 LOG.debug("Empty ACK was already scheduled (RCPT: \"{}\", message ID: {}", remoteSocket, messageID);
                 return;
             }
@@ -206,7 +206,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
 
         try {
             this.lock.writeLock().lock();
-            if(this.scheduledEmptyAcknowledgements.contains(remoteSocket, messageID)) {
+            if (this.scheduledEmptyAcknowledgements.contains(remoteSocket, messageID)) {
                 LOG.debug("Empty ACK was already scheduled (RCPT: \"{}\", message ID: {}", remoteSocket, messageID);
                 return;
             }
@@ -237,7 +237,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
         }
 
         ScheduledFuture future = removeFromScheduledEmptyAcknowledgements(remoteSocket, messageID);
-        if(future != null && !future.isDone()) {
+        if (future != null && !future.isDone()) {
             if (future.cancel(false)) {
                 LOG.info("Canceled empty ACK to \"{}\" (message ID: {})", remoteSocket, messageID);
                 return true;
@@ -255,7 +255,7 @@ public class ServerInboundReliabilityHandler extends AbstractCoapChannelHandler 
         try {
             this.lock.writeLock().lock();
             ScheduledFuture future = this.scheduledEmptyAcknowledgements.remove(remoteSocket, messageID);
-            if(LOG.isDebugEnabled() && future != null) {
+            if (LOG.isDebugEnabled() && future != null) {
                 LOG.debug("Removed scheduled empty ACK (Remaining: {})", this.scheduledEmptyAcknowledgements.size());
             }
             return future;

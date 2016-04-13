@@ -98,14 +98,14 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
      * @param executor the {@link ScheduledExecutorService} to process the task to send a {@link de.uzl.itm.ncoap.message.CoapResponse}
      *                        and
      */
-    public RequestDispatcher(NotFoundHandler notFoundHandler, ScheduledExecutorService executor){
+    public RequestDispatcher(NotFoundHandler notFoundHandler, ScheduledExecutorService executor) {
         super(executor);
         this.registeredServices = Collections.synchronizedMap(new HashMap<String, Webresource>());
         this.notFoundHandler = notFoundHandler;
         this.shutdown = false;
     }
 
-    public void registerWellKnownCoreResource(){
+    public void registerWellKnownCoreResource() {
         registerWebresource(new WellKnownCoreResource(registeredServices, getExecutor()));
     }
 
@@ -113,7 +113,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, final InetSocketAddress remoteSocket) {
 
-        if(!(coapMessage instanceof CoapRequest)) {
+        if (!(coapMessage instanceof CoapRequest)) {
             return true;
         }
 
@@ -124,11 +124,11 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
 
         //Look up web service instance to handle the request
         final Webresource webresource = this.registeredServices.get(coapRequest.getUriPath());
-        if(webresource == null) {
+        if (webresource == null) {
             // the requested Webservice DOES NOT exist
             try {
                 this.notFoundHandler.processCoapRequest(responseFuture, coapRequest, remoteSocket);
-            } catch(Exception ex){
+            } catch(Exception ex) {
                 responseFuture.setException(ex);
             }
         } else if (coapRequest.isIfNonMatchSet()) {
@@ -137,7 +137,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
             // the requested Webservice DOES exist
             try {
                 webresource.processCoapRequest(responseFuture, coapRequest, remoteSocket);
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 responseFuture.setException(ex);
             }
         }
@@ -165,7 +165,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
 //     *
 //     * @param channel the {@link Channel} to be used for messages to be sent to other handlers in that channel
 //     */
-//    public void setChannel(Channel channel){
+//    public void setChannel(Channel channel) {
 //        this.channel = channel;
 //    }
 
@@ -193,8 +193,8 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
      * @param exceptionEvent the {@link ExceptionEvent} containing, e.g. the exception
      */
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent){
-        if(!shutdown){
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent) {
+        if (!shutdown) {
             Throwable cause = exceptionEvent.getCause();
             LOG.error("Unsupported exception caught! Don't know what to do...", cause);
         }
@@ -212,7 +212,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
     public ListenableFuture<Void> shutdown() {
         this.shutdown = true;
         String[] webservices = registeredServices.keySet().toArray(new String[registeredServices.size()]);
-        for(String servicePath : webservices){
+        for(String servicePath : webservices) {
             shutdownWebresource(servicePath);
         }
 
@@ -262,7 +262,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
      * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} registered with the same path
      */
     public final void registerWebresource(final Webresource webresource) throws IllegalArgumentException{
-        if(registeredServices.containsKey(webresource.getUriPath())){
+        if (registeredServices.containsKey(webresource.getUriPath())) {
             throw new IllegalArgumentException("Service " + webresource.getUriPath() + " is already registered");
         }
 
@@ -270,7 +270,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         registeredServices.put(webresource.getUriPath(), webresource);
         LOG.info("Registered new service at " + webresource.getUriPath());
 
-        if(webresource instanceof ObservableWebresource){
+        if (webresource instanceof ObservableWebresource) {
             ChannelPipeline pipeline = getContext().getChannel().getPipeline();
             ServerObservationHandler handler = pipeline.get(ServerObservationHandler.class);
             handler.registerWebresource((ObservableWebresource) webresource);
@@ -298,7 +298,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
             coapResponse.setMessageID(coapRequest.getMessageID());
             coapResponse.setToken(coapRequest.getToken());
 
-            if(this.coapRequest.getBlock2Szx() != UintOptionValue.UNDEFINED) {
+            if (this.coapRequest.getBlock2Szx() != UintOptionValue.UNDEFINED) {
                 coapResponse.setPreferedBlock2Size(BlockSize.getBlockSize(this.coapRequest.getBlock2Szx()));
             }
 
@@ -335,11 +335,11 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
 
         private void sendResponse(final CoapResponse coapResponse) {
             ChannelFuture future = Channels.write(this.channel, coapResponse, this.remoteSocket);
-            if(LOG.isDebugEnabled()) {
+            if (LOG.isDebugEnabled()) {
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
-                        if(future.isSuccess()) {
+                        if (future.isSuccess()) {
                             LOG.debug("Response sent to \"{}\" (Token: {}).", remoteSocket, coapResponse.getToken());
                         }
                     }

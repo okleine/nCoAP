@@ -68,12 +68,12 @@ public class LinkFormatDecoder {
 
         String[] services = linkFormat.split(",");
 
-        for(String service : services){
+        for(String service : services) {
             String serviceName = service.substring(service.indexOf("<") + 1, service.indexOf(">"));
             LOG.info("Found service {}", serviceName);
 
             int attributesIndex = service.indexOf(";");
-            if(attributesIndex == -1){
+            if (attributesIndex == -1) {
                 LOG.debug("No attributes found for resource {}.", service);
                 continue;
             }
@@ -82,25 +82,25 @@ public class LinkFormatDecoder {
 
             Set<LinkAttribute> attributesSet = new HashSet<>();
 
-            for(String attribute : attributes){
+            for(String attribute : attributes) {
                 LOG.info("Service {} has attribute {}.", serviceName, attribute);
                 String key = !attribute.contains("=") ? attribute : attribute.substring(0, attribute.indexOf("="));
                 LinkAttribute.Type attributeType = LinkAttribute.getAttributeType(key);
 
-                if(LinkAttribute.Type.EMPTY.equals(attributeType)) {
+                if (LinkAttribute.Type.EMPTY.equals(attributeType)) {
                     attributesSet.add(new EmptyLinkAttribute(key));
-                } else if(attribute.length() == attribute.indexOf("=") + 1){
+                } else if (attribute.length() == attribute.indexOf("=") + 1) {
                     LOG.warn("Service {} has attribute {} without any value (IGNORE!)", serviceName, key);
                 } else {
 
                     String encodedValues = attribute.substring(attribute.indexOf("=") + 1);
 
-                    if(LinkAttribute.Type.STRING.equals(attributeType)) {
+                    if (LinkAttribute.Type.STRING.equals(attributeType)) {
                         //Remove the quotation marks
-                        if(encodedValues.startsWith("\"")){
+                        if (encodedValues.startsWith("\"")) {
                             encodedValues = encodedValues.substring(1);
                         }
-                        if(encodedValues.endsWith("\"")){
+                        if (encodedValues.endsWith("\"")) {
                             encodedValues = encodedValues.substring(0, encodedValues.length() - 1);
                         }
 
@@ -114,7 +114,7 @@ public class LinkFormatDecoder {
                         for(String value : values) {
                             try {
                                 attributesSet.add(new LongLinkAttribute(key, Long.valueOf(value)));
-                            } catch(NumberFormatException ex){
+                            } catch(NumberFormatException ex) {
                                 LOG.warn("Value ({}) of link attribute \"{}\" is no number (IGNORE!)", value, key);
                             }
                         }

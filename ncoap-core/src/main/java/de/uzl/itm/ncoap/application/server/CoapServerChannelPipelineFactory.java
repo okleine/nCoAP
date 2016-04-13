@@ -57,7 +57,7 @@ public class CoapServerChannelPipelineFactory extends CoapChannelPipelineFactory
      *                        unknown {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s.
      */
     public CoapServerChannelPipelineFactory(ScheduledExecutorService executor, NotFoundHandler notFoundHandler,
-                                            BlockSize maxBlock1Size, BlockSize maxBlock2Size){
+                                            BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
 
         super(executor);
         addChannelHandler(new ServerIdentificationHandler(executor));

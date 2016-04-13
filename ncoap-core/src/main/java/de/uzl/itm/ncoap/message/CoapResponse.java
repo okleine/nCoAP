@@ -80,7 +80,7 @@ public class CoapResponse extends CoapMessage {
     public CoapResponse(int messageType, int messageCode) throws IllegalArgumentException {
         super(messageType, messageCode);
 
-        if(!MessageCode.isResponse(messageCode))
+        if (!MessageCode.isResponse(messageCode))
             throw new IllegalArgumentException("Message code no." + messageCode + " is no response code.");
     }
 
@@ -104,7 +104,7 @@ public class CoapResponse extends CoapMessage {
     public static CoapResponse createErrorResponse(int messageType, int messageCode, String content)
         throws IllegalArgumentException{
 
-        if(!MessageCode.isErrorMessage(messageCode)){
+        if (!MessageCode.isErrorMessage(messageCode)) {
             throw new IllegalArgumentException(String.format(NO_ERRROR_CODE, MessageCode.asString(messageCode)));
         }
 
@@ -161,8 +161,8 @@ public class CoapResponse extends CoapMessage {
      *
      * @return the byte array representing the ETAG of the content returned by {@link #getContent()}
      */
-    public byte[] getEtag(){
-        if(options.containsKey(ETAG))
+    public byte[] getEtag() {
+        if (options.containsKey(ETAG))
             return ((OpaqueOptionValue) options.get(ETAG).iterator().next()).getDecodedValue();
         else
             return null;
@@ -173,7 +173,7 @@ public class CoapResponse extends CoapMessage {
      * {@link de.uzl.itm.ncoap.application.server.resource.ObservableWebresource} if an inbound
      * {@link CoapRequest} to start a new observation is accepted.
      */
-    public void setObserve(){
+    public void setObserve() {
         this.setObserve(System.currentTimeMillis() % ResourceStatusAge.MODULUS);
     }
 
@@ -196,12 +196,12 @@ public class CoapResponse extends CoapMessage {
     public void setBlock2(long number, boolean more, long szx) throws IllegalArgumentException{
         try {
             this.removeOptions(BLOCK_2);
-            if(number > 1048575) {
+            if (number > 1048575) {
                 throw new IllegalArgumentException("Max. BLOCK2NUM is 1048575");
             }
             //long more = ((more) ? 1 : 0) << 3;
             this.addUintOption(BLOCK_2, ((number & 0xFFFFF) << 4) + ((more ? 1 : 0) << 3) + szx);
-        } catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             this.removeOptions(BLOCK_2);
             log.error("This should never happen.", e);
         }
@@ -210,12 +210,12 @@ public class CoapResponse extends CoapMessage {
     public void setBlock1(long number, long szx) throws IllegalArgumentException{
         try {
             this.removeOptions(BLOCK_1);
-            if(number > 1048575) {
+            if (number > 1048575) {
                 throw new IllegalArgumentException("Max. BLOCK1NUM is 1048575");
             }
             //long more = ((more) ? 1 : 0) << 3;
             this.addUintOption(BLOCK_1, ((number & 0xFFFFF) << 4) + (1 << 3) + szx);
-        } catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             this.removeOptions(BLOCK_1);
             log.error("This should never happen.", e);
         }
@@ -230,7 +230,7 @@ public class CoapResponse extends CoapMessage {
      * @return <code>true</code> if this {@link CoapResponse} is an update notification
      * and <code>false</code> otherwise.
      */
-    public boolean isUpdateNotification(){
+    public boolean isUpdateNotification() {
         return this.getObserve() != UintOptionValue.UNDEFINED;
     }
 
@@ -257,16 +257,16 @@ public class CoapResponse extends CoapMessage {
         String locationQuery = locationURI.getRawQuery();
 
         try{
-            if(locationPath != null){
+            if (locationPath != null) {
                 //Path must not start with "/" to be further processed
-                if(locationPath.startsWith("/"))
+                if (locationPath.startsWith("/"))
                     locationPath = locationPath.substring(1);
 
                 for(String pathComponent : locationPath.split("/"))
                     this.addStringOption(LOCATION_PATH, pathComponent);
             }
 
-            if(locationQuery != null){
+            if (locationQuery != null) {
                 for(String queryComponent : locationQuery.split("&"))
                     this.addStringOption(LOCATION_QUERY, queryComponent);
             }
@@ -290,7 +290,7 @@ public class CoapResponse extends CoapMessage {
         //Reconstruct path
         StringBuilder locationPath = new StringBuilder();
 
-        if(options.containsKey(LOCATION_PATH)){
+        if (options.containsKey(LOCATION_PATH)) {
             for (OptionValue optionValue : options.get(LOCATION_PATH))
                 locationPath.append("/").append(((StringOptionValue) optionValue).getDecodedValue());
         }
@@ -298,7 +298,7 @@ public class CoapResponse extends CoapMessage {
         //Reconstruct query
         StringBuilder locationQuery = new StringBuilder();
 
-        if(options.containsKey(LOCATION_QUERY)){
+        if (options.containsKey(LOCATION_QUERY)) {
             Iterator<OptionValue> queryComponentIterator = options.get(LOCATION_QUERY).iterator();
             locationQuery.append(((StringOptionValue) queryComponentIterator.next()).getDecodedValue());
             while(queryComponentIterator.hasNext())
@@ -306,7 +306,7 @@ public class CoapResponse extends CoapMessage {
                              .append(((StringOptionValue) queryComponentIterator.next()).getDecodedValue());
         }
 
-        if(locationPath.length() == 0 && locationQuery.length() == 0)
+        if (locationPath.length() == 0 && locationQuery.length() == 0)
             return null;
 
         return new URI(null, null, null, (int) UintOptionValue.UNDEFINED, locationPath.toString(),
@@ -319,7 +319,7 @@ public class CoapResponse extends CoapMessage {
      *
      * @param maxAge the value for the Max-Age option to be set
      */
-    public void setMaxAge(long maxAge){
+    public void setMaxAge(long maxAge) {
         try {
             this.options.removeAll(MAX_AGE);
             this.addUintOption(MAX_AGE, maxAge);
@@ -336,8 +336,8 @@ public class CoapResponse extends CoapMessage {
      * @return the value of the Max-Age option of this {@link de.uzl.itm.ncoap.message.CoapResponse}. If no such option
      * exists, this method returns {@link de.uzl.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
      */
-    public long getMaxAge(){
-        if(options.containsKey(MAX_AGE)) {
+    public long getMaxAge() {
+        if (options.containsKey(MAX_AGE)) {
             return ((UintOptionValue) options.get(MAX_AGE).iterator().next()).getDecodedValue();
         } else {
             return OptionValue.MAX_AGE_DEFAULT;

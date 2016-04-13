@@ -77,7 +77,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * @param uriPath the uriPath this {@link ObservableWebresource} is registered at.
      * @param initialStatus the initial status of this {@link ObservableWebresource}.
      */
-    protected ObservableWebresource(String uriPath, T initialStatus, ScheduledExecutorService executor){
+    protected ObservableWebresource(String uriPath, T initialStatus, ScheduledExecutorService executor) {
         this(uriPath, initialStatus, MAX_AGE_DEFAULT, executor);
         this.setLinkAttribute(new EmptyLinkAttribute(EmptyLinkAttribute.OBSERVABLE));
     }
@@ -89,7 +89,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * @param lifetime the number of seconds the initial status may be considered fresh, i.e. cachable by
      *                        proxies or clients.
      */
-    protected ObservableWebresource(String uriPath, T initialStatus, long lifetime, ScheduledExecutorService executor){
+    protected ObservableWebresource(String uriPath, T initialStatus, long lifetime, ScheduledExecutorService executor) {
         this.uriPath = uriPath;
         this.linkAttributes = LinkedHashMultimap.create();
         this.statusLock = new ReentrantReadWriteLock();
@@ -99,10 +99,10 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     @Override
-    public void setLinkAttribute(LinkAttribute linkAttribute){
-        if(this.linkAttributes.containsKey(linkAttribute.getKey())){
+    public void setLinkAttribute(LinkAttribute linkAttribute) {
+        if (this.linkAttributes.containsKey(linkAttribute.getKey())) {
 
-            if(!LinkAttribute.allowsMultipleValues(linkAttribute.getKey()))
+            if (!LinkAttribute.allowsMultipleValues(linkAttribute.getKey()))
                 removeLinkAttribute(linkAttribute.getKey());
         }
 
@@ -111,29 +111,29 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     @Override
-    public boolean removeLinkAttribute(String attributeKey){
+    public boolean removeLinkAttribute(String attributeKey) {
         return !this.linkAttributes.removeAll(attributeKey).isEmpty();
     }
 
     @Override
-    public boolean hasLinkAttribute(LinkAttribute linkAttribute){
+    public boolean hasLinkAttribute(LinkAttribute linkAttribute) {
         return this.linkAttributes.get(linkAttribute.getKey()).contains(linkAttribute);
     }
 
     @Override
-    public Collection<LinkAttribute> getLinkAttributes(){
+    public Collection<LinkAttribute> getLinkAttributes() {
         return this.linkAttributes.values();
     }
 
 
     @Override
-    public void setRequestDispatcher(RequestDispatcher requestDispatcher){
+    public void setRequestDispatcher(RequestDispatcher requestDispatcher) {
         this.requestDispatcher = requestDispatcher;
     }
 
 
     @Override
-    public RequestDispatcher getRequestDispatcher(){
+    public RequestDispatcher getRequestDispatcher() {
         return this.requestDispatcher;
     }
 
@@ -145,7 +145,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     @Override
-    public ScheduledExecutorService getExecutor(){
+    public ScheduledExecutorService getExecutor() {
         return this.executor;
     }
 
@@ -159,14 +159,14 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * this method is safely called within {@link #getWrappedResourceStatus(java.util.Set)}.</p>
      */
     @Override
-    public final T getResourceStatus(){
+    public final T getResourceStatus() {
         return this.status;
     }
 
 
     @Override
-    public synchronized final void setResourceStatus(final T status, final long lifetime){
-        this.executor.submit(new Runnable(){
+    public synchronized final void setResourceStatus(final T status, final long lifetime) {
+        this.executor.submit(new Runnable() {
 
             @Override
             public void run() {
@@ -183,7 +183,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
                     setChanged();
                     notifyObservers(UPDATE);
                 }
-                catch(Exception ex){
+                catch(Exception ex) {
                     log.error("Exception while setting new resource status for \"{}\"!",
                             ObservableWebresource.this.getUriPath(), ex);
                 }
@@ -215,13 +215,13 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * @return a {@link WrappedResourceStatus} if the content format was supported or <code>null</code> if the
      * resource status could not be serialized to the desired content format.
      */
-    public final WrappedResourceStatus getWrappedResourceStatus(long contentFormat){
+    public final WrappedResourceStatus getWrappedResourceStatus(long contentFormat) {
         try{
             this.statusLock.readLock().lock();
 
             byte[] serializedResourceStatus = getSerializedResourceStatus(contentFormat);
 
-            if(serializedResourceStatus == null)
+            if (serializedResourceStatus == null)
                 return null;
 
             else
@@ -259,16 +259,16 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * <code>null</code> if the resource status could not be serialized to any accepted content format.
      */
     @Override
-    public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats){
+    public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats) {
         try{
             this.statusLock.readLock().lock();
 
             WrappedResourceStatus result = null;
 
-            for(long contentFormat : contentFormats){
+            for(long contentFormat : contentFormats) {
                 result = getWrappedResourceStatus(contentFormat);
 
-                if(result != null)
+                if (result != null)
                     break;
             }
 
@@ -308,7 +308,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * or clients.
      */
     @Override
-    public final long getMaxAge(){
+    public final long getMaxAge() {
         return Math.max(this.statusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
 

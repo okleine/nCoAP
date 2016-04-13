@@ -55,7 +55,7 @@ public class RemoteClientSocketChangedEvent extends AbstractMessageExchangeEvent
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "REMOTE CLIENT SOCKET CHANGED (old: " + this.getPreviousRemoteSocket() + ", new: " + this.getRemoteSocket() +
                 ", Token: " + this.getToken() + ")";
     }

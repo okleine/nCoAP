@@ -73,7 +73,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
     /**
      * Creates a new instance of {@link ClientBlock2Handler}.
      */
-    public ClientBlock2Handler(ScheduledExecutorService executor){
+    public ClientBlock2Handler(ScheduledExecutorService executor) {
         super(executor);
         this.block2HelperTable = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
@@ -81,7 +81,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
 
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if(coapMessage instanceof CoapResponse && coapMessage.getBlock2Szx() != UintOptionValue.UNDEFINED) {
+        if (coapMessage instanceof CoapResponse && coapMessage.getBlock2Szx() != UintOptionValue.UNDEFINED) {
             return handleInboundCoapResponseWithBlock2((CoapResponse) coapMessage, remoteSocket);
         } else {
             return true;
@@ -96,13 +96,13 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
 
         ChannelBuffer received = addResponseBlock(remoteSocket, token, etag, responseBlock);
 
-        if(received.readableBytes() == 0) {
+        if (received.readableBytes() == 0) {
             LOG.error("Blockwise response transfer failed!");
             triggerEvent(new BlockwiseResponseTransferFailedEvent(remoteSocket, token), false);
             return false;
         }
 
-        if(!coapResponse.isLastBlock2()) {
+        if (!coapResponse.isLastBlock2()) {
             long block2num = coapResponse.getBlock2Number();
             long block2szx = coapResponse.getBlock2Szx();
 
@@ -134,7 +134,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
         try {
             this.lock.writeLock().lock();
             ClientBlock2Helper helper = this.block2HelperTable.get(remoteSocket, token);
-            if(helper != null) {
+            if (helper != null) {
                 return helper.addResponseBlock(responsePayloadBlock, etag);
             } else {
                 return ChannelBuffers.EMPTY_BUFFER;
@@ -149,7 +149,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
         try {
             this.lock.readLock().lock();
             ClientBlock2Helper helper = this.block2HelperTable.get(remoteSocket, token);
-            if(helper != null) {
+            if (helper != null) {
                 return helper.getCoapRequestForResponseBlock(block2num, block2szx);
             } else {
                 return null;
@@ -189,7 +189,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
     private void removeHelper(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.writeLock().lock();
-            if(this.block2HelperTable.remove(remoteSocket, token) == null) {
+            if (this.block2HelperTable.remove(remoteSocket, token) == null) {
                 LOG.debug("No BLOCK2 helper found to be removed (Remote Socket: {}, Token: {})", remoteSocket, token);
             } else {
                 LOG.debug("Successfully removed BLOCK2 helper (Remote Socket: {}, Token: {})", remoteSocket, token);
@@ -205,7 +205,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
         Token token = event.getToken();
         try {
             this.lock.readLock().lock();
-            if(!this.block2HelperTable.contains(previous, token)) {
+            if (!this.block2HelperTable.contains(previous, token)) {
                 return;
             }
         } finally {
@@ -242,7 +242,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
 
 
         private ChannelBuffer addResponseBlock(ChannelBuffer buffer, byte[] etag) {
-            if(this.etag != null && etag == null) {
+            if (this.etag != null && etag == null) {
                 // previous response block had an ETAG but current block has no ETAG
                 return ChannelBuffers.EMPTY_BUFFER;
             } else if (this.etag == null || Arrays.equals(this.etag, etag)) {
@@ -257,7 +257,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
 
 
         private CoapRequest getCoapRequestForResponseBlock(long block2num, long block2szx) {
-            if(block2num > 0) {
+            if (block2num > 0) {
                 coapRequest.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
                 coapRequest.setContent(ChannelBuffers.EMPTY_BUFFER);
                 coapRequest.removeOptions(Option.CONTENT_FORMAT);

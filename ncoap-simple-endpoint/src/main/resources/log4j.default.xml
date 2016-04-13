@@ -13,7 +13,7 @@
         <appender-ref ref="console"/>
     </appender>
 
-    <logger name="de.uzl.itm.ncoap.examples.SimpleCallback">
+    <logger name="SimpleCallback">
         <level value="info"/>
     </logger>
 

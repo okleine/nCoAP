@@ -92,7 +92,7 @@ public class ResourceStatusAgeTest extends AbstractCoapTest {
     private boolean expected;
 
 
-    public ResourceStatusAgeTest(long v1, long v2, long t1, long t2, boolean expected){
+    public ResourceStatusAgeTest(long v1, long v2, long t1, long t2, boolean expected) {
 
         CoapResponse coapResponse1 = new CoapResponse(MessageType.CON, MessageCode.CONTENT_205);
         coapResponse1.setObserve(v1);
@@ -117,9 +117,9 @@ public class ResourceStatusAgeTest extends AbstractCoapTest {
     }
 
     @Test
-    public void compareActuality(){
+    public void compareActuality() {
         String message;
-        if(expected){
+        if (expected) {
             message = "Params2 (" + this.params2 + ") should be considered newer than Params1 (" + this.params1 + ")";
         }
         else{

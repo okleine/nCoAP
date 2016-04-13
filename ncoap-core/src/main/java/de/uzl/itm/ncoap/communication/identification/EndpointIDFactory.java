@@ -68,7 +68,7 @@ public class EndpointIDFactory {
      * {@link Token#getBytes()} is not longer than the given
      * maximum length.
      */
-    public EndpointIDFactory(){
+    public EndpointIDFactory() {
         this.lock = new ReentrantReadWriteLock();
         activeIDs = new TreeSet<>();
         this.random = new Random(System.currentTimeMillis());
@@ -93,7 +93,7 @@ public class EndpointIDFactory {
 //        try{
 //            this.lock.writeLock().lock();
 //            EndpointID endpointID;
-//            if(activeIDs.isEmpty()){
+//            if (activeIDs.isEmpty()) {
 //                endpointID = new EndpointID(new byte[1]);
 //            }
 //            else{
@@ -110,10 +110,10 @@ public class EndpointIDFactory {
 //    }
 
 
-    public synchronized boolean passBackEndpointID(EndpointID endpointID){
+    public synchronized boolean passBackEndpointID(EndpointID endpointID) {
         try{
             this.lock.readLock().lock();
-            if(!this.activeIDs.contains(endpointID)){
+            if (!this.activeIDs.contains(endpointID)) {
                 LOG.error("Could not pass pack (unknown) Endpoint ID ({})", endpointID);
                 return false;
             }
@@ -124,7 +124,7 @@ public class EndpointIDFactory {
 
         try{
             this.lock.writeLock().lock();
-            if(this.activeIDs.remove(endpointID)){
+            if (this.activeIDs.remove(endpointID)) {
                 LOG.info("Passed back Endpoint ID ({})", endpointID);
                 return true;
             }
@@ -139,21 +139,21 @@ public class EndpointIDFactory {
     }
 
 
-    private static EndpointID getSuccessor(EndpointID endpointID){
+    private static EndpointID getSuccessor(EndpointID endpointID) {
 
         boolean allBitsSet = true;
 
         //Check if all bits in the given byte array are set to 1
-        for(byte b : endpointID.getBytes()){
-            if(b != -1){
+        for(byte b : endpointID.getBytes()) {
+            if (b != -1) {
                 allBitsSet = false;
                 break;
             }
         }
 
-        if(allBitsSet){
+        if (allBitsSet) {
             //make e.g. ([00000000], [00000000]) the successor of ([11111111])
-            if(endpointID.getBytes().length < EndpointID.MAX_LENGTH){
+            if (endpointID.getBytes().length < EndpointID.MAX_LENGTH) {
                 return new EndpointID(new byte[endpointID.getBytes().length + 1]);
             }
 

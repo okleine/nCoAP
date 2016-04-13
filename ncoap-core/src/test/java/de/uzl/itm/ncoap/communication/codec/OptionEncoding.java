@@ -96,7 +96,7 @@ public class OptionEncoding extends AbstractCoapTest {
     private ChannelBuffer encodedOption;
 
 
-    private OptionEncoding(int previousOptionNumber, int optionNumber, OptionValue optionValue){
+    private OptionEncoding(int previousOptionNumber, int optionNumber, OptionValue optionValue) {
         this.coapTestEncoder = new CoapTestEncoder();
         this.previousOptionNumber = previousOptionNumber;
         this.optionNumber = optionNumber;
@@ -117,28 +117,28 @@ public class OptionEncoding extends AbstractCoapTest {
     }
 
     @Test
-    public void testDeltaPartOfFirstByte(){
+    public void testDeltaPartOfFirstByte() {
         int expectedDelta = this.optionNumber - this.previousOptionNumber;
 
         ChannelBuffer buffer = ChannelBuffers.copiedBuffer(encodedOption);
 
         int firstByte = buffer.readByte() & 0xFF;
 
-        if(expectedDelta < 13){
+        if (expectedDelta < 13) {
             assertEquals("Delta part of first byte is incorrect, ",
                     getZeroPaddedBinaryString(Integer.toBinaryString(expectedDelta), 4),
                     getZeroPaddedBinaryString(Integer.toBinaryString(firstByte >>> 4), 4)
             );
         }
 
-        if(expectedDelta >= 13 && expectedDelta < 269){
+        if (expectedDelta >= 13 && expectedDelta < 269) {
             assertEquals("Delta part of first byte is incorrect, ",
                     getZeroPaddedBinaryString(Integer.toBinaryString(13), 4),
                     getZeroPaddedBinaryString(Integer.toBinaryString(firstByte >>> 4), 4)
             );
         }
 
-        if(expectedDelta >= 269 && expectedDelta < 65804){
+        if (expectedDelta >= 269 && expectedDelta < 65804) {
             assertEquals("Delta part of first byte does is incorrect, ",
                     getZeroPaddedBinaryString(Integer.toBinaryString(14), 4),
                     getZeroPaddedBinaryString(Integer.toBinaryString(firstByte >>> 4), 4)
@@ -147,14 +147,14 @@ public class OptionEncoding extends AbstractCoapTest {
     }
 
     @Test
-    public void testLengthPartOfFirstByte(){
+    public void testLengthPartOfFirstByte() {
         int expectedLength = this.optionValue.getValue().length;
 
         ChannelBuffer buffer = ChannelBuffers.copiedBuffer(encodedOption);
 
         int firstByte = buffer.readByte() & 0xFF;
 
-        if(expectedLength < 13){
+        if (expectedLength < 13) {
             assertEquals("Length part of first byte is incorrect, ",
                     getZeroPaddedBinaryString(Integer.toBinaryString(expectedLength), 4),
                     getZeroPaddedBinaryString(Integer.toBinaryString(firstByte & 0x0F), 4)
@@ -164,14 +164,14 @@ public class OptionEncoding extends AbstractCoapTest {
                     (firstByte & 0x0F) + 269, buffer.readableBytes());
         }
 
-        if(expectedLength >= 13 && expectedLength < 269){
+        if (expectedLength >= 13 && expectedLength < 269) {
             assertEquals("Length part of first byte is incorrect, ",
                     getZeroPaddedBinaryString(Integer.toBinaryString(13), 4),
                     getZeroPaddedBinaryString(Integer.toBinaryString(firstByte & 0x0F), 4)
             );
         }
 
-        if(expectedLength >= 269 && expectedLength < 65804){
+        if (expectedLength >= 269 && expectedLength < 65804) {
             assertEquals("Length part of first byte is incorrect, ",
                     getZeroPaddedBinaryString(Integer.toBinaryString(14), 4),
                     getZeroPaddedBinaryString(Integer.toBinaryString(firstByte & 0x0F), 4)
@@ -180,21 +180,21 @@ public class OptionEncoding extends AbstractCoapTest {
     }
 
     @Test
-    public void testExtendedDelta(){
+    public void testExtendedDelta() {
 
         int expectedDelta = this.optionNumber - this.previousOptionNumber;
 
         ChannelBuffer buffer = ChannelBuffers.copiedBuffer(encodedOption);
         buffer.readByte();
 
-        if(expectedDelta >= 13 && expectedDelta < 269){
+        if (expectedDelta >= 13 && expectedDelta < 269) {
             int extendedDelta = (buffer.readByte() & 0xFF);
             assertEquals("Extended delta part is incorrect, ",
                     getZeroPaddedBinaryString(Integer.toBinaryString(expectedDelta - 13), 8),
                     getZeroPaddedBinaryString(Integer.toBinaryString(extendedDelta), 8));
         }
 
-        if(expectedDelta >= 269 && expectedDelta < 65804){
+        if (expectedDelta >= 269 && expectedDelta < 65804) {
             int extendedDelta = ((buffer.readByte() & 0xFF) << 8 | (buffer.readByte() & 0xFF));
             assertEquals("Length part of first byte is incorrect, ",
                     getZeroPaddedBinaryString(Integer.toBinaryString(expectedDelta - 269), 16),
@@ -204,7 +204,7 @@ public class OptionEncoding extends AbstractCoapTest {
     }
 
     @Test
-    public void testExtendedLength(){
+    public void testExtendedLength() {
 
         int expectedLength = optionValue.getValue().length;
 
@@ -213,18 +213,18 @@ public class OptionEncoding extends AbstractCoapTest {
         int deltaPart = (firstByte & 0xFF) >>> 4 ;
 
         //read and ignore next byte (extended option delta)
-        if(deltaPart == 13){
+        if (deltaPart == 13) {
             log.debug("Skip next byte (extended delta)");
             buffer.readByte();
         }
 
         //read and ignore next 2 bytes (extended option delta)
-        if(deltaPart == 14){
+        if (deltaPart == 14) {
             log.debug("Skip next 2 bytes (extended delta)");
             buffer.readBytes(new byte[2]);
         }
 
-        if(expectedLength >= 13 && expectedLength < 269){
+        if (expectedLength >= 13 && expectedLength < 269) {
             log.info("Expected extended length value: " + (expectedLength - 13));
             int extendedLength = (buffer.readByte() & 0xFF);
 
@@ -236,7 +236,7 @@ public class OptionEncoding extends AbstractCoapTest {
                     extendedLength + 13, buffer.readableBytes());
         }
 
-        if(expectedLength >= 269 && expectedLength < 65804){
+        if (expectedLength >= 269 && expectedLength < 65804) {
             log.info("Expected extended length value: " + (expectedLength - 269));
             int extendedLength = ((buffer.readByte() & 0xFF) << 8 | (buffer.readByte() & 0xFF));
 
@@ -252,7 +252,7 @@ public class OptionEncoding extends AbstractCoapTest {
 
 
 
-    private static String getZeroPaddedBinaryString(String original, int expectedLength){
+    private static String getZeroPaddedBinaryString(String original, int expectedLength) {
         String result = original;
         while(result.length() < expectedLength)
             result = 0 + result;

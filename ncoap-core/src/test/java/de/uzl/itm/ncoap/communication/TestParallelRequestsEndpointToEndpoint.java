@@ -79,8 +79,8 @@ public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunic
         server = new CoapEndpoint("SERVER EP", NotFoundHandler.getDefault(), new InetSocketAddress(5683));
         serverSocket = new InetSocketAddress("localhost", server.getPort());
 
-        //Add different webservices to server
-        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
+        // Add different webservices to server
+        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             server.registerWebresource(new NotObservableTestWebresource("/resource" + (i + 1),
                     "This is the status of /resource" + (i + 1), 0, 0, server.getExecutor()));
         }
@@ -88,7 +88,7 @@ public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunic
         //Create client, callbacks and requests
         client = new CoapEndpoint("CLIENT EP", NotFoundHandler.getDefault(), new InetSocketAddress(5684));
 
-        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
+        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             clientCallbacks[i] = new TestCallback();
             requests[i] =  new CoapRequest(MessageType.CON, MessageCode.GET,
                     new URI("coap://localhost:" + server.getPort() + "/resource" + (i+1)));
@@ -105,7 +105,7 @@ public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunic
    @Override
     public void createTestScenario() throws Exception {
 
-        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
+        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             client.sendCoapRequest(requests[i], clientCallbacks[i], serverSocket);
         }
 
@@ -114,8 +114,8 @@ public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunic
     }
 
     @Test
-    public void testClientsReceivedCorrectResponses(){
-        for (int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
+    public void testClientsReceivedCorrectResponses() {
+        for (int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             CoapResponse coapResponse = clientCallbacks[i].getCoapResponses().values().iterator().next();
 
             assertEquals("Response Processor " + (i+1) + " received wrong message content",

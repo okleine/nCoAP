@@ -68,7 +68,7 @@ public class CoapEndpointChannelPipelineFactory extends CoapChannelPipelineFacto
      * incoming requests for unknown {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s.
      */
     public CoapEndpointChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory,
-                             NotFoundHandler notFoundHandler, BlockSize maxBlock1Size, BlockSize maxBlock2Size){
+                             NotFoundHandler notFoundHandler, BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
 
         super(executor);
         MessageIDFactory factory = new MessageIDFactory(executor);

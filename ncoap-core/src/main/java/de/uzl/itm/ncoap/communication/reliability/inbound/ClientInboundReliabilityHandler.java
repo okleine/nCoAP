@@ -64,7 +64,7 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to provide the threads to execute the
      *                 tasks for reliability.
      */
-    public ClientInboundReliabilityHandler(ScheduledExecutorService executor){
+    public ClientInboundReliabilityHandler(ScheduledExecutorService executor) {
         super(executor);
         this.awaitedResponses = HashMultimap.create();
         this.lock = new ReentrantReadWriteLock();
@@ -112,19 +112,19 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
     }
 
 
-    private boolean handleInboundCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteSocket){
+    private boolean handleInboundCoapResponse(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
 
         final int messageType = coapResponse.getMessageType();
         Token token = coapResponse.getToken();
 
-        if(!this.isResponseAwaited(remoteSocket, token)) {
-            if(messageType == CON || (messageType == NON && coapResponse.isUpdateNotification())) {
+        if (!this.isResponseAwaited(remoteSocket, token)) {
+            if (messageType == CON || (messageType == NON && coapResponse.isUpdateNotification())) {
                 // response was unexpected (send RST)
                 sendReset(coapResponse.getMessageID(), remoteSocket);
             }
             LOG.debug("Received unexpected response from \"{}\" (token: {})", remoteSocket, token);
             return false;
-        } else if ((messageType == CON)){
+        } else if ((messageType == CON)) {
             // send empty ACK
             sendEmptyACK(coapResponse.getMessageID(), remoteSocket);
         }
@@ -132,7 +132,7 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
     }
 
 
-    private boolean isResponseAwaited(InetSocketAddress remoteSocket, Token token){
+    private boolean isResponseAwaited(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
             return awaitedResponses.get(remoteSocket).contains(token);
@@ -152,10 +152,10 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
         }
     }
 
-    private boolean removeFromAwaitedResponses(InetSocketAddress remoteSocket, Token token){
+    private boolean removeFromAwaitedResponses(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
-            if(!awaitedResponses.get(remoteSocket).contains(token)){
+            if (!awaitedResponses.get(remoteSocket).contains(token)) {
                 return false;
             }
         } finally {
@@ -164,7 +164,7 @@ public class ClientInboundReliabilityHandler extends AbstractCoapChannelHandler
 
         try {
             this.lock.writeLock().lock();
-            if(this.awaitedResponses.remove(remoteSocket, token)) {
+            if (this.awaitedResponses.remove(remoteSocket, token)) {
                 LOG.debug("Removed message exchange with \"{}\" and token {} (Remaining: {})",
                         new Object[]{remoteSocket, token, this.awaitedResponses.size()});
                 return true;

@@ -145,7 +145,7 @@ public abstract class OptionValue<T>{
      */
     public static Type getType(int optionNumber) throws IllegalArgumentException {
         Characteristics characteristics = CHARACTERISTICS.get(optionNumber);
-        if(characteristics == null){
+        if (characteristics == null) {
             throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
         } else {
             return characteristics.getType();
@@ -163,7 +163,7 @@ public abstract class OptionValue<T>{
      */
     public static int getMinLength(int optionNumber) throws IllegalArgumentException {
         Characteristics characteristics = CHARACTERISTICS.get(optionNumber);
-        if(characteristics == null){
+        if (characteristics == null) {
             throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
         } else {
             return characteristics.getMinLength();
@@ -182,7 +182,7 @@ public abstract class OptionValue<T>{
      */
     public static int getMaxLength(int optionNumber) throws IllegalArgumentException {
         Characteristics characteristics = CHARACTERISTICS.get(optionNumber);
-        if(characteristics == null){
+        if (characteristics == null) {
             throw new IllegalArgumentException(String.format(UNKNOWN_OPTION, optionNumber));
         } else {
             return characteristics.getMaxLength();
@@ -199,20 +199,20 @@ public abstract class OptionValue<T>{
      *
      * @return <code>true</code> if the given value is the default value for the given option number
      */
-    public static boolean isDefaultValue(int optionNumber, byte[] value){
+    public static boolean isDefaultValue(int optionNumber, byte[] value) {
 
-        if(optionNumber == URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT))
+        if (optionNumber == URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT))
             return true;
 
-        if(optionNumber == MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT))
+        if (optionNumber == MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT))
             return true;
 
-        if(optionNumber == URI_HOST){
+        if (optionNumber == URI_HOST) {
             String hostName = new String(value, CoapMessage.CHARSET);
-            if(hostName.startsWith("[") && hostName.endsWith("]"))
+            if (hostName.startsWith("[") && hostName.endsWith("]"))
                 hostName = hostName.substring(1, hostName.length() - 1);
 
-            if(InetAddresses.isInetAddress(hostName))
+            if (InetAddresses.isInetAddress(hostName))
                 return true;
         }
 
@@ -232,10 +232,10 @@ public abstract class OptionValue<T>{
      */
     protected OptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
 
-        if(OptionValue.isDefaultValue(optionNumber, value))
+        if (OptionValue.isDefaultValue(optionNumber, value))
             throw new IllegalArgumentException(String.format(VALUE_IS_DEFAULT_VALUE, optionNumber));
 
-        if(getMinLength(optionNumber) > value.length || getMaxLength(optionNumber) < value.length)
+        if (getMinLength(optionNumber) > value.length || getMaxLength(optionNumber) < value.length)
             throw new IllegalArgumentException(String.format(OUT_OF_ALLOWED_RANGE, value.length, optionNumber,
                     getMinLength(optionNumber), getMaxLength(optionNumber)));
 
@@ -248,7 +248,7 @@ public abstract class OptionValue<T>{
      *
      * @return the encoded value of this option as byte array
      */
-    public byte[] getValue(){
+    public byte[] getValue() {
         return this.value;
     }
 
@@ -285,7 +285,7 @@ public abstract class OptionValue<T>{
      * {@link #getDecodedValue().toString()}.
      */
     @Override
-    public String toString(){
+    public String toString() {
         return "" + this.getDecodedValue();
     }
 

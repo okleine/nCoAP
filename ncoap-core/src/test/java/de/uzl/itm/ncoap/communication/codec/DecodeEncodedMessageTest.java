@@ -82,7 +82,7 @@ public class DecodeEncodedMessageTest extends AbstractCoapTest {
         coapMessage.setMessageID(1234);
         coapMessage.setToken(new Token(new byte[]{1,2,3,4}));
 
-        if(coapMessage.getMessageCode() == MessageCode.POST){
+        if (coapMessage.getMessageCode() == MessageCode.POST) {
             String payload = "Some arbitrary payload";
             coapMessage.setContent(payload.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
         }

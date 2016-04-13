@@ -68,7 +68,7 @@ public abstract class AbstractOutboundReliabilityHandler extends AbstractCoapCha
      * @param retransmission the retransmission number (e.g. 2 for the 2nd retransmission)
      * @return a random(!) delay for the given retransmission number according to the CoAP specification
      */
-    public static long provideRetransmissionDelay(int retransmission){
+    public static long provideRetransmissionDelay(int retransmission) {
         return (long)(Math.pow(2, retransmission - 1) * ACK_TIMEOUT_MILLIS *
                 (1 + RANDOM.nextDouble() * (ACK_RANDOM_FACTOR - 1)));
     }
@@ -81,17 +81,17 @@ public abstract class AbstractOutboundReliabilityHandler extends AbstractCoapCha
      * @param executor the {@link java.util.concurrent.ScheduledExecutorService} to process the tasks to ensure
      *                 reliable message transfer
      */
-    public AbstractOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory){
+    public AbstractOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory) {
         super(executor);
         this.messageIDFactory = factory;
         this.messageIDFactory.addObserver(this);
     }
 
 
-    protected int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteSocket){
+    protected int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         int messageID = this.messageIDFactory.getNextMessageID(remoteSocket, coapMessage.getToken());
 
-        if(!(messageID == CoapMessage.UNDEFINED_MESSAGE_ID)){
+        if (!(messageID == CoapMessage.UNDEFINED_MESSAGE_ID)) {
             coapMessage.setMessageID(messageID);
             LOG.debug("Message ID set to {}.", messageID);
 

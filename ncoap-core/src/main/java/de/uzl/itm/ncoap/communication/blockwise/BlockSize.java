@@ -52,7 +52,7 @@ public enum BlockSize {
         this.decodedSize = decodedSize;
     }
 
-    public int getSzx(){
+    public int getSzx() {
         return this.encodedSize;
     }
 
@@ -68,9 +68,17 @@ public enum BlockSize {
         return !(szx < SZX_MIN) && !(szx > SZX_MAX);
     }
 
-
-    public static long min(long szx1, long szx2) {
-        if(szx1 == BlockSize.UNDEFINED) {
+    /**
+     * Returns the SZX value representing the smaller block size. This method is for internal use and takes into
+     * account that
+     * @param szx1 the first SZX
+     * @param szx2 the second SZX
+     * @return
+     */
+    public static long min(long szx1, long szx2) throws IllegalArgumentException {
+        if (szx1 < UNDEFINED || szx1 > SZX_MAX || szx2 < UNDEFINED || szx2 > SZX_MAX) {
+            throw new IllegalArgumentException("SZX value out of allowed range.");
+        } else if (szx1 == BlockSize.UNDEFINED) {
             return szx2;
         } else if (szx2 == BlockSize.UNDEFINED) {
             return szx1;
@@ -84,17 +92,17 @@ public enum BlockSize {
             return BlockSize.UNBOUND;
         } else if (szx == 0) {
             return SIZE_16;
-        } else if(szx == 1) {
+        } else if (szx == 1) {
             return SIZE_32;
-        } else if(szx == 2) {
+        } else if (szx == 2) {
             return SIZE_64;
-        } else if(szx == 3) {
+        } else if (szx == 3) {
             return SIZE_128;
-        } else if(szx == 4) {
+        } else if (szx == 4) {
             return SIZE_256;
-        } else if(szx == 5) {
+        } else if (szx == 5) {
             return SIZE_512;
-        } else if(szx == 6) {
+        } else if (szx == 6) {
             return SIZE_1024;
         } else {
             throw new IllegalArgumentException("Unsupported SZX value (Block Option): " + szx);

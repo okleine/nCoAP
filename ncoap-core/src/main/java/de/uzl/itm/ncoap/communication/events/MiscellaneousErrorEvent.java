@@ -59,7 +59,7 @@ public class MiscellaneousErrorEvent extends AbstractMessageTransferEvent {
      * Returns a human readable description of the error that caused this event
      * @return a human readable description of the error that caused this event
      */
-    public String getDescription(){
+    public String getDescription() {
         return this.description;
     }
 
@@ -69,7 +69,7 @@ public class MiscellaneousErrorEvent extends AbstractMessageTransferEvent {
 //    }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "MISCELLANEOUS MESSAGE EXCHANGE ERROR (remote endpoint: " + this.getRemoteSocket() +
                 ", message ID: " + this.getMessageID() + ", token: " + this.getToken() + ")";
     }

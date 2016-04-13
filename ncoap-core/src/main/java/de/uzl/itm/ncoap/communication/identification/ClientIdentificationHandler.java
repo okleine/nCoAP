@@ -50,7 +50,7 @@ public class ClientIdentificationHandler extends AbstractIdentificationHandler
 
     private static Logger LOG = LoggerFactory.getLogger(ClientIdentificationHandler.class.getName());
 
-    public ClientIdentificationHandler(ScheduledExecutorService executor){
+    public ClientIdentificationHandler(ScheduledExecutorService executor) {
         super(executor);
     }
 
@@ -58,7 +58,7 @@ public class ClientIdentificationHandler extends AbstractIdentificationHandler
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 
-        if(coapMessage instanceof CoapResponse) {
+        if (coapMessage instanceof CoapResponse) {
             return handleInboundCoapResponse((CoapResponse) coapMessage, remoteSocket);
         } else {
             return true;
@@ -69,7 +69,7 @@ public class ClientIdentificationHandler extends AbstractIdentificationHandler
     @Override
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 
-        if(coapMessage instanceof CoapRequest) {
+        if (coapMessage instanceof CoapRequest) {
             handleOutboundCoapRequest((CoapRequest) coapMessage, remoteSocket);
         }
         return true;
@@ -78,14 +78,14 @@ public class ClientIdentificationHandler extends AbstractIdentificationHandler
 
     private boolean handleOutboundCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
         byte[] endpointID2 = getFromAssignedToMe(remoteSocket, coapRequest.getToken());
-        if(endpointID2 != null){
+        if (endpointID2 != null) {
             coapRequest.setEndpointID2(endpointID2);
         }
 
-        if(!(coapRequest.getEndpointID1() == null)){
+        if (!(coapRequest.getEndpointID1() == null)) {
             // set the endpoint ID 1 option with a valid value
             EndpointID endpointID1 = getFromAssignedByMe(remoteSocket, coapRequest.getToken());
-            if(endpointID1 == null) {
+            if (endpointID1 == null) {
                 endpointID1 = getFactory().getNextEndpointID();
                 addToAssignedByMe(remoteSocket, coapRequest.getToken(), endpointID1);
             }
@@ -103,11 +103,11 @@ public class ClientIdentificationHandler extends AbstractIdentificationHandler
 
         // handle endpoint ID 2 if any (assigned by me)
         byte[] value = coapResponse.getEndpointID2();
-        if(value != null){
+        if (value != null) {
             EndpointID endpointID2 = new EndpointID(value);
             InetSocketAddress previousSocket = getFromAssignedByMe(endpointID2, token);
 
-            if(updateAssignedByMe(endpointID2, token, remoteSocket)){
+            if (updateAssignedByMe(endpointID2, token, remoteSocket)) {
                 triggerEvent(new RemoteServerSocketChangedEvent(
                     remoteSocket, previousSocket, coapResponse.getToken()
                     ), false);
@@ -118,7 +118,7 @@ public class ClientIdentificationHandler extends AbstractIdentificationHandler
 
         // handle endpoint ID 1 if present in message (assigned to me)
         byte[] endpointID1 = coapResponse.getEndpointID1();
-        if(endpointID1 != null){
+        if (endpointID1 != null) {
             addToAssignedToMe(remoteSocket, token, endpointID1);
         }
 

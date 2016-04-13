@@ -26,6 +26,7 @@ package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.communication.events.*;
 //import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
+import de.uzl.itm.ncoap.communication.events.client.ContinueResponseReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.ResponseBlockReceivedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
@@ -56,7 +57,7 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
     public final void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         Object message = me.getMessage();
         if (message instanceof CoapMessage) {
-            if(!handleInboundCoapMessage((CoapMessage) message, (InetSocketAddress) me.getRemoteAddress())) {
+            if (!handleInboundCoapMessage((CoapMessage) message, (InetSocketAddress) me.getRemoteAddress())) {
                 return;
             }
         } else if (message instanceof TokenReleasedEvent && this instanceof TokenReleasedEvent.Handler) {
@@ -86,6 +87,9 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         } else if (message instanceof ResponseBlockReceivedEvent &&
                 this instanceof ResponseBlockReceivedEvent.Handler) {
             ((ResponseBlockReceivedEvent.Handler) this).handleEvent((ResponseBlockReceivedEvent) message);
+        } else if (message instanceof ContinueResponseReceivedEvent &&
+                this instanceof ContinueResponseReceivedEvent.Handler) {
+            ((ContinueResponseReceivedEvent.Handler) this).handleEvent((ContinueResponseReceivedEvent) message);
         }
 
         ctx.sendUpstream(me);
@@ -102,7 +106,7 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
     public final void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception {
         Object message = me.getMessage();
 
-        if(me.getMessage() instanceof CoapMessage) {
+        if (me.getMessage() instanceof CoapMessage) {
             if (!handleOutboundCoapMessage((CoapMessage) message, (InetSocketAddress) me.getRemoteAddress())) {
                 me.getFuture().cancel();
                 return;
@@ -138,7 +142,7 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
 
 
     protected void triggerEvent(final AbstractMessageExchangeEvent event, boolean bottomUp) {
-        if(bottomUp) {
+        if (bottomUp) {
             Channels.fireMessageReceived(context.getChannel(), event);
         } else {
             Channels.fireMessageReceived(this.context, event);
@@ -154,7 +158,7 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         final CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
         ChannelFuture future = Channels.future(getContext().getChannel());
         Channels.write(getContext(), future, emptyACK, remoteSocket);
-        if(LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
@@ -169,7 +173,7 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         final CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
         ChannelFuture future = Channels.future(getContext().getChannel());
         Channels.write(getContext(), future, resetMessage, remoteSocket);
-        if(LOG.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {

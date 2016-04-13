@@ -100,7 +100,7 @@ public class ClientSendsTheSameCONRequestTwice extends AbstractCoapCommunication
         endpoint.writeMessage(coapRequest2, serverSocket);
         Thread.sleep(2000);
 
-        if(endpoint.getReceivedCoapMessages().size() >= 3) {
+        if (endpoint.getReceivedCoapMessages().size() >= 3) {
             int messageID = endpoint.getReceivedMessage(2).getMessageID();
             endpoint.writeMessage(CoapMessage.createEmptyAcknowledgement(messageID), serverSocket);
         }
@@ -117,18 +117,18 @@ public class ClientSendsTheSameCONRequestTwice extends AbstractCoapCommunication
     }
 
     @Test
-    public void testMessagesForEquality(){
+    public void testMessagesForEquality() {
         assertEquals(coapRequest1, coapRequest2);
         assertEquals(coapRequest1.hashCode(), coapRequest2.hashCode());
     }
 
     @Test
-    public void testEndpointReceivedThreeMessages(){
+    public void testEndpointReceivedThreeMessages() {
         assertEquals(3, endpoint.getReceivedCoapMessages().size());
     }
 
     @Test
-    public void testFirstMessageisEmptyAck(){
+    public void testFirstMessageisEmptyAck() {
         CoapMessage message1 = endpoint.getReceivedMessage(0);
 
         assertEquals("First message is not empty!", MessageCode.EMPTY, message1.getMessageCode());
@@ -137,7 +137,7 @@ public class ClientSendsTheSameCONRequestTwice extends AbstractCoapCommunication
     }
 
     @Test
-    public void testSecondMessageisEmptyAck(){
+    public void testSecondMessageisEmptyAck() {
         CoapMessage message1 = endpoint.getReceivedMessage(1);
 
         assertEquals("Second message is not empty!", MessageCode.EMPTY, message1.getMessageCode());
@@ -146,7 +146,7 @@ public class ClientSendsTheSameCONRequestTwice extends AbstractCoapCommunication
     }
 
     @Test
-    public void testThirdMessage(){
+    public void testThirdMessage() {
         CoapMessage message2 = endpoint.getReceivedMessage(2);
 
         assertEquals("Third message has wrong message code!", MessageCode.CONTENT_205,

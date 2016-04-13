@@ -104,7 +104,7 @@ public abstract class MessageType {
      *
      * @return whether the given number corresponds to a valid message type.
      */
-    public static boolean isMessageType(int number){
+    public static boolean isMessageType(int number) {
             return MESSAGE_TYPES.containsKey(number);
         }
 

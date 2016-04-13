@@ -87,7 +87,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
         InetSocketAddress remoteEndpoint) throws Exception{
 
-        if(!(coapRequest.getMessageCode() == GET)) {
+        if (!(coapRequest.getMessageCode() == GET)) {
             responseFuture.set(CoapResponse.createErrorResponse(
                 coapRequest.getMessageType(), METHOD_NOT_ALLOWED_405, "GET is the only allowed method!"
             ));
@@ -97,7 +97,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
     }
 
 
-    private void processCoapGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest){
+    private void processCoapGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest) {
         try{
             LinkAttribute filterAttribute = LinkAttribute.createFromUriQuery(coapRequest.getUriQuery());
             CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
@@ -106,7 +106,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
             coapResponse.setEtag(this.etag);
             responseFuture.set(coapResponse);
 
-        } catch(IllegalArgumentException ex){
+        } catch(IllegalArgumentException ex) {
             responseFuture.set(CoapResponse.createErrorResponse(
                 coapRequest.getMessageType(), BAD_REQUEST_400, ex.getMessage()
             ));
@@ -116,21 +116,21 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
 
 //    private LinkAttribute createLinkAttributeFromQuery(String queryParameter) throws IllegalArgumentException {
 //
-//        if(!queryParameter.equals("")){
+//        if (!queryParameter.equals("")) {
 //            String[] param = queryParameter.split("=");
 //
-//            if(param.length != 2) {
+//            if (param.length != 2) {
 //                throw new IllegalArgumentException("Could not parse query " + queryParameter);
 //            }
 //
 //            LinkAttribute linkAttribute;
 //            LinkAttribute.Type attributeType = LinkAttribute.getAttributeType(param[0]);
 //
-//            if(STRING.equals(attributeType)) {
+//            if (STRING.equals(attributeType)) {
 //                linkAttribute = new StringLinkAttribute(param[0], param[1]);
-//            } else if(LONG.equals(attributeType)) {
+//            } else if (LONG.equals(attributeType)) {
 //                linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
-//            } else if(EMPTY.equals(attributeType)) {
+//            } else if (EMPTY.equals(attributeType)) {
 //                linkAttribute = new EmptyLinkAttribute(param[0]);
 //            } else {
 //                throw new IllegalArgumentException("This should never happen!");
@@ -144,12 +144,12 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
 
 
     @SuppressWarnings("unchecked")
-    public byte[] getSerializedResourceStatus(LinkAttribute attribute){
+    public byte[] getSerializedResourceStatus(LinkAttribute attribute) {
         StringBuilder buffer = new StringBuilder();
 
-        for(Webresource webresource : getResourceStatus().values()){
+        for(Webresource webresource : getResourceStatus().values()) {
 
-            if(attribute != null && !webresource.hasLinkAttribute(attribute))
+            if (attribute != null && !webresource.hasLinkAttribute(attribute))
                 continue;
 
             buffer.append("<").append(webresource.getUriPath()).append(">");
@@ -158,7 +158,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
             for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webresource.getLinkAttributes()) {
                 buffer.append(linkAttribute.getKey().equals(previousKey) ? "" : ";" + linkAttribute.getKey());
 
-                if(!(linkAttribute instanceof EmptyLinkAttribute)){
+                if (!(linkAttribute instanceof EmptyLinkAttribute)) {
 
                     buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : "=")
                           .append(linkAttribute.getValue());
@@ -171,7 +171,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
             buffer.append(",\n");
         }
 
-        if(buffer.length() > 3)
+        if (buffer.length() > 3)
             buffer.deleteCharAt(buffer.length() - 2);
 
         log.debug("Content: \n{}", buffer.toString());
@@ -183,10 +183,10 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
 
     @Override
     @SuppressWarnings("unchecked")
-    public byte[] getSerializedResourceStatus(long contentFormat){
+    public byte[] getSerializedResourceStatus(long contentFormat) {
         StringBuilder buffer = new StringBuilder();
 
-        for(Webresource webresource : getResourceStatus().values()){
+        for(Webresource webresource : getResourceStatus().values()) {
             buffer.append("<").append(webresource.getUriPath()).append(">");
 
             String previousKey = null;
@@ -198,7 +198,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
             }
         }
 
-        if(buffer.length() > 3)
+        if (buffer.length() > 3)
             buffer.deleteCharAt(buffer.length() - 2);
 
         log.debug("Content: \n{}", buffer.toString());

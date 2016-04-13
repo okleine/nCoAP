@@ -83,7 +83,7 @@ public class ClientSendsPingToServer extends AbstractCoapCommunicationTest{
 
 
     @Test
-    public void testResetReceived(){
+    public void testResetReceived() {
         assertFalse("No RST (Pong) received.", callback.getEmptyRSTs().isEmpty());
     }
 

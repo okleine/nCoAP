@@ -26,6 +26,7 @@ package de.uzl.itm.ncoap.endpoints.client;
 
 import com.google.common.collect.Ordering;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +47,9 @@ public class TestCallback extends ClientCallback {
     private Set<Long> transmissions;
     private Set<Long> transmissionTimeouts;
     private Set<Long> responseBlockReceptions;
+    private Set<Long> continueResponseReceptions;
 
-    public TestCallback(){
+    public TestCallback() {
         this.coapResponses = Collections.synchronizedSortedMap(
                 new TreeMap<Long, CoapResponse>(Ordering.natural())
         );
@@ -56,11 +58,12 @@ public class TestCallback extends ClientCallback {
         this.transmissions = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
         this.transmissionTimeouts = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
         this.responseBlockReceptions = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
+        this.continueResponseReceptions = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
     }
 
 
     @Override
-    public void processCoapResponse(CoapResponse coapResponse){
+    public void processCoapResponse(CoapResponse coapResponse) {
        coapResponses.put(System.currentTimeMillis(), coapResponse);
        log.info("Received #{}: {}", coapResponses.size(), coapResponse);
     }
@@ -105,6 +108,13 @@ public class TestCallback extends ClientCallback {
         });
     }
 
+    @Override
+    public void processContinueResponseReceived(BlockSize block1Size) {
+        long actualTime = System.currentTimeMillis();
+        this.continueResponseReceptions.add(actualTime);
+        log.info("Received request block delivery confirmation (Size: {} bytes).", block1Size.getSize());
+    }
+
     /**
      * Returns a {@link SortedMap} containing all received {@link CoapResponse} instances as values and their reception
      * timestamps as key.
@@ -112,31 +122,39 @@ public class TestCallback extends ClientCallback {
      * @return a {@link SortedMap} containing all received {@link CoapResponse} instances as values and their reception
      * timestamps as key.
      */
-    public SortedMap<Long, CoapResponse> getCoapResponses(){
+    public SortedMap<Long, CoapResponse> getCoapResponses() {
         return this.coapResponses;
     }
 
+    public CoapResponse getCoapResponse(int index) {
+        long key = (long) this.coapResponses.keySet().toArray()[index];
+        return this.coapResponses.get(key);
+    }
 
-    public Set<Long> getEmptyACKs(){
+    public Set<Long> getEmptyACKs() {
         return this.emptyACKs;
     }
 
 
-    public Set<Long> getEmptyRSTs(){
+    public Set<Long> getEmptyRSTs() {
         return this.emptyRSTs;
     }
 
 
-    public Set<Long> getTransmissions(){
+    public Set<Long> getTransmissions() {
         return this.transmissions;
     }
 
 
-    public Set<Long> getTransmissionTimeouts(){
+    public Set<Long> getTransmissionTimeouts() {
         return this.transmissionTimeouts;
     }
 
     public Set<Long> getResponseBlockReceptions() {
         return this.responseBlockReceptions;
+    }
+
+    public Set<Long> getRequestBlockDeliveryConfirmations() {
+        return this.continueResponseReceptions;
     }
 }

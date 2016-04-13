@@ -73,18 +73,18 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
      * @param updateInterval the time passing between two status updates (in milliseconds)
      */
     public ObservableTestWebresource(String path, int initialStatus, long artificalDelay, final long updateInterval,
-                                     ScheduledExecutorService executor){
+                                     ScheduledExecutorService executor) {
         super(path, initialStatus, executor);
         this.artificalDelay = artificalDelay;
         this.updateInterval = updateInterval;
 
-        if(updateInterval != NO_AUTOMATIC_UPDATE){
-            executor.scheduleAtFixedRate(new Runnable(){
+        if (updateInterval != NO_AUTOMATIC_UPDATE) {
+            executor.scheduleAtFixedRate(new Runnable() {
 
                 @Override
                 public void run() {
                     int newStatus = (getResourceStatus() + 1) % 6;
-                    if(newStatus == 0)
+                    if (newStatus == 0)
                         newStatus = 1;
                     setResourceStatus(newStatus, updateInterval / 1000);
                 }
@@ -99,7 +99,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
      *                       requests
      */
     public ObservableTestWebresource(String path, int initialStatus, long artificalDelay,
-                                     ScheduledExecutorService executor){
+                                     ScheduledExecutorService executor) {
         this(path, initialStatus, artificalDelay, NO_AUTOMATIC_UPDATE, executor);
     }
 
@@ -116,25 +116,25 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteEndpoint){
+                                   InetSocketAddress remoteEndpoint) {
         LOG.debug("Process Request from \"{}\".", remoteEndpoint);
         try{
 
             Thread.sleep(this.artificalDelay);
 
-            if(coapRequest.getMessageCode() == MessageCode.GET){
+            if (coapRequest.getMessageCode() == MessageCode.GET) {
                 processGetRequest(responseFuture, coapRequest, remoteEndpoint);
             }
 
-            else if(coapRequest.getMessageCode() == MessageCode.POST){
+            else if (coapRequest.getMessageCode() == MessageCode.POST) {
                 processPostRequest(responseFuture, coapRequest, remoteEndpoint);
             }
 
-            else if(coapRequest.getMessageCode() == MessageCode.PUT){
+            else if (coapRequest.getMessageCode() == MessageCode.PUT) {
                 processPutRequest(responseFuture, coapRequest, remoteEndpoint);
             }
 
-            else if(coapRequest.getMessageCode() == MessageCode.DELETE){
+            else if (coapRequest.getMessageCode() == MessageCode.DELETE) {
                 processDeleteRequest(responseFuture, coapRequest, remoteEndpoint);
             }
 
@@ -144,7 +144,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
             }
         }
 
-        catch(InterruptedException ex){
+        catch(InterruptedException ex) {
             responseFuture.setException(ex);
         }
 
@@ -152,7 +152,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
 
     private void processGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteEndpoint){
+                                   InetSocketAddress remoteEndpoint) {
 
 
         Set<Long> acceptedContentFormats = coapRequest.getAcceptedContentFormats();
@@ -161,22 +161,22 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
         long contentFormat;
 
         //Use default content format if there was no accept option set in the request
-        if(acceptedContentFormats.isEmpty()){
+        if (acceptedContentFormats.isEmpty()) {
             contentFormat = DEFAULT_CONTENT_FORMAT;
             wrappedResourceStatus = getWrappedResourceStatus(contentFormat);
         }
 
         //Try all accepted content formats (if accept option was set in the request)
         else{
-            for(long acceptedContentFormat : acceptedContentFormats){
+            for(long acceptedContentFormat : acceptedContentFormats) {
                 wrappedResourceStatus = getWrappedResourceStatus(acceptedContentFormat);
 
-                if(wrappedResourceStatus != null)
+                if (wrappedResourceStatus != null)
                     break;
             }
         }
 
-        if(wrappedResourceStatus == null){
+        if (wrappedResourceStatus == null) {
             CoapResponse coapResponse =
                     new CoapResponse(coapRequest.getMessageType(), MessageCode.BAD_REQUEST_400);
 
@@ -194,7 +194,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
             coapResponse.setEtag(wrappedResourceStatus.getEtag());
             coapResponse.setMaxAge(wrappedResourceStatus.getMaxAge());
 
-            if(coapRequest.getObserve() == 0){
+            if (coapRequest.getObserve() == 0) {
                 coapResponse.setObserve();
             }
 
@@ -204,19 +204,19 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
 
     private void processPostRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                  InetSocketAddress remoteAddress){
+                                  InetSocketAddress remoteAddress) {
         responseFuture.setException(new Exception("Something went wrong..."));
     }
 
 
     private void processPutRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                  InetSocketAddress remoteAddress){
+                                  InetSocketAddress remoteAddress) {
         responseFuture.setException(new Exception("Something went wrong..."));
     }
 
 
     private void processDeleteRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                  InetSocketAddress remoteAddress){
+                                  InetSocketAddress remoteAddress) {
         responseFuture.setException(new Exception("Something went wrong..."));
     }
 
@@ -224,7 +224,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
     @Override
     public byte[] getSerializedResourceStatus(long contentFormat) {
 
-        switch((int) contentFormat){
+        switch((int) contentFormat) {
 
             case (int) ContentFormat.TEXT_PLAIN_UTF8:
                 return ("Status #" + getResourceStatus()).getBytes(CoapMessage.CHARSET);

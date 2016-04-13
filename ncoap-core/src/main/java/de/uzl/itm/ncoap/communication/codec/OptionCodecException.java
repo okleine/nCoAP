@@ -51,7 +51,7 @@ public class OptionCodecException extends Exception {
     /**
      * @param optionNumber the option number of the {@link OptionValue} that caused this exception
      */
-    public OptionCodecException(int optionNumber){
+    public OptionCodecException(int optionNumber) {
         super();
         this.optionNumber = optionNumber;
     }
@@ -72,7 +72,7 @@ public class OptionCodecException extends Exception {
      *
      * @param messageID the message ID of the message that caused this exception
      */
-    public void setMessageID(int messageID){
+    public void setMessageID(int messageID) {
         this.messageID = messageID;
     }
 
@@ -153,7 +153,7 @@ public class OptionCodecException extends Exception {
     }
 
     @Override
-    public String getMessage(){
+    public String getMessage() {
         return String.format(message, getOptionNumber());
     }
 }

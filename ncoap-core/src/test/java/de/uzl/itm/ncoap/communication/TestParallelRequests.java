@@ -78,7 +78,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         serverSocket = new InetSocketAddress("localhost", server.getPort());
 
         //Add different webservices to server
-        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
+        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             server.registerWebresource(new NotObservableTestWebresource("/service" + (i + 1),
                     "This is the status of service " + (i + 1), 0, 0, server.getExecutor()));
         }
@@ -86,7 +86,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
         //Create client, callbacks and requests
         client = new CoapClient();
 
-        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
+        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             clientCallbacks[i] = new TestCallback();
             requests[i] =  new CoapRequest(MessageType.CON, MessageCode.GET,
                     new URI("coap://localhost:" + server.getPort() + "/service" + (i+1)));
@@ -102,7 +102,7 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
    @Override
     public void createTestScenario() throws Exception {
 
-        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
+        for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             client.sendCoapRequest(requests[i], serverSocket, clientCallbacks[i]);
         }
 
@@ -111,8 +111,8 @@ public class TestParallelRequests extends AbstractCoapCommunicationTest {
     }
 
     @Test
-    public void testClientsReceivedCorrectResponses(){
-        for (int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++){
+    public void testClientsReceivedCorrectResponses() {
+        for (int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             CoapResponse coapResponse = clientCallbacks[i].getCoapResponses().values().iterator().next();
 
             assertEquals("Response Processor " + (i+1) + " received wrong message content",

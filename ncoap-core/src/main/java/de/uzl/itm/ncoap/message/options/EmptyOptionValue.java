@@ -82,7 +82,7 @@ public final class EmptyOptionValue extends OptionValue<Void> {
      */
     @Override
     public boolean equals(Object object) {
-        if(!(object instanceof EmptyOptionValue))
+        if (!(object instanceof EmptyOptionValue))
             return false;
 
         EmptyOptionValue other = (EmptyOptionValue) object;

@@ -79,25 +79,25 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
     public abstract void shutdownComponents() throws Exception;
 
 
-    public AbstractCoapCommunicationTest(){
+    public AbstractCoapCommunicationTest() {
 
         Logger.getLogger("AbstractCoapCommunicationTest")
                 .setLevel(Level.INFO);
 
         try {
-            if(!areComponentsSetup){
+            if (!areComponentsSetup) {
                 log.info("START TEST (" + this.getClass().getSimpleName() + ")");
                 setupComponents();
                 areComponentsSetup = true;
             }
 
-            if(!isTestScenarioCreated){
+            if (!isTestScenarioCreated) {
                 createTestScenario();
                 isTestScenarioCreated = true;
                 log.info("SCENARIO CREATED (" + this.getClass().getSimpleName() + ")");
             }
 
-            if(!areComponentsShutdown){
+            if (!areComponentsShutdown) {
                 shutdownComponents();
                 areComponentsShutdown = true;
                 log.info("COMPONENTS SHUT DOWN (" + this.getClass().getSimpleName() + ")");
@@ -110,7 +110,7 @@ public abstract class AbstractCoapCommunicationTest extends AbstractCoapTest{
     }
 
     @AfterClass
-    public static void reset(){
+    public static void reset() {
         areComponentsSetup = false;
         areComponentsShutdown = false;
         isTestScenarioCreated = false;

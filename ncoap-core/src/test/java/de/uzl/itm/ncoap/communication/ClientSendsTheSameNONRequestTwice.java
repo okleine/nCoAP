@@ -112,19 +112,19 @@ public class ClientSendsTheSameNONRequestTwice extends AbstractCoapCommunication
     }
 
     @Test
-    public void testMessagesForEquality(){
+    public void testMessagesForEquality() {
         assertEquals(coapRequest1, coapRequest2);
         assertEquals(coapRequest1.hashCode(), coapRequest2.hashCode());
     }
 
     @Test
-    public void testEndpointReceivedOnlyOneMessages(){
+    public void testEndpointReceivedOnlyOneMessages() {
         assertEquals(1, endpoint.getReceivedCoapMessages().size());
     }
 
 
     @Test
-    public void testFirstMessage(){
+    public void testFirstMessage() {
         CoapMessage message2 = endpoint.getReceivedMessage(0);
 
         assertEquals("Third message has wrong message code!", MessageCode.CONTENT_205, message2.getMessageCode());

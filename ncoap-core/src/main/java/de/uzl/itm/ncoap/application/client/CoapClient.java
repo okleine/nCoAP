@@ -54,61 +54,54 @@ public class CoapClient extends AbstractCoapApplication {
 
 //    public static final int RECEIVE_BUFFER_SIZE = 65536;
 
-    public static final String DEFAULT_NAME = "CoAP Client";
+    public static final String DEFAULT_NAME = "nCoAP Client";
 
     private ResponseDispatcher responseDispatcher;
     private static Logger LOG = LoggerFactory.getLogger(CoapClient.class.getName());
 
 
     /**
+     * Creates a new instance of {@link CoapClient} with default parameters, i.e. a random port number and
+     * <code>Runtime.getRuntime().availableProcessors() * 2</code> as number of I/O-Threads.
+     */
+    public CoapClient() {
+        this(DEFAULT_NAME, new InetSocketAddress(0));
+    }
+
+    /**
+     * Creates a new instance of {@link CoapClient} with default parameters, i.e. a random port number and
+     * <code>Runtime.getRuntime().availableProcessors() * 2</code> as number of I/O-Threads.
+     */
+    public CoapClient(String name) {
+        this(name, new InetSocketAddress(0));
+    }
+
+    /**
      * Creates a new instance of {@link CoapClient}.
      *
      * @param name the name of the application (used for logging purposes)
-     * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
+     * @param portNumber the number of the port to send , this {@link CoapClient} should be bound to (use <code>0</code> for
      *             arbitrary port)
-     * @param ioThreads the number of threads to be used for I/O operations. The minimum number is 4, i.e. even
-     *                  if the given number is smaller then 4, the application will use 4 threads.
      */
-    public CoapClient(String name, int port, int ioThreads) {
-        super(name, ioThreads);
+    public CoapClient(String name, int portNumber) {
+        this(name, new InetSocketAddress(portNumber));
+    }
 
-        InetSocketAddress localSocket = new InetSocketAddress(port);
+    /**
+     * Creates a new instance of {@link CoapClient}.
+     *
+     * @param name the name of the application (used for logging purposes)
+     * @param clientSocket the socket to send {@link CoapMessage}s
+     */
+    public CoapClient(String name, InetSocketAddress clientSocket) {
+        super(name);
+
         ClientChannelPipelineFactory factory = new ClientChannelPipelineFactory(this.getExecutor());
-        startApplication(factory, localSocket);
+        startApplication(factory, clientSocket);
 
         this.responseDispatcher = getChannel().getPipeline().get(ResponseDispatcher.class);
     }
 
-
-    /**
-     * Creates a new instance of {@link CoapClient} with default parameters, i.e. a random port number and
-     * <code>Runtime.getRuntime().availableProcessors() * 2</code> as number of I/O-Threads.
-     */
-    public CoapClient(){
-        this(DEFAULT_NAME);
-    }
-
-    /**
-     * Creates a new instance of {@link CoapClient} with default parameters, i.e. a random port number and
-     * <code>Runtime.getRuntime().availableProcessors() * 2</code> as number of I/O-Threads.
-     *
-     * @param name The name of the client instance (for logging purposes only)
-     */
-    public CoapClient(String name){
-        this(name, 0);
-    }
-
-    /**
-     * Creates a new instance of {@link CoapClient} with default parameters, i.e.
-     * <code>Runtime.getRuntime().availableProcessors() * 2</code> as number of I/O-Threads.
-     *
-     * @param name the name of the application (used for logging purposes)
-     * @param port the port, this {@link CoapClient} should be bound to (use <code>0</code> for
-     *             arbitrary port)
-     */
-    public CoapClient(String name, int port){
-        this(name, port, Runtime.getRuntime().availableProcessors() * 2);
-    }
 
 
     /**
@@ -126,7 +119,7 @@ public class CoapClient extends AbstractCoapApplication {
      *
      * @param remoteEndpoint the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
-    public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteEndpoint, ClientCallback callback){
+    public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteEndpoint, ClientCallback callback) {
         this.responseDispatcher.sendCoapRequest(coapRequest, remoteEndpoint, callback);
     }
 
@@ -151,7 +144,7 @@ public class CoapClient extends AbstractCoapApplication {
      *                       #processReset()} MUST be overridden
      * @param remoteEndpoint the desired recipient of the CoAP PING message
      */
-    public void sendCoapPing(InetSocketAddress remoteEndpoint, ClientCallback callback){
+    public void sendCoapPing(InetSocketAddress remoteEndpoint, ClientCallback callback) {
         this.responseDispatcher.sendCoapPing(remoteEndpoint, callback);
     }
 
@@ -162,7 +155,7 @@ public class CoapClient extends AbstractCoapApplication {
      * this {@link org.jboss.netty.channel.socket.DatagramChannel} from the listening port and by this means free the
      * port.
      */
-    public final void shutdown(){
+    public final void shutdown() {
         LOG.warn("Start to shutdown " + this.getApplicationName() + " (Port : " + this.getPort() + ")");
 
         getChannel().close().awaitUninterruptibly().addListener(new ChannelFutureListener() {

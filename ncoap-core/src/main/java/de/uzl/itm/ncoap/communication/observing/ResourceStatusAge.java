@@ -50,7 +50,7 @@ public class ResourceStatusAge {
      *                   notification
      * @param timestamp the reception timestamp of an update notification
      */
-    public ResourceStatusAge(long sequenceNo, long timestamp){
+    public ResourceStatusAge(long sequenceNo, long timestamp) {
         this.sequenceNo = sequenceNo;
         this.timestamp = timestamp;
     }
@@ -67,18 +67,18 @@ public class ResourceStatusAge {
      * @return <code>true</code> if <code>received</code> is newer than <code>latest</code> or <code>false</code>
      * otherwise
      */
-    public static boolean isReceivedStatusNewer(ResourceStatusAge latest, ResourceStatusAge received){
-        if(latest.sequenceNo < received.sequenceNo && received.sequenceNo - latest.sequenceNo < THRESHOLD){
+    public static boolean isReceivedStatusNewer(ResourceStatusAge latest, ResourceStatusAge received) {
+        if (latest.sequenceNo < received.sequenceNo && received.sequenceNo - latest.sequenceNo < THRESHOLD) {
             log.debug("Criterion 1 matches: received ({}) is newer than latest ({}).", received, latest);
             return true;
         }
 
-        if(latest.sequenceNo > received.sequenceNo && latest.sequenceNo - received.sequenceNo > THRESHOLD){
+        if (latest.sequenceNo > received.sequenceNo && latest.sequenceNo - received.sequenceNo > THRESHOLD) {
             log.debug("Criterion 2 matches: received  ({}) is newer than latest ({}).", received, latest);
             return true;
         }
 
-        if(received.timestamp > latest.timestamp + 128000L){
+        if (received.timestamp > latest.timestamp + 128000L) {
             log.debug("Criterion 3 matches: received ({}) is newer than latest ({}).", received, latest);
             return true;
         }
@@ -88,7 +88,7 @@ public class ResourceStatusAge {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "STATUS AGE (Sequence No: " + this.sequenceNo + ", Reception Timestamp: " + this.timestamp + ")";
     }
 }

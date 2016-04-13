@@ -49,7 +49,7 @@ public class EmptyLinkAttribute extends LinkAttribute<Void> {
     public EmptyLinkAttribute(String key) throws IllegalArgumentException {
         super(key, null);
 
-        if(!EMPTY.equals(LinkAttribute.getAttributeType(key))) {
+        if (!EMPTY.equals(LinkAttribute.getAttributeType(key))) {
             throw new IllegalArgumentException(
                 "Given attribute key \"" + key + "\" does not refer to an empty attribute."
             );

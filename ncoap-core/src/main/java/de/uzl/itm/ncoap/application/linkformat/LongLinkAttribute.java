@@ -52,7 +52,7 @@ public class LongLinkAttribute extends LinkAttribute<Long> {
     public LongLinkAttribute(String key, Long value) {
         super(key, value);
 
-        if(!Type.LONG.equals(LinkAttribute.getAttributeType(key))) {
+        if (!Type.LONG.equals(LinkAttribute.getAttributeType(key))) {
             throw new IllegalArgumentException(
                 "Given attribute key \"" + key + "\" does not refer to a known numeric attribute."
             );
@@ -68,7 +68,7 @@ public class LongLinkAttribute extends LinkAttribute<Long> {
 
     @Override
     public boolean equals(Object object) {
-        if(!(object instanceof LongLinkAttribute))
+        if (!(object instanceof LongLinkAttribute))
             return false;
 
         LongLinkAttribute other = (LongLinkAttribute) object;

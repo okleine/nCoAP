@@ -107,7 +107,7 @@ public class StringOptionValue extends OptionValue<String> {
 
     @Override
     public boolean equals(Object object) {
-        if(!(object instanceof StringOptionValue))
+        if (!(object instanceof StringOptionValue))
             return false;
 
         StringOptionValue other = (StringOptionValue) object;
@@ -134,17 +134,17 @@ public class StringOptionValue extends OptionValue<String> {
             i = in.read();
 
             //-1 indicates end of stream
-            if(i == -1)
+            if (i == -1)
                 break;
 
             //0x25 = '%'
-            if(i == 0x25){
+            if (i == 0x25) {
                 //Character.digit returns the integer value encoded as in.read(). Since we know that percent encoding
                 //uses bytes from 0x0 to 0xF (i.e. 0 to 15) the radix must be 16.
                 int d1 = Character.digit(in.read(), 16);
                 int d2 = Character.digit(in.read(), 16);
 
-                if(d1 == -1 || d2 == -1){
+                if (d1 == -1 || d2 == -1) {
                     //Unexpected end of stream (at least one byte missing after '%')
                     throw new IllegalArgumentException("Invalid percent encoding in: " + s);
                 }

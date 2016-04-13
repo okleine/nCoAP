@@ -28,11 +28,8 @@ import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.events.client.BlockwiseResponseTransferFailedEvent;
-import de.uzl.itm.ncoap.communication.events.client.ResponseBlockReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.client.*;
 import de.uzl.itm.ncoap.communication.events.*;
-import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
-import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
@@ -63,7 +60,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         EmptyAckReceivedEvent.Handler, ResetReceivedEvent.Handler, MessageIDAssignedEvent.Handler,
         MessageRetransmittedEvent.Handler, TransmissionTimeoutEvent.Handler, NoMessageIDAvailableEvent.Handler,
         MiscellaneousErrorEvent.Handler, TokenReleasedEvent.Handler, ResponseBlockReceivedEvent.Handler,
-        BlockwiseResponseTransferFailedEvent.Handler {
+        BlockwiseResponseTransferFailedEvent.Handler, ContinueResponseReceivedEvent.Handler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -92,7 +89,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
 
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if(coapMessage instanceof CoapResponse) {
+        if (coapMessage instanceof CoapResponse) {
             handleInboundCoapResponse((CoapResponse) coapMessage, remoteSocket);
             return false;
         } else {
@@ -112,7 +109,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress previousSocket = event.getPreviousRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = updateCallback(event.getRemoteSocket(), previousSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processRemoteSocketChanged(event.getRemoteSocket(), previousSocket);
         } else {
             log.warn("No callback found for socket change (previous: \"{}\", token: {})", previousSocket, token);
@@ -125,7 +122,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = getCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processEmptyAcknowledgement();
         } else {
             log.warn("No callback found for empty ACK (remote socket: \"{}\", token: {})", remoteSocket, token);
@@ -144,7 +141,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = removeCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processReset();
         } else {
             log.warn("No callback found for RESET (remote socket: \"{}\", token: {}", remoteSocket, token);
@@ -157,7 +154,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
 //        InetSocketAddress remoteSocket = event.getRemoteSocket();
 //        Token token = event.getToken();
 //        ClientCallback callback = getCallback(remoteSocket, token);
-//        if(callback != null) {
+//        if (callback != null) {
 //            callback.processReset();
 //        } else {
 //            log.warn("No callback found for block reception (remote socket: \"{}\", token: {}", remoteSocket, token);
@@ -170,7 +167,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = getCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processMessageIDAssignment(event.getMessageID());
         } else {
             log.warn("No callback found for MsgID assignment (remote socket: \"{}\", token: {}", remoteSocket, token);
@@ -182,7 +179,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = removeCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processNoMessageIDAvailable();
         } else {
             log.warn("No callback found for \"no MsgID available\" (remote socket: \"{}\", token: {}", remoteSocket, token);
@@ -195,7 +192,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = getCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processRetransmission();
         } else {
             log.warn("No callback found for retransmission (remote socket: \"{}\", token: {}", remoteSocket, token);
@@ -208,7 +205,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = removeCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processTransmissionTimeout();
         } else {
             log.warn("No callback found for timeout (remote socket: \"{}\", token: {}, message ID: {})",
@@ -221,19 +218,32 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = getCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processResponseBlockReceived(event.getReceivedLength(), event.getExpectedLength());
         } else {
             log.warn("No callback found for partial response (remote socket: \"{}\", token: {})", remoteSocket, token);
         }
     }
 
+
+    @Override
+    public void handleEvent(ContinueResponseReceivedEvent event) {
+        InetSocketAddress remoteSocket = event.getRemoteSocket();
+        Token token = event.getToken();
+        ClientCallback callback = getCallback(remoteSocket, token);
+        if (callback != null) {
+            callback.processContinueResponseReceived(event.getBlock1Size());
+        } else {
+            log.warn("No callback found for CONTINUE (remote socket: \"{}\", token: {})", remoteSocket, token);
+        }
+    }
+    
     @Override
     public void handleEvent(BlockwiseResponseTransferFailedEvent event) {
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = removeCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processBlockwiseResponseTransferFailed();
         } else {
             log.warn("No callback found for blockwise response transfer failure (remote socket: \"{}\", token: \"{}\")",
@@ -246,7 +256,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         InetSocketAddress remoteSocket = event.getRemoteSocket();
         Token token = event.getToken();
         ClientCallback callback = removeCallback(remoteSocket, token);
-        if(callback != null) {
+        if (callback != null) {
             callback.processMiscellaneousError(event.getDescription());
         } else {
             log.warn("No callback found for misc. error (remote socket: \"{}\", token: {}", remoteSocket, token);
@@ -295,7 +305,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
     private ClientCallback updateCallback(InetSocketAddress remoteSocket, InetSocketAddress previous, Token token) {
         try {
             this.lock.readLock().lock();
-            if(getCallback(previous, token) == null) {
+            if (getCallback(previous, token) == null) {
                 return null;
             }
         } finally {
@@ -305,7 +315,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         try {
             this.lock.writeLock().lock();
             ClientCallback callback = this.clientCallbacks.remove(previous, token);
-            if(callback != null) {
+            if (callback != null) {
                 this.clientCallbacks.put(remoteSocket, token, callback);
                 log.info("Updated remote socket (old: \"{}\", new: \"{}\")", previous, remoteSocket);
             }
@@ -334,7 +344,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
             } else {
                 clientCallbacks.put(remoteEndpoint, token, clientCallback);
                 log.info("Added callback (remote endpoint: {}, token: {})", remoteEndpoint, token);
-                if(this.clientCallbacks.size() > 1000){
+                if (this.clientCallbacks.size() > 1000) {
                     log.error("More than 1000 callbacks!");
                 }
             }
@@ -386,7 +396,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
 
         if (callback == null) {
             log.warn("No callback found for CoAP response (from {}): {}", remoteSocket, coapResponse);
-        } else if(!coapResponse.isLastBlock2()) {
+        } else if (!coapResponse.isLastBlock2()) {
             callback.processCoapResponse(coapResponse);
             log.debug("Callback found for token {} from {}.", token, remoteSocket);
         } else {
@@ -471,7 +481,7 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
                     if (!future.isSuccess()) {
                         ClientCallback callback = removeCallback(remoteSocket, coapMessage.getToken());
                         log.error("Could not write CoAP Request!", future.getCause());
-                        if(callback != null) {
+                        if (callback != null) {
                             callback.processMiscellaneousError("Message could not be sent (Reason: \"" +
                                     future.getCause().getMessage() + ")\"");
                         }

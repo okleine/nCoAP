@@ -51,7 +51,7 @@
                     <execution>
                         <configuration>
                             <mainClass>
-                                de.uzl.itm.ncoap.examples.SimpleCoapClient
+                                de.uzl.itm.ncoap.examples.client.SimpleCoapClient
                             </mainClass>
                             <!-- Optional -->
                             <onejarVersion>0.97</onejarVersion>
