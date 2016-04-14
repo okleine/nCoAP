@@ -23,13 +23,16 @@ The nCoAP project is organized in several maven modules, i.e.,
 ```
 
 for the raw protocol implementation. For CoAP application development this is probably what you want.
-To use the latest protocol implementation release add the following to your pom.xml
+
+#### Latest SNAPSHOT version (1.8.3-SNAPSHOT)
+
+To use the latest bleeding edge version (SNAPSHOT) add the following to your pom.xml:
 
 ```xml
 <repositories>
 ...
     <repository>
-        <id>itm-maven-repository-releases</id>
+        <id>itm-maven-repository-snapshots</id>
         <name>ITM Maven Snapshots Repository</name>
         <url>https://maven.itm.uni-luebeck.de/content/repositories/snapshots</url>
     </repository>
@@ -51,6 +54,42 @@ To use the latest protocol implementation release add the following to your pom.
 </dependencies>
 ```
 
+Note, that for several reasons some interfaces changed since the latest stable version.
+
+#### Latest stable release (1.8.2)
+
+To use the latest stable release add the following to your pom.xml:
+
+```xml
+<repositories>
+...
+    <repository>
+        <id>itm-maven-repository-releases</id>
+        <name>ITM Maven Releases Repository</name>
+        <url>https://maven.itm.uni-luebeck.de/content/repositories/releases</url>
+    </repository>
+...
+</repositories>
+```
+
+...
+
+```xml
+<dependencies>
+...
+    <dependency>
+        <groupId>de.uniluebeck.itm</groupId>
+        <artifactId>ncoap-core</artifactId>
+        <version>1.8.2</version>
+    </dependency>
+...
+</dependencies>
+```
+
+The JavaDoc is available [here](http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.2).
+
+### Examples for Client and Server 
+
 The other models, i.e.,
 
 ```xml
@@ -67,8 +106,3 @@ and
 
 provide simple CoAP applications for both, client and server. There intention is to highlight, how easy it is to
 write such applications using ncoap.
-
-
-### Documentation
-
-The JavaDoc is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.3-SNAPSHOT
