@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,7 +22,6 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uzl.itm.ncoap.application.server.resource;
 
 import com.google.common.primitives.Ints;
@@ -67,17 +66,18 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
      * The .well-known/core resource only allows requests with {@link MessageCode#GET}. Any other code
      * returns a {@link CoapResponse} with {@link MessageCode#METHOD_NOT_ALLOWED_405}.
      *
-     * In case of a request with {@link @link MessageCode#GET} it returns a {@link CoapResponse} with
+     * In case of a request with {@link MessageCode#GET} it returns a {@link CoapResponse} with
      * {@link MessageCode#CONTENT_205} and with a payload listing all paths to the available resources
      * (i.e. {@link Webresource} instances}).
      *
-     * <b>Note:</b> The payload is always formatted in {@link de.uzl.itm.ncoap.message.options.ContentFormat#APP_LINK_FORMAT}, possibly contained
+     * <b>Note:</b> The payload is always formatted in
+     * {@link de.uzl.itm.ncoap.message.options.ContentFormat#APP_LINK_FORMAT}, possibly contained
      * {@link de.uzl.itm.ncoap.message.options.Option#ACCEPT} options in inbound {@link CoapRequest}s are ignored!
      *
      * @param responseFuture The {@link SettableFuture} to be set with a {@link CoapResponse} containing
      *                       the list of available services in CoRE link format.
      * @param coapRequest The {@link CoapRequest} to be processed by the {@link Webresource} instance
-     * @param remoteEndpoint The address of the sender of the request
+     * @param remoteSocket The address of the sender of the request
      *
      * @throws Exception Implementing classes may throw any {@link Exception}. Thrown {@link Exception}s cause the
      * framework to send a {@link CoapResponse} with {@link MessageCode#INTERNAL_SERVER_ERROR_500} to the
@@ -85,7 +85,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
      */
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-        InetSocketAddress remoteEndpoint) throws Exception{
+        InetSocketAddress remoteSocket) throws Exception{
 
         if (!(coapRequest.getMessageCode() == GET)) {
             responseFuture.set(CoapResponse.createErrorResponse(

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -38,16 +38,13 @@ public class MessageIDAssignedEvent extends AbstractMessageTransferEvent {
 
     /**
      * Creates a new instance of {@link MessageIDAssignedEvent}
-     * @param remoteEndpoint the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that was
-     *                       assigned a message ID
-     * @param messageID the message ID that was assigned to a new
-     *                  {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
-     * @param token the {@link Token} of the
-     *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that was assigned an ID
+     *
+     * @param remoteSocket the socket of the recipient of the message that was assigned a message ID
+     * @param messageID the message ID that was assigned
+     * @param token the {@link Token} of the message that was assigned a message ID
      */
-    public MessageIDAssignedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-        super(remoteEndpoint, messageID, token);
+    public MessageIDAssignedEvent(InetSocketAddress remoteSocket, int messageID, Token token) {
+        super(remoteSocket, messageID, token);
     }
 
 

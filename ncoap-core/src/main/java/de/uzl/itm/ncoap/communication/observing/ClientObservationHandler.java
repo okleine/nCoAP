@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -163,12 +163,12 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
 //    }
 
 
-    private void startObservation(InetSocketAddress remoteEndpoint, Token token) {
+    private void startObservation(InetSocketAddress remoteSocket, Token token) {
         try{
             this.lock.readLock().lock();
-            if (this.observations.contains(remoteEndpoint, token)) {
+            if (this.observations.contains(remoteSocket, token)) {
                 LOG.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
-                        remoteEndpoint, token);
+                        remoteSocket, token);
                 return;
             }
         }
@@ -178,14 +178,14 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
 
         try{
             this.lock.writeLock().lock();
-            if (this.observations.contains(remoteEndpoint, token)) {
+            if (this.observations.contains(remoteSocket, token)) {
                 LOG.error("Tried to override existing observation (remote endpoint: {}, token: {}).",
-                        remoteEndpoint, token);
+                        remoteSocket, token);
             }
 
             else{
-                this.observations.put(remoteEndpoint, token, new ResourceStatusAge(0, 0));
-                LOG.info("New observation added (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                this.observations.put(remoteSocket, token, new ResourceStatusAge(0, 0));
+                LOG.info("New observation added (remote endpoint: {}, token: {})", remoteSocket, token);
             }
         }
         finally{
@@ -194,23 +194,23 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
     }
 
 
-    private void updateStatusAge(InetSocketAddress remoteEndpoint, Token token, ResourceStatusAge age) {
+    private void updateStatusAge(InetSocketAddress remoteSocket, Token token, ResourceStatusAge age) {
         try{
             this.lock.writeLock().lock();
-            this.observations.put(remoteEndpoint, token, age);
+            this.observations.put(remoteSocket, token, age);
             LOG.info("Updated observation (remote endpoint: {}, token: {}): {}",
-                    new Object[]{remoteEndpoint, token, age});
+                    new Object[]{remoteSocket, token, age});
         }
         finally {
             this.lock.writeLock().unlock();
         }
     }
 
-    private ResourceStatusAge stopObservation(InetSocketAddress remoteEndpoint, Token token) {
+    private ResourceStatusAge stopObservation(InetSocketAddress remoteSocket, Token token) {
         try{
             this.lock.readLock().lock();
-            if (!this.observations.contains(remoteEndpoint, token)) {
-                LOG.debug("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            if (!this.observations.contains(remoteSocket, token)) {
+                LOG.debug("No observation found to be stopped (remote endpoint: {}, token: {})", remoteSocket, token);
                 return null;
             }
         }
@@ -220,12 +220,12 @@ public class ClientObservationHandler extends AbstractCoapChannelHandler impleme
 
         try{
             this.lock.writeLock().lock();
-            ResourceStatusAge age = this.observations.remove(remoteEndpoint, token);
+            ResourceStatusAge age = this.observations.remove(remoteSocket, token);
             if (age == null) {
-                LOG.warn("No observation found to be stopped (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                LOG.warn("No observation found to be stopped (remote endpoint: {}, token: {})", remoteSocket, token);
             }
             else{
-                LOG.info("Observation stopped (remote endpoint: {}, token: {})!", remoteEndpoint, token);
+                LOG.info("Observation stopped (remote endpoint: {}, token: {})!", remoteSocket, token);
             }
             return age;
         }

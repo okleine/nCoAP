@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -36,17 +36,20 @@ import java.net.InetSocketAddress;
 public interface RequestConsumer {
 
     /**
-     * This method is invoked by the framework on inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s with {@link de.uzl.itm.ncoap.message.MessageCode.Name#PUT} if
-     * there is no {@link de.uzl.itm.ncoap.application.server.resource.Webresource} registered at the path given as {@link de.uzl.itm.ncoap.message.CoapRequest#getUriPath()}.
+     * This method is invoked by the framework on inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s with
+     * {@link de.uzl.itm.ncoap.message.MessageCode#PUT} if there is no
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} registered at the path given as
+     * {@link de.uzl.itm.ncoap.message.CoapRequest#getUriPath()}.
      *
-     * @param responseFuture the {@link com.google.common.util.concurrent.SettableFuture} to be set with a proper {@link de.uzl.itm.ncoap.message.CoapResponse} to indicate
-     *                       whether there was a new {@link de.uzl.itm.ncoap.application.server.resource.Webresource} created or not.
+     * @param responseFuture the {@link com.google.common.util.concurrent.SettableFuture} to be set with a proper
+     * {@link de.uzl.itm.ncoap.message.CoapResponse} to indicate whether there was a new
+     * {@link de.uzl.itm.ncoap.application.server.resource.Webresource} created or not.
      *
      * @param coapRequest the {@link de.uzl.itm.ncoap.message.CoapRequest} to be processed
      *
      * @param remoteSocket the {@link java.net.InetSocketAddress} of the {@link de.uzl.itm.ncoap.message.CoapRequest}s origin.
      */
-    public abstract void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+    public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                             InetSocketAddress remoteSocket) throws Exception;
 
 }

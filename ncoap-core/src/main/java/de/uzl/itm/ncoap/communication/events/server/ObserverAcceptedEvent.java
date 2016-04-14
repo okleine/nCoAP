@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -27,6 +27,7 @@ package de.uzl.itm.ncoap.communication.events.server;
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
+import de.uzl.itm.ncoap.message.options.ContentFormat;
 
 import java.net.InetSocketAddress;
 
@@ -41,29 +42,32 @@ public class ObserverAcceptedEvent extends AbstractMessageExchangeEvent {
     /**
      * Creates a new instance of {@link de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent}
      *
-     * @param remoteEndpoint the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
-     *                       event
-     * @param token          the {@link Token} of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
+     * @param remoteSocket the socket of the newly accepted observer
+     * @param token the {@link Token} to be used for this observation
      */
-    public ObserverAcceptedEvent(InetSocketAddress remoteEndpoint, Token token,
+    public ObserverAcceptedEvent(InetSocketAddress remoteSocket, Token token,
             ObservableWebresource webresource, long contentFormat) {
 
-        super(remoteEndpoint, token);
+        super(remoteSocket, token);
         this.webresource = webresource;
         this.contentFormat = contentFormat;
     }
 
-//    @Override
-//    public boolean stopsMessageExchange() {
-//        return false;
-//    }
-
+    /**
+     * Returns the {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instance that is observed
+     * @return the {@link de.uzl.itm.ncoap.application.server.resource.Webresource} instance that is observed
+     */
     public ObservableWebresource getWebresource() {
         return webresource;
     }
 
+    /**
+     * Returns the number representing the content format to be used for this observation
+     *
+     * @see ContentFormat
+     *
+     * @return the number representing the content format to be used for this observation
+     */
     public long getContentFormat() {
         return contentFormat;
     }

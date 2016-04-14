@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,13 +22,16 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uzl.itm.ncoap.application.server.resource;
 
 import com.google.common.collect.LinkedHashMultimap;
 import de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute;
 import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.MessageType;
+import de.uzl.itm.ncoap.message.options.OptionValue;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,11 +45,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static de.uzl.itm.ncoap.message.options.OptionValue.MAX_AGE_DEFAULT;
 
 /**
-* This is the abstract class to be extended by classes to represent an observable resource. The generic type T
-* means, that the object that holds the status of the resource is of type T.
+* <p>This is the abstract class to be extended by classes to represent an observable resource. The generic type T
+* means, that the object that holds the status of the resource is of type T.</p>
 *
-* Example: Assume, you want to realize a not observable service representing a temperature with limited accuracy
-* (integer values). Then, your service class should extend {@link ObservableWebresource<Integer>}.
+* <p>Example: Assume, you want to realize a not observable service representing a temperature with limited accuracy
+* (integer values). Then, your service class should extend <code>ObservableWebresource&lt;Integer&gt;</code>.</p>
 *
 * @author Oliver Kleine, Stefan Hüske
 */
@@ -69,13 +72,13 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
-     * Using this constructor is the same as
-     * {@link #ObservableWebresource(String, Object, long, java.util.concurrent.ScheduledExecutorService)}
-     * with parameter <code>lifetimeSeconds</code> set to
-     * {@link de.uzl.itm.ncoap.message.options.OptionValue#MAX_AGE_DEFAULT}.
+     * Creates a new instance of {@link ObservableWebresource} with {@link OptionValue#MAX_AGE_DEFAULT} as lifetime
+     * of the initial resource status.
      *
      * @param uriPath the uriPath this {@link ObservableWebresource} is registered at.
      * @param initialStatus the initial status of this {@link ObservableWebresource}.
+     * @param executor {@link ScheduledExecutorService} to execute internal (application and resource-specific)
+     *                 tasks
      */
     protected ObservableWebresource(String uriPath, T initialStatus, ScheduledExecutorService executor) {
         this(uriPath, initialStatus, MAX_AGE_DEFAULT, executor);
@@ -84,10 +87,14 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
+     * Creates a new instance of {@link ObservableWebresource}.
+     *
      * @param uriPath the uriPath this {@link ObservableWebresource} is registered at.
      * @param initialStatus the initial status of this {@link ObservableWebresource}.
      * @param lifetime the number of seconds the initial status may be considered fresh, i.e. cachable by
      *                        proxies or clients.
+     * @param executor the {@link ScheduledExecutorService} to execute internal (application and resource-specific)
+     *                 tasks
      */
     protected ObservableWebresource(String uriPath, T initialStatus, long lifetime, ScheduledExecutorService executor) {
         this.uriPath = uriPath;
@@ -151,12 +158,12 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
-     * {@inheritDoc}
+     * <p><b>Important:</b>To avoid synchronization issues do not use this method but
+     * {@link #getWrappedResourceStatus(Set)} or {@link #getWrappedResourceStatus(long)} for status retrieval
+     * (e.g. when processing an inbound {@link CoapRequest}).
      *
-     * <p><b>Note: </b>Do not use this method for status retrieval when processing an inbound
-     * {@link de.uzl.itm.ncoap.message.CoapRequest}. Use
-     * {@link #getWrappedResourceStatus(java.util.Set)} instead to avoid synchronization issues. However,
-     * this method is safely called within {@link #getWrappedResourceStatus(java.util.Set)}.</p>
+     * @see #getWrappedResourceStatus(Set)
+     * @see #getWrappedResourceStatus(long)
      */
     @Override
     public final T getResourceStatus() {
@@ -197,18 +204,19 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
-     * This method and {@link #getWrappedResourceStatus(java.util.Set)} are the only recommended way to retrieve
-     * the actual resource status that is used for a {@link de.uzl.itm.ncoap.message.CoapResponse} to answer an inbound {@link de.uzl.itm.ncoap.message.CoapRequest}.
+     * <p>This method and {@link #getWrappedResourceStatus(java.util.Set)} are the only recommended way to retrieve
+     * the actual resource status that is used for a {@link de.uzl.itm.ncoap.message.CoapResponse} to answer an inbound
+     * {@link de.uzl.itm.ncoap.message.CoapRequest}.</p>
      *
-     * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
+     * <p>Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
      * This is to avoid inconsistencies between the content and {@link de.uzl.itm.ncoap.message.options.Option#ETAG}, resp.
      * {@link de.uzl.itm.ncoap.message.options.Option#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
      * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
-     * resp. {@link #getMaxAge()}.
+     * resp. {@link #getMaxAge()}.</p>
      *
-     * However, concurrent invocations of this method are possible, as the resources read-lock can be locked multiple
-     * times in parallel and {@link #setResourceStatus(Object, long)} waits for all read-locks to be released.
+     * <p>However, concurrent invocations of this method are possible, as the resources read-lock can be locked multiple
+     * times in parallel and {@link #setResourceStatus(Object, long)} waits for all read-locks to be released.</p>
      *
      * @param contentFormat the number representing the desired content format of the serialized resource status
      *
@@ -235,23 +243,24 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
-     * This method and {@link #getWrappedResourceStatus(long)} are the only recommended ways to retrieve
-     * the actual resource status that is used for a {@link de.uzl.itm.ncoap.message.CoapResponse} to answer an inbound {@link de.uzl.itm.ncoap.message.CoapRequest}.
+     * <p>This method and {@link #getWrappedResourceStatus(long)} are the only recommended ways to retrieve
+     * the actual resource status that is used for a {@link de.uzl.itm.ncoap.message.CoapResponse} to answer an
+     * inbound {@link de.uzl.itm.ncoap.message.CoapRequest}.</p>
      *
-     * Invocation of this method read-locks the resource status, i.e. concurrent invocations of
+     * <p>Invocation of this method read-locks the resource status, i.e. concurrent invocations of
      * {@link #setResourceStatus(Object, long)} wait for this method to finish, i.e. the read-lock to be released.
      * This is to avoid inconsistencies between the content and {@link de.uzl.itm.ncoap.message.options.Option#ETAG}, resp.
      * {@link de.uzl.itm.ncoap.message.options.Option#MAX_AGE} in a {@link de.uzl.itm.ncoap.message.CoapResponse}. Such inconsistencies could happen in case of a
      * resource update between calls of e.g. {@link #getSerializedResourceStatus(long)} and {@link #getEtag(long)},
-     * resp. {@link #getMaxAge()}.
+     * resp. {@link #getMaxAge()}.</p>
      *
-     * However, concurrent invocations of this method are possible, as the resources read-lock can be locked multiple
-     * times in parallel and {@link #setResourceStatus(Object, long)} waits for all read-locks to be released.
+     * <p>However, concurrent invocations of this method are possible, as the resources read-lock can be locked multiple
+     * times in parallel and {@link #setResourceStatus(Object, long)} waits for all read-locks to be released.</p>
      *
-     * <b>Note:</b> This method iterates over the given {@link Set} and tries to serialize the status in the order
+     * <p><b>Note:</b> This method iterates over the given {@link Set} and tries to serialize the status in the order
      * given by the {@link java.util.Set#iterator()}. The first supported content format, i.e. where
      * {@link #getSerializedResourceStatus(long)} does return a value other than <code>null</code> is the content
-     * format of the {@link WrappedResourceStatus} returned by this method.
+     * format of the {@link WrappedResourceStatus} returned by this method.</p>
      *
      * @param contentFormats A {@link Set} containing the numbers representing the accepted content formats
      *
@@ -281,11 +290,12 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
-     * This method is invoked by the framework for every observer after every resource update. Classes that extend
+     * <p>This method is invoked by the framework for every observer after every resource update. Classes that extend
      * {@link ObservableWebresource} may implement this method just by returning one of
-     * {@link de.uzl.itm.ncoap.message.MessageType#CON} or {@link de.uzl.itm.ncoap.message.MessageType#NON}.
-     * However, this method also gives {@link ObservableWebresource}s the opportunity
-     * to e.g. distinguish between observers or have some other arbitrary logic...
+     * {@link MessageType#CON} or {@link MessageType#NON}.</p>
+     *
+     * <p>However, this method also gives {@link ObservableWebresource}s the opportunity
+     * to e.g. distinguish between observers or implement some other arbitrary logic...</p>
      *
      * @param remoteSocket the remote CoAP endpoints that observes this {@link ObservableWebresource}
      *
@@ -295,14 +305,14 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
-     * Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies
-     * or clients. The returned number is calculated using the parameter <code>lifetimeSeconds</code> on
+     * <p>Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies
+     * or clients. The returned number is calculated using the parameter <code>lifetime</code> on
      * invocation of {@link #setResourceStatus(Object, long)} or
      * {@link #ObservableWebresource(String, Object, long, ScheduledExecutorService)}
-     * (which internally invokes {@link #setResourceStatus(Object, long)}).
+     * (which internally invokes {@link #setResourceStatus(Object, long)}).</p>
      *
-     * If the number of seconds passed after the last invocation of {@link #setResourceStatus(Object, long)} is larger
-     * than the number of seconds given as parameter <code>lifetimeSeconds</code>, this method returns zero.
+     * <p>If the number of seconds passed after the last invocation of {@link #setResourceStatus(Object, long)} is larger
+     * than the number of seconds given as parameter <code>lifetime</code>, this method returns zero.</p>
      *
      * @return the number of seconds the actual resource state can be considered fresh for status caching on proxies
      * or clients.
@@ -314,20 +324,10 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     /**
-     * <p>This method is called by the nCoAP framework within the unregistration process of this
-     * {@link de.uzl.itm.ncoap.application.server.resource.ObservableWebresource} instance.</p>
+     * {@inheritDoc}
      *
-     * <p><b>Important:</b> Make sure to invoke <code>super.shutdown()</code> if you override this method in an extending
-     * class.</p>
-     *
-     * <p><b>Note:</b> Do NOT INVOKE this method directly! Use
-     * {@link de.uzl.itm.ncoap.application.server.CoapServer#
-     *  shutdownWebresource(de.uzl.itm.ncoap.application.server.webresource.Webresource)
-     * } or
-     * {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint#
-     *  shutdownWebresource(de.uzl.itm.ncoap.application.server.webresource.Webresource)
-     * }
-     * to shutdown a resource!</p>
+     * <p><b>Important:</b> Make sure to invoke <code>super.shutdown()</code> if you override this method in an
+     * extending class.</p>
      */
     @Override
     public void shutdown() {

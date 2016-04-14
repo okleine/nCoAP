@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,7 +22,6 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uzl.itm.ncoap.application.server.resource;
 
 import com.google.common.util.concurrent.SettableFuture;
@@ -147,17 +146,22 @@ public interface Webresource<T> extends RequestConsumer{
 
 
     /**
-     * <p>This method is called by the nCoAP framework when this
-     * {@link Webresource} is removed from the
+     * <p>This method is called by the nCoAP framework when this {@link Webresource} is removed from the
      * {@link de.uzl.itm.ncoap.application.server.CoapServer} instance. One could e.g. try to
-     * cancel scheduled tasks if any. There might even be no need to do anything at all, i.e. implement the method with
-     * empty body.</p>
+     * cancel scheduled tasks if any. However, there may be no need to override this method.</p>
      *
-     * <p><b>Note: </b>If this {@link Webresource} uses the
-     * {@link java.util.concurrent.ScheduledExecutorService} returned by
-     * {@link de.uzl.itm.ncoap.application.server.CoapServer#getExecutor()} one MUST NOT
-     * terminate this {@link java.util.concurrent.ScheduledExecutorService} but only cancel scheduled tasks using there
-     * {@link java.util.concurrent.ScheduledFuture}.</p>
+     * <p><b>Note</b>:
+     * <ol>
+     *     <li>DO NOT INVOKE THIS METHOD DIRECTLY! Use
+     *     {@link de.uzl.itm.ncoap.application.server.CoapServer#shutdownWebresource(String)} or
+     *     {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint#shutdownWebresource(String)}
+     *     to shutdown a resource!</li>
+     *
+     *     <li>If this {@link Webresource} uses the {@link java.util.concurrent.ScheduledExecutorService} returned by
+     *     {@link de.uzl.itm.ncoap.application.server.CoapServer#getExecutor()}, one MUST NOT
+     *     terminate this {@link java.util.concurrent.ScheduledExecutorService} but only cancel scheduled tasks using
+     *     there {@link java.util.concurrent.ScheduledFuture#cancel(boolean)}.</li>
+     * </ol>
      */
     public void shutdown();
 
@@ -183,13 +187,13 @@ public interface Webresource<T> extends RequestConsumer{
      *
      * @param coapRequest The {@link de.uzl.itm.ncoap.message.CoapRequest} to be processed by the
      *                    {@link Webresource} instance
-     * @param remoteEndpoint The {@link java.net.InetSocketAddress} of the sender of the request
+     * @param remoteSocket The {@link java.net.InetSocketAddress} of the sender of the request
      *
      * @throws Exception if an error occurred while processing the {@link de.uzl.itm.ncoap.message.CoapRequest}.
      */
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteEndpoint) throws Exception;
+                                   InetSocketAddress remoteSocket) throws Exception;
 
 
     /**

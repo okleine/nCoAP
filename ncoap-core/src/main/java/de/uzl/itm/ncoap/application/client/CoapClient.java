@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,7 +22,6 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
@@ -117,10 +116,10 @@ public class CoapClient extends AbstractCoapApplication {
      * @param callback the {@link ClientCallback} to process the corresponding response, resp.
      *                              update notification (which are also instances of {@link CoapResponse}.
      *
-     * @param remoteEndpoint the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
+     * @param remoteSocket the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
-    public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteEndpoint, ClientCallback callback) {
-        this.responseDispatcher.sendCoapRequest(coapRequest, remoteEndpoint, callback);
+    public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteSocket, ClientCallback callback) {
+        this.responseDispatcher.sendCoapRequest(coapRequest, remoteSocket, callback);
     }
 
 
@@ -142,10 +141,10 @@ public class CoapClient extends AbstractCoapApplication {
      *                       <b>Note:</b> To handle the CoAP PONG, i.e. the empty RST, the method
      *                       {@link ClientCallback
      *                       #processReset()} MUST be overridden
-     * @param remoteEndpoint the desired recipient of the CoAP PING message
+     * @param remoteSocket the desired recipient of the CoAP PING message
      */
-    public void sendCoapPing(InetSocketAddress remoteEndpoint, ClientCallback callback) {
-        this.responseDispatcher.sendCoapPing(remoteEndpoint, callback);
+    public void sendCoapPing(InetSocketAddress remoteSocket, ClientCallback callback) {
+        this.responseDispatcher.sendCoapPing(remoteSocket, callback);
     }
 
 

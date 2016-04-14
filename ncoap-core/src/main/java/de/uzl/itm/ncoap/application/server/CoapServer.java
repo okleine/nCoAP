@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,7 +22,6 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uzl.itm.ncoap.application.server;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -53,7 +52,14 @@ import java.net.InetSocketAddress;
 */
 public class CoapServer extends AbstractCoapApplication {
 
+    /**
+     * 5683
+     */
     public static final int DEFAULT_PORT_NUMBER = 5683;
+
+    /**
+     * 'nCoAP Server'
+     */
     public static final String DEFAULT_NAME = "nCoAP Server";
 
     private static Logger LOG = LoggerFactory.getLogger(CoapServer.class.getName());
@@ -61,13 +67,13 @@ public class CoapServer extends AbstractCoapApplication {
     private RequestDispatcher requestDispatcher;
 
     /**
-     * <p>Creates a new instance of {@link CoapServer} without limits in terms of blocksize restrictions (i.e.
-     * {@link BlockSize#UNBOUND} for both, BLOCK1 (requests) and BLOCK2 (responses).</p
-     *
-     * <p><b>Note:</b> An instance created with this constructor uses
-     * {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler#getDefault()} to handle
-     * {@link de.uzl.itm.ncoap.message.CoapRequest}s for unknown resources and listens on port
-     * {@link #DEFAULT_PORT_NUMBER} (all IP addresses)
+     * Creates a new instance of {@link CoapServer} with default parameters, i.e.
+     * <ul>
+     *     <li>{@link CoapServer#DEFAULT_NAME} as name,</li>
+     *     <li>{@link NotFoundHandler#getDefault()} as {@link NotFoundHandler},</li>
+     *     <li>{@link CoapServer#DEFAULT_PORT_NUMBER} as port number (listening at all local IP-addresses), and</li>
+     *     <li>{@link BlockSize#UNBOUND} for maximum size of both, inbound requests and outbound responses.</li>
+     * </ul>
      */
     public CoapServer() {
         this(DEFAULT_NAME, NotFoundHandler.getDefault(), getDefaultSocket(), BlockSize.UNBOUND, BlockSize.UNBOUND);
@@ -75,11 +81,8 @@ public class CoapServer extends AbstractCoapApplication {
 
 
     /**
-     * <p>Creates a new instance of {@link CoapServer}</p>
-     *
-     * <p><b>Note:</b> An instance created with this constructor uses
-     * {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler#getDefault()} to handle
-     * {@link de.uzl.itm.ncoap.message.CoapRequest}s targeting unknown resources.</p>
+     * <p>Creates a new instance of {@link CoapServer}. See {@link #CoapServer()} for default values of
+     * unspecified parameters).</p>
      *
      * @param serverPort the port number for the server to listen at (holds for all IP addresses of the server)
      */
@@ -87,14 +90,10 @@ public class CoapServer extends AbstractCoapApplication {
         this(DEFAULT_NAME, NotFoundHandler.getDefault(), getSocket(serverPort), BlockSize.UNBOUND, BlockSize.UNBOUND);
     }
 
-    
+
     /**
-     * <p>Creates a new instance of {@link CoapServer} without limits in terms of blocksize restrictions (i.e.
-     * {@link BlockSize#UNBOUND} for both, BLOCK1 (requests) and BLOCK2 (responses).</p
-     *
-     * <p><b>Note:</b> An instance created with this constructor uses
-     * {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler#getDefault()} to handle
-     * {@link de.uzl.itm.ncoap.message.CoapRequest}s targeting unknown resources.</p>
+     * <p>Creates a new instance of {@link CoapServer}. See {@link #CoapServer()} for default values of
+     * unspecified parameters).</p>
      *
      * @param serverSocket the socket address for the server to listen at
      */
@@ -104,11 +103,8 @@ public class CoapServer extends AbstractCoapApplication {
 
 
     /**
-     * <p>Creates a new instance of {@link CoapServer} without limits in terms of blocksize restrictions (i.e.
-     * {@link BlockSize#UNBOUND} for both, BLOCK1 (requests) and BLOCK2 (responses).</p
-     *
-     * <p><b>Note:</b> An instance created with this constructor listens on port
-     * {@link #DEFAULT_PORT_NUMBER} (all IP addresses)
+     * <p>Creates a new instance of {@link CoapServer}. See {@link #CoapServer()} for default values of
+     * unspecified parameters).</p>
      * 
      * @param notFoundHandler to handle inbound {@link CoapRequest}s for unknown resources
      */
@@ -117,8 +113,8 @@ public class CoapServer extends AbstractCoapApplication {
     }
 
     /**
-     * <p>Creates a new instance of {@link CoapServer} without limits in terms of blocksize restrictions (i.e.
-     * {@link BlockSize#UNBOUND} for both, BLOCK1 (requests) and BLOCK2 (responses).</p>
+     * <p>Creates a new instance of {@link CoapServer}. See {@link #CoapServer()} for default values of
+     * unspecified parameters).</p>
      *
      * @param notFoundHandler to handle inbound {@link CoapRequest}s for unknown resources
      * @param serverPort the port number for the server to listen at (holds for all IP addresses of the server)
@@ -128,9 +124,8 @@ public class CoapServer extends AbstractCoapApplication {
     }
 
     /**
-     * <p>Creates a new instance of {@link CoapServer}</p>
-     *
-     * <p><b>Note:</b> Server listens on port {@link #DEFAULT_PORT_NUMBER} (all IP addresses)
+     * <p>Creates a new instance of {@link CoapServer}. See {@link #CoapServer()} for default values of
+     * unspecified parameters).</p>
      *
      * @param notFoundHandler to handle inbound {@link CoapRequest}s for unknown resources
      * @param maxBlock1Size the maximum blocksize for inbound requests
@@ -140,17 +135,9 @@ public class CoapServer extends AbstractCoapApplication {
         this(DEFAULT_NAME, notFoundHandler, getDefaultSocket(), maxBlock1Size, maxBlock2Size);
     }
 
-    public CoapServer(String name, NotFoundHandler notFoundHandler, int serverPort,
-                      BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
-
-        this(name, notFoundHandler, getSocket(serverPort), maxBlock1Size, maxBlock2Size);
-    }
-
     /**
-     * <p>Creates a new instance of {@link CoapServer}</p>
-     *
-     * <p><b>Note:</b> An instance created with this constructor uses {@link NotFoundHandler#getDefault()} to handle
-     * {@link CoapRequest}s for unknown resources and listens on port {@link #DEFAULT_PORT_NUMBER} (all IP addresses)
+     * <p>Creates a new instance of {@link CoapServer}. See {@link #CoapServer()} for default values of
+     * unspecified parameters).</p>
      *
      * @param maxBlock1Size the maximum blocksize for inbound requests
      * @param maxBlock2Size the maximum blocksize for outbound responses
@@ -161,10 +148,25 @@ public class CoapServer extends AbstractCoapApplication {
 
 
     /**
+     * Creates a new instance of {@link CoapServer}
+     *
+     * @param name the name of this {@link CoapServer} (for logging only)
+     * @param notFoundHandler the {@link NotFoundHandler} to handle inbound requests for unknown resources
+     * @param serverPort the port number of the socket to receive messages (all local IP-addresses)
+     * @param maxBlock1Size the maximum blocksize for inbound requests
+     * @param maxBlock2Size the maximum blocksize for outbound responses
+     */
+    public CoapServer(String name, NotFoundHandler notFoundHandler, int serverPort,
+                      BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
+
+        this(name, notFoundHandler, getSocket(serverPort), maxBlock1Size, maxBlock2Size);
+    }
+
+    /**
      * <p>Creates a new instance of {@link CoapServer}</p>
      *
      * @param name the name of this {@link CoapServer} (for logging only)
-     * @param notFoundHandler to handle inbound {@link de.uzl.itm.ncoap.message.CoapRequest}s for unknown resources
+     * @param notFoundHandler the {@link NotFoundHandler} to handle inbound requests for unknown resources
      * @param serverSocket the socket address for the server to listen at
      * @param maxBlock1Size the maximum blocksize for inbound requests
      * @param maxBlock2Size the maximum blocksize for outbound responses
@@ -184,10 +186,26 @@ public class CoapServer extends AbstractCoapApplication {
         this.requestDispatcher.registerWellKnownCoreResource();
     }
 
+    /**
+     * <p>Returns the socket address of a socket including the given port and all local IP addresses.</p>
+     *
+     * <p>Note: This method is intended as a shortcut for internal use.</p>
+     *
+     * @return the socket address of a socket including the given port and all local IP addresses.
+     */
     public static InetSocketAddress getSocket(int portNumber) {
         return new InetSocketAddress(portNumber);
     }
 
+    /**
+     * <p>Returns the default socket address for CoAP servers, i.e. all local IP addresses and port number
+     * {@link CoapServer#DEFAULT_PORT_NUMBER}.</p>
+     *
+     * <p>Note: This method is intended as a shortcut for internal use.</p>
+     *
+     * @return the default socket address for CoAP servers, i.e. all local IP addresses and port number
+     * {@link CoapServer#DEFAULT_PORT_NUMBER}.
+     */
     public static InetSocketAddress getDefaultSocket() {
         return getSocket(DEFAULT_PORT_NUMBER);
     }
@@ -208,6 +226,17 @@ public class CoapServer extends AbstractCoapApplication {
         return getChannel().getPipeline().get(RequestDispatcher.class);
     }
 
+    /**
+     * <p>Gracefully shuts down the {@link Webresource} that was registered at the given path (if any).</p>
+     *
+     * That includes e.g. notifications to all observers in case we deal with a
+     * {@link de.uzl.itm.ncoap.application.server.resource.ObservableWebresource}
+     *
+     * @param uriPath the path of the {@link Webresource} to be shut down.
+     */
+    public void shutdownWebresource(String uriPath){
+        this.getRequestDispatcher().shutdownWebresource(uriPath);
+    }
 
     /**
      * Gracefully shuts down the server by sequentially shutting down all its components, i.e. the registered

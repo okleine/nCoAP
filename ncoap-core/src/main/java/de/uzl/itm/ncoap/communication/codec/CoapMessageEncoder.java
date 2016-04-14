@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -116,17 +116,17 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
             return;
         }
 
-        InetSocketAddress remoteEndpoint = (InetSocketAddress) ((MessageEvent) event).getRemoteAddress();
+        InetSocketAddress remoteSocket = (InetSocketAddress) ((MessageEvent) event).getRemoteAddress();
         CoapMessage coapMessage = (CoapMessage) ((MessageEvent) event).getMessage();
 
         try {
             ChannelBuffer encodedMessage = encode(coapMessage);
-            Channels.write(ctx, event.getFuture(), encodedMessage, remoteEndpoint);
+            Channels.write(ctx, event.getFuture(), encodedMessage, remoteSocket);
         } catch(Exception ex) {
             event.getFuture().setFailure(ex);
             int messageID = coapMessage.getMessageID();
             Token token = coapMessage.getToken();
-            sendInternalEncodingFailedMessage(ctx, remoteEndpoint, messageID, token, ex);
+            sendInternalEncodingFailedMessage(ctx, remoteSocket, messageID, token, ex);
         }
     }
 
@@ -289,10 +289,10 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteEndpoint,
+    private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteSocket,
                                                    int messageID, Token token, Throwable cause) {
 
-        MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteEndpoint, messageID, token,
+        MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteSocket, messageID, token,
                 cause.getMessage());
         Channels.fireMessageReceived(ctx, event);
     }

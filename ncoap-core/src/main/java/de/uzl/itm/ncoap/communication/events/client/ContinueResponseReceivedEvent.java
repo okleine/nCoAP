@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -37,8 +37,8 @@ public class ContinueResponseReceivedEvent extends AbstractMessageExchangeEvent 
 
     private BlockSize block1Size;
 
-    public ContinueResponseReceivedEvent(InetSocketAddress remoteEndpoint, Token token, long block1Szx) {
-        super(remoteEndpoint, token);
+    public ContinueResponseReceivedEvent(InetSocketAddress remoteSocket, Token token, long block1Szx) {
+        super(remoteSocket, token);
         this.block1Size = BlockSize.getBlockSize(block1Szx);
     }
 

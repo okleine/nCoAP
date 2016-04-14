@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -29,8 +29,7 @@ import de.uzl.itm.ncoap.communication.dispatching.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Instances of {@link MiscellaneousErrorEvent} are sent upstream if some
- * error occurred while establishing a new {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}.
+ * Instances of {@link MiscellaneousErrorEvent} are sent upstream if some error occurred during message transfer.
  *
  * @author Oliver Kleine
  */
@@ -41,17 +40,13 @@ public class MiscellaneousErrorEvent extends AbstractMessageTransferEvent {
     /**
      * Creates a new instance of {@link MiscellaneousErrorEvent}
      *
-     * @param remoteEndpoint the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
-     *                       event
-     * @param messageID the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
-     *                  that caused this event
-     * @param token the {@link Token} of the
-     *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
+     * @param remoteSocket the remote socket of the transfer that caused this event
+     * @param messageID the message ID of the message that caused this event
+     * @param token the {@link Token} of the message that caused this event
      * @param description a human readable description of the error that caused this event
      */
-    public MiscellaneousErrorEvent(InetSocketAddress remoteEndpoint, int messageID, Token token, String description) {
-        super(remoteEndpoint, messageID, token);
+    public MiscellaneousErrorEvent(InetSocketAddress remoteSocket, int messageID, Token token, String description) {
+        super(remoteSocket, messageID, token);
         this.description = description;
     }
 

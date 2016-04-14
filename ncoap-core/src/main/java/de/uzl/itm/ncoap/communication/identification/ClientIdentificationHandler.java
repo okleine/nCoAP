@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -37,11 +37,14 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * The {@link de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler} realizes a non-RFC extension to
- * the CoAP protocol ({@see http://tools.ietf.org/html/draft-kleine-core-coap-endpoint-id-01}.
+ * <p>The {@link de.uzl.itm.ncoap.communication.identification.ClientIdentificationHandler} realizes a non-RFC
+ * extension to the CoAP protocol
+ * (see: <a href="http://tools.ietf.org/html/draft-kleine-core-coap-endpoint-id-01">CoAP-Endpoint-ID-Draft-01)</a>).
+ * </p>
  *
- * This extension to the raw protocol deals with the issue if one of the endpoints (client or server) changes its
- * socket (i.e. IP address, port number, or both) during an ongoing conversation (e.g. an observation).
+ * <p>This extension to the raw protocol deals with the issue if one of the endpoints (client or server) changes its
+ * socket (i.e. IP address, port number, or both) during an ongoing conversation (e.g. an observation or a blockwise
+ * transfer).</p>
  *
  * @author Oliver Kleine
  */

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -164,19 +164,19 @@ public class DummyEndpoint extends SimpleChannelHandler {
     private class TransmissionTask implements Runnable{
 
         private CoapMessage coapMessage;
-        private InetSocketAddress remoteEndpoint;
+        private InetSocketAddress remoteSocket;
 
 
-        private TransmissionTask(CoapMessage coapMessage, InetSocketAddress remoteEndpoint) {
+        private TransmissionTask(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
             this.coapMessage = coapMessage;
-            this.remoteEndpoint = remoteEndpoint;
+            this.remoteSocket = remoteSocket;
         }
 
 
         @Override
         public void run() {
             log.info("Send CoAP message: {}", coapMessage);
-            Channels.write(channel, coapMessage, remoteEndpoint);
+            Channels.write(channel, coapMessage, remoteSocket);
         }
     }
 

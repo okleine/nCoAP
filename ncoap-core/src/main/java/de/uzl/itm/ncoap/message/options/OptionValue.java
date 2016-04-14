@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -253,9 +253,9 @@ public abstract class OptionValue<T>{
     }
 
     /**
-     * Returns the decoded value of this {@link OptionValue} as an instance of {@link T}.
+     * Returns the decoded value of this {@link OptionValue} as an instance of <code>T</code>.
      *
-     * @return the decoded value of this {@link OptionValue} as an instance of {@link T}
+     * @return the decoded value of this {@link OptionValue} as an instance of <code>T</code>
      */
     public abstract T getDecodedValue();
 
@@ -278,11 +278,9 @@ public abstract class OptionValue<T>{
     public abstract boolean equals(Object object);
 
     /**
-     * Returns a {@link String} representation of this option which is the same as
-     * {@link #getDecodedValue().toString()}.
+     * Returns a {@link String} representation of this option.
      *
-     * @return a {@link String} representation of this option which is the same as
-     * {@link #getDecodedValue().toString()}.
+     * @return a {@link String} representation of this option.
      */
     @Override
     public String toString() {

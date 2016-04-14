@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,7 +22,6 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uzl.itm.ncoap.endpoints.server;
 
 import com.google.common.primitives.Ints;
@@ -116,26 +115,26 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteEndpoint) {
-        LOG.debug("Process Request from \"{}\".", remoteEndpoint);
+                                   InetSocketAddress remoteSocket) {
+        LOG.debug("Process Request from \"{}\".", remoteSocket);
         try{
 
             Thread.sleep(this.artificalDelay);
 
             if (coapRequest.getMessageCode() == MessageCode.GET) {
-                processGetRequest(responseFuture, coapRequest, remoteEndpoint);
+                processGetRequest(responseFuture, coapRequest, remoteSocket);
             }
 
             else if (coapRequest.getMessageCode() == MessageCode.POST) {
-                processPostRequest(responseFuture, coapRequest, remoteEndpoint);
+                processPostRequest(responseFuture, coapRequest, remoteSocket);
             }
 
             else if (coapRequest.getMessageCode() == MessageCode.PUT) {
-                processPutRequest(responseFuture, coapRequest, remoteEndpoint);
+                processPutRequest(responseFuture, coapRequest, remoteSocket);
             }
 
             else if (coapRequest.getMessageCode() == MessageCode.DELETE) {
-                processDeleteRequest(responseFuture, coapRequest, remoteEndpoint);
+                processDeleteRequest(responseFuture, coapRequest, remoteSocket);
             }
 
             else{
@@ -152,7 +151,7 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
 
 
     private void processGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteEndpoint) {
+                                   InetSocketAddress remoteSocket) {
 
 
         Set<Long> acceptedContentFormats = coapRequest.getAcceptedContentFormats();

@@ -45,11 +45,11 @@ public class ClientCmdLineArgumentsWrapper {
     private int uriPort = 5683;
 
     @Option(name = "--path",
-            usage = "Sets the path of the target URI (default = null")
+            usage = "Sets the path of the target URI (default = null)")
     private String uriPath = null;
 
     @Option(name = "--query",
-            usage = "Sets the query of the target URI (default = null")
+            usage = "Sets the query of the target URI (default = null)")
     private String uriQuery = null;
 
     @Option(name = "--proxyAddress",

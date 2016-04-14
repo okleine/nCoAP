@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -29,32 +29,26 @@ import de.uzl.itm.ncoap.communication.dispatching.Token;
 import java.net.InetSocketAddress;
 
 /**
- * Instances of {@link TransmissionTimeoutEvent} are sent upstream if
- * a {@link MessageIDReleasedEvent} occurs which is related to an open
- * {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer}, i.e. there was an
- * outbound reliable message transfer (CON message) which was neither acknowledged nor resetted by the remote endpoint
- * within {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory#EXCHANGE_LIFETIME} seconds.
+ * Instances of {@link TransmissionTimeoutEvent} are sent upstream if there was no reaction (ACK, RST or response,
+ * respectively) received from the remote endpoint within
+ * {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory#EXCHANGE_LIFETIME} even though some
+ * reaction was expected, e.g. during a confirmable message transfer.
+ *
+ * @author Oliver Kleine
  */
 public class TransmissionTimeoutEvent extends AbstractMessageTransferEvent {
 
     /**
      * Creates a new instance of {@link TransmissionTimeoutEvent}
      *
-     * @param remoteEndpoint the remote endpoint that did not confirm the reception of a reliable message
-     * @param messageID the message ID of the timed out
-     *                  {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer}
-     * @param token the {@link Token} of the timed out
-     *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliableMessageTransfer}
+     * @param remoteSocket the remote endpoint that did not confirm the reception of a reliable message
+     * @param messageID the message ID of the message that caused this event
+     * @param token the {@link Token} of the message that caused this event
      */
-    public TransmissionTimeoutEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-        super(remoteEndpoint, messageID, token);
+    public TransmissionTimeoutEvent(InetSocketAddress remoteSocket, int messageID, Token token) {
+        super(remoteSocket, messageID, token);
     }
 
-
-//    @Override
-//    public boolean stopsMessageExchange() {
-//        return true;
-//    }
 
     public interface Handler {
         public void handleEvent(TransmissionTimeoutEvent event);

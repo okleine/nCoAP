@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -326,11 +326,11 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
     }
 
 
-    private void addCallback(InetSocketAddress remoteEndpoint, Token token, ClientCallback clientCallback) {
+    private void addCallback(InetSocketAddress remoteSocket, Token token, ClientCallback clientCallback) {
         try {
             this.lock.readLock().lock();
-            if (this.clientCallbacks.contains(remoteEndpoint, token)) {
-                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            if (this.clientCallbacks.contains(remoteSocket, token)) {
+                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteSocket, token);
                 return;
             }
         } finally {
@@ -339,11 +339,11 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
 
         try {
             this.lock.writeLock().lock();
-            if (this.clientCallbacks.contains(remoteEndpoint, token)) {
-                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            if (this.clientCallbacks.contains(remoteSocket, token)) {
+                log.error("Tried to use token twice (remote endpoint: {}, token: {})", remoteSocket, token);
             } else {
-                clientCallbacks.put(remoteEndpoint, token, clientCallback);
-                log.info("Added callback (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                clientCallbacks.put(remoteSocket, token, clientCallback);
+                log.info("Added callback (remote endpoint: {}, token: {})", remoteSocket, token);
                 if (this.clientCallbacks.size() > 1000) {
                     log.error("More than 1000 callbacks!");
                 }
@@ -354,11 +354,11 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
     }
 
 
-    private ClientCallback removeCallback(InetSocketAddress remoteEndpoint, Token token) {
+    private ClientCallback removeCallback(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
-            if (!this.clientCallbacks.contains(remoteEndpoint, token)) {
-                log.info("No callback found to be removed (remote endpoint: {}, token: {})", remoteEndpoint, token);
+            if (!this.clientCallbacks.contains(remoteSocket, token)) {
+                log.info("No callback found to be removed (remote endpoint: {}, token: {})", remoteSocket, token);
                 return null;
             }
         } finally {
@@ -367,13 +367,13 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
 
         try {
             this.lock.writeLock().lock();
-            ClientCallback callback = clientCallbacks.remove(remoteEndpoint, token);
+            ClientCallback callback = clientCallbacks.remove(remoteSocket, token);
             if (callback == null) {
-                log.info("No callback found to be removed (remote endpoint: {}, token: {})", remoteEndpoint, token);
+                log.info("No callback found to be removed (remote endpoint: {}, token: {})", remoteSocket, token);
             } else {
                 log.info("Removed callback (remote endpoint: {}, token: {}). Remaining: {}",
-                        new Object[]{remoteEndpoint, token, this.clientCallbacks.size()});
-                triggerEvent(new TokenReleasedEvent(remoteEndpoint, token), true);
+                        new Object[]{remoteSocket, token, this.clientCallbacks.size()});
+                triggerEvent(new TokenReleasedEvent(remoteSocket, token), true);
             }
             return callback;
         } finally {

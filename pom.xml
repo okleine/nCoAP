@@ -23,7 +23,6 @@
         <module>ncoap-core</module>
         <module>ncoap-simple-client</module>
         <module>ncoap-simple-server</module>
-        <module>ncoap-simple-endpoint</module>
     </modules>
 
     <distributionManagement>
@@ -51,6 +50,11 @@
             <version>2.9.1</version>
             <configuration>
               <additionalparam>-Xdoclint:none</additionalparam>
+              <links>
+                <link>http://netty.io/3.9/api/</link>
+                <link>http://docs.guava-libraries.googlecode.com/git-history/v16.0.1/javadoc/</link>
+              </links>
+              <stylesheetfile>src/main/resources/stylesheet.css</stylesheetfile>
             </configuration>
             <reportSets>
               <reportSet>
@@ -70,8 +74,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>

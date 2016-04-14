@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -69,11 +69,12 @@ public enum BlockSize {
     }
 
     /**
-     * Returns the SZX value representing the smaller block size. This method is for internal use and takes into
-     * account that
+     * Returns the SZX value representing the smaller block size.
+     *
      * @param szx1 the first SZX
      * @param szx2 the second SZX
-     * @return
+     *
+     * @return the SZX value representing the smaller block size.
      */
     public static long min(long szx1, long szx2) throws IllegalArgumentException {
         if (szx1 < UNDEFINED || szx1 > SZX_MAX || szx2 < UNDEFINED || szx2 > SZX_MAX) {

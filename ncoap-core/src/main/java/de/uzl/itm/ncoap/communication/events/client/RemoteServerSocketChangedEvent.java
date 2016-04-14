@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -38,13 +38,11 @@ public class RemoteServerSocketChangedEvent extends AbstractMessageExchangeEvent
     private final InetSocketAddress previous;
 
     /**
-     * Creates a new instance of {@link de.uzl.itm.ncoap.communication.events.AbstractMessageTransferEvent}
+     * Creates a new instance of {@link RemoteServerSocketChangedEvent}
      *
-     * @param remoteSocket the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
-     *                       event
-     * @param token          the {@link Token} of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
+     * @param remoteSocket the new socket of the remote endpoint
+     * @param previous the previous socket of the remote endpoint
+     * @param token the {@link Token} of ongoing conversation
      */
     public RemoteServerSocketChangedEvent(InetSocketAddress remoteSocket, InetSocketAddress previous, Token token) {
 
@@ -53,7 +51,10 @@ public class RemoteServerSocketChangedEvent extends AbstractMessageExchangeEvent
 
     }
 
-
+    /**
+     * Returns the previous socket address
+     * @return the previous socket address
+     */
     public InetSocketAddress getPreviousRemoteSocket() {
         return previous;
     }

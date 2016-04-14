@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -37,9 +37,9 @@ public class ResponseBlockReceivedEvent extends AbstractMessageExchangeEvent {
     private long receivedLength;
     private long expectedLength;
 
-    public ResponseBlockReceivedEvent(InetSocketAddress remoteEndpoint, Token token, long receivedLength,
+    public ResponseBlockReceivedEvent(InetSocketAddress remoteSocket, Token token, long receivedLength,
                                       long expectedLength) {
-        super(remoteEndpoint, token);
+        super(remoteSocket, token);
         this.receivedLength = receivedLength;
         this.expectedLength = expectedLength;
     }

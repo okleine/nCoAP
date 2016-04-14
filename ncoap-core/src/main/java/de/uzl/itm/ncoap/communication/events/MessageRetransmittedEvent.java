@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -30,7 +30,7 @@ import de.uzl.itm.ncoap.communication.dispatching.Token;
 
 /**
  * Instances are sent upstream by the
- * {@link de.uzl.itm.ncoap.communication.reliability.outbound.OutboundReliabilityHandler} whenever there was a
+ * {@link de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler} whenever there was a
  * retransmission of a confirmable {@link de.uzl.itm.ncoap.message.CoapMessage}.
  *
  * @author Oliver Kleine
@@ -40,13 +40,13 @@ public class MessageRetransmittedEvent extends AbstractMessageTransferEvent {
     /**
      * Creates a new instance of {@link MessageRetransmittedEvent}
      *
-     * @param remoteEndpoint the desired recipient of the retransmitted message
+     * @param remoteSocket the desired recipient of the retransmitted message
      * @param messageID the message ID of the retransmitted message
      * @param token the {@link Token} of the retransmitted
      *              message
      */
-    public MessageRetransmittedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-        super(remoteEndpoint, messageID, token);
+    public MessageRetransmittedEvent(InetSocketAddress remoteSocket, int messageID, Token token) {
+        super(remoteSocket, messageID, token);
     }
 
 //    @Override

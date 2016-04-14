@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -89,18 +89,18 @@ public class MessageIDFactory extends Observable {
      * If all message IDs available for the given remote endpoint are in use
      * {@link de.uzl.itm.ncoap.message.CoapMessage#UNDEFINED_MESSAGE_ID} is returned.
      *
-     * @param remoteEndpoint the recipient of the message the returned message ID is supposed to be used for
+     * @param remoteSocket the recipient of the message the returned message ID is supposed to be used for
      *
      * @return the message ID to be used for outgoing messages or
      * {@link de.uzl.itm.ncoap.message.CoapMessage#UNDEFINED_MESSAGE_ID} if all IDs are in use.
      */
-    public int getNextMessageID(final InetSocketAddress remoteEndpoint, final Token token) {
+    public int getNextMessageID(final InetSocketAddress remoteSocket, final Token token) {
 
         try{
             lock.readLock().lock();
 
-            if (this.allocations.get(remoteEndpoint).size() == MODULUS) {
-                log.warn("No more message IDs available for remote endpoint {}.", remoteEndpoint);
+            if (this.allocations.get(remoteSocket).size() == MODULUS) {
+                log.warn("No more message IDs available for remote endpoint {}.", remoteSocket);
                 return CoapMessage.UNDEFINED_MESSAGE_ID;
             }
         }
@@ -111,9 +111,9 @@ public class MessageIDFactory extends Observable {
         try{
             lock.writeLock().lock();
 
-            final SortedSet<Integer> allocations = this.allocations.get(remoteEndpoint);
+            final SortedSet<Integer> allocations = this.allocations.get(remoteSocket);
             if (allocations.size() == MODULUS) {
-                log.warn("No more message IDs available for remote endpoint {}.", remoteEndpoint);
+                log.warn("No more message IDs available for remote endpoint {}.", remoteSocket);
                 return CoapMessage.UNDEFINED_MESSAGE_ID;
             }
 
@@ -123,12 +123,12 @@ public class MessageIDFactory extends Observable {
             } else {
                 messageID = (allocations.last() + 1);
             }
-            this.allocations.put(remoteEndpoint, messageID);
+            this.allocations.put(remoteSocket, messageID);
 
             this.executor.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    releaseMessageID(remoteEndpoint, messageID, token);
+                    releaseMessageID(remoteSocket, messageID, token);
                 }
             }, EXCHANGE_LIFETIME, TimeUnit.SECONDS);
 
@@ -193,13 +193,13 @@ public class MessageIDFactory extends Observable {
 //    private class AllocationRetirementTask implements Runnable{
 //
 //        private Channel channel;
-//        private InetSocketAddress remoteEndpoint;
+//        private InetSocketAddress remoteSocket;
 //        private Token token;
 //        private int messageID;
 //
 //        private AllocationRetirementTask(Channel channel, InetSocketAddress remoteSocket, int messageID, Token token) {
 //            this.channel = channel;
-//            this.remoteEndpoint = remoteSocket;
+//            this.remoteSocket = remoteSocket;
 //            this.token = token;
 //            this.messageID = messageID;
 //        }
@@ -208,25 +208,25 @@ public class MessageIDFactory extends Observable {
 //            return this.messageID;
 //        }
 //
-//        public InetSocketAddress getRemoteEndpoint() {
-//            return this.remoteEndpoint;
+//        public InetSocketAddress getremoteSocket() {
+//            return this.remoteSocket;
 //        }
 //
 //        @Override
 //        public void run() {
 //            try{
 //                lock.writeLock().lock();
-//                ArrayDeque<AllocationRetirementTask> tasks = usedMessageIDs.get(remoteEndpoint);
+//                ArrayDeque<AllocationRetirementTask> tasks = usedMessageIDs.get(remoteSocket);
 //                tasks.remove(this);
 //                if (tasks.size() == 0) {
-//                    usedMessageIDs.remove(remoteEndpoint);
+//                    usedMessageIDs.remove(remoteSocket);
 //                }
 //            } finally {
 //                lock.writeLock().unlock();
 //            }
 //
 //            Channels.fireMessageReceived(this.channel, new MessageIDReleasedEvent(
-//                this.remoteEndpoint, this.messageID, this.token
+//                this.remoteSocket, this.messageID, this.token
 //            ));
 //        }
 //    }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -39,16 +39,12 @@ public abstract class AbstractMessageTransferEvent extends AbstractMessageExchan
 
     /**
      * Creates a new instance of {@link AbstractMessageTransferEvent}
-     * @param remoteEndpoint the remote endpoint of the
-     *                       {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this
-     *                       event
-     * @param messageID the message ID of the {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer}
-     *                  that caused this event
-     * @param token the {@link Token} of the
-     *              {@link de.uzl.itm.ncoap.communication.reliability.outbound.MessageTransfer} that caused this event
+     * @param remoteSocket the remote socket of the transfer that caused this event
+     * @param messageID the message ID of the transfer that caused this event
+     * @param token the {@link Token} of the of the transfer that caused this event
      */
-    public AbstractMessageTransferEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-        super(remoteEndpoint, token);
+    public AbstractMessageTransferEvent(InetSocketAddress remoteSocket, int messageID, Token token) {
+        super(remoteSocket, token);
         this.messageID = messageID;
     }
 

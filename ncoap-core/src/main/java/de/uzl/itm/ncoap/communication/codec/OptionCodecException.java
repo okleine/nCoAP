@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,7 +22,6 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package de.uzl.itm.ncoap.communication.codec;
 
 import de.uzl.itm.ncoap.communication.dispatching.Token;
@@ -45,7 +44,7 @@ public class OptionCodecException extends Exception {
     private int optionNumber;
     private int messageID;
     private Token token;
-    private InetSocketAddress remoteEndpoint;
+    private InetSocketAddress remoteSocket;
     private int messageType;
 
     /**
@@ -113,10 +112,10 @@ public class OptionCodecException extends Exception {
      * {@link CoapMessageDecoder} or he desired recipient if this exception was thrown by the
      * {@link CoapMessageEncoder}.
      *
-     * @param remoteEndpoint the remote CoAP endpoints of the message that caused this exception
+     * @param remoteSocket the remote CoAP endpoints of the message that caused this exception
      */
-    public void setRemoteEndpoint(InetSocketAddress remoteEndpoint) {
-        this.remoteEndpoint = remoteEndpoint;
+    public void setremoteSocket(InetSocketAddress remoteSocket) {
+        this.remoteSocket = remoteSocket;
     }
 
 
@@ -128,8 +127,8 @@ public class OptionCodecException extends Exception {
      *
      * @return the remote CoAP endpoints of the message that caused this exception
      */
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
+    public InetSocketAddress getremoteSocket() {
+        return remoteSocket;
     }
 
 

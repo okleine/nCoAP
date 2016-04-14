@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -25,8 +25,7 @@
 package de.uzl.itm.ncoap.application.linkformat;
 
 /**
- * A {@link LongLinkAttribute} is a {@link LinkAttribute} with values of type 'Long'
- * ({@link LinkAttribute#LONG}).
+ * A {@link LongLinkAttribute} is a {@link LinkAttribute} with values of type {@link LinkAttribute.Type#LONG}.
  *
  * @author Oliver Kleine
  */

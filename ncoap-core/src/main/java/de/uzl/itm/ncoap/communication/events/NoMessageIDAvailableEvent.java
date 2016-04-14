@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -33,8 +33,8 @@ import java.net.InetSocketAddress;
  */
 public class NoMessageIDAvailableEvent extends AbstractMessageExchangeEvent {
 
-    public NoMessageIDAvailableEvent(InetSocketAddress remoteEndpoint, Token token) {
-        super(remoteEndpoint, token);
+    public NoMessageIDAvailableEvent(InetSocketAddress remoteSocket, Token token) {
+        super(remoteSocket, token);
     }
 
     public interface Handler {

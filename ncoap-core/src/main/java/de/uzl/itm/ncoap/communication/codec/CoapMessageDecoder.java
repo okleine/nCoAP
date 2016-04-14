@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -87,16 +87,16 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         final MessageEvent messageEvent = (MessageEvent) evt;
         messageEvent.getFuture().setSuccess();
 
-        InetSocketAddress remoteEndpoint = (InetSocketAddress) messageEvent.getRemoteAddress();
-        CoapMessage coapMessage = decode(remoteEndpoint, (ChannelBuffer) messageEvent.getMessage());
+        InetSocketAddress remoteSocket = (InetSocketAddress) messageEvent.getRemoteAddress();
+        CoapMessage coapMessage = decode(remoteSocket, (ChannelBuffer) messageEvent.getMessage());
 
         if (coapMessage != null) {
-            Channels.fireMessageReceived(ctx, coapMessage, remoteEndpoint);
+            Channels.fireMessageReceived(ctx, coapMessage, remoteSocket);
         }
     }
 
 
-    protected CoapMessage decode(InetSocketAddress remoteEndpoint, ChannelBuffer buffer)
+    protected CoapMessage decode(InetSocketAddress remoteSocket, ChannelBuffer buffer)
             throws HeaderDecodingException, OptionCodecException {
 
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
@@ -104,7 +104,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         //Decode the Message Header which must have a length of exactly 4 bytes
         if (buffer.readableBytes() < 4) {
             String message = "Encoded CoAP messages MUST have min. 4 bytes. This has " + buffer.readableBytes() + "!";
-            throw new HeaderDecodingException(CoapMessage.UNDEFINED_MESSAGE_ID, remoteEndpoint, message);
+            throw new HeaderDecodingException(CoapMessage.UNDEFINED_MESSAGE_ID, remoteSocket, message);
         }
 
         //Decode the header values
@@ -122,19 +122,19 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         //Check whether the protocol version is supported (=1)
         if (version != CoapMessage.PROTOCOL_VERSION) {
             String message = "CoAP version (" + version + ") is other than \"1\"!";
-            throw new HeaderDecodingException(messageID, remoteEndpoint, message);
+            throw new HeaderDecodingException(messageID, remoteSocket, message);
         }
 
         //Check whether TKL indicates a not allowed token length
         if (tokenLength > CoapMessage.MAX_TOKEN_LENGTH) {
             String message = "TKL value (" + tokenLength + ") is larger than 8!";
-            throw new HeaderDecodingException(messageID, remoteEndpoint, message);
+            throw new HeaderDecodingException(messageID, remoteSocket, message);
         }
 
         //Check whether there are enough unread bytes left to read the token
         if (buffer.readableBytes() < tokenLength) {
             String message = "TKL value is " + tokenLength + " but only " + buffer.readableBytes() + " bytes left!";
-            throw new HeaderDecodingException(messageID, remoteEndpoint, message);
+            throw new HeaderDecodingException(messageID, remoteSocket, message);
         }
 
         //Handle empty message (ignore everything but the first 4 bytes)
@@ -148,7 +148,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 return CoapMessage.createPing(messageID);
             } else {
                 //There is no empty NON message defined, so send a RST
-                throw new HeaderDecodingException(messageID, remoteEndpoint, "Empty NON messages are invalid!");
+                throw new HeaderDecodingException(messageID, remoteSocket, "Empty NON messages are invalid!");
             }
         }
 
@@ -176,7 +176,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             } catch (OptionCodecException ex) {
                 ex.setMessageID(messageID);
                 ex.setToken(new Token(token));
-                ex.setRemoteEndpoint(remoteEndpoint);
+                ex.setremoteSocket(remoteSocket);
                 ex.setMessageType(messageType);
                 throw ex;
             }
@@ -300,7 +300,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             HeaderDecodingException ex = (HeaderDecodingException) cause;
 
             if (ex.getMessageID() != CoapMessage.UNDEFINED_MESSAGE_ID) {
-                writeReset(ctx, ex.getMessageID(), ex.getRemoteEndpoint());
+                writeReset(ctx, ex.getMessageID(), ex.getremoteSocket());
             } else {
                 log.warn("Ignore inbound message with malformed header...");
             }
@@ -308,7 +308,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             OptionCodecException ex = (OptionCodecException) cause;
             int messageType = ex.getMessageType() == CON ? ACK : NON;
 
-            writeBadOptionResponse(ctx, messageType, ex.getMessageID(), ex.getToken(), ex.getRemoteEndpoint(),
+            writeBadOptionResponse(ctx, messageType, ex.getMessageID(), ex.getToken(), ex.getremoteSocket(),
                     ex.getMessage());
         } else {
             ctx.sendUpstream(exceptionEvent);
@@ -316,20 +316,20 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
     }
 
-    private void writeReset(ChannelHandlerContext ctx, int messageID, InetSocketAddress remoteEndpoint) {
+    private void writeReset(ChannelHandlerContext ctx, int messageID, InetSocketAddress remoteSocket) {
         CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
-        Channels.write(ctx, Channels.future(ctx.getChannel()), resetMessage, remoteEndpoint);
+        Channels.write(ctx, Channels.future(ctx.getChannel()), resetMessage, remoteSocket);
     }
 
 
     private void writeBadOptionResponse(ChannelHandlerContext ctx, int messageType, int messageID,
-                                        Token token, InetSocketAddress remoteEndpoint, String content) {
+                                        Token token, InetSocketAddress remoteSocket, String content) {
 
         CoapResponse errorResponse = CoapResponse.createErrorResponse(messageType, BAD_OPTION_402, content);
         errorResponse.setMessageID(messageID);
         errorResponse.setToken(token);
 
-        Channels.write(ctx, Channels.future(ctx.getChannel()), errorResponse, remoteEndpoint);
+        Channels.write(ctx, Channels.future(ctx.getChannel()), errorResponse, remoteSocket);
     }
 
 

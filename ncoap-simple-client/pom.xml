@@ -59,6 +59,8 @@
                             <attachToBuild>true</attachToBuild>
                             <!-- Optional, default is "onejar" -->
                             <classifier>onejar</classifier>
+                            <!-- Change the filename of the executable jar file-->
+                            <!--<filename>SimpleCoapClient-${project.version}</filename>-->
                         </configuration>
                         <goals>
                             <goal>one-jar</goal>
@@ -68,7 +70,5 @@
             </plugin>
         </plugins>
     </build>
-
-
 
 </project>

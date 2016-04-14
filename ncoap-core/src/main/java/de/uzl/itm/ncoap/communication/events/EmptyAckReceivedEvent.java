@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -49,11 +49,12 @@
 package de.uzl.itm.ncoap.communication.events;
 
 import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;
 
 import java.net.InetSocketAddress;
 
 /**
-* Instances are sent upstream (i.e. to the plugtest) by the {@link de.uniluebeck.itm.ncoap.communication.reliability.server.outgoing.ServerOutboundReliabilityHandler}
+* Instances are sent upstream (i.e. to the plugtest) by the {@link ServerOutboundReliabilityHandler}
 * when there was an empty acknowledgement received indicating that a recipient received a a confirmable
 * message.
 *

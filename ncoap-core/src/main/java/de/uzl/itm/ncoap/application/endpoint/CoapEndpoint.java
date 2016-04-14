@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -58,38 +58,60 @@ import java.net.InetSocketAddress;
  * @author Oliver Kleine
  */
 public class CoapEndpoint extends AbstractCoapApplication {
-    
+
+    /**
+     * 'nCoAP Endpoint'
+     */
+    public static final String DEFAULT_NAME = "nCoAP Endpoint";
+
     private static Logger LOG = LoggerFactory.getLogger(CoapEndpoint.class.getName());
 
     private ResponseDispatcher responseDispatcher;
     private RequestDispatcher requestDispatcher;
 
     /**
+     * Creates a new instance of {@link CoapEndpoint} with default parameters, i.e.
+     * <ul>
+     *     <li>{@link CoapEndpoint#DEFAULT_NAME} as name,</li>
+     *     <li>{@link NotFoundHandler#getDefault()} as {@link NotFoundHandler},</li>
+     *     <li>{@link CoapServer#DEFAULT_PORT_NUMBER} as port number (listening at all local IP-addresses), and</li>
+     *     <li>{@link BlockSize#UNBOUND} for maximum size of both, inbound requests and outbound responses.</li>
+     * </ul>
+     */
+    public CoapEndpoint() {
+        this(DEFAULT_NAME, NotFoundHandler.getDefault(), CoapServer.getDefaultSocket(), BlockSize.UNBOUND,
+                BlockSize.UNBOUND);
+    }
+
+    /**
      * <p>Creates a new instance of {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint}</p>
-     * <p>Using this constructor has the same effect as invoking the other constructor with name
-     * <code>COAP ENDPOINT</code>.
      *
-     * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler}
-     * to deal with requests that are addressed to resources that do not (yet) exist.
-     * @param localSocket the local {@link java.net.InetSocketAddress} to listen at for incoming messages
+     * @param notFoundHandler the {@link NotFoundHandler} to handle inbound requests for unknown resources
+     * @param localSocket the socket address to send and receive messages
      */
     public CoapEndpoint(NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
         this("COAP ENDPOINT", notFoundHandler, localSocket, BlockSize.UNBOUND, BlockSize.UNBOUND);
     }
 
-    public CoapEndpoint(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
-        this(applicationName, notFoundHandler, localSocket, BlockSize.UNBOUND, BlockSize.UNBOUND);
+    /**
+     * Creates a new instance of {@link CoapEndpoint}
+     *
+     * @param name the name of this {@link CoapEndpoint} (for logging only)
+     * @param notFoundHandler the {@link NotFoundHandler} to handle inbound requests for unknown resources
+     * @param localSocket the socket address to send and receive messages
+     */
+    public CoapEndpoint(String name, NotFoundHandler notFoundHandler, InetSocketAddress localSocket) {
+        this(name, notFoundHandler, localSocket, BlockSize.UNBOUND, BlockSize.UNBOUND);
     }
 
     /**
-     * Creates a new instance of {@link CoapEndpoint} which combines both, client and server.
+     * Creates a new instance of {@link CoapEndpoint}
      *
-     * @param applicationName the name of this endpoint (for logging only)
-     * @param notFoundHandler the {@link NotFoundHandler} to deal with inbound requests for unknown resources
-     * @param portNumber the number of the port to send and receive messages
+     * @param applicationName the name of this {@link CoapEndpoint} (for logging only)
+     * @param notFoundHandler the {@link NotFoundHandler} to handle inbound requests for unknown resources
+     * @param portNumber the port number of the socket to send and receive messages (all local IP-addresses)
      * @param maxBlock1Size the maximum BLOCK 1 size (<b>for inbound requests only</b>)
      * @param maxBlock2Size the maximum BLOCK 2 size (<b>for outbound responses only</b>)
-     *
      */
     public CoapEndpoint(String applicationName, NotFoundHandler notFoundHandler, int portNumber,
                         BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
@@ -98,12 +120,11 @@ public class CoapEndpoint extends AbstractCoapApplication {
     }
 
     /**
-     * Creates a new instance of {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint}
+     * Creates a new instance of {@link CoapEndpoint}
      *
-     * @param applicationName the name of the application
-     * @param notFoundHandler the {@link de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler}
-     * to deal with requests that are addressed to resources that do not (yet) exist.
-     * @param localSocket the local {@link java.net.InetSocketAddress} to listen at for incoming messages
+     * @param applicationName the name of this {@link CoapEndpoint} (for logging only)
+     * @param notFoundHandler the {@link NotFoundHandler} to handle inbound requests for unknown resources
+     * @param localSocket the socket address to send and receive messages
      */
     public CoapEndpoint(String applicationName, NotFoundHandler notFoundHandler, InetSocketAddress localSocket,
                         BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
@@ -189,7 +210,19 @@ public class CoapEndpoint extends AbstractCoapApplication {
 
 
     /**
-     * Gracefully shuts down the server by sequentially shutting down all its components, i.e. the registered
+     * <p>Gracefully shuts down the {@link Webresource} that was registered at the given path.</p>
+     *
+     * That includes e.g. notifications to all observers in case we deal with a
+     * {@link de.uzl.itm.ncoap.application.server.resource.ObservableWebresource}
+     *
+     * @param uriPath the path of the {@link Webresource} to be shut down.
+     */
+    public void shutdownWebresource(String uriPath){
+        this.getRequestDispatcher().shutdownWebresource(uriPath);
+    }
+
+    /**
+     * Gracefully shuts down the endpoint by sequentially shutting down all its components, i.e. the registered
      * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s and the
      * {@link org.jboss.netty.channel.socket.DatagramChannel} to write and receive messages.
      */

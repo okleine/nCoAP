@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -63,12 +63,12 @@ public class ResetReceivedEvent extends AbstractMessageTransferEvent {
     /**
      * Creates a new instance of {@link ResetReceivedEvent}
      *
-     * @param remoteEndpoint the socket address of the remote endpoint that sent the RST
+     * @param remoteSocket the socket address of the remote endpoint that sent the RST
      * @param messageID the message ID that was contained in the received RST message
      * @param token the {@link Token} of the confirmed message
      */
-    public ResetReceivedEvent(InetSocketAddress remoteEndpoint, int messageID, Token token) {
-        super(remoteEndpoint, messageID, token);
+    public ResetReceivedEvent(InetSocketAddress remoteSocket, int messageID, Token token) {
+        super(remoteSocket, messageID, token);
     }
 
 

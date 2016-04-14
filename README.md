@@ -1,20 +1,23 @@
 ## nCoAP
 
-### Java implementation of the CoAP protocol (RFC 7252)
+### Java implementation of the CoAP protocol
 
-See: https://datatracker.ietf.org/doc/rfc7252/
+This implementation currently covers
 
-This implementation currently supports the main protocol according to RFC 7252 (without SSL) plus
+* the raw protocol ([RFC 7252](https://tools.ietf.org/html/rfc7252)),
+* the observation of CoAP resources ([RFC 7252](https://tools.ietf.org/html/rfc7252)),
+* the blockwise transfer ([draft 19](https://tools.ietf.org/html/draft-ietf-core-block-19)),
+* the identification of endpoints with changing IPs
+([draft 01](https://tools.ietf.org/html/draft-kleine-core-coap-endpoint-id-01)) , and
+* the CoRE Link Format ([RFC 6690](https://tools.ietf.org/html/rfc6690)).
 
-* the core link format (see https://datatracker.ietf.org/doc/rfc6690/) and
-* the observe extension (draft 14) (see http://tools.ietf.org/html/draft-ietf-core-observe-14).
 
 ### Maven
 
 The nCoAP project is organized in several maven modules, i.e.,
 
 ```xml
-<groupId>de.uniluebeck.itm</groupId>
+<groupId>de.uzl.itm</groupId>
 <artifactId>ncoap-core</artifactId>
 ```
 
@@ -26,8 +29,8 @@ To use the latest protocol implementation release add the following to your pom.
 ...
     <repository>
         <id>itm-maven-repository-releases</id>
-        <name>ITM Maven Releases Repository</name>
-        <url>https://maven.itm.uni-luebeck.de/content/repositories/releases</url>
+        <name>ITM Maven Snapshots Repository</name>
+        <url>https://maven.itm.uni-luebeck.de/content/repositories/snapshots</url>
     </repository>
 ...
 </repositories>
@@ -39,7 +42,7 @@ To use the latest protocol implementation release add the following to your pom.
 <dependencies>
 ...
     <dependency>
-        <groupId>de.uniluebeck.itm</groupId>
+        <groupId>de.uzl.itm</groupId>
         <artifactId>ncoap-core</artifactId>
         <version>1.8.3-SNAPSHOT</version>
     </dependency>
@@ -50,14 +53,14 @@ To use the latest protocol implementation release add the following to your pom.
 The other models, i.e.,
 
 ```xml
-<groupId>de.uniluebeck.itm</groupId>
+<groupId>de.uzl.itm</groupId>
 <artifactId>ncoap-simple-client</artifactId>
 ```
 
 and
 
 ```xml
-<groupId>de.uniluebeck.itm</groupId>
+<groupId>de.uzl.itm</groupId>
 <artifactId>ncoap-simple-server</artifactId>
 ```
 
@@ -67,4 +70,4 @@ write such applications using ncoap.
 
 ### Documentation
 
-The documentation is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.3-SNAPSHOT
+The JavaDoc is available at http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.3-SNAPSHOT

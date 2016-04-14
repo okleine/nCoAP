@@ -1,7 +1,7 @@
-## A Simple Client with nCoAP
+## A simple Client with nCoAP
 
-This is a simple example application, to showcase how to use the protocol implementation for clients. The client is
-configured using command line parameters. For a complete list of supported parameters use e.g.
+This MAVEN module contains  a simple example application, to showcase how to use the protocol implementation for
+clients. The client is configured using command line parameters. For a complete list of supported parameters use
 
 `java -jar ncoap-simple-client-1.8.3-SNAPSHOT.one-jar.jar --help`
 
@@ -14,8 +14,8 @@ program parameters (command line or IDE) parameters:
 
 `--host example.org --port 5683 --path /test --non --duration 20`
 
-This will cause a non-confirmable CoAP request to be sent to the resource and either await a single response or 20
-seconds to pass (whatever happens first). Then the application is shut down.
+This will cause a non-confirmable CoAP request sent to the resource.  Afterwards the client awaits either a single
+response or 20 seconds to pass (whatever happens first). Then the application is shut down.
 
 ### Example 2
 
@@ -27,3 +27,6 @@ program parameters:
 This will cause a confirmable CoAP request with the observing option set to be sent to the resource and either await 5
 update notifications or 60 seconds to pass (whatever happens first). If one of this shutdown criteria is satisfied,
 the application is shut down after another delay of 10 seconds.
+
+The 10 seconds are to (possibly) enable a graceful abortion of the running observation (depends on the update interval
+of the observed resource).

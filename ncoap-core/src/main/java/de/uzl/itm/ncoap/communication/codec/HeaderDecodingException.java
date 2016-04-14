@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -36,18 +36,18 @@ import java.net.InetSocketAddress;
 public class HeaderDecodingException extends Exception{
 
     private int messageID;
-    private InetSocketAddress remoteEndpoint;
+    private InetSocketAddress remoteSocket;
 
     /**
      * Creates a new instance of {@link HeaderDecodingException}.
      *
      * @param messageID the message ID of the message that caused
-     * @param remoteEndpoint the malformed message origin
+     * @param remoteSocket the malformed message origin
      */
-    public HeaderDecodingException(int messageID, InetSocketAddress remoteEndpoint, String message) {
+    public HeaderDecodingException(int messageID, InetSocketAddress remoteSocket, String message) {
         super(message);
         this.messageID = messageID;
-        this.remoteEndpoint = remoteEndpoint;
+        this.remoteSocket = remoteSocket;
     }
 
     /**
@@ -64,7 +64,7 @@ public class HeaderDecodingException extends Exception{
      *
      * @return the malformed inbound messages origin CoAP endpoints
      */
-    public InetSocketAddress getRemoteEndpoint() {
-        return remoteEndpoint;
+    public InetSocketAddress getremoteSocket() {
+        return remoteSocket;
     }
 }

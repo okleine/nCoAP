@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -71,7 +71,7 @@ public class NotObservableTestWebresourceForPost extends NotObservableWebresourc
 
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-                                   InetSocketAddress remoteEndpoint) throws Exception {
+                                   InetSocketAddress remoteSocket) throws Exception {
 
         int messageType = coapRequest.getMessageType();
 

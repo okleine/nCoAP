@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -34,12 +34,12 @@ import java.net.InetSocketAddress;
 public abstract class AbstractMessageExchangeEvent{
 
 
-    private final InetSocketAddress remoteEndpoint;
+    private final InetSocketAddress remoteSocket;
     private final Token token;
 
 
-    public AbstractMessageExchangeEvent(InetSocketAddress remoteEndpoint, Token token) {
-        this.remoteEndpoint = remoteEndpoint;
+    public AbstractMessageExchangeEvent(InetSocketAddress remoteSocket, Token token) {
+        this.remoteSocket = remoteSocket;
         this.token = token;
     }
 
@@ -48,7 +48,7 @@ public abstract class AbstractMessageExchangeEvent{
      * @return the remote endpoint of the message exchange (i.e. communication) that caused this events
      */
     public InetSocketAddress getRemoteSocket() {
-        return remoteEndpoint;
+        return remoteSocket;
     }
 
     /**

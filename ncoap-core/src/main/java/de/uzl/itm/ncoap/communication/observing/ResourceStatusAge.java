@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -45,8 +45,7 @@ public class ResourceStatusAge {
 
     /**
      * Creates a new instance of {@link ResourceStatusAge}
-     * @param sequenceNo the sequence number, i.e.
-     *                   {@link de.uzl.itm.ncoap.message.options.OptionValue.Name#OBSERVE} of an update
+     * @param sequenceNo the sequence number, i.e. {@link de.uzl.itm.ncoap.message.options.Option#OBSERVE} of an update
      *                   notification
      * @param timestamp the reception timestamp of an update notification
      */

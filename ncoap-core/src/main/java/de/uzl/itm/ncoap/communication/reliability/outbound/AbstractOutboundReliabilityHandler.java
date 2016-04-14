@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -50,14 +50,14 @@ public abstract class AbstractOutboundReliabilityHandler extends AbstractCoapCha
     /**
      * The minimum number of milliseconds (2000) to wait for the first retransmit of an outgoing
      * {@link de.uzl.itm.ncoap.message.CoapMessage} with
-     * {@link de.uzl.itm.ncoap.message.MessageType.Name#CON}
+     * {@link de.uzl.itm.ncoap.message.MessageType#CON}
      */
     public static final int ACK_TIMEOUT_MILLIS = 2000;
 
     /**
      * The factor (1.5) to be multiplied with {@link #ACK_TIMEOUT_MILLIS} to get the maximum number of milliseconds
      * (3000) to wait for the first retransmit of an outgoing {@link de.uzl.itm.ncoap.message.CoapMessage} with
-     * {@link de.uzl.itm.ncoap.message.MessageType.Name#CON}
+     * {@link de.uzl.itm.ncoap.message.MessageType#CON}
      */
     public static final double ACK_RANDOM_FACTOR = 1.5;
 

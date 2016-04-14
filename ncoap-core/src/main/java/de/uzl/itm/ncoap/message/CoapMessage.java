@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
  * All rights reserved
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -877,13 +877,13 @@ public abstract class CoapMessage {
     }
 
     /**
-     * Returns a {@link Set<de.uzl.itm.ncoap.message.options.OptionValue>} containing the options that are explicitly set in this {@link CoapMessage}. The
-     * returned set does not contain options with default values. If this {@link CoapMessage} does not contain any
+     * Returns a {@link Set} containing the {@link OptionValue}s that are explicitly set in this {@link CoapMessage}.
+     * The returned set does not contain options with default values. If this {@link CoapMessage} does not contain any
      * options of the given option number, then the returned set is empty.
      *
      * @param optionNumber the option number
      *
-     * @return a {@link Set<de.uzl.itm.ncoap.message.options.OptionValue>} containing the options that are explicitly set in this {@link CoapMessage}.
+     * @return a {@link Set} containing the {@link OptionValue}s that are explicitly set in this {@link CoapMessage}.
      */
     public Set<OptionValue> getOptions(int optionNumber) {
         return this.options.get(optionNumber);
