@@ -13,7 +13,7 @@ currently covers
 
 but without SSL (i.e. coaps). 
 
-### Maven
+### Latest SNAPSHOT version (1.8.3-SNAPSHOT)
 
 The nCoAP project is organized in several maven modules, i.e.,
 
@@ -22,11 +22,9 @@ The nCoAP project is organized in several maven modules, i.e.,
 <artifactId>ncoap-core</artifactId>
 ```
 
-for the raw protocol implementation. For CoAP application development this is probably what you want.
-
-#### Latest SNAPSHOT version (1.8.3-SNAPSHOT)
-
-To use the latest bleeding edge version (SNAPSHOT) add the following to your pom.xml:
+for the raw protocol implementation. For CoAP application development this is probably what you want. Note, that for
+several reasons some interfaces changed since the latest stable version. To use the latest bleeding edge version
+add the following to your pom.xml:
 
 ```xml
 <repositories>
@@ -54,39 +52,8 @@ To use the latest bleeding edge version (SNAPSHOT) add the following to your pom
 </dependencies>
 ```
 
-Note, that for several reasons some interfaces changed since the latest stable version.
+JavaDoc is available [here](https://media.itm.uni-luebeck.de/people/kleine/javadoc/ncoap-core/1.8.3-SNAPSHOT/).
 
-#### Latest stable release (1.8.2)
-
-To use the latest stable release add the following to your pom.xml:
-
-```xml
-<repositories>
-...
-    <repository>
-        <id>itm-maven-repository-releases</id>
-        <name>ITM Maven Releases Repository</name>
-        <url>https://maven.itm.uni-luebeck.de/content/repositories/releases</url>
-    </repository>
-...
-</repositories>
-```
-
-...
-
-```xml
-<dependencies>
-...
-    <dependency>
-        <groupId>de.uniluebeck.itm</groupId>
-        <artifactId>ncoap-core</artifactId>
-        <version>1.8.2</version>
-    </dependency>
-...
-</dependencies>
-```
-
-The JavaDoc is available [here](http://media.itm.uni-luebeck.de/people/kleine/maven/ncoap-complete/1.8.2).
 
 ### Examples for Client and Server 
 

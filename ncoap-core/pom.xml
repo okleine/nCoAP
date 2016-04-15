@@ -13,7 +13,9 @@
     <artifactId>ncoap-core</artifactId>
     <name>nCoAP Core</name>
     <description>
-      The protocol implementation (RFC 7252) and the observe extension (Draft 14)
+      Implementation of the Constrained Application Protocol (RFC 7252), the extensions to observe CoAP resources
+      (RFC 7641), transfer messages blockwise (draft 19), identify CoAP endpoints despite changing IP addresses
+      (draft 01), and the CoRE Link Format (RFC 6690).
     </description>
     <packaging>jar</packaging>
 
