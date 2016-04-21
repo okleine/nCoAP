@@ -11,7 +11,7 @@ currently covers
 ([draft 01](https://tools.ietf.org/html/draft-kleine-core-coap-endpoint-id-01)) , and
 * the CoRE Link Format ([RFC 6690](https://tools.ietf.org/html/rfc6690)).
 
-but without SSL (i.e. coaps). 
+but without DTLS (i.e. support for the coaps scheme). 
 
 ### Latest SNAPSHOT version (1.8.3-SNAPSHOT)
 
@@ -22,9 +22,9 @@ The nCoAP project is organized in several maven modules, i.e.,
 <artifactId>ncoap-core</artifactId>
 ```
 
-for the raw protocol implementation. For CoAP application development this is probably what you want. Note, that for
-several reasons some interfaces and package names changed since the latest stable version (1.8.2). To use the
-latest bleeding edge version add the following to your pom.xml:
+for the raw protocol implementation (including the extensions mentioned above). For CoAP application development this
+is probably what you want. Note, that for several reasons some interfaces and package names changed since the latest
+stable version (1.8.2). To use the latest bleeding edge version add the following to your pom.xml:
 
 ```xml
 <repositories>
