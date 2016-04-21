@@ -26,6 +26,7 @@ package de.uzl.itm.ncoap.examples.server;
 
 
 import de.uzl.itm.ncoap.application.server.CoapServer;
+import de.uzl.itm.ncoap.message.options.OptionValue;
 
 /**
  * This is a simple application to showcase ho to use nCoAP for servers
@@ -46,8 +47,9 @@ public class SimpleCoapServer extends CoapServer {
 
         SimpleCoapServer server = new SimpleCoapServer();
 
+        String status = "This is the status of a simple not observable Web Resource running on a CoAP Server...";
         SimpleNotObservableWebresource simpleWebresource =
-                new SimpleNotObservableWebresource("/simple", "Some payload...", 5, server.getExecutor());
+                new SimpleNotObservableWebresource("/simple", status, OptionValue.MAX_AGE_MAX, server.getExecutor());
         server.registerWebresource(simpleWebresource);
 
         SimpleObservableTimeService timeResource = new SimpleObservableTimeService("/utc-time", 5,

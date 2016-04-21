@@ -130,9 +130,9 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
     public byte[] getSerializedResourceStatus(long contentFormat) {
         String result = null;
         if (contentFormat == ContentFormat.TEXT_PLAIN_UTF8) {
-            result = "The resource status is " + getResourceStatus() + ".";
+            result = getResourceStatus();
         } else if (contentFormat == ContentFormat.APP_XML) {
-            result = "<status>" + getResourceStatus() + "</status>";
+            result = "<status>\n  " + getResourceStatus() + "\n</status>";
         }
 
         if (result == null) {
