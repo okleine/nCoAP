@@ -298,7 +298,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
             coapResponse.setToken(coapRequest.getToken());
 
             if (this.coapRequest.getBlock2Szx() != UintOptionValue.UNDEFINED) {
-                coapResponse.setPreferedBlock2Size(BlockSize.getBlockSize(this.coapRequest.getBlock2Szx()));
+                coapResponse.setPreferredBlock2Size(BlockSize.getBlockSize(this.coapRequest.getBlock2Szx()));
             }
 
             if (coapResponse.isUpdateNotification()) {
@@ -306,8 +306,9 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
                     // trigger new observer accepted event
                     Token token = coapResponse.getToken();
                     long contentFormat = coapResponse.getContentFormat();
+                    BlockSize block2Size = BlockSize.getBlockSize(coapRequest.getBlock2Szx());
                     triggerEvent(new ObserverAcceptedEvent(
-                            remoteSocket, token, (ObservableWebresource) webresource, contentFormat
+                            remoteSocket, token, (ObservableWebresource) webresource, contentFormat, block2Size
                     ), true);
                 } else {
                     // the observe option is useless here (remove it)...

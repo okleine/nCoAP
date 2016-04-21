@@ -58,8 +58,8 @@ public class ClientSendsRequestWithBlock1AndBlock2ToETHZ extends AbstractCoapCom
         coapClient = new CoapClient();
         URI targetURI = new URI("coap://vs0.inf.ethz.ch:5683/large-post");
         coapRequest = new CoapRequest(MessageType.CON, MessageCode.POST, targetURI);
-        coapRequest.setPreferedBlock1Size(BlockSize.SIZE_16);
-        coapRequest.setPreferedBlock2Size(BlockSize.SIZE_16);
+        coapRequest.setPreferredBlock1Size(BlockSize.SIZE_16);
+        coapRequest.setPreferredBlock2Size(BlockSize.SIZE_16);
         byte[] payload = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(CoapMessage.CHARSET);
         coapRequest.setContent(payload, ContentFormat.TEXT_PLAIN_UTF8);
         clientCallback = new TestCallback();

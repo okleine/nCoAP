@@ -23,8 +23,8 @@ The nCoAP project is organized in several maven modules, i.e.,
 ```
 
 for the raw protocol implementation. For CoAP application development this is probably what you want. Note, that for
-several reasons some interfaces changed since the latest stable version. To use the latest bleeding edge version
-add the following to your pom.xml:
+several reasons some interfaces and package names changed since the latest stable version (1.8.2). To use the
+latest bleeding edge version add the following to your pom.xml:
 
 ```xml
 <repositories>

@@ -30,6 +30,7 @@ import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
+import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -45,7 +46,18 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Created by olli on 11.04.16.
+ * <p>The {@link ServerBlock2Handler} handles the {@link Option#BLOCK_2} for
+ * {@link de.uzl.itm.ncoap.application.server.CoapServer}s. The {@link de.uzl.itm.ncoap.application.server.CoapServer},
+ * resp. the {@link de.uzl.itm.ncoap.application.server.resource.Webresource} does not need to deal with any blockwise
+ * transfer details for requests with content. This automatically handled by the {@link ServerBlock1Handler}.</p>
+
+ * <p>The full payload (the cumulative blocks) is set as the payload of the latest request. Only this request
+ * (with full payload) is sent further upstream, i.e. to be processed by the
+ * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}. Thus, from the
+ * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s perspective there is virtually no
+ * difference between a blockwise transfer and a large payload in a single request.</p>
+ *
+ * @author Oliver Kleine
  */
 public class ServerBlock1Handler extends AbstractCoapChannelHandler {
 
@@ -55,6 +67,13 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
     private ReentrantReadWriteLock lock;
     private BlockSize maxBlock1Size;
 
+    /**
+     * Creates a new instance of {@link ServerBlock1Handler}
+     *
+     * @param executor the {@link ScheduledExecutorService} for I/O operations
+     * @param maxBlock1Size the maximum {@link BlockSize} for inbound {@link CoapRequest}s the
+     * {@link de.uzl.itm.ncoap.application.server.CoapServer} is willing to process
+     */
     public ServerBlock1Handler(ScheduledExecutorService executor, BlockSize maxBlock1Size) {
         super(executor);
         this.maxBlock1Size = maxBlock1Size;

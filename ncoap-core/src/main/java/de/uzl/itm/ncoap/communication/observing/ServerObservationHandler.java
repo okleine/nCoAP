@@ -28,6 +28,7 @@ import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
 import de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent;
@@ -47,7 +48,6 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -59,9 +59,10 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
     private static Logger LOG = LoggerFactory.getLogger(ServerObservationHandler.class.getName());
 
-    private HashBasedTable<InetSocketAddress, Token, ObservableWebresource> observations1;
+    private HashBasedTable<InetSocketAddress, Token, ObservationParams> observations1;
     private HashBasedTable<ObservableWebresource, InetSocketAddress, Token> observations2;
-    private HashBasedTable<InetSocketAddress, Token, Long> contentFormats;
+    //private HashMap<ObservableWebresource, Observation> observations2;
+    //private HashBasedTable<InetSocketAddress, Token, Observation> observations3;
 
     private ReentrantReadWriteLock lock;
 
@@ -70,7 +71,9 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
         super(executor);
         this.observations1 = HashBasedTable.create();
         this.observations2 = HashBasedTable.create();
-        this.contentFormats = HashBasedTable.create();
+//        this.observations3 = HashBasedTable.create();
+
+        //this.contentFormats = HashBasedTable.create();
 
         this.lock = new ReentrantReadWriteLock();
     }
@@ -91,7 +94,7 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
 
         if (coapMessage instanceof CoapResponse && !((CoapResponse) coapMessage).isUpdateNotification()) {
-            if (stopObservation(remoteSocket, coapMessage.getToken())) {
+            if (stopObservation(remoteSocket, coapMessage.getToken()) != null) {
                 LOG.info("Observation stopped due to non-update-notification response.");
             }
         }
@@ -108,12 +111,13 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
     @Override
     public void handleEvent(ObserverAcceptedEvent event) {
-        startObservation(event.getRemoteSocket(), event.getToken(), event.getWebresource(), event.getContentFormat());
+        startObservation(event.getRemoteSocket(), event.getToken(), event.getWebresource(), event.getContentFormat(),
+                event.getBlock2Size());
     }
 
     @Override
     public void handleEvent(TransmissionTimeoutEvent event) {
-       if (stopObservation(event.getRemoteSocket(), event.getToken())) {
+       if (stopObservation(event.getRemoteSocket(), event.getToken()) != null) {
         LOG.info("Observation stopped due to transmission timeout of latest update notification!");
        }
     }
@@ -130,27 +134,27 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     }
 
 
-    private void startObservation(InetSocketAddress remoteAddress, Token token, ObservableWebresource webresource,
-            long contentFormat) {
+    private void startObservation(InetSocketAddress remoteSocket, Token token, ObservableWebresource webresource,
+            long contentFormat, BlockSize block2Size) {
 
         try {
             this.lock.writeLock().lock();
-            this.observations1.put(remoteAddress, token, webresource);
-            this.observations2.put(webresource, remoteAddress, token);
-            this.contentFormats.put(remoteAddress, token, contentFormat);
-            LOG.info("Client \"{}\" is now observing \"{}\".", remoteAddress, webresource.getUriPath());
-
+            ObservationParams params =
+                    new ObservationParams(webresource, remoteSocket, token, contentFormat, block2Size);
+            this.observations1.put(remoteSocket, token, params);
+            this.observations2.put(webresource, remoteSocket, token);
+            LOG.info("Client \"{}\" is now observing \"{}\".", remoteSocket, webresource.getUriPath());
         } finally {
             this.lock.writeLock().unlock();
         }
     }
 
 
-    private boolean stopObservation(InetSocketAddress remoteSocket, Token token) {
+    private ObservationParams stopObservation(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
             if (!this.observations1.contains(remoteSocket, token)) {
-                return false;
+                return null;
             }
         } finally {
             this.lock.readLock().unlock();
@@ -158,15 +162,14 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
         try {
             this.lock.writeLock().lock();
-            ObservableWebresource webresource = this.observations1.remove(remoteSocket, token);
-            if (webresource == null) {
-                return false;
+            ObservationParams params = this.observations1.remove(remoteSocket, token);
+            if (params == null) {
+                return null;
             }
-            this.observations2.remove(webresource, remoteSocket);
-            this.contentFormats.remove(remoteSocket, token);
+            this.observations2.remove(params.getWebresource(), remoteSocket);
             LOG.info("Client \"{}\" is no longer observing \"{}\" (token was: \"{}\").",
-                    new Object[]{remoteSocket, webresource.getUriPath(), token});
-            return true;
+                    new Object[]{remoteSocket, params.getWebresource().getUriPath(), token});
+            return params;
 
         } finally {
             this.lock.writeLock().unlock();
@@ -177,6 +180,7 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     @Override
     public void update(Observable observable, Object type) {
         ObservableWebresource webresource = (ObservableWebresource) observable;
+        LOG.info("Webresource {} was updated. Starting to send update notifications to observers.");
         if (type.equals(ObservableWebresource.UPDATE)) {
             sendUpdateNotifications(webresource);
         } else if (type.equals(ObservableWebresource.SHUTDOWN)) {
@@ -188,13 +192,17 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
         try {
             this.lock.writeLock().lock();
             Map<InetSocketAddress, Token> observations = new HashMap<>(this.observations2.row(webresource));
-
             for (Map.Entry<InetSocketAddress, Token> observation : observations.entrySet()) {
                 InetSocketAddress remoteSocket = observation.getKey();
                 Token token = observation.getValue();
-                stopObservation(remoteSocket, token);
-
-                getExecutor().submit(new ShutdownNotificationTask(remoteSocket, token, webresource.getUriPath()));
+                ObservationParams params = stopObservation(remoteSocket, token);
+                if(params != null) {
+                    BlockSize block2Size = params.getBlock2Size();
+                    String uriPath = webresource.getUriPath();
+                    getExecutor().submit(new ShutdownNotificationTask(remoteSocket, token, uriPath, block2Size));
+                } else {
+                    LOG.error("This should never happen!");
+                }
             }
         } finally {
             this.lock.writeLock().unlock();
@@ -208,10 +216,14 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
             this.lock.readLock().lock();
             Map<Long, WrappedResourceStatus> representations = new HashMap<>();
             for(Map.Entry<InetSocketAddress, Token> observation : this.observations2.row(webresource).entrySet()) {
+                // determine observation specific data
                 InetSocketAddress remoteSocket = observation.getKey();
                 Token token = observation.getValue();
-                long contentFormat = this.contentFormats.get(remoteSocket, token);
+                ObservationParams params = this.observations1.get(remoteSocket, token);
+                long contentFormat = params.getContentFormat();
+                BlockSize block2Size = params.getBlock2Size();
 
+                // get the actual resource status
                 WrappedResourceStatus status = representations.get(contentFormat);
                 if (status == null) {
                     status = webresource.getWrappedResourceStatus(contentFormat);
@@ -221,43 +233,93 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
                 // schedule update notification (immediately)
                 boolean confirmable = webresource.isUpdateNotificationConfirmable(remoteSocket);
                 int messageType =  confirmable ? MessageType.CON : MessageType.NON;
-                UpdateNotificationTask task = new UpdateNotificationTask(remoteSocket, status, messageType, token);
-                getExecutor().schedule(task, 0, TimeUnit.MILLISECONDS);
+                getExecutor().submit(new UpdateNotificationTask(remoteSocket, status, messageType, token, block2Size));
             }
         } finally {
             this.lock.readLock().unlock();
         }
     }
 
+    private class ObservationParams {
+
+        private ObservableWebresource webresource;
+        private InetSocketAddress remoteSocket;
+        private Token token;
+        private long contentFormat;
+        private BlockSize block2Size;
+
+        public ObservationParams(ObservableWebresource webresource, InetSocketAddress remoteSocket, Token token,
+                                 long contentFormat, BlockSize block2Size) {
+
+            this.webresource = webresource;
+            this.remoteSocket = remoteSocket;
+            this.token = token;
+            this.contentFormat = contentFormat;
+            this.block2Size = block2Size;
+        }
+
+
+        public InetSocketAddress getRemoteSocket() {
+            return remoteSocket;
+        }
+
+        public void setRemoteSocket(InetSocketAddress remoteSocket) {
+            this.remoteSocket = remoteSocket;
+        }
+
+        public Token getToken() {
+            return token;
+        }
+
+        public long getContentFormat() {
+            return contentFormat;
+        }
+
+        public BlockSize getBlock2Size() {
+            return block2Size;
+        }
+
+        public ObservableWebresource getWebresource() {
+            return webresource;
+        }
+    }
+
+
+
     private class ShutdownNotificationTask implements Runnable{
 
         private InetSocketAddress remoteSocket;
         private Token token;
         private String webresourcePath;
+        private BlockSize block2Size;
 
 
-        public ShutdownNotificationTask(InetSocketAddress remoteSocket, Token token, String webresourcePath) {
+        public ShutdownNotificationTask(InetSocketAddress remoteSocket, Token token, String webresourcePath,
+                                        BlockSize block2Size) {
             this.remoteSocket = remoteSocket;
             this.token = token;
             this.webresourcePath = webresourcePath;
+            this.block2Size = block2Size;
         }
 
         public void run() {
+            //prepare CoAP response
             CoapResponse coapResponse = new CoapResponse(MessageType.NON, MessageCode.NOT_FOUND_404);
             coapResponse.setToken(token);
             String content = "Resource \"" + this.webresourcePath + "\" is no longer available.";
             coapResponse.setContent(content.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+            coapResponse.setPreferredBlock2Size(block2Size);
 
-            ChannelFuture future = Channels.future(getContext().getChannel());
-            Channels.write(getContext(), future, coapResponse, remoteSocket);
+            ChannelFuture future = sendCoapMessage(coapResponse, this.remoteSocket);
+//            ChannelFuture future = Channels.future(getContext().getChannel());
+//            Channels.write(getContext(), future, coapResponse, remoteSocket);
 
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
                         LOG.error("Shutdown Notification Failure!", future.getCause());
-                    }
-                    else{
+                    } else {
                         LOG.info("Sent NOT_FOUND to \"{}\" (Token: {}).", remoteSocket, token);
                     }
                 }
@@ -270,15 +332,17 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
         private InetSocketAddress remoteSocket;
         private int messageType;
         private Token token;
+        private BlockSize block2Size;
         private WrappedResourceStatus representation;
 
         public UpdateNotificationTask(InetSocketAddress remoteSocket, WrappedResourceStatus representation,
-                    int messageType, Token token) {
+                    int messageType, Token token, BlockSize block2Size) {
 
             this.remoteSocket = remoteSocket;
             this.representation = representation;
             this.messageType = messageType;
             this.token = token;
+            this.block2Size = block2Size;
         }
 
         public void run() {
@@ -287,10 +351,13 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
                 updateNotification.setToken(token);
                 updateNotification.setEtag(representation.getEtag());
                 updateNotification.setContent(representation.getContent(), representation.getContentFormat());
+                updateNotification.setMaxAge(representation.getMaxAge());
                 updateNotification.setObserve();
+                updateNotification.setPreferredBlock2Size(block2Size);
 
                 ChannelFuture future = Channels.future(getContext().getChannel());
-                Channels.write(getContext(), future, updateNotification, remoteSocket);
+                sendCoapMessage(updateNotification, remoteSocket, future);
+                //Channels.write(getContext(), future, updateNotification, remoteSocket);
 
                 future.addListener(new ChannelFutureListener() {
                     @Override

@@ -487,12 +487,18 @@ public class CoapRequest extends CoapMessage {
         return null;
     }
 
-    public void setPreferedBlock2Size(BlockSize size) {
+    /**
+     * Sets the {@link BlockSize} the client prefers for a blockwise response transfer. The server may choose a smaller
+     * size (late negotiation).
+     *
+     * @param size the preferred size for a blockwise response transfer
+     */
+    public void setPreferredBlock2Size(BlockSize size) {
         this.setBlock2(0, size.getSzx());
     }
 
     /**
-     * <b>Note: This method is for internal use only! Use {@link #setPreferedBlock2Size(BlockSize)} instead.</b>
+     * <b>Note: This method is for internal use only! Use {@link #setPreferredBlock2Size(BlockSize)} instead.</b>
      *
      * Sets the BLOCK2 option in this {@link CoapRequest} and returns
      * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior
@@ -517,12 +523,18 @@ public class CoapRequest extends CoapMessage {
         }
     }
 
-    public void setPreferedBlock1Size(BlockSize size) {
+    /**
+     * Sets the {@link BlockSize} the client prefers for a blockwise response transfer. The server may choose a smaller
+     * size (late negotiation).
+     *
+     * @param size the preferred size for a blockwise request transfer
+     */
+    public void setPreferredBlock1Size(BlockSize size) {
         this.setBlock1(0, false, size.getSzx());
     }
 
     /**
-     * <b>Note: This method is for internal use only! Use {@link #setPreferedBlock1Size(BlockSize)} instead.</b>
+     * <b>Note: This method is for internal use only! Use {@link #setPreferredBlock1Size(BlockSize)} instead.</b>
      *
      * Sets the BLOCK1 option in this {@link CoapRequest} and returns
      * <code>true</code> if the option is set after method returns (may already have been set beforehand in a prior

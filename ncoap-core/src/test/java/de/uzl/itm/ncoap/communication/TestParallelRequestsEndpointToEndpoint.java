@@ -26,7 +26,6 @@ package de.uzl.itm.ncoap.communication;
 
 import de.uzl.itm.ncoap.application.endpoint.CoapEndpoint;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
-import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresource;
@@ -91,7 +90,7 @@ public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunic
             clientCallbacks[i] = new TestCallback();
             requests[i] =  new CoapRequest(MessageType.CON, MessageCode.GET,
                     new URI("coap://localhost:" + server.getPort() + "/resource" + (i+1)));
-            requests[i].setPreferedBlock2Size(BlockSize.SIZE_16);
+            requests[i].setPreferredBlock2Size(BlockSize.SIZE_16);
         }
     }
 

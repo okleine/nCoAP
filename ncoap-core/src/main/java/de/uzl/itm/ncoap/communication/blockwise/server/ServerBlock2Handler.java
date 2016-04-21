@@ -48,7 +48,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Created by olli on 12.04.16.
+ * <p>The {@link ServerBlock2Handler} handles the {@link Option#BLOCK_2} for
+ * {@link de.uzl.itm.ncoap.application.server.CoapServer}s. The {@link de.uzl.itm.ncoap.application.server.CoapServer},
+ * resp. the {@link de.uzl.itm.ncoap.application.server.resource.Webresource} does not need to deal with any blockwise
+ * transfer details for responses with content. This is automatically handled by the {@link ServerBlock2Handler}.</p>
+ *
+ * <p>This is particularly useful for resources with frequently changing states. The {@link ServerBlock2Handler}
+ * ensures that all response blocks refer to the resource state the time of the first block.</p>
+ *
+ * @author Oliver Kleine
  */
 public class ServerBlock2Handler extends AbstractCoapChannelHandler {
 
@@ -58,6 +66,12 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
     private HashBasedTable<InetSocketAddress, Token, ServerBlock2Helper> block2Helpers;
     private ReentrantReadWriteLock lock;
 
+    /**
+     * Creates a new instance of {@link ServerBlock2Handler}
+     *
+     * @param executor the {@link ScheduledExecutorService} for I/O operations
+     * @param maxBlock2Size the maximum {@link BlockSize} for outbound {@link CoapResponse}s
+     */
     public ServerBlock2Handler(ScheduledExecutorService executor, BlockSize maxBlock2Size) {
         super(executor);
         this.maxBlock2Size = maxBlock2Size;
@@ -80,7 +94,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         ServerBlock2Helper helper = this.getBlock2Helper(remoteSocket, coapRequest.getToken());
 
         if (helper == null && coapRequest.getBlock2Number() > 0) {
-            writePreconditionFailedResponse(coapRequest, remoteSocket);
+             writePreconditionFailedResponse(coapRequest, remoteSocket);
             return false;
         } else if (helper != null && coapRequest.getBlock2Number() > 0) {
             // determine next BLOCK 2 number according to (possibly changed) BLOCK 2 SZX
@@ -109,7 +123,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         coapResponse.setToken(coapRequest.getToken());
         coapResponse.setMessageID(coapRequest.getMessageID());
 
-        String message = "Request for " + coapRequest.getBlock2Number() + " without prior request for block 0";
+        String message = "Request for block " + coapRequest.getBlock2Number() + " without prior request for block 0";
         coapResponse.setContent(message.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
 
         ChannelFuture future = sendCoapMessage(coapResponse, remoteSocket);
@@ -138,7 +152,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
             // set the BLOCK 2 option if necessary and not yet present
             if (coapMessage.getContentLength() > this.maxBlock2Size.getSize() &&
                     coapMessage.getBlock2Szx() == UintOptionValue.UNDEFINED) {
-                ((CoapResponse) coapMessage).setPreferedBlock2Size(this.maxBlock2Size);
+                ((CoapResponse) coapMessage).setPreferredBlock2Size(this.maxBlock2Size);
             }
 
             // handle responses with BLOCK 2 option
@@ -154,7 +168,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
 
     private void handleOutboundCoapResponseWithBlock2(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
         if (coapResponse.getBlock2Size() > this.maxBlock2Size.getSize()) {
-            coapResponse.setPreferedBlock2Size(this.maxBlock2Size);
+            coapResponse.setPreferredBlock2Size(this.maxBlock2Size);
         }
 
         ServerBlock2Helper helper = addHelper(coapResponse, remoteSocket);
@@ -176,6 +190,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
             // add new response to be sent blockwise
             ServerBlock2Helper helper = new ServerBlock2Helper(coapResponse, remoteSocket);
             this.block2Helpers.put(remoteSocket, coapResponse.getToken(), helper);
+            LOG.debug("Added Block2 Helper (Remote Socket: {}, Token: {})", remoteSocket, coapResponse.getToken());
             return helper;
         } finally {
             this.lock.writeLock().unlock();

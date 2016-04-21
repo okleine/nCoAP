@@ -35,9 +35,9 @@ import org.slf4j.LoggerFactory;
  */
 public class ResourceStatusAge {
 
-    public static long MODULUS = (long) Math.pow(2, 24);
+    public static final long MODULUS = (long) Math.pow(2, 24);
+    private static final long THRESHOLD = (long) Math.pow(2, 23);
 
-    private static long THRESHOLD = (long) Math.pow(2, 23);
     private static Logger log = LoggerFactory.getLogger(ResourceStatusAge.class.getName());
 
     private long sequenceNo;

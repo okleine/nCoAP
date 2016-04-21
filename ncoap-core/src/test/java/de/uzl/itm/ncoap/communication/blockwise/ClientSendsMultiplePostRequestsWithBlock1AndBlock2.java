@@ -27,16 +27,10 @@ package de.uzl.itm.ncoap.communication.blockwise;
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
-import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock1Handler;
-import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler;
-import de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock1Handler;
-import de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock2Handler;
-import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresourceForPost;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
-import jdk.nashorn.internal.ir.Block;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -88,8 +82,8 @@ public class ClientSendsMultiplePostRequestsWithBlock1AndBlock2 extends Abstract
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
             coapRequests[i] = new CoapRequest(MessageType.CON, MessageCode.POST, targetURI);
-            coapRequests[i].setPreferedBlock1Size(initialRequestBlock1Size);
-            coapRequests[i].setPreferedBlock2Size(initialRequestBlock2Size);
+            coapRequests[i].setPreferredBlock1Size(initialRequestBlock1Size);
+            coapRequests[i].setPreferredBlock2Size(initialRequestBlock2Size);
 
             // payload length = 5 x 26 = 130
             ChannelBuffer payload = ChannelBuffers.wrappedBuffer(capitals, capitals, capitals, capitals, capitals);

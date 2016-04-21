@@ -40,7 +40,9 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * Created by olli on 30.03.14.
+ * A simple not observable {@link de.uzl.itm.ncoap.application.server.resource.Webresource} implementation
+ *
+ * @author Oliver Kleine
  */
 public class SimpleNotObservableWebresource extends NotObservableWebresource<String> {
 
@@ -78,16 +80,27 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
                                    InetSocketAddress remoteEndpoint) throws Exception {
 
-        if (coapRequest.getMessageCode() != MessageCode.GET)
+        if (coapRequest.getMessageCode() != MessageCode.GET) {
             setMethodNotAllowedResponse(responseFuture, coapRequest);
-
-        else
-            processCoapGetRequest(responseFuture, coapRequest);
-
+        } else {
+            processGet(responseFuture, coapRequest);
+        }
     }
 
 
-    public void processCoapGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest) {
+    private void setMethodNotAllowedResponse(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest)
+            throws Exception{
+
+        CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.METHOD_NOT_ALLOWED_405);
+
+        byte[] content = "Only method GET is allowed!".getBytes(CoapMessage.CHARSET);
+        coapResponse.setContent(content, ContentFormat.TEXT_PLAIN_UTF8);
+
+        responseFuture.set(coapResponse);
+    }
+
+
+    private void processGet(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest) {
         //create resource status
         WrappedResourceStatus resourceStatus;
         if (coapRequest.getAcceptedContentFormats().isEmpty()) {
@@ -102,9 +115,7 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
             coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.NOT_ACCEPTABLE_406);
             coapResponse.setContent("None of the accepted content formats is supported!".getBytes(CoapMessage.CHARSET),
                     ContentFormat.TEXT_PLAIN_UTF8);
-        }
-
-        else{
+        } else {
             coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
             coapResponse.setContent(resourceStatus.getContent(), resourceStatus.getContentFormat());
             coapResponse.setEtag(resourceStatus.getEtag());
@@ -115,32 +126,19 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
     }
 
 
-    public void setMethodNotAllowedResponse(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest)
-        throws Exception{
-
-        CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.METHOD_NOT_ALLOWED_405);
-
-        coapResponse.setContent("Only method GET is allowed!".getBytes(CoapMessage.CHARSET),
-                ContentFormat.TEXT_PLAIN_UTF8);
-
-        responseFuture.set(coapResponse);
-    }
-
-
     @Override
     public byte[] getSerializedResourceStatus(long contentFormat) {
         String result = null;
-        if (contentFormat == ContentFormat.TEXT_PLAIN_UTF8)
+        if (contentFormat == ContentFormat.TEXT_PLAIN_UTF8) {
             result = "The resource status is " + getResourceStatus() + ".";
-
-        else if (contentFormat == ContentFormat.APP_XML)
+        } else if (contentFormat == ContentFormat.APP_XML) {
             result = "<status>" + getResourceStatus() + "</status>";
+        }
 
-
-        if (result == null)
+        if (result == null) {
             return null;
-
-        else
+        } else {
             return result.getBytes(CoapMessage.CHARSET);
+        }
     }
 }

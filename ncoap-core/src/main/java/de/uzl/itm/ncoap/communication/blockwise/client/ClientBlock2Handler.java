@@ -49,16 +49,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * This handler is only used on the client side and deals with blockwise transfers in a rather simple manner.
- * If a response contains the BLOCK2 option (i.e. just a portion of the complete payload) the client accepts the
- * block size (as given in the SZX part of the response option) and requests the next blocks with the same size until
- * the full payload was received (as indicated by the M part of the (final) response option).
- *
- * The full payload (the cumulative blocks) is then set as the payload of the latest response. Only this response
+ * <p>The {@link ClientBlock2Handler} handles the {@link Option#BLOCK_2} for
+ * {@link de.uzl.itm.ncoap.application.client.CoapClient}s. The {@link de.uzl.itm.ncoap.application.client.CoapClient},
+ * resp. the {@link de.uzl.itm.ncoap.application.client.ClientCallback} does not need to deal with any blockwise
+ * transfer details for responses with content. This automatically handled by the {@link ClientBlock2Handler}.</p>
+
+ * <p>The full payload (the cumulative blocks) is then set as the payload of the latest response. Only this response
  * (with full payload) is sent further upstream, i.e. to be processed by the
  * {@link de.uzl.itm.ncoap.application.client.ClientCallback}. Thus, from the
  * {@link de.uzl.itm.ncoap.application.client.ClientCallback}s perspective there is virtually no
- * difference between a blockwise transfer and a large payload in a single response.
+ * difference between a blockwise transfer and a large payload in a single response.</p>
  *
  * @author Oliver Kleine
  */
@@ -71,7 +71,9 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
     private ReentrantReadWriteLock lock;
 
     /**
-     * Creates a new instance of {@link ClientBlock2Handler}.
+     * Creates a new instance of {@link ClientBlock2Handler}
+     *
+     * @param executor the {@link ScheduledExecutorService} for I/O operations
      */
     public ClientBlock2Handler(ScheduledExecutorService executor) {
         super(executor);

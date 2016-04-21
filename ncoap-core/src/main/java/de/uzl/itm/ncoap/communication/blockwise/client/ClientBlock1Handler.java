@@ -48,7 +48,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Created by olli on 07.12.15.
+ * The {@link ClientBlock1Handler} handles the {@link Option#BLOCK_1} for
+ * {@link de.uzl.itm.ncoap.application.client.CoapClient}s. The {@link de.uzl.itm.ncoap.application.client.CoapClient},
+ * resp. the {@link de.uzl.itm.ncoap.application.client.ClientCallback} does not need to deal with any blockwise
+ * transfer details for requests with content. This automatically handled by the {@link ClientBlock1Handler}.
+ *
+ * @author Oliver Kleine
  */
 public class ClientBlock1Handler extends AbstractCoapChannelHandler implements TokenReleasedEvent.Handler,
         RemoteServerSocketChangedEvent.Handler {
@@ -58,8 +63,13 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
     private HashBasedTable<InetSocketAddress, Token, ClientBlock1Helper> block1Helpers;
     private ReentrantReadWriteLock lock;
 
-    public ClientBlock1Handler(ScheduledExecutorService executorService) {
-        super(executorService);
+    /**
+     * Creates a new instance of {@link ClientBlock1Handler}
+     *
+     * @param executor the {@link ScheduledExecutorService} for I/O operations
+     */
+    public ClientBlock1Handler(ScheduledExecutorService executor) {
+        super(executor);
         this.block1Helpers = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
     }
@@ -110,26 +120,6 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
         }
     }
 
-//    private void writeCoapRequestWithPayloadBlock(ClientBlock1Helper helper, long block1Num, long block1Szx) {
-//
-//        try {
-//            this.lock.readLock().lock();
-//            ClientBlock1Helper helper = this.block1Helpers.get(remoteSocket, token);
-//            if (helper != null) {
-//                if (helper.getblock1Szx() > block1Szx) {
-//                    int oldSize = BlockSize.getSize(helper.getblock1Szx());
-//                    int newSize = BlockSize.getSize(block1Szx);
-//                    block1Num =  oldSize * block1Num / newSize;
-//                }
-//                return helper.getCoapRequestWithPayloadBlock(block1Num , block1Szx);
-//            } else {
-//                return null;
-//            }
-//        } finally {
-//            this.lock.readLock().unlock();
-//        }
-//    }
-
     @Override
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         if (coapMessage instanceof CoapRequest && coapMessage.getBlock1Szx() != UintOptionValue.UNDEFINED) {
@@ -146,14 +136,6 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
 
         // send first block
         helper.writeCoapRequestWithPayloadBlock(0L, coapRequest.getBlock1Szx());
-//        ChannelFuture future = sendCoapMessage(firstBlock, remoteSocket);
-//        future.addListener(new ChannelFutureListener() {
-//            @Override
-//            public void operationComplete(ChannelFuture future) throws Exception {
-//                LOG.debug("Sent CoAP request (BLOCK): {}", firstBlock);
-//            }
-//        });
-
     }
 
     private ClientBlock1Helper addHelper(CoapRequest coapRequest, InetSocketAddress remoteSocket) {

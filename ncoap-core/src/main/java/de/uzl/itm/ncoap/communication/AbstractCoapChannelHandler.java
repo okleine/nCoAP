@@ -41,7 +41,9 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * Created by olli on 04.09.15.
+ * Abstract base class for all {@link ChannelHandler} instances handling inbound or outbound messages
+ *
+ * @author Oliver Kleine
  */
 public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
 
@@ -50,10 +52,16 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
     private ScheduledExecutorService executor;
     private ChannelHandlerContext context;
 
+    /**
+     * Creates a new instance of {@link AbstractCoapChannelHandler}
+     *
+     * @param executor the {@link ScheduledExecutorService} used to execute I/O tasks
+     */
     protected AbstractCoapChannelHandler(ScheduledExecutorService executor) {
         this.executor = executor;
     }
 
+    @Override
     public final void messageReceived(ChannelHandlerContext ctx, MessageEvent me) throws Exception{
         Object message = me.getMessage();
         if (message instanceof CoapMessage) {
@@ -95,14 +103,24 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         ctx.sendUpstream(me);
     }
 
+    /**
+     * Sets the {@link ChannelHandlerContext} of this handler
+     *
+     * @param context the {@link ChannelHandlerContext} of this handler
+     */
     public void setContext(ChannelHandlerContext context) {
         this.context = context;
     }
 
+    /**
+     * Returns the {@link ChannelHandlerContext} of this handler
+     * @return the {@link ChannelHandlerContext} of this handler
+     */
     public ChannelHandlerContext getContext() {
         return this.context;
     }
 
+    @Override
     public final void writeRequested(ChannelHandlerContext ctx, MessageEvent me) throws Exception {
         Object message = me.getMessage();
 
@@ -115,14 +133,20 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         ctx.sendDownstream(me);
     }
 
+    /**
+     * Returns the {@link ScheduledExecutorService} used to execute I/O tasks
+     *
+     * @return the {@link ScheduledExecutorService} used to execute I/O tasks
+     */
     protected ScheduledExecutorService getExecutor() {
         return this.executor;
     }
 
     /**
+     * This method is called by the framework for every inbound {@link CoapMessage}
      *
-     * @param coapMessage
-     * @param remoteSocket
+     * @param coapMessage the {@link CoapMessage} that was received
+     * @param remoteSocket the socket address of the remote endpoint (i.e. the sender of the received message)
      *
      * @return <code>true</code> if this {@link AbstractCoapChannelHandler} is to be
      * further processed by the next handler(s) and <code>false</code> otherwise.
@@ -132,8 +156,10 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
 
     /**
      *
-     * @param coapMessage
-     * @param remoteSocket
+     * This method is called by the framework for every outbound {@link CoapMessage}
+     *
+     * @param coapMessage the {@link CoapMessage} that is to be sent
+     * @param remoteSocket the recipient of the message
      *
      * @return <code>true</code> if this {@link AbstractCoapChannelHandler} is to be
      * further processed by the next handler(s) and <code>false</code> otherwise.
@@ -141,6 +167,15 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
     public abstract boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket);
 
 
+    /**
+     * Triggers an internal event, i.e. some extension of {@link AbstractMessageExchangeEvent}
+     *
+     * @param event the event
+     * @param bottomUp <code>true</code> if this event is to be handled by all {@link ChannelHandler}s in the
+     *                 {@link ChannelPipeline} or <code>false</code> if the event is to be handled by
+     *                 {@link ChannelHandler}s that are located "upstream" from the {@link ChannelHandler} that
+     *                 triggered this event.
+     */
     protected void triggerEvent(final AbstractMessageExchangeEvent event, boolean bottomUp) {
         if (bottomUp) {
             Channels.fireMessageReceived(context.getChannel(), event);
@@ -149,11 +184,22 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         }
     }
 
+    /**
+     * Continues the internal processing of the {@link CoapMessage} which was previously stopped for some reason
+     *
+     * @param coapMessage the {@link CoapMessage} to be sent further upstream
+     * @param remoteSocket the socket address of the sender of the message to be further processed
+     */
     protected void continueMessageProcessing(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         Channels.fireMessageReceived(this.context, coapMessage, remoteSocket);
     }
 
-
+    /**
+     * Sends an empty {@link CoapMessage} with {@link de.uzl.itm.ncoap.message.MessageType#ACK}.
+     *
+     * @param messageID the message ID of this empty ACK
+     * @param remoteSocket the recipient of this empty ACK
+     */
     protected void sendEmptyACK(int messageID, final InetSocketAddress remoteSocket) {
         final CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
         ChannelFuture future = Channels.future(getContext().getChannel());
@@ -169,6 +215,12 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         }
     }
 
+    /**
+     * Sends an empty {@link CoapMessage} with {@link de.uzl.itm.ncoap.message.MessageType#RST}.
+     *
+     * @param messageID the message ID of this empty RST
+     * @param remoteSocket the recipient of this empty RST
+     */
     protected void sendReset(int messageID, final InetSocketAddress remoteSocket) {
         final CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
         ChannelFuture future = Channels.future(getContext().getChannel());
@@ -184,12 +236,27 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         }
     }
 
+    /**
+     * Sends a {@link CoapMessage}
+     *
+     * @param coapMessage the {@link CoapMessage} to be sent
+     * @param remoteSocket the recipient of the message to be sent
+     *
+     * @return a {@link ChannelFuture} that will contain the result of the message writing process
+     */
     protected ChannelFuture sendCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         ChannelFuture future = Channels.future(getContext().getChannel());
         sendCoapMessage(coapMessage, remoteSocket, future);
         return future;
     }
 
+    /**
+     * Sends a {@link CoapMessage}
+     *
+     * @param coapMessage the {@link CoapMessage} to be sent
+     * @param remoteSocket the recipient of the message to be sent
+     * @param future the {@link ChannelFuture} that will be set with the result of the message writing process
+     */
     protected void sendCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket, ChannelFuture future) {
         Channels.write(getContext(), future, coapMessage, remoteSocket);
     }

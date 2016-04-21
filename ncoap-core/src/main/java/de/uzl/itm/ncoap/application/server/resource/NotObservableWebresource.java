@@ -75,10 +75,9 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
     @Override
     public void setLinkAttribute(LinkAttribute linkAttribute) {
-        if (this.linkAttributes.containsKey(linkAttribute.getKey())) {
-
-            if (!LinkAttribute.allowsMultipleValues(linkAttribute.getKey()))
-                removeLinkAttribute(linkAttribute.getKey());
+        if (this.linkAttributes.containsKey(linkAttribute.getKey()) &&
+                !LinkAttribute.allowsMultipleValues(linkAttribute.getKey())) {
+            removeLinkAttribute(linkAttribute.getKey());
         }
 
         this.linkAttributes.put(linkAttribute.getKey(), linkAttribute);
@@ -118,12 +117,6 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
     }
 
 
-//    @Override
-//    public final void setExecutor(ScheduledExecutorService executorService) {
-//        this.scheduledExecutorService = executorService;
-//    }
-
-
     @Override
     public ScheduledExecutorService getExecutor() {
         return this.executor;
@@ -152,8 +145,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
             updateEtag(resourceStatus);
 
             LOG.debug("New status of {} set (expires in {} seconds).", this.path, lifetimeSeconds);
-        }
-        finally {
+        } finally {
             readWriteLock.writeLock().unlock();
         }
     }
@@ -183,14 +175,14 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
             byte[] serializedResourceStatus = getSerializedResourceStatus(contentFormat);
 
-            if (serializedResourceStatus == null)
+            if (serializedResourceStatus == null) {
                 return null;
-
-            else
-                return new WrappedResourceStatus(serializedResourceStatus, contentFormat,
-                        this.getEtag(contentFormat), this.getMaxAge());
-        }
-        finally {
+            } else {
+                byte[] etag = this.getEtag(contentFormat);
+                long maxAge = this.getMaxAge();
+                return new WrappedResourceStatus(serializedResourceStatus, contentFormat, etag, maxAge);
+            }
+        } finally {
             this.readWriteLock.readLock().unlock();
         }
     }
@@ -264,25 +256,4 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
     public final long getMaxAge() {
         return Math.max(this.resourceStatusExpiryDate - System.currentTimeMillis(), 0) / 1000;
     }
-
-
-//    @Override
-//    public int hashCode() {
-//        return this.getUriPath().hashCode();
-//    }
-//
-//
-//    @Override
-//    public boolean equals(Object object) {
-//        if (object == null)
-//            return false;
-//
-//        if (!(object instanceof String || object instanceof Webservice))
-//            return false;
-//
-//        if (object instanceof String)
-//            return (this.getUriPath().equals(object));
-//
-//        return (this.getUriPath().equals(((Webservice) object).getUriPath()));
-//    }
 }

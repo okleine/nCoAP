@@ -13,7 +13,19 @@
         <appender-ref ref="console"/>
     </appender>
 
-    <logger name="de.uniluebeck.itm.ncoap.examples">
+    <logger name="de.uzl.itm.ncoap.communication.observing.ServerObservationHandler">
+        <level value="debug"/>
+    </logger>
+
+    <logger name="de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock2Handler">
+        <level value="debug"/>
+    </logger>
+
+    <logger name="de.uzl.itm.ncoap.application.server.resource.ObservableWebresource">
+        <level value="debug"/>
+    </logger>
+
+    <logger name="de.uzl.itm.ncoap.examples">
         <level value="info"/>
     </logger>
 

@@ -25,6 +25,7 @@
 package de.uzl.itm.ncoap.communication.events.server;
 
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.AbstractMessageExchangeEvent;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
@@ -38,6 +39,7 @@ public class ObserverAcceptedEvent extends AbstractMessageExchangeEvent {
 
     private final ObservableWebresource webresource;
     private final long contentFormat;
+    private final BlockSize block2Size;
 
     /**
      * Creates a new instance of {@link de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent}
@@ -46,11 +48,12 @@ public class ObserverAcceptedEvent extends AbstractMessageExchangeEvent {
      * @param token the {@link Token} to be used for this observation
      */
     public ObserverAcceptedEvent(InetSocketAddress remoteSocket, Token token,
-            ObservableWebresource webresource, long contentFormat) {
+            ObservableWebresource webresource, long contentFormat, BlockSize block2Size) {
 
         super(remoteSocket, token);
         this.webresource = webresource;
         this.contentFormat = contentFormat;
+        this.block2Size = block2Size;
     }
 
     /**
@@ -70,6 +73,10 @@ public class ObserverAcceptedEvent extends AbstractMessageExchangeEvent {
      */
     public long getContentFormat() {
         return contentFormat;
+    }
+
+    public BlockSize getBlock2Size() {
+        return block2Size;
     }
 
     public interface Handler {

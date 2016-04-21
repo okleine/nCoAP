@@ -29,7 +29,6 @@ import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
 import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock1Handler;
 import de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock1Handler;
-import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresourceForPost;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -78,7 +77,7 @@ public class ClientSendsPostRequestWithBlock1 extends AbstractCoapCommunicationT
         // setup request
         URI targetURI = new URI("coap://localhost:5683/test");
         coapRequest = new CoapRequest(MessageType.CON, MessageCode.POST, targetURI);
-        coapRequest.setPreferedBlock1Size(BlockSize.SIZE_64);
+        coapRequest.setPreferredBlock1Size(BlockSize.SIZE_64);
         payload = ("ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                 "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz").getBytes(CoapMessage.CHARSET);
         coapRequest.setContent(payload, ContentFormat.TEXT_PLAIN_UTF8);

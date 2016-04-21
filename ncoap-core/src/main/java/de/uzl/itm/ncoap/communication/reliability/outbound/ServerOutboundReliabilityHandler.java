@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -58,7 +59,6 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     private HashBasedTable<InetSocketAddress, Integer, Token> transfers1;
     private HashBasedTable<InetSocketAddress, Token, CoapResponse> transfers2;
-
 
     private ReentrantReadWriteLock lock;
     private final MessageIDFactory messageIDFactory;
@@ -161,27 +161,12 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         }
 
         int messageType = coapResponse.getMessageType();
-        if (messageType == MessageType.CON || messageType == MessageType.NON) {
-            this.addTransfer(remoteSocket, coapResponse);
-            if (coapResponse.getMessageType() == MessageType.CON) {
-                scheduleRetransmission(remoteSocket, coapResponse.getToken(), 1);
-            }
+        if (messageType == MessageType.CON) {
+            addTransfer(remoteSocket, coapResponse);
+            scheduleRetransmission(remoteSocket, coapResponse.getToken(), 1);
         }
         return true;
     }
-
-
-
-//    private int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-//        int messageID = this.messageIDFactory.getNextMessageID(remoteSocket, coapMessage.getToken());
-//
-//        if (!(messageID == CoapMessage.UNDEFINED_MESSAGE_ID)) {
-//            coapMessage.setMessageID(messageID);
-//            LOG.debug("Message ID set to {}.", messageID);
-//
-//        }
-//        return messageID;
-//    }
 
 
     private void addTransfer(InetSocketAddress remoteSocket, CoapResponse coapResponse) {
@@ -228,7 +213,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
     private CoapResponse removeTransfer(InetSocketAddress remoteSocket, Token token) {
         try {
             this.lock.readLock().lock();
-            if (this.transfers2.get(remoteSocket,token) == null) {
+            if (!this.transfers2.contains(remoteSocket,token)) {
                 return null;
             }
         } finally {

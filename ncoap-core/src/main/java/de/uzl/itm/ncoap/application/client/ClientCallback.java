@@ -51,9 +51,9 @@ public abstract class ClientCallback {
 
 
     /**
-     * Method invoked by the {@link de.uzl.itm.ncoap.application.client.CoapClient} for an inbound response (which is of any type but
-     * empty {@link de.uzl.itm.ncoap.message.MessageType#ACK} or
-     * {@link de.uzl.itm.ncoap.message.MessageType#RST}).
+     * <p>This method is invoked by the {@link de.uzl.itm.ncoap.application.client.CoapClient} for an inbound response
+     * (which is of any type but empty {@link de.uzl.itm.ncoap.message.MessageType#ACK} or
+     * {@link de.uzl.itm.ncoap.message.MessageType#RST}).</p>
      *
      * @param coapResponse the response message
      */
@@ -61,10 +61,10 @@ public abstract class ClientCallback {
 
 
     /**
-     * This method is called by the framework whenever an update notification was received, i.e. this method is
+     * <p>This method is called by the framework whenever an update notification was received, i.e. this method is
      * only called if the {@link de.uzl.itm.ncoap.message.CoapRequest} that is associated with this
      * {@link ClientCallback} had the
-     * {@link de.uzl.itm.ncoap.message.options.Option#OBSERVE} set to <code>0</code>.
+     * {@link de.uzl.itm.ncoap.message.options.Option#OBSERVE} set to <code>0</code>.</p>
      *
      * @return <code>true</code> if the observation is to be continued, <code>false</code> if the observation
      * is to be canceled (next update notification will cause a RST being send to the remote endpoint). Default,
@@ -76,8 +76,8 @@ public abstract class ClientCallback {
 
 
     /**
-     * This method is called by the framework if the socket address of the remote endpoint changed during an
-     * ongoing conversation (e.g. an observation)
+     * <p>This method is called by the framework if the socket address of the remote endpoint changed during an
+     * ongoing conversation (e.g. an observation).</p>
      *
      * <b>Note:</b>to somehow handle the change this method is to be overridden.
      */
@@ -87,10 +87,10 @@ public abstract class ClientCallback {
 
 
     /**
-     * This method is called by the framework if there was no answer (either an empty ACK) or a proper CoAP response
-     * from the remote endpoint received within the 247 seconds.
+     * <p>This method is called by the framework if there was no answer (either an empty ACK) or a proper CoAP response
+     * from the remote endpoint received within the 247 seconds.</p>
      *
-     * <b>Note:</b>to somehow handle a conversation timeout this method is to be overridden.
+     * <p><b>Note:</b>to somehow handle a conversation timeout this method is to be overridden.</p>
      */
     public void processTransmissionTimeout() {
         //to be overridden by extending classes
@@ -98,33 +98,33 @@ public abstract class ClientCallback {
 
 
     /**
-     * This method is called by the framework if the {@link de.uzl.itm.ncoap.message.CoapRequest} corresponding
-     * to this {@link ClientCallback} was answered with a RST.
+     * <p>This method is called by the framework if the {@link de.uzl.itm.ncoap.message.CoapRequest} corresponding
+     * to this {@link ClientCallback} was answered with a RST.</p>
      *
-     * <b>Note:</b>to somehow handle RST messaged this method is to be overridden.
+     * <p><b>Note:</b>to somehow handle RST messaged this method is to be overridden.</p>
      */
     public void processReset() {
         //to be overridden by extending classes
     }
 
     /**
-     * This method is called by the framework upon every retransmission of the confirmable
+     * <p>This method is called by the framework upon every retransmission of the confirmable
      * {@link de.uzl.itm.ncoap.message.CoapRequest} corresponding to this
-     * {@link ClientCallback}, i.e. up to 4 times.
+     * {@link ClientCallback}, i.e. up to 4 times.</p>
      *
-     * <b>Note:</b> to somehow handle retransmissions this method is to be overridden.
+     * <p><b>Note:</b> to somehow handle retransmissions this method is to be overridden.</p>
      */
     public void processRetransmission() {
         //to be overridden by extending classes
     }
 
     /**
-     * This method is called by the framework upon every reception of a response with a BLOCK2 option that indicates
-     * that there are more blocks to come.
+     * <p>This method is called by the framework upon every reception of a response with a BLOCK2 option that
+     * indicates that there are more blocks to come.</p>
      *
-     * <b>Note:</b> Invocation of this method has rather "informal" character. Once all blocks where received, the
+     * <p><b>Note:</b> Invocation of this method has rather "informal" character. Once all blocks where received, the
      * framework invokes {@link #processCoapResponse(CoapResponse)} with the full payload included in the
-     * {@link CoapResponse}.
+     * {@link CoapResponse}.</p>
      *
      * @param receivedLength the number of bytes received so far
      * @param expectedLength the number of bytes expected for the complete representation
@@ -133,6 +133,17 @@ public abstract class ClientCallback {
         //to be overridden by extending classes
     }
 
+    /**
+     * <p>This method is called by the framework upon every reception of a response with
+     * {@link de.uzl.itm.ncoap.message.MessageCode#CONTINUE_231} within a blockwise request transfer with
+     * {@link de.uzl.itm.ncoap.message.MessageCode#POST} or {@link de.uzl.itm.ncoap.message.MessageCode#PUT}.</p>
+     *
+     * <p><b>Note:</b> Invocation of this method has rather "informal" character. The callback does not need to
+     * do anything and may even ignore it. The next request block is automatically sent by the
+     * {@link de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock1Handler}.</p>
+     *
+     * @param block1Size the {@link BlockSize} of the latest successfully transfered request block
+     */
     public void processContinueResponseReceived(BlockSize block1Size) {
         // to be overridden by extending classes
     }

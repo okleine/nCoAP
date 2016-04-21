@@ -50,7 +50,14 @@ import java.util.concurrent.ThreadFactory;
  */
 public abstract class AbstractCoapApplication {
 
+    /**
+     * {@value #RECEIVE_BUFFER_SIZE}
+     */
     public static final int RECEIVE_BUFFER_SIZE = 65536;
+
+    /**
+     * {@value #NOT_BOUND}
+     */
     public static final int NOT_BOUND = -1;
 
     private ScheduledThreadPoolExecutor executor;
@@ -58,6 +65,11 @@ public abstract class AbstractCoapApplication {
     private String applicationName;
 
 
+    /**
+     * Creates a new instance of {@link AbstractCoapApplication}.
+     *
+     * @param applicationName the given name of this application (for logging only)
+     */
     protected AbstractCoapApplication(String applicationName) {
 
         this.applicationName = applicationName;
@@ -77,8 +89,14 @@ public abstract class AbstractCoapApplication {
         this.executor = new ScheduledThreadPoolExecutor(ioThreads, threadFactory);
     }
 
-
-    protected void startApplication(CoapChannelPipelineFactory pipelineFactory, InetSocketAddress socketAddress) {
+    /**
+     * Starts this application
+     *
+     * @param pipelineFactory the {@link CoapChannelPipelineFactory} that creates the instances of
+     * {@link AbstractCoapChannelHandler}s that deal with inbound and outbound messages
+     * @param localSocket the socket address to be used for inbound and outbound messages
+     */
+    protected void startApplication(CoapChannelPipelineFactory pipelineFactory, InetSocketAddress localSocket) {
         ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, executor.getCorePoolSize() / 2 );
 
         //System.out.println("Threads: " + (executor.getCorePoolSize() - 1));
@@ -89,7 +107,7 @@ public abstract class AbstractCoapApplication {
                 new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE));
 
         //Create datagram channel
-        this.channel = (DatagramChannel) bootstrap.bind(socketAddress);
+        this.channel = (DatagramChannel) bootstrap.bind(localSocket);
 
         // set the channel handler contexts
         for(ChannelHandler handler : pipelineFactory.getChannelHandlers()) {
@@ -103,30 +121,29 @@ public abstract class AbstractCoapApplication {
     /**
      * Returns the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
      * {@link de.uzl.itm.ncoap.application.client.CoapClient} is bound to or
-     * {@value #NOT_BOUND} if the application has not yet been started.
+     * {@link #NOT_BOUND} if the application has not yet been started.
      *
      * @return the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
      * {@link de.uzl.itm.ncoap.application.client.CoapClient} is bound to or
-     * {@value #NOT_BOUND} if the application has not yet been started.
+     * {@link #NOT_BOUND} if the application has not yet been started.
      */
     public int getPort() {
         try {
             return this.channel.getLocalAddress().getPort();
-        }
-        catch(Exception ex) {
+        } catch(Exception ex) {
             return NOT_BOUND;
         }
     }
 
     /**
      * Returns the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
-     * {@link de.uzl.itm.ncoap.application.server.CoapServer} to handle tasks, e.g. write and
+     * {@link de.uzl.itm.ncoap.application.AbstractCoapApplication} to handle tasks, e.g. write and
      * receive messages. The returned {@link java.util.concurrent.ScheduledExecutorService} may also be used by
      * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s to handle inbound
      * {@link de.uzl.itm.ncoap.message.CoapRequest}s
      *
      * @return the {@link java.util.concurrent.ScheduledExecutorService} which is used by this
-     * {@link de.uzl.itm.ncoap.application.server.CoapServer} to handle tasks, e.g. write and
+     * {@link de.uzl.itm.ncoap.application.AbstractCoapApplication} to handle tasks, e.g. write and
      * receive messages.
      */
     public ScheduledExecutorService getExecutor() {
@@ -134,10 +151,20 @@ public abstract class AbstractCoapApplication {
     }
 
 
+    /**
+     * Returns the {@link DatagramChannel} instance this application uses to communicate with other endpoints
+     *
+     * @return the {@link DatagramChannel} instance this application uses to communicate with other endpoints
+     */
     public DatagramChannel getChannel() {
         return this.channel;
     }
 
+    /**
+     * Returns the name this application was given
+     *
+     * @return the name this application was given
+     */
     public String getApplicationName() {
         return applicationName;
     }

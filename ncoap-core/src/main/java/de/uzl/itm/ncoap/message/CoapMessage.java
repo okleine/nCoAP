@@ -73,7 +73,7 @@ public abstract class CoapMessage {
     private static Logger log = LoggerFactory.getLogger(CoapMessage.class.getName());
 
     private static final String WRONG_OPTION_TYPE = "Option no. %d is no option of type %s";
-    private static final String OPTION_NOT_ALLOWED_WITH_MESSAGE_TYPE = "Option no. %d is not allowed with " +
+    private static final String OPTION_NOT_ALLOWED_WITH_MESSAGE_TYPE = "Option no. %d (%s) is not allowed with " +
             "message type %s";
     private static final String OPTION_ALREADY_SET = "Option no. %d is already set and is only allowed once per " +
             "message";
@@ -357,7 +357,7 @@ public abstract class CoapMessage {
         Option.Occurence permittedOccurence = Option.getPermittedOccurrence(optionNumber, this.messageCode);
         if (permittedOccurence == Option.Occurence.NONE) {
             throw new IllegalArgumentException(String.format(OPTION_NOT_ALLOWED_WITH_MESSAGE_TYPE,
-                    optionNumber, this.getMessageCodeName()));
+                    optionNumber, Option.asString(optionNumber), this.getMessageCodeName()));
         } else if (options.containsKey(optionNumber) && permittedOccurence == Option.Occurence.ONCE) {
                 throw new IllegalArgumentException(String.format(OPTION_ALREADY_SET, optionNumber));
         }
@@ -587,8 +587,8 @@ public abstract class CoapMessage {
 
     public long getBlock2Size() {
         long block2szx = getBlock2Szx();
-        if (block2szx != UintOptionValue.UNDEFINED) {
-            return UintOptionValue.UNDEFINED;
+        if (block2szx != BlockSize.UNDEFINED) {
+            return BlockSize.UNDEFINED;
         } else {
             return BlockSize.getBlockSize(block2szx).getSize();
         }

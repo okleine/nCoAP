@@ -28,20 +28,29 @@ package de.uzl.itm.ncoap.examples.server;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 
 /**
- * Created by olli on 30.03.14.
+ * This is a simple application to showcase ho to use nCoAP for servers
+ *
+ * @author Oliver Kleine
  */
 public class SimpleCoapServer extends CoapServer {
 
+    /**
+     * Starts a {@link CoapServer} instance with two {@link de.uzl.itm.ncoap.application.server.resource.Webresource}
+     * instances where one is observable and the other one is not.
+     *
+     * @param args no arguments needed (may be empty)
+     * @throws Exception if some unexpected error occurred
+     */
     public static void main(String[] args) throws Exception {
         LoggingConfiguration.configureDefaultLogging();
 
         SimpleCoapServer server = new SimpleCoapServer();
 
         SimpleNotObservableWebresource simpleWebresource =
-                new SimpleNotObservableWebresource("/simple", "Some payload...", 5000, server.getExecutor());
+                new SimpleNotObservableWebresource("/simple", "Some payload...", 5, server.getExecutor());
         server.registerWebresource(simpleWebresource);
 
-        SimpleObservableTimeService timeResource = new SimpleObservableTimeService("/utc-time", 5000,
+        SimpleObservableTimeService timeResource = new SimpleObservableTimeService("/utc-time", 5,
                 server.getExecutor());
         server.registerWebresource(timeResource);
     }

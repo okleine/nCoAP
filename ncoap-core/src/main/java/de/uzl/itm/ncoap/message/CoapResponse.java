@@ -162,10 +162,11 @@ public class CoapResponse extends CoapMessage {
      * @return the byte array representing the ETAG of the content returned by {@link #getContent()}
      */
     public byte[] getEtag() {
-        if (options.containsKey(ETAG))
+        if (options.containsKey(ETAG)) {
             return ((OpaqueOptionValue) options.get(ETAG).iterator().next()).getDecodedValue();
-        else
+        } else {
             return null;
+        }
     }
 
     /**
@@ -177,8 +178,13 @@ public class CoapResponse extends CoapMessage {
         this.setObserve(System.currentTimeMillis() % ResourceStatusAge.MODULUS);
     }
 
-    public void setPreferedBlock2Size(BlockSize size) {
-        this.setBlock2(0, false, size.getSzx());
+
+    public void setPreferredBlock2Size(BlockSize block2Size) {
+        if (BlockSize.UNBOUND == block2Size || block2Size == null) {
+            this.removeOptions(BLOCK_2);
+        } else {
+            this.setBlock2(0, false, block2Size.getSzx());
+        }
     }
 
     /**
