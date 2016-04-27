@@ -64,7 +64,7 @@ public class LinkFormatDecoder {
         Map<String, Set<LinkAttribute>> result = new HashMap<>();
 
         LOG.debug("Link Format String:\n{}", linkFormat);
-        linkFormat = linkFormat.replaceAll("[^a-zA-Z0-9<>;,/=]", "");
+        //linkFormat = linkFormat.replaceAll("[^a-zA-Z0-9<>;,/=-]", "");
 
         String[] services = linkFormat.split(",");
 
@@ -82,18 +82,18 @@ public class LinkFormatDecoder {
 
             Set<LinkAttribute> attributesSet = new HashSet<>();
 
-            for(String attribute : attributes) {
-                LOG.info("Service {} has attribute {}.", serviceName, attribute);
-                String key = !attribute.contains("=") ? attribute : attribute.substring(0, attribute.indexOf("="));
+            for(String attr : attributes) {
+                LOG.info("Service {} has attribute {}.", serviceName, attr);
+                String key = !attr.contains("=") ? attr : attr.substring(0, attr.indexOf("="));
                 LinkAttribute.Type attributeType = LinkAttribute.getAttributeType(key);
 
                 if (LinkAttribute.Type.EMPTY.equals(attributeType)) {
                     attributesSet.add(new EmptyLinkAttribute(key));
-                } else if (attribute.length() == attribute.indexOf("=") + 1) {
+                } else if (attr.length() == attr.indexOf("=") + 1) {
                     LOG.warn("Service {} has attribute {} without any value (IGNORE!)", serviceName, key);
                 } else {
 
-                    String encodedValues = attribute.substring(attribute.indexOf("=") + 1);
+                    String encodedValues = attr.substring(attr.indexOf("=") + 1);
 
                     if (LinkAttribute.Type.STRING.equals(attributeType)) {
                         //Remove the quotation marks
@@ -109,7 +109,7 @@ public class LinkFormatDecoder {
                             attributesSet.add(new StringLinkAttribute(key, value));
                         }
                     } else if (LinkAttribute.Type.LONG.equals(attributeType)) {
-                        String tmp = attribute.substring(attribute.indexOf("=") + 1, attribute.length());
+                        String tmp = attr.substring(attr.indexOf("=") + 1, attr.length()).replace("\"", "");
                         String[] values = tmp.split(" ");
                         for(String value : values) {
                             try {

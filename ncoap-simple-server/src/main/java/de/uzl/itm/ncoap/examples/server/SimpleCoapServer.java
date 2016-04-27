@@ -26,6 +26,7 @@ package de.uzl.itm.ncoap.examples.server;
 
 
 import de.uzl.itm.ncoap.application.server.CoapServer;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.options.OptionValue;
 
 /**
@@ -35,6 +36,9 @@ import de.uzl.itm.ncoap.message.options.OptionValue;
  */
 public class SimpleCoapServer extends CoapServer {
 
+    public SimpleCoapServer(BlockSize block1Size, BlockSize block2Size) {
+        super(block1Size, block2Size);
+    }
     /**
      * Starts a {@link CoapServer} instance with two {@link de.uzl.itm.ncoap.application.server.resource.Webresource}
      * instances where one is observable and the other one is not.
@@ -45,9 +49,12 @@ public class SimpleCoapServer extends CoapServer {
     public static void main(String[] args) throws Exception {
         LoggingConfiguration.configureDefaultLogging();
 
-        SimpleCoapServer server = new SimpleCoapServer();
+        SimpleCoapServer server = new SimpleCoapServer(BlockSize.SIZE_16, BlockSize.SIZE_16);
 
-        String status = "This is the status of a simple not observable Web Resource running on a CoAP Server...";
+        String status = "This is the status of a simple not observable Web Resource running on a CoAP Server...," +
+                "This is the status of a simple not observable Web Resource running on a CoAP Server..., " +
+                "This is the status of a simple not observable Web Resource running on a CoAP Server..., " +
+                "This is the status of a simple not observable Web Resource running on a CoAP Server...";
         SimpleNotObservableWebresource simpleWebresource =
                 new SimpleNotObservableWebresource("/simple", status, OptionValue.MAX_AGE_MAX, server.getExecutor());
         server.registerWebresource(simpleWebresource);

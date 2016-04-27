@@ -24,6 +24,7 @@
  */
 package de.uzl.itm.ncoap.application;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
@@ -38,9 +39,7 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 
 /**
  * The abstract base class for all kinds of CoAP applications, i.e. clients, servers, and endpoints (combining client
@@ -84,9 +83,10 @@ public abstract class AbstractCoapApplication {
             }
         });
 
-        // determine number of I/O threads and create thread pool executor of  that size
+        // determine number of I/O threads and create thread pool executor of that size
         int ioThreads = Math.max(Runtime.getRuntime().availableProcessors() * 2, 4);
         this.executor = new ScheduledThreadPoolExecutor(ioThreads, threadFactory);
+//        this.executor = new SynchronizedExecutor(ioThreads, threadFactory);
     }
 
     /**
@@ -97,7 +97,8 @@ public abstract class AbstractCoapApplication {
      * @param localSocket the socket address to be used for inbound and outbound messages
      */
     protected void startApplication(CoapChannelPipelineFactory pipelineFactory, InetSocketAddress localSocket) {
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, executor.getCorePoolSize() / 2 );
+        //ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, executor.getCorePoolSize() / 2 );
+        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, 1 );
 
         //System.out.println("Threads: " + (executor.getCorePoolSize() - 1));
         //Create and configure bootstrap
@@ -110,7 +111,7 @@ public abstract class AbstractCoapApplication {
         this.channel = (DatagramChannel) bootstrap.bind(localSocket);
 
         // set the channel handler contexts
-        for(ChannelHandler handler : pipelineFactory.getChannelHandlers()) {
+        for (ChannelHandler handler : pipelineFactory.getChannelHandlers()) {
             if (handler instanceof AbstractCoapChannelHandler) {
                 ChannelHandlerContext context = this.channel.getPipeline().getContext(handler.getClass());
                 ((AbstractCoapChannelHandler) handler).setContext(context);
@@ -169,4 +170,15 @@ public abstract class AbstractCoapApplication {
         return applicationName;
     }
 
+//    private class SynchronizedExecutor extends ScheduledThreadPoolExecutor {
+//
+//        public SynchronizedExecutor(int corePoolSize, ThreadFactory threadFactory) {
+//            super(corePoolSize, threadFactory);
+//        }
+//
+//        @Override
+//        public synchronized ScheduledFuture<?> schedule(Runnable task, long delay, TimeUnit timeUnit) {
+//            return super.schedule(task, delay, timeUnit);
+//        }
+//    }
 }

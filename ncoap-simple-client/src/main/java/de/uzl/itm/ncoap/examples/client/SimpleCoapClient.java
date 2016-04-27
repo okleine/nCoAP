@@ -24,14 +24,21 @@
  */
 package de.uzl.itm.ncoap.examples.client;
 
+import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.application.client.CoapClient;
+import de.uzl.itm.ncoap.application.client.linkformat.LinkFormatDecoder;
+import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.examples.client.callback.SimpleCallback;
 import de.uzl.itm.ncoap.examples.client.callback.SimpleObservationCallback;
 import de.uzl.itm.ncoap.examples.client.config.ClientCmdLineArgumentsWrapper;
 import de.uzl.itm.ncoap.examples.client.config.LoggingConfiguration;
 import de.uzl.itm.ncoap.message.*;
+import de.uzl.itm.ncoap.message.options.ContentFormat;
 
 import java.net.*;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -170,60 +177,61 @@ public class SimpleCoapClient extends CoapClient {
         } else {
             LoggingConfiguration.configureLogging(log4jConfigPath);
         }
-
-        // Start the client
-        SimpleCoapClient client = new SimpleCoapClient(arguments);
-
-        // Send the request
-        client.sendRequest();
-
-        // wait ...
-        client.waitAndShutdown();
-
-        //CoapClient client = new CoapClient("Simple CoAP Client", 6000);
-
-//        URI uri = new URI("coap", null, "vs0.inf.ethz.ch", 5683, "/.well-known/core", null, null);
-//        CoapRequest request = new CoapRequest(MessageType.CON, MessageCode.GET, uri);
-////        request.setObserve(0);
-////        request.setEndpointID1();
 //
-//        client.sendCoapRequest(request, new InetSocketAddress("vs0.inf.ethz.ch", 5683), new ClientCallback() {
-//            @Override
-//            public void processCoapResponse(CoapResponse coapResponse) {
-//                System.out.println("BLOCK NO.:" + coapResponse.getBlock2Number());
-//                String content = coapResponse.getContent().toString(CoapMessage.CHARSET);
-//                System.out.println("RECEIVED: " + content);
+//        // Start the client
+//        SimpleCoapClient client = new SimpleCoapClient(arguments);
 //
-//                if (coapResponse.getContentFormat() == ContentFormat.APP_LINK_FORMAT) {
-//                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(content);
+//        // Send the request
+//        client.sendRequest();
 //
-//                    for (String service : attributes.keySet()) {
-//                        System.out.println(service);
-//                        for (LinkAttribute attribute : attributes.get(service)) {
-//                            System.out.println("   " + attribute);
-//                        }
-//                    }
-//                }
-//            }
-//
-//            @Override
-//            public boolean continueObservation() {
-//                return true;
-//            }
-//
-//            @Override
-//            public void processMiscellaneousError(final String description) {
-//                System.out.println("ERROR: " + description);
-//            }
-//
-//            @Override
-//            public void processResponseBlockReceived(long receivedLength, long expectedLength) {
-//                System.out.println("Received " + receivedLength + "/" + expectedLength + " bytes.");
-//            }
-//        });
+//        // wait ...
+//        client.waitAndShutdown();
 
-//        Thread.sleep(90000);
-//        client.shutdown();
+        CoapClient client = new CoapClient("Simple CoAP Client", 6000);
+
+        URI uri = new URI("coap", null, "vs0.inf.ethz.ch", 5683, "/.well-known/core", null, null);
+        CoapRequest request = new CoapRequest(MessageType.CON, MessageCode.GET, uri);
+        request.setPreferredBlock2Size(BlockSize.SIZE_16);
+//        request.setObserve(0);
+//        request.setEndpointID1();
+
+        client.sendCoapRequest(request, new InetSocketAddress("vs0.inf.ethz.ch", 5683), new ClientCallback() {
+            @Override
+            public void processCoapResponse(CoapResponse coapResponse) {
+                System.out.println("BLOCK NO.:" + coapResponse.getBlock2Number());
+                String content = coapResponse.getContent().toString(CoapMessage.CHARSET);
+                System.out.println("RECEIVED: " + content);
+
+                if (coapResponse.getContentFormat() == ContentFormat.APP_LINK_FORMAT) {
+                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(content);
+
+                    for (String service : attributes.keySet()) {
+                        System.out.println(service);
+                        for (LinkAttribute attribute : attributes.get(service)) {
+                            System.out.println("   " + attribute);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public boolean continueObservation() {
+                return true;
+            }
+
+            @Override
+            public void processMiscellaneousError(final String description) {
+                System.out.println("ERROR: " + description);
+            }
+
+            @Override
+            public void processResponseBlockReceived(long receivedLength, long expectedLength) {
+                System.out.println("Received " + receivedLength + "/" + expectedLength + " bytes.");
+            }
+        });
+
+        Thread.sleep(90000);
+        client.shutdown();
 
 
 

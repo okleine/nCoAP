@@ -857,6 +857,12 @@ public abstract class CoapMessage {
         return this.content;
     }
 
+    public byte[] getContentAsByteArray() {
+        byte[] result = new byte[this.getContentLength()];
+        this.getContent().readBytes(result, 0, this.getContentLength());
+        return result;
+    }
+
     public int getContentLength() {
         return this.content.readableBytes();
     }

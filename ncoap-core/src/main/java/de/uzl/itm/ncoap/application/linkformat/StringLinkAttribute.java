@@ -45,6 +45,8 @@ public class StringLinkAttribute extends LinkAttribute<String> {
      */
     public static final String INTERFACE = "if";
 
+    public static final String TITLE = "title";
+
     /**
      * Creates a new instance of {@link de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute}
      *

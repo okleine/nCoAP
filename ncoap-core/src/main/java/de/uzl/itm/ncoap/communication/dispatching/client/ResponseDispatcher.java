@@ -60,7 +60,8 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         EmptyAckReceivedEvent.Handler, ResetReceivedEvent.Handler, MessageIDAssignedEvent.Handler,
         MessageRetransmittedEvent.Handler, TransmissionTimeoutEvent.Handler, NoMessageIDAvailableEvent.Handler,
         MiscellaneousErrorEvent.Handler, TokenReleasedEvent.Handler, ResponseBlockReceivedEvent.Handler,
-        BlockwiseResponseTransferFailedEvent.Handler, ContinueResponseReceivedEvent.Handler {
+        BlockwiseResponseTransferFailedEvent.Handler, ContinueResponseReceivedEvent.Handler,
+        MessageIDReleasedEvent.Handler {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -417,6 +418,11 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ee) {
         log.error("Exception: ", ee.getCause());
+    }
+
+    @Override
+    public void handleEvent(MessageIDReleasedEvent event) {
+
     }
 
 

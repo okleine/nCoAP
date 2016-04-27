@@ -73,6 +73,14 @@ public abstract class AbstractOutboundReliabilityHandler extends AbstractCoapCha
                 (1 + RANDOM.nextDouble() * (ACK_RANDOM_FACTOR - 1)));
     }
 
+    public static long[] provideTransmissionDelays() {
+        long[] delays = new long[5];
+        delays[0] = 0;
+        for (int i = 1; i < 5; i++) {
+            delays[i] = delays[i - 1] + provideRetransmissionDelay(i);
+        }
+        return delays;
+    }
 
     private MessageIDFactory messageIDFactory;
 

@@ -146,32 +146,28 @@ public class MessageIDFactory extends Observable {
                         new Object[]{(messageID % MODULUS), remoteSocket, token});
             }
             setChanged();
-            notifyObservers(new ReleasedMessageID(remoteSocket, messageID % MODULUS, token));
+            notifyObservers(new MessageIDRelease(remoteSocket, messageID % MODULUS, token));
         } finally {
             lock.writeLock().unlock();
         }
-
     }
-
-
 
     public void shutdown() {
         try{
             lock.writeLock().lock();
             this.allocations.clear();
-        }
-        finally{
+        } finally {
             lock.writeLock().lock();
         }
     }
 
-    class ReleasedMessageID {
+    class MessageIDRelease {
 
         private InetSocketAddress remoteSocket;
         private int messageID;
         private Token token;
 
-        ReleasedMessageID(InetSocketAddress remoteSocket, int messageID, Token token) {
+        private MessageIDRelease(InetSocketAddress remoteSocket, int messageID, Token token) {
             this.remoteSocket = remoteSocket;
             this.messageID = messageID;
             this.token = token;
@@ -189,45 +185,4 @@ public class MessageIDFactory extends Observable {
             return token;
         }
     }
-
-//    private class AllocationRetirementTask implements Runnable{
-//
-//        private Channel channel;
-//        private InetSocketAddress remoteSocket;
-//        private Token token;
-//        private int messageID;
-//
-//        private AllocationRetirementTask(Channel channel, InetSocketAddress remoteSocket, int messageID, Token token) {
-//            this.channel = channel;
-//            this.remoteSocket = remoteSocket;
-//            this.token = token;
-//            this.messageID = messageID;
-//        }
-//
-//        public int getMessageID() {
-//            return this.messageID;
-//        }
-//
-//        public InetSocketAddress getremoteSocket() {
-//            return this.remoteSocket;
-//        }
-//
-//        @Override
-//        public void run() {
-//            try{
-//                lock.writeLock().lock();
-//                ArrayDeque<AllocationRetirementTask> tasks = usedMessageIDs.get(remoteSocket);
-//                tasks.remove(this);
-//                if (tasks.size() == 0) {
-//                    usedMessageIDs.remove(remoteSocket);
-//                }
-//            } finally {
-//                lock.writeLock().unlock();
-//            }
-//
-//            Channels.fireMessageReceived(this.channel, new MessageIDReleasedEvent(
-//                this.remoteSocket, this.messageID, this.token
-//            ));
-//        }
-//    }
 }

@@ -30,33 +30,29 @@ import de.uzl.itm.ncoap.communication.events.*;
 import de.uzl.itm.ncoap.message.*;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.Channels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Observable;
-import java.util.Observer;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
-  * This is the handler to deal with reliability message transfers (e.g. retransmissions of confirmable messages) for
-  * CoAP Endpoints.
-  *
-  * @author Oliver Kleine
+ * This is the handler to deal with message transmissions (e.g. transmissions of confirmable messages)
+ * for CoAP Clients.
+ *
+ * @author Oliver Kleine
  */
-public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilityHandler implements Observer {
+public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilityHandler {
 
     private static Logger LOG = LoggerFactory.getLogger(ClientOutboundReliabilityHandler.class.getName());
 
-    private Table<InetSocketAddress, Integer, Token> transfers1;
-    private Table<InetSocketAddress, Token, Integer> transfers2;
-
+    private Table<InetSocketAddress, Integer, TransmissionTask[]> transmissions;
     private ReentrantReadWriteLock lock;
-
 
     /**
      * Creates a new instance of {@link de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler}
@@ -65,18 +61,16 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
      */
     public ClientOutboundReliabilityHandler(ScheduledExecutorService executor, MessageIDFactory factory) {
         super(executor, factory);
-        this.transfers1 = HashBasedTable.create();
-        this.transfers2 = HashBasedTable.create();
+        this.transmissions = HashBasedTable.create();
         this.lock = new ReentrantReadWriteLock();
     }
 
 
     @Override
     public boolean handleOutboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-        if (coapMessage instanceof CoapRequest) {
-            return handleOutboundCoapMessage2(coapMessage, remoteSocket);
-        } else if (coapMessage.isPing()) {
-            return handleOutboundCoapMessage2(coapMessage, remoteSocket);
+        if (coapMessage instanceof CoapRequest || coapMessage.isPing()) {
+            handleOutboundCoapMessage2(coapMessage, remoteSocket);
+            return true;
         } else {
             return true;
         }
@@ -95,7 +89,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
     }
 
 
-    private boolean handleOutboundCoapMessage2(CoapMessage coapRequest, InetSocketAddress remoteSocket) {
+    private void handleOutboundCoapMessage2(CoapMessage coapRequest, InetSocketAddress remoteSocket) {
         LOG.debug("HANDLE OUTBOUND MESSAGE: {}", coapRequest);
 
         int messageID = assignMessageID(coapRequest, remoteSocket);
@@ -103,28 +97,24 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
         if (messageID == CoapMessage.UNDEFINED_MESSAGE_ID) {
             LOG.info("No message ID available for \"{}\" (ID pool exhausted).", remoteSocket);
             triggerEvent(new NoMessageIDAvailableEvent(remoteSocket, token), false);
-            return false;
         } else {
             LOG.info("Set message ID to {}", messageID);
             triggerEvent(new MessageIDAssignedEvent(remoteSocket, messageID, token), false);
-        }
 
-        addTransfer(remoteSocket, coapRequest.getMessageID(), coapRequest.getToken());
-        if (coapRequest.getMessageType() == MessageType.CON) {
-            scheduleRetransmission(coapRequest, remoteSocket, 1);
+            scheduleTransmissions(coapRequest, remoteSocket);
         }
-        return true;
     }
 
 
     private boolean handleInboundEmptyMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
         int messageType = coapMessage.getMessageType();
+        int messageID = coapMessage.getMessageID();
+
         if (messageType == MessageType.CON) {
             // incoming PINGs are handled by the inbound reliability handler
             return true;
         } else {
-            int messageID = coapMessage.getMessageID();
-            Token token = removeTransfer(remoteSocket, messageID);
+            Token token = stopRetransmissions(remoteSocket, messageID);
             if (token == null) {
                 return true;
             } else if (messageType == MessageType.ACK) {
@@ -150,166 +140,143 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
         int messageType = coapResponse.getMessageType();
 
         if (messageType == MessageType.ACK) {
-            Token token = removeTransfer(remoteSocket, coapResponse.getMessageID());
-            if (token == null) {
-                LOG.warn("Received ACK response for unknown request (remote socket \"{}\", message ID: {})",
-                    remoteSocket, coapResponse.getMessageID()
-                );
+            int messageID = coapResponse.getMessageID();
+            if (stopRetransmissions(remoteSocket, messageID) != null) {
+                return true;
+            } else {
+                LOG.warn("Received ACK from \"{}\" for unknown message ID {}", remoteSocket, messageID);
+                return false;
             }
         } else {
-            Token token = coapResponse.getToken();
-            Integer messageID = removeTransfer(remoteSocket, token);
-            if (messageID != null) {
-                LOG.info("Received response for request (remote socket \"{}\", message ID: {})",
-                        remoteSocket, messageID
-                );
-            }
+            return true;
         }
-        return true;
     }
 
-//    private int assignMessageID(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
-//        int messageID = this.messageIDFactory.getNextMessageID(remoteSocket, coapMessage.getToken());
-//
-//        if (!(messageID == CoapMessage.UNDEFINED_MESSAGE_ID)) {
-//            coapMessage.setMessageID(messageID);
-//            LOG.debug("Message ID set to {}.", messageID);
-//
-//        }
-//        return messageID;
-//    }
 
-    private void addTransfer(InetSocketAddress remoteSocket, int messageID, Token token) {
+    private Token stopRetransmissions(InetSocketAddress remoteSocket, int messageID) {
         try {
             this.lock.writeLock().lock();
-            this.transfers1.put(remoteSocket, messageID, token);
-            this.transfers2.put(remoteSocket, token, messageID);
-        } finally {
-            this.lock.writeLock().unlock();
-        }
-    }
-
-    private boolean needsRetransmission(InetSocketAddress remoteSocket, int messageID) {
-        try {
-            this.lock.readLock().lock();
-            return !(this.transfers1.get(remoteSocket, messageID) == null);
-        } finally {
-            this.lock.readLock().unlock();
-        }
-    }
-
-    private Integer removeTransfer(InetSocketAddress remoteSocket, Token token) {
-        try {
-            this.lock.readLock().lock();
-            if (this.transfers2.get(remoteSocket, token) == null) {
+            TransmissionTask[] tasks = this.transmissions.remove(remoteSocket, messageID);
+            if (tasks == null) {
                 return null;
+            } else {
+                for (int i = 0; i < tasks.length; i++) {
+                    if (tasks[i].cancel()) {
+                        LOG.debug("Cancelled transmission #{} (Remote Socket: {}, Message ID: {})",
+                                new Object[]{i + 1, remoteSocket, messageID});
+                    } else {
+                        LOG.debug("Could not cancel transmission #{} (Remote Socket: {}, Message ID: {})",
+                                new Object[]{i + 1, remoteSocket, messageID});
+                    }
+                }
+                return tasks[0].getToken();
             }
-        } finally {
-            this.lock.readLock().unlock();
-        }
-
-        try {
-            this.lock.writeLock().lock();
-            Integer messageID = this.transfers2.remove(remoteSocket, token);
-            this.transfers1.remove(remoteSocket, messageID);
-            return messageID;
-        } finally {
-            this.lock.writeLock().unlock();
-        }
-    }
-
-    private Token removeTransfer(InetSocketAddress remoteSocket, int messageID) {
-        try {
-            this.lock.readLock().lock();
-            if (this.transfers1.get(remoteSocket, messageID) == null) {
-                return null;
-            }
-        } finally {
-            this.lock.readLock().unlock();
-        }
-
-        try {
-            this.lock.writeLock().lock();
-            Token token = this.transfers1.remove(remoteSocket, messageID);
-            this.transfers2.remove(remoteSocket, token);
-            return token;
         } finally {
             this.lock.writeLock().unlock();
         }
     }
 
 
-    private void scheduleRetransmission(CoapMessage coapMessage, InetSocketAddress remoteSocket, int retransmissionNo) {
-        long delay = provideRetransmissionDelay(retransmissionNo);
-        RequestRetransmissionTask task = new RequestRetransmissionTask(coapMessage, remoteSocket, retransmissionNo);
-        getExecutor().schedule(task, delay, TimeUnit.MILLISECONDS);
+    private void scheduleTransmissions(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
+        int messageType = coapMessage.getMessageType();
+        TransmissionTask[] tasks;
+        if(messageType == MessageType.CON) {
+            tasks = new TransmissionTask[5];
+            long[] delays = provideTransmissionDelays();
+            for (int i = 0; i < 5; i++) {
+                tasks[i] = new TransmissionTask(coapMessage, remoteSocket, i);
+                if(i > 0) {
+                    tasks[i].setFuture(this.scheduleTask(tasks[i], delays[i], TimeUnit.MILLISECONDS));
+                    LOG.debug("Scheduled transmission #{} with delay {} ms (Remote Socket: {}, message ID: {}).",
+                            new Object[]{i + 1, delays[i], remoteSocket, coapMessage.getMessageID()}
+                    );
+                }
+            }
+        } else {
+            tasks = new TransmissionTask[1];
+            tasks[0] = new TransmissionTask(coapMessage, remoteSocket, 0);
+            //tasks[0].setFuture(this.scheduleTask(tasks[0], 0, TimeUnit.MILLISECONDS));
+        }
+
+        try {
+            this.lock.writeLock().lock();
+            this.transmissions.put(remoteSocket, coapMessage.getMessageID(), tasks);
+        } finally {
+            this.lock.writeLock().unlock();
+        }
     }
 
-
+    /**
+     * This method is called by the {@link MessageIDFactory} when a message ID was released
+     *
+     * @param factory the {@link MessageIDFactory} that released the message ID
+     * @param releasedID representaton of the message ID that was released
+     */
     @Override
-    public void update(Observable o, Object arg) {
-        if (arg instanceof MessageIDFactory.ReleasedMessageID) {
-            InetSocketAddress remoteSocket = ((MessageIDFactory.ReleasedMessageID) arg).getRemoteSocket();
-            int messageID = ((MessageIDFactory.ReleasedMessageID) arg).getMessageID();
+    public void update(Observable factory, Object releasedID) {
+        if (releasedID instanceof MessageIDFactory.MessageIDRelease) {
+            InetSocketAddress remoteSocket = ((MessageIDFactory.MessageIDRelease) releasedID).getRemoteSocket();
+            int messageID = ((MessageIDFactory.MessageIDRelease) releasedID).getMessageID();
+            Token token = ((MessageIDFactory.MessageIDRelease) releasedID).getToken();
 
-            if (removeTransfer(remoteSocket, messageID) != null) {
+            if (stopRetransmissions(remoteSocket, messageID) != null) {
                 // there was an ongoing outbound transfer (i.e. CON with no ACK or NON with no response)
-                Token token = ((MessageIDFactory.ReleasedMessageID) arg).getToken();
                 LOG.warn("Transmission timed out (remote socket: \"{}\", token: {}, message ID: {})",
                         new Object[]{remoteSocket, token, messageID});
                 triggerEvent(new TransmissionTimeoutEvent(remoteSocket, messageID, token), true);
             } else {
-                LOG.info("Message ID retirement does not lead to a transmission timeout (GOOD!)");
+                triggerEvent(new MessageIDReleasedEvent(remoteSocket, messageID, token), true);
+                LOG.info("Message ID was released (remote socket: \"{}\", token: {}, message ID: {})");
             }
         } else {
             LOG.error("This should never happen...");
         }
     }
 
+    private class TransmissionTask implements Runnable {
 
-    class RequestRetransmissionTask implements Runnable{
+        private CoapMessage coapMessage;
+        private InetSocketAddress remoteSocket;
+        private int transmissionNumber;
+        private ScheduledFuture future;
 
-        private final CoapMessage coapRequest;
-        private final InetSocketAddress remoteSocket;
-        private final int retransmissionNo;
-
-        private RequestRetransmissionTask(CoapMessage coapRequest, InetSocketAddress remoteSocket, int retransmissionNo) {
-            this.coapRequest = coapRequest;
+        public TransmissionTask(CoapMessage coapMessage, InetSocketAddress remoteSocket, int transmissionNumber) {
+            this.coapMessage = coapMessage;
             this.remoteSocket = remoteSocket;
-            this.retransmissionNo = retransmissionNo;
+            this.transmissionNumber = transmissionNumber;
         }
 
         @Override
         public void run() {
-            if (needsRetransmission(remoteSocket, coapRequest.getMessageID())) {
-                // retransmit message
-                ChannelFuture future = Channels.future(getContext().getChannel());
-                Channels.write(getContext(), future, coapRequest, remoteSocket);
-                future.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        int messageID = coapRequest.getMessageID();
-                        Token token = coapRequest.getToken();
-                        if (future.isSuccess()) {
-                            triggerEvent(new MessageRetransmittedEvent(remoteSocket, messageID, token), false);
-                        } else {
-                            String desc = "Could not sent retransmission (\"" + future.getCause().getMessage() + "\"";
-                            triggerEvent(new MiscellaneousErrorEvent(remoteSocket, messageID, token, desc), false);
-                        }
-                    }
-                });
 
-                if (retransmissionNo < MAX_RETRANSMISSIONS) {
-                    scheduleRetransmission(coapRequest, remoteSocket, retransmissionNo + 1);
-                    LOG.debug("Scheduled next retransmission to \"{}\" (Message ID: {})",
-                        remoteSocket, coapRequest.getMessageID()
-                    );
-                } else {
-                    LOG.warn("No more retransmissions (remote endpoint: {}, message ID: {})!",
-                           remoteSocket, coapRequest.getMessageID()
-                    );
+            ChannelFuture channelFuture = sendCoapMessage(coapMessage, remoteSocket);
+            channelFuture.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    int messageID = coapMessage.getMessageID();
+                    Token token = coapMessage.getToken();
+                    if (future.isSuccess()) {
+                        triggerEvent(new MessageRetransmittedEvent(remoteSocket, messageID, token), false);
+                        LOG.debug("Finished transmission #{}: {}", transmissionNumber, coapMessage);
+                    } else {
+                        String desc = "Transmission failed (\"" + future.getCause().getMessage() + "\"";
+                        triggerEvent(new MiscellaneousErrorEvent(remoteSocket, messageID, token, desc), false);
+                    }
                 }
-            }
+            });
         }
+
+        public void setFuture(ScheduledFuture future) {
+            this.future = future;
+        }
+
+        public Token getToken() {
+            return this.coapMessage.getToken();
+        }
+
+        public boolean cancel() {
+            return this.future != null && this.future.cancel(true);
+        }
+
     }
 }

@@ -8,17 +8,21 @@
         </layout>
     </appender>
 
-    <appender name="async" class="org.apache.log4j.AsyncAppender">
-        <param name="BufferSize" value="1000000"/>
-        <appender-ref ref="console"/>
-    </appender>
+    <!--<appender name="async" class="org.apache.log4j.AsyncAppender">-->
+        <!--<param name="BufferSize" value="1000000"/>-->
+        <!--<appender-ref ref="console"/>-->
+    <!--</appender>-->
 
-    <logger name="de.uzl.itm.ncoap.examples.callback">
-        <level value="info"/>
+    <logger name="de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler">
+        <level value="debug"/>
+    </logger>
+
+    <logger name="de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler">
+        <level value="debug"/>
     </logger>
 
     <root>
         <priority value="warn"/>
-        <appender-ref ref="async"/>
+        <appender-ref ref="console"/>
     </root>
 </log4j:configuration>

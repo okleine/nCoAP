@@ -292,8 +292,8 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteSocket,
                                                    int messageID, Token token, Throwable cause) {
 
-        MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteSocket, messageID, token,
-                cause.getMessage());
+       String desc = cause.getMessage() == null ? "Encoder (" + cause.getClass().getName() + ")" : cause.getMessage();
+        MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteSocket, messageID, token, desc);
         Channels.fireMessageReceived(ctx, event);
     }
 }

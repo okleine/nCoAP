@@ -56,6 +56,7 @@ public abstract class LinkAttribute<T> {
             .put(OBSERVABLE, new AttributeProperties(false, EMPTY))
             .put(RESOURCE_TYPE, new AttributeProperties(true, STRING))
             .put(INTERFACE, new AttributeProperties(false, STRING))
+            .put(TITLE, new AttributeProperties(false, STRING))
             .build()
         );
     }

@@ -78,8 +78,8 @@ public class ClientSendsPostRequestWithBlock1 extends AbstractCoapCommunicationT
         URI targetURI = new URI("coap://localhost:5683/test");
         coapRequest = new CoapRequest(MessageType.CON, MessageCode.POST, targetURI);
         coapRequest.setPreferredBlock1Size(BlockSize.SIZE_64);
-        payload = ("ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-                "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz").getBytes(CoapMessage.CHARSET);
+        payload = ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
+                   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").getBytes(CoapMessage.CHARSET);
         coapRequest.setContent(payload, ContentFormat.TEXT_PLAIN_UTF8);
 
         // setup callback
@@ -112,8 +112,8 @@ public class ClientSendsPostRequestWithBlock1 extends AbstractCoapCommunicationT
 
     @Test
     public void testResponseContainedFullPayload() {
-        byte[] received = clientCallback.getCoapResponse(0).getContent().array();
-        String message = "Sent and received content do not equal!";
+        byte[] received = clientCallback.getCoapResponse(0).getContentAsByteArray();
+        String message = "Sent and received content do not equal";
         assertArrayEquals(message, payload, received);
     }
 

@@ -39,6 +39,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract base class for all {@link ChannelHandler} instances handling inbound or outbound messages
@@ -98,6 +100,8 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
         } else if (message instanceof ContinueResponseReceivedEvent &&
                 this instanceof ContinueResponseReceivedEvent.Handler) {
             ((ContinueResponseReceivedEvent.Handler) this).handleEvent((ContinueResponseReceivedEvent) message);
+        } else if (message instanceof MessageIDReleasedEvent && this instanceof MessageIDReleasedEvent.Handler) {
+            ((MessageIDReleasedEvent.Handler) this).handleEvent((MessageIDReleasedEvent) message);
         }
 
         ctx.sendUpstream(me);
@@ -259,5 +263,9 @@ public abstract class AbstractCoapChannelHandler extends SimpleChannelHandler{
      */
     protected void sendCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket, ChannelFuture future) {
         Channels.write(getContext(), future, coapMessage, remoteSocket);
+    }
+
+    protected ScheduledFuture scheduleTask(Runnable task, long delay, TimeUnit unit) {
+        return this.getExecutor().schedule(task, delay, unit);
     }
 }

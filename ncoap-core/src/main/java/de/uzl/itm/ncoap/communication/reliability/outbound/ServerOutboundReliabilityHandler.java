@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -101,9 +100,9 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
 
     @Override
     public void update(Observable o, Object arg) {
-        if (arg instanceof MessageIDFactory.ReleasedMessageID) {
-            InetSocketAddress remoteSocket = ((MessageIDFactory.ReleasedMessageID) arg).getRemoteSocket();
-            Token token = ((MessageIDFactory.ReleasedMessageID) arg).getToken();
+        if (arg instanceof MessageIDFactory.MessageIDRelease) {
+            InetSocketAddress remoteSocket = ((MessageIDFactory.MessageIDRelease) arg).getRemoteSocket();
+            Token token = ((MessageIDFactory.MessageIDRelease) arg).getToken();
             CoapResponse coapResponse = removeTransfer(remoteSocket, token);
             if (coapResponse != null && coapResponse.getMessageType() == MessageType.CON) {
                 // there was an ongoing outbound transfer
