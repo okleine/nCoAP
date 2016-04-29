@@ -15,7 +15,8 @@ but without DTLS (i.e. support for the coaps scheme).
 
 ### Latest SNAPSHOT version (1.8.3-SNAPSHOT)
 
-The nCoAP project is organized in several maven modules, i.e.,
+JavaDoc is available [here](https://media.itm.uni-luebeck.de/people/kleine/javadoc/ncoap-core/1.8.3-SNAPSHOT/). The
+nCoAP project is organized in several maven modules, i.e.,
 
 ```xml
 <groupId>de.uzl.itm</groupId>
@@ -51,8 +52,6 @@ stable version (1.8.2). To use the latest bleeding edge version add the followin
 ...
 </dependencies>
 ```
-
-JavaDoc is available [here](https://media.itm.uni-luebeck.de/people/kleine/javadoc/ncoap-core/1.8.3-SNAPSHOT/).
 
 
 ### Examples for Client and Server 

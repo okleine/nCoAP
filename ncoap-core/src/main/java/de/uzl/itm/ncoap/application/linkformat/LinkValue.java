@@ -33,7 +33,8 @@ import java.util.List;
 
 /**
  * <p>A {@link LinkValue} is a representation of a single entry in a {@link LinkValueList}. It consists of
- * one URI reference, i.e. the resource to be described, and zero or more instances of {@link LinkParam}.</p>
+ * one URI reference, i.e. the resource to be described, and zero or more instances of {@link LinkParam}, e.g.
+ * <code>, e.g. <code>&lt;</example&gt;;ct="0 40"</code>.</p>
  *
  * <p>The notations are taken from RFC 6690</p>
  *

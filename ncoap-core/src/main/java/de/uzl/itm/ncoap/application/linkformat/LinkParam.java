@@ -31,7 +31,17 @@ import java.util.*;
 
 /**
  * <p>A {@link LinkParam} is a representation of an attribute to describe a resource, resp. its representations. A
- * {@link LinkParam} instance consists of a key and a value.</p>
+ * {@link LinkParam} instance consists of a key and a value, e.g.
+ *
+ * <ul>
+ *     <li><code>ct="0 40"</code></li>
+ *     <li><code>ct=0</code></li>
+ * </ul></p>
+ *
+ * <p>As one can see from the examples the <code>ct</code>-attribute can have different types of values, i.e.
+ * multiple values divides by white spaces and enclosed in double-quotes or a single value without double quotes. There
+ * are other keys (other than <code>ct</code>) which allow different types of values, too. The static method
+ * {@link #getValueType(Key, String)} is to determine the type used for the given value.</p>
  *
  * @author Oliver Kleine
  */
@@ -45,6 +55,8 @@ public class LinkParam {
 
     /**
      * The enumeration {@link Key} contains all link-param-keys that are supported
+     *
+     * @author Oliver Kleine
      */
     public enum Key {
         /**
@@ -146,6 +158,8 @@ public class LinkParam {
 
     /**
      * The enumeration {@link ValueType} contains all value types that are supported
+     *
+     * @author Oliver Kleine
      */
     public enum ValueType {
 
@@ -268,6 +282,14 @@ public class LinkParam {
         return null;
     }
 
+    /**
+     * Returns the {@link ValueType} that corresponds to the given key-value-pair.
+     *
+     * @param key the key
+     * @param value the value
+     *
+     * @return the {@link ValueType} that corresponds to the given key-value-pair
+     */
     public static ValueType getValueType(Key key, String value) {
         // determine possible value types
         Set<ValueType> valueTypes = key.getValueTypes();
@@ -296,7 +318,8 @@ public class LinkParam {
         return result;
     }
 
-    public static LinkParam decode(String linkParam) {
+
+    static LinkParam decode(String linkParam) {
 
         if (!linkParam.contains("=")) {
             // link param has empty value
