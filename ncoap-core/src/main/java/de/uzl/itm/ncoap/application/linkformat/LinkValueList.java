@@ -1,0 +1,168 @@
+/**
+ * Copyright (c) 2016, Oliver Kleine, Institute of Telematics, University of Luebeck
+ * All rights reserved
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ *  - Redistributions of source messageCode must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ *  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ *  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package de.uzl.itm.ncoap.application.linkformat;
+
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.options.ContentFormat;
+
+import java.util.*;
+
+/**
+ * <p>A {@link LinkValueList} is a representation of the string that is contained in a {@link CoapMessage} with
+ * content type {@link ContentFormat#APP_LINK_FORMAT}.</p>
+ *
+ * <p>A {@link LinkValueList} contains zero or more instances of {@link LinkValue}.</p>
+ *
+ * <p>The notations are taken from RFC 6690</p>
+ *
+ * @author Oliver Kleine
+ */
+public class LinkValueList {
+
+    //*******************************************************************************************
+    // static methods
+    //*******************************************************************************************
+
+    /**
+     * Decodes a serialized link-value-list, e.g. the payload (content) of a {@link CoapMessage} with content type
+     * {@link ContentFormat#APP_LINK_FORMAT} and returns a corresponding {@link LinkValueList} instance.
+     *
+     * @param linkValueList the serialized link-value-list
+     *
+     * @return A {@link LinkValueList} instance corresponsing to the given serialization
+     */
+    public static LinkValueList decode(String linkValueList) {
+        LinkValueList result = new LinkValueList();
+        List<String> linkValues = getLinkValues(linkValueList);
+        for(String linkValue : linkValues) {
+            result.addLinkValue(LinkValue.decode(linkValue));
+        }
+        return result;
+    }
+
+    private static List<String> getLinkValues(String linkValueList) {
+        List<String> linkValues = new ArrayList<>();
+        Collections.addAll(linkValues, linkValueList.split(","));
+        return linkValues;
+    }
+
+    //******************************************************************************************
+    // instance related fields and methods
+    //******************************************************************************************
+
+    private List<LinkValue> linkValues;
+
+    private LinkValueList() {
+        this.linkValues = new ArrayList<>();
+    }
+
+    /**
+     * Creates a new instance of {@link LinkValueList}
+     * @param linkValues the {@link LinkValue}s to be contained in the {@link LinkValueList} to be created
+     */
+    public LinkValueList(LinkValue... linkValues) {
+        this.linkValues = Arrays.asList(linkValues);
+    }
+
+    /**
+     * Adds an instance of {@link LinkValue} to this {@link LinkValueList}.
+     * @param linkValue the {@link LinkValue} to be added
+     */
+    public void addLinkValue(LinkValue linkValue) {
+        this.linkValues.add(linkValue);
+    }
+
+    /**
+     * Returns all URI references contained in this {@link LinkValueList}
+     *
+     * @return all URI references contained in this {@link LinkValueList}
+     */
+    public List<String> getUriReferences() {
+        List<String> result = new ArrayList<>(linkValues.size());
+        for (LinkValue linkValue : linkValues) {
+            result.add(linkValue.getUriReference());
+        }
+        return result;
+    }
+
+    /**
+     * Returns the URI references that match the given criterion, i.e. contain a {@link LinkParam} with the given
+     * pair of keyname and value.
+     *
+     * @param keyName the keyname to match
+     * @param value the value to match
+     *
+     * @return the URI references that match the given criterion
+     */
+    public Set<String> getUriReferences(String keyName, String value) {
+        Set<String> result = new HashSet<>();
+        for (LinkValue linkValue : linkValues) {
+            if (linkValue.containsLinkParam(keyName, value)) {
+                result.add(linkValue.getUriReference());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns the {@link LinkParam}s for the given URI reference.
+     *
+     * @param uriReference the URI reference to lookup the {@link LinkParam}s for
+     *
+     * @return the {@link LinkParam}s for the given URI reference
+     */
+    public List<LinkParam> getLinkParams(String uriReference) {
+        List<LinkParam> result = new ArrayList<>();
+        for (LinkValue linkValue : this.linkValues) {
+            if (linkValue.getUriReference().equals(uriReference)) {
+                return linkValue.getLinkParams();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns a string representation of this {@link LinkValueList}, i.e. the reversal of {@link #decode(String)}
+     * @return a string representation of this {@link LinkValueList}, i.e. the reversal of {@link #decode(String)}
+     */
+    public String encode() {
+        StringBuilder builder = new StringBuilder();
+        for (LinkValue linkValue : this.linkValues) {
+            builder.append(linkValue.toString());
+            builder.append(",");
+        }
+        builder.deleteCharAt(builder.length() - 1);
+        return builder.toString();
+    }
+
+    /**
+     * Returns a string representation of this {@link LinkValueList} (same as {@link #encode()}
+     * @return a string representation of this {@link LinkValueList} (same as {@link #encode()}
+     */
+    @Override
+    public String toString() {
+        return this.encode();
+    }
+}

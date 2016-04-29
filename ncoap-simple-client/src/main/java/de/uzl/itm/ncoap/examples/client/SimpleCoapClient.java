@@ -24,21 +24,14 @@
  */
 package de.uzl.itm.ncoap.examples.client;
 
-import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.application.client.CoapClient;
-import de.uzl.itm.ncoap.application.client.linkformat.LinkFormatDecoder;
-import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.examples.client.callback.SimpleCallback;
 import de.uzl.itm.ncoap.examples.client.callback.SimpleObservationCallback;
 import de.uzl.itm.ncoap.examples.client.config.ClientCmdLineArgumentsWrapper;
 import de.uzl.itm.ncoap.examples.client.config.LoggingConfiguration;
 import de.uzl.itm.ncoap.message.*;
-import de.uzl.itm.ncoap.message.options.ContentFormat;
 
 import java.net.*;
-import java.util.Map;
-import java.util.Set;
 
 
 /**
@@ -83,7 +76,7 @@ public class SimpleCoapClient extends CoapClient {
         this.arguments = arguments;
     }
 
-    private void sendRequest() throws URISyntaxException, UnknownHostException {
+    private void sendCoapRequest() throws URISyntaxException, UnknownHostException {
 
         // determine the URI of the resource to be requested
         String host = arguments.getUriHost();
@@ -134,8 +127,9 @@ public class SimpleCoapClient extends CoapClient {
         }
 
         //Wait for another 10 seconds to answer the next update notification with a RST to stop the observation
-        if (arguments.isObserve())
+        if (arguments.isObserve()) {
             Thread.sleep(10000);
+        }
 
         this.shutdown();
     }
@@ -182,9 +176,9 @@ public class SimpleCoapClient extends CoapClient {
         SimpleCoapClient client = new SimpleCoapClient(arguments);
 
         // Send the request
-        client.sendRequest();
+        client.sendCoapRequest();
 
-        // wait ...
+        // wait for shutdown criterion and shutdown...
         client.waitAndShutdown();
 
 //        CoapClient client = new CoapClient("Simple CoAP Client", 6000);
