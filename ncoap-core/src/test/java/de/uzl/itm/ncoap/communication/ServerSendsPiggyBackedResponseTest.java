@@ -64,14 +64,14 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
     public void setupComponents() throws Exception {
 
         //Create endpoint
-        endpoint = new DummyEndpoint();
+        endpoint = new DummyEndpoint(5683);
         endpointSocket = new InetSocketAddress("localhost", endpoint.getPort());
 
         //Create client and callback
         client = new CoapClient();
         callback = new TestCallback();
 
-        URI targetUri =  new URI("coap://localhost:" + endpoint.getPort() + "/");
+        URI targetUri =  new URI("coap", "localhost" + endpoint.getPort(), "/", null);
         coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, targetUri);
     }
 

@@ -49,12 +49,13 @@ public class SimpleCoapServer extends CoapServer {
     public static void main(String[] args) throws Exception {
         LoggingConfiguration.configureDefaultLogging();
 
-        SimpleCoapServer server = new SimpleCoapServer(BlockSize.SIZE_16, BlockSize.SIZE_16);
+        SimpleCoapServer server = new SimpleCoapServer(BlockSize.SIZE_16, BlockSize.SIZE_1024);
 
-        String status = "This is the status of a simple not observable Web Resource running on a CoAP Server...," +
-                "This is the status of a simple not observable Web Resource running on a CoAP Server..., " +
-                "This is the status of a simple not observable Web Resource running on a CoAP Server..., " +
-                "This is the status of a simple not observable Web Resource running on a CoAP Server...";
+        String[] status = new String[10];
+        for (int i = 0; i < status.length; i++) {
+            status[i] = "This is paragraph #" + (i + 1);
+        }
+
         SimpleNotObservableWebresource simpleWebresource =
                 new SimpleNotObservableWebresource("/simple", status, OptionValue.MAX_AGE_MAX, server.getExecutor());
         server.registerWebresource(simpleWebresource);

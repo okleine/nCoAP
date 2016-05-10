@@ -27,7 +27,9 @@ package de.uzl.itm.ncoap.application.linkformat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * <p>A {@link LinkParam} is a representation of an attribute to describe a resource, resp. its representations. A
@@ -122,12 +124,12 @@ public class LinkParam {
         /**
          * Corresponds to link-param-key "obs"
          */
-        OBS("obs", ValueType.EMPTY),
+        OBS("obs", ValueType.EMPTY);
 
-        /**
-         * Used internally for unknown link-param-keys
-         */
-        UNKNOWN(null, ValueType.UNKNOWN);
+//        /**
+//         * Used internally for unknown link-param-keys
+//         */
+//        UNKNOWN(null, ValueType.UNKNOWN);
 
         private final String keyName;
         private final Set<ValueType> valueTypes;
@@ -225,15 +227,15 @@ public class LinkParam {
         CARDINAL (false, false),
 
         /**
-         * Values of this type consist of multiple cardinal values, divided by white spaces and  enclosed in
+         * Values of this type consist of multiple cardinal values, divided by white spaces and enclosed in
          * double-quotes (<code>DQUOTE</code>)
          */
-        DQUOTED_CARDINALS(true, true),
+        DQUOTED_CARDINALS(true, true);
 
-        /**
-         * Internally used to represent all other types
-         */
-        UNKNOWN(false, false);
+//        /**
+//         * Internally used to represent all other types
+//         */
+//        UNKNOWN(false, false);
 
         private boolean doubleQuoted;
         private boolean multipleValues;
@@ -268,10 +270,10 @@ public class LinkParam {
 
 
     /**
-     * Returns the {@link Key} corresponding to the given name or {@link Key#UNKNOWN} if no such {@link Key} exists
+     * Returns the {@link Key} corresponding to the given name or <code>null</code> if no such {@link Key} exists
      *
      * @param keyName the name of the {@link Key} to lookup
-     * @return the {@link Key} corresponding to the given name or {@link Key#UNKNOWN} if no such {@link Key} exists
+     * @return the {@link Key} corresponding to the given name or <code>null</code> if no such {@link Key} exists
      */
     public static Key getKey(String keyName) {
         for(Key key : Key.values()) {
@@ -283,57 +285,70 @@ public class LinkParam {
     }
 
     /**
-     * Returns the {@link ValueType} that corresponds to the given key-value-pair.
+     * Returns the {@link ValueType} that corresponds to the given key-value-pair or <code>null</code> if no such
+     * {@link ValueType} exists.
      *
      * @param key the key
      * @param value the value
      *
-     * @return the {@link ValueType} that corresponds to the given key-value-pair
+     * @return the {@link ValueType} that corresponds to the given key-value-pair or <code>null</code> if no such
+     * {@link ValueType} exists.
      */
     public static ValueType getValueType(Key key, String value) {
         // determine possible value types
         Set<ValueType> valueTypes = key.getValueTypes();
 
         // check if link param value is quoted and if there is quoted type
-        ValueType result = ValueType.UNKNOWN;
-
         if (valueTypes.size() == 1) {
-            result = valueTypes.iterator().next();
+            return valueTypes.iterator().next();
         } else if (value.startsWith("\"") && value.endsWith("\"")) {
             for (ValueType valueType : valueTypes) {
                 if(valueType.isDoubleQuoted()) {
-                    result = valueType;
-                    break;
+                    return valueType;
                 }
             }
         } else {
             for (ValueType valueType : valueTypes) {
                 if(!valueType.isDoubleQuoted()) {
-                    result = valueType;
-                    break;
+                    return valueType;
                 }
             }
         }
 
-        return result;
+        return null;
     }
 
+    /**
+     * Decodes the given (serialized) link param (e.g. <code>ct=40</code>)
+     * @param linkParam the serialized link param
+     * @return an instance of {@link LinkParam} according to the given parameter
+     */
+    public static LinkParam decode(String linkParam) {
+        // determine the key of this link param
+        String keyName = !linkParam.contains("=") ? linkParam
+                : linkParam.substring(linkParam.indexOf("=") + 1, linkParam.length());
+        LinkParam.Key key = LinkParam.getKey(keyName);
 
-    static LinkParam decode(String linkParam) {
-
-        if (!linkParam.contains("=")) {
-            // link param has empty value
-            return new LinkParam(linkParam, ValueType.EMPTY, null);
+        if(key == null) {
+            LOG.warn("Unsupported key name for link param: {}", keyName);
+            return null;
+        } else if (keyName.equals(linkParam)) {
+            // empty attribute
+            if(!key.getValueTypes().contains(ValueType.EMPTY)) {
+                LOG.debug("Key {} does not support empty values!", key.getKeyName());
+                return null;
+            } else {
+                return new LinkParam(key, ValueType.EMPTY, null);
+            }
         } else {
             // link param has non-empty value
-            String keyName = linkParam.substring(0, linkParam.indexOf("="));
-            LinkParam.Key key = LinkParam.getKey(keyName);
             String value = linkParam.substring(linkParam.indexOf("=") + 1, linkParam.length());
-            if (key == null) {
-                return new LinkParam(keyName, ValueType.UNKNOWN, value);
-            } else {
-                LinkParam.ValueType valueType = LinkParam.getValueType(key, value);
+            LinkParam.ValueType valueType = LinkParam.getValueType(key, value);
 
+            if(valueType == null) {
+                LOG.warn("Could not determine value type for key \"{}\" and value\"{}\".", keyName, value);
+                return null;
+            } else {
                 LOG.debug("Value: {}, Type: {}", value, valueType);
 
                 // remove double quotes if necessary
@@ -341,33 +356,53 @@ public class LinkParam {
                     value = value.substring(1, value.length() - 1);
                 }
 
-                return new LinkParam(keyName, valueType, value);
+                return new LinkParam(key, valueType, value);
             }
         }
     }
 
+    public static LinkParam createLinkParam(Key key, String value) {
+        ValueType valueType = getValueType(key, value);
+        if (valueType == null) {
+            LOG.warn("Could not determine value type for key \"{}\" and value\"{}\".", key.getKeyName(), value);
+            return null;
+        } else {
+            return new LinkParam(key, valueType, value);
+        }
+    }
 
     //******************************************************************************************
     // instance related fields and methods
     //******************************************************************************************
 
-    private String key;
+    private Key key;
     private ValueType valueType;
     private String value;
 
-    protected LinkParam(String key, ValueType valueType, String value) {
+
+    private LinkParam(Key key, ValueType valueType, String value) {
         this.key = key;
         this.valueType = valueType;
-        this.value = value;
+        // remove double quotes if existing
+        this.value = valueType.isDoubleQuoted() ? value.substring(1, value.length() - 1) : value;
         LOG.debug("LinkParam created: {}", this.toString());
     }
 
+
     /**
-     * Returns the name of the key (e.g. "ct" or "rt")
-     * @return the name of the key (e.g. "ct" or "rt")
+     * Returns the {@link Key} of this {@link LinkParam}
+     * @return the {@link Key} of this {@link LinkParam}
      */
-    public String getKey() {
+    public Key getKey() {
         return key;
+    }
+
+    /**
+     * Shortcut for {@link #getKey()#getKeyName()}
+     * @return the name of the {@link Key} of this {@link LinkParam} (e.g. "ct" or "rt")
+     */
+    public String getKeyName() {
+        return this.key.getKeyName();
     }
 
     /**
@@ -419,7 +454,7 @@ public class LinkParam {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append(this.key);
+        builder.append(this.key.getKeyName());
         if (this.valueType != ValueType.EMPTY) {
             builder.append("=");
             if (this.valueType.doubleQuoted) {

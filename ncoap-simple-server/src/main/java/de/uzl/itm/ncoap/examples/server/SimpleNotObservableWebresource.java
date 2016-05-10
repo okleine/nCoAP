@@ -27,9 +27,9 @@ package de.uzl.itm.ncoap.examples.server;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
+import de.uzl.itm.ncoap.application.linkformat.LinkParam;
 import de.uzl.itm.ncoap.application.server.resource.NotObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
-import de.uzl.itm.ncoap.application.linkformat.LongLinkAttribute;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
@@ -37,25 +37,32 @@ import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.concurrent.ScheduledExecutorService;
+
+import static de.uzl.itm.ncoap.application.linkformat.LinkParam.Key.CT;
+import static de.uzl.itm.ncoap.message.options.ContentFormat.APP_XML;
+import static de.uzl.itm.ncoap.message.options.ContentFormat.TEXT_PLAIN_UTF8;
 
 /**
  * A simple not observable {@link de.uzl.itm.ncoap.application.server.resource.Webresource} implementation
  *
  * @author Oliver Kleine
  */
-public class SimpleNotObservableWebresource extends NotObservableWebresource<String> {
+public class SimpleNotObservableWebresource extends NotObservableWebresource<String[]> {
 
     private static long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
 
     private int weakEtag;
 
-    protected SimpleNotObservableWebresource(String servicePath, String initialStatus, long lifetimeSeconds,
+    protected SimpleNotObservableWebresource(String servicePath, String[] initialStatus, long lifetimeSeconds,
                                              ScheduledExecutorService executor) {
+
         super(servicePath, initialStatus, lifetimeSeconds, executor);
 
-        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
-        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.APP_XML));
+        //Sets the link attributes for supported content types ('ct')
+        String ctValue = "\"" + TEXT_PLAIN_UTF8 + " " + APP_XML + "\"";
+        this.setLinkParam(LinkParam.createLinkParam(CT, ctValue));
     }
 
 
@@ -66,8 +73,8 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
 
 
     @Override
-    public void updateEtag(String resourceStatus) {
-        weakEtag = resourceStatus.hashCode();
+    public void updateEtag(String[] resourceStatus) {
+        weakEtag = Arrays.hashCode(resourceStatus);
     }
 
 
@@ -128,17 +135,22 @@ public class SimpleNotObservableWebresource extends NotObservableWebresource<Str
 
     @Override
     public byte[] getSerializedResourceStatus(long contentFormat) {
-        String result = null;
+        StringBuffer buffer = new StringBuffer();
         if (contentFormat == ContentFormat.TEXT_PLAIN_UTF8) {
-            result = getResourceStatus();
+            for (String paragraph : this.getResourceStatus()) {
+                buffer.append(paragraph).append("\n");
+            }
         } else if (contentFormat == ContentFormat.APP_XML) {
-            result = "<status>\n  " + getResourceStatus() + "\n</status>";
+            for (String paragraph : this.getResourceStatus()) {
+                buffer.append("<paragraph>\n  ").append(paragraph).append("\n</paragraph>\n");
+            }
         }
 
-        if (result == null) {
+        if (buffer.length() == 0) {
             return null;
         } else {
-            return result.getBytes(CoapMessage.CHARSET);
+            buffer.deleteCharAt(buffer.length() - 1);
+            return buffer.toString().getBytes(CoapMessage.CHARSET);
         }
     }
 }

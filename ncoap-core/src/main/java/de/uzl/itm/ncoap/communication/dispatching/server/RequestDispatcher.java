@@ -28,6 +28,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import de.uzl.itm.ncoap.application.linkformat.LinkValue;
+import de.uzl.itm.ncoap.application.linkformat.LinkValueList;
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.Webresource;
 import de.uzl.itm.ncoap.application.server.resource.WellKnownCoreResource;
@@ -36,7 +38,9 @@ import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
-import de.uzl.itm.ncoap.message.*;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
@@ -50,7 +54,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static de.uzl.itm.ncoap.message.MessageCode.*;
+import static de.uzl.itm.ncoap.message.MessageCode.INTERNAL_SERVER_ERROR_500;
+import static de.uzl.itm.ncoap.message.MessageCode.PRECONDITION_FAILED_412;
 
 /**
 * The {@link RequestDispatcher} is the topmost {@link ChannelHandler} of the {@link ChannelPipeline} returned
@@ -105,7 +110,12 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
     }
 
     public void registerWellKnownCoreResource() {
-        registerWebresource(new WellKnownCoreResource(registeredServices, getExecutor()));
+        LinkValueList linkValueList = new LinkValueList();
+//        for(Webresource webresource : this.registeredServices.values()) {
+//            Collection<LinkParam> linkParams = webresource.getLinkParams();
+//            linkValueList.addLinkValue(new LinkValue(webresource.getUriPath(), linkParams));
+//        }
+        registerWebresource(new WellKnownCoreResource(linkValueList, getExecutor()));
     }
 
 
@@ -210,13 +220,13 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
      */
     public ListenableFuture<Void> shutdown() {
         this.shutdown = true;
-        String[] webservices = registeredServices.keySet().toArray(new String[registeredServices.size()]);
-        for(String servicePath : webservices) {
-            shutdownWebresource(servicePath);
+        String[] uriPaths = registeredServices.keySet().toArray(new String[registeredServices.size()]);
+        for(String path : uriPaths) {
+            shutdownWebresource(path);
         }
 
         // some time to send possible update notifications (404_NOT_FOUND) to observers
-        try{
+        try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
             LOG.error("Interrupted while shutting down RequestDispatcher Manager!", e);
@@ -242,6 +252,15 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         if (webresource != null) {
             LOG.info("Resource \"{}\" removed from server.", uriPath);
             webresource.shutdown();
+            WellKnownCoreResource wkcResource =
+                    ((WellKnownCoreResource) this.registeredServices.get(WellKnownCoreResource.URI_PATH));
+            if (wkcResource != null) {
+                LinkValueList linkValueList = LinkValueList.decode(new String(
+                        wkcResource.getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT), CoapMessage.CHARSET
+                ));
+                linkValueList.removeLinkValue(uriPath);
+                wkcResource.setResourceStatus(linkValueList, 0);
+            }
         } else {
             LOG.error("Resource \"{}\" could not be removed. Does not exist.", uriPath);
         }
@@ -262,7 +281,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
      */
     public final void registerWebresource(final Webresource webresource) throws IllegalArgumentException{
         if (registeredServices.containsKey(webresource.getUriPath())) {
-            throw new IllegalArgumentException("Service " + webresource.getUriPath() + " is already registered");
+            throw new IllegalArgumentException("Resource " + webresource.getUriPath() + " is already registered");
         }
 
         webresource.setRequestDispatcher(this);
@@ -274,6 +293,11 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
             ServerObservationHandler handler = pipeline.get(ServerObservationHandler.class);
             handler.registerWebresource((ObservableWebresource) webresource);
         }
+
+        WellKnownCoreResource wkcResource =
+                (WellKnownCoreResource) this.registeredServices.get(WellKnownCoreResource.URI_PATH);
+        LinkValueList linkValueList = wkcResource.getResourceStatus();
+        linkValueList.addLinkValue(new LinkValue(webresource.getUriPath(), webresource.getLinkParams()));
     }
 
 

@@ -25,7 +25,7 @@
 package de.uzl.itm.ncoap.application.server.resource;
 
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LinkParam;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestConsumer;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -213,54 +213,45 @@ public interface Webresource<T> extends RequestConsumer{
 
 
     /**
-     * <p>Sets the given {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute} for this
+     * <p>Sets the given {@link de.uzl.itm.ncoap.application.linkformat.LinkParam} for this
      * {@link Webresource} instance.</p>
      *
-     * <p><b>Note:</b> Implementing classes MUST ensure that attributes keys that do only allow a single
-     * value are not set multiple times</p>
-     *
-     * @param attribute the {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute} to
-     *                  be set for this {@link Webresource}
-     *                  instance
+     * @param linkParam the {@link de.uzl.itm.ncoap.application.linkformat.LinkParam} to
+     *                  be set for this {@link Webresource} instance
      */
-    public void setLinkAttribute(LinkAttribute attribute);
+    public void setLinkParam(LinkParam linkParam);
 
 
     /**
-     * Removes all {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}s for the
+     * Removes all {@link de.uzl.itm.ncoap.application.linkformat.LinkParam}s for the
      * given key.
      *
-     * @param attributeKey the attribute key to remove all attributes of
+     * @param key the {@link LinkParam.Key} to remove all values of
      *
      * @return <code>true</code> if there were any (previously set) attributes removed, <code>false</code>
      * otherwise
      */
-    public boolean removeLinkAttribute(String attributeKey);
+    public boolean removeLinkParams(LinkParam.Key key);
+
 
     /**
-     * Returns <code>true</code> if this {@link Webresource}
-     * instance has the given {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}
+     * Returns <code>true</code> if this {@link Webresource} instance has the given {@link LinkParam}
      * and <code>false</code> otherwise
      *
-     * @param linkAttribute the {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}
-     *                      to check for existence
+     * @param key the key of a {@link LinkParam}
+     * @param value the value of a {@link LinkParam}
      *
-     * @return code>true</code> if this {@link Webresource}
-     * instance has the given {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}
-     * and <code>false</code> otherwise
+     * @return code>true</code> if this {@link Webresource} instance matches the criterion given as key/value pair
+     * in the parameters  and <code>false</code> otherwise
      */
-    public boolean hasLinkAttribute(LinkAttribute linkAttribute);
+    public boolean hasLinkAttribute(LinkParam.Key key, String value);
 
     /**
-     * Returns a {@link java.util.Collection} containing all
-     * {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}s of this
-     * {@link Webresource} instance
+     * Returns a {@link Collection} containing all {@link LinkParam}s of this {@link Webresource} instance
      *
-     * @return a {@link java.util.Collection} containing all
-     * {@link de.uzl.itm.ncoap.application.linkformat.LinkAttribute}s of this
-     * {@link Webresource} instance
+     * @return a {@link Collection} containing all {@link LinkParam}s of this {@link Webresource} instance
      */
-    public Collection<LinkAttribute> getLinkAttributes();
+    public Collection<LinkParam> getLinkParams();
 
     /**
      * Returns the number of seconds the actual resource state can be considered fresh for status caching on proxies

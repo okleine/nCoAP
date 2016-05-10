@@ -67,6 +67,10 @@ public class DummyEndpoint extends SimpleChannelHandler {
     private ScheduledExecutorService executor;
 
     public DummyEndpoint() {
+        this(0);
+    }
+
+    public DummyEndpoint(int port) {
         //Create thread pool factory (for thread-naming)
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Dummy Endpoint I/O worker #%d").build();
 
@@ -104,7 +108,7 @@ public class DummyEndpoint extends SimpleChannelHandler {
         });
 
 
-        this.channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(0));
+        this.channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(port));
         log.info("New message receiver channel created for port " + channel.getLocalAddress().getPort());
     }
 

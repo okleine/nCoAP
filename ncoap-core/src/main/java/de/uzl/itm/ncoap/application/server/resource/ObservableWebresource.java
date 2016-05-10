@@ -24,19 +24,17 @@
  */
 package de.uzl.itm.ncoap.application.server.resource;
 
-import com.google.common.collect.LinkedHashMultimap;
-import de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute;
-import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LinkParam;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.MessageType;
 import de.uzl.itm.ncoap.message.options.OptionValue;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Observable;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -62,7 +60,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
     private RequestDispatcher requestDispatcher;
     private String uriPath;
-    private LinkedHashMultimap<String, LinkAttribute> linkAttributes;
+    private LinkedHashMap<String, LinkParam> linkParams;
 
     private T status;
     private long statusExpiryDate;
@@ -82,7 +80,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      */
     protected ObservableWebresource(String uriPath, T initialStatus, ScheduledExecutorService executor) {
         this(uriPath, initialStatus, MAX_AGE_DEFAULT, executor);
-        this.setLinkAttribute(new EmptyLinkAttribute(EmptyLinkAttribute.OBSERVABLE));
+        this.setLinkParam(LinkParam.createLinkParam(LinkParam.Key.OBS, null));
     }
 
 
@@ -98,7 +96,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      */
     protected ObservableWebresource(String uriPath, T initialStatus, long lifetime, ScheduledExecutorService executor) {
         this.uriPath = uriPath;
-        this.linkAttributes = LinkedHashMultimap.create();
+        this.linkParams = new LinkedHashMap<>();
         this.statusLock = new ReentrantReadWriteLock();
         this.executor = executor;
         setResourceStatus(initialStatus, lifetime);
@@ -106,30 +104,34 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
 
     @Override
-    public void setLinkAttribute(LinkAttribute linkAttribute) {
-        if (this.linkAttributes.containsKey(linkAttribute.getKey())) {
-
-            if (!LinkAttribute.allowsMultipleValues(linkAttribute.getKey()))
-                removeLinkAttribute(linkAttribute.getKey());
+    public void setLinkParam(LinkParam linkParam) {
+        if (this.linkParams.containsKey(linkParam.getKeyName())) {
+            removeLinkParams(linkParam.getKey());
         }
 
-        this.linkAttributes.put(linkAttribute.getKey(), linkAttribute);
-    }
-
-
-    @Override
-    public boolean removeLinkAttribute(String attributeKey) {
-        return !this.linkAttributes.removeAll(attributeKey).isEmpty();
+        this.linkParams.put(linkParam.getKeyName(), linkParam);
     }
 
     @Override
-    public boolean hasLinkAttribute(LinkAttribute linkAttribute) {
-        return this.linkAttributes.get(linkAttribute.getKey()).contains(linkAttribute);
+    public boolean removeLinkParams(LinkParam.Key key) {
+        this.linkParams.remove(key.getKeyName());
+        return (this.linkParams.get(key.getKeyName()) == null);
     }
 
     @Override
-    public Collection<LinkAttribute> getLinkAttributes() {
-        return this.linkAttributes.values();
+    public boolean hasLinkAttribute(LinkParam.Key key, String value) {
+        LinkParam linkParam = this.linkParams.get(key.getKeyName());
+        if(linkParam == null) {
+            return false;
+        } else if (linkParam.getValueType() == LinkParam.ValueType.EMPTY && value == null){
+            return true;
+        } else {
+            return linkParam.contains(value);
+        }
+    }
+
+    public Collection<LinkParam> getLinkParams() {
+        return this.linkParams.values();
     }
 
 

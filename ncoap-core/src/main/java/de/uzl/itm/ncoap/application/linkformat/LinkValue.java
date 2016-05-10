@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -75,14 +76,14 @@ public class LinkValue {
     //******************************************************************************************
 
     private String uriReference;
-    private List<LinkParam> linkParams;
+    private Collection<LinkParam> linkParams;
 
     /**
      * Creates a new instance of {@link LinkValue}
      * @param uriReference the URI reference, i.e. the resource to be described
      * @param linkParams the {@link LinkParam}s to describe the resource
      */
-    public LinkValue(String uriReference, List<LinkParam> linkParams) {
+    public LinkValue(String uriReference, Collection<LinkParam> linkParams) {
         this.uriReference = uriReference;
         this.linkParams = linkParams;
     }
@@ -107,7 +108,7 @@ public class LinkValue {
      * Returns the {@link LinkParam}s describing the resource identified by the URI reference
      * @return the {@link LinkParam}s describing this resource identified by the URI reference
      */
-    public List<LinkParam> getLinkParams() {
+    public Collection<LinkParam> getLinkParams() {
         return this.linkParams;
     }
 
@@ -121,10 +122,10 @@ public class LinkValue {
      * @return <code>true</code> if this {@link LinkValue} contains a {@link LinkParam} that matches the given
      * criterion, i.e. the given key-value-pair and <code>false</code> otherwise.
      */
-    public boolean containsLinkParam(String key, String value) {
+    public boolean containsLinkParam(LinkParam.Key key, String value) {
         for (LinkParam linkParam : this.linkParams) {
-            if (key.equals(linkParam.getKey()) && linkParam.contains(value) ) {
-                return true;
+            if (key.equals(linkParam.getKey())) {
+                return value == null || linkParam.contains(value);
             }
         }
         return false;

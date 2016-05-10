@@ -24,15 +24,15 @@
  */
 package de.uzl.itm.ncoap.application.server.resource;
 
-import com.google.common.collect.*;
+import de.uzl.itm.ncoap.application.linkformat.LinkParam;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
-import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
-
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -53,7 +53,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
     private String path;
 
-    private LinkedHashMultimap<String, LinkAttribute> linkAttributes;
+    private LinkedHashMap<String, LinkParam> linkParams;
 
     private ReadWriteLock readWriteLock;
 
@@ -65,7 +65,7 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
     protected NotObservableWebresource(String servicePath, T initialStatus, long lifetimeSeconds,
                                        ScheduledExecutorService executor) {
         this.path = servicePath;
-        this.linkAttributes = LinkedHashMultimap.create();
+        this.linkParams = new LinkedHashMap<>();
 
         this.readWriteLock = new ReentrantReadWriteLock(false);
         this.executor = executor;
@@ -74,28 +74,35 @@ public abstract class NotObservableWebresource<T> implements Webresource<T> {
 
 
     @Override
-    public void setLinkAttribute(LinkAttribute linkAttribute) {
-        if (this.linkAttributes.containsKey(linkAttribute.getKey()) &&
-                !LinkAttribute.allowsMultipleValues(linkAttribute.getKey())) {
-            removeLinkAttribute(linkAttribute.getKey());
+    public void setLinkParam(LinkParam linkParam) {
+        if (this.linkParams.containsKey(linkParam.getKeyName())) {
+            removeLinkParams(linkParam.getKey());
         }
 
-        this.linkAttributes.put(linkAttribute.getKey(), linkAttribute);
+        this.linkParams.put(linkParam.getKeyName(), linkParam);
     }
 
     @Override
-    public boolean removeLinkAttribute(String attributeKey) {
-        return !this.linkAttributes.removeAll(attributeKey).isEmpty();
+    public boolean removeLinkParams(LinkParam.Key key) {
+        this.linkParams.remove(key.getKeyName());
+        return (this.linkParams.get(key.getKeyName()) == null);
     }
 
     @Override
-    public boolean hasLinkAttribute(LinkAttribute linkAttribute) {
-        return this.linkAttributes.get(linkAttribute.getKey()).contains(linkAttribute);
+    public boolean hasLinkAttribute(LinkParam.Key key, String value) {
+        LinkParam linkParam = this.linkParams.get(key.getKeyName());
+        if(linkParam == null) {
+            return false;
+        } else if (linkParam.getValueType() == LinkParam.ValueType.EMPTY && value == null){
+            return true;
+        } else {
+            return linkParam.contains(value);
+        }
     }
 
     @Override
-    public Collection<LinkAttribute> getLinkAttributes() {
-        return this.linkAttributes.values();
+    public Collection<LinkParam> getLinkParams() {
+        return this.linkParams.values();
     }
 
 

@@ -72,7 +72,7 @@ public class LinkValueList {
     // instance related fields and methods
     //******************************************************************************************
 
-    private List<LinkValue> linkValues;
+    private ArrayList<LinkValue> linkValues;
 
     private LinkValueList() {
         this.linkValues = new ArrayList<>();
@@ -83,7 +83,7 @@ public class LinkValueList {
      * @param linkValues the {@link LinkValue}s to be contained in the {@link LinkValueList} to be created
      */
     public LinkValueList(LinkValue... linkValues) {
-        this.linkValues = Arrays.asList(linkValues);
+        this.linkValues = new ArrayList<>(Arrays.asList(linkValues));
     }
 
     /**
@@ -92,6 +92,16 @@ public class LinkValueList {
      */
     public void addLinkValue(LinkValue linkValue) {
         this.linkValues.add(linkValue);
+    }
+
+
+    public void removeLinkValue(String uriReference) {
+        for(LinkValue linkValue : this.linkValues) {
+            if (linkValue.getUriReference().equals(uriReference)) {
+                this.linkValues.remove(linkValue);
+                return;
+            }
+        }
     }
 
     /**
@@ -111,15 +121,15 @@ public class LinkValueList {
      * Returns the URI references that match the given criterion, i.e. contain a {@link LinkParam} with the given
      * pair of keyname and value.
      *
-     * @param keyName the keyname to match
+     * @param key the {@link LinkParam.Key} to match
      * @param value the value to match
      *
      * @return the URI references that match the given criterion
      */
-    public Set<String> getUriReferences(String keyName, String value) {
+    public Set<String> getUriReferences(LinkParam.Key key, String value) {
         Set<String> result = new HashSet<>();
         for (LinkValue linkValue : linkValues) {
-            if (linkValue.containsLinkParam(keyName, value)) {
+            if (linkValue.containsLinkParam(key, value)) {
                 result.add(linkValue.getUriReference());
             }
         }
@@ -133,7 +143,7 @@ public class LinkValueList {
      *
      * @return the {@link LinkParam}s for the given URI reference
      */
-    public List<LinkParam> getLinkParams(String uriReference) {
+    public Collection<LinkParam> getLinkParams(String uriReference) {
         List<LinkParam> result = new ArrayList<>();
         for (LinkValue linkValue : this.linkValues) {
             if (linkValue.getUriReference().equals(uriReference)) {
@@ -141,6 +151,17 @@ public class LinkValueList {
             }
         }
         return null;
+    }
+
+    public LinkValueList filter(LinkParam.Key key, String value) {
+        LinkValueList result = new LinkValueList();
+        for (LinkValue linkValue : this.linkValues) {
+            if (linkValue.containsLinkParam(key, value)) {
+                result.addLinkValue(linkValue);
+                continue;
+            }
+        }
+        return result;
     }
 
     /**
@@ -153,7 +174,9 @@ public class LinkValueList {
             builder.append(linkValue.toString());
             builder.append(",");
         }
-        builder.deleteCharAt(builder.length() - 1);
+        if (builder.length() > 0) {
+            builder.deleteCharAt(builder.length() - 1);
+        }
         return builder.toString();
     }
 

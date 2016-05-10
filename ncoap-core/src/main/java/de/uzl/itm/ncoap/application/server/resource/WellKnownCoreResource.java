@@ -26,8 +26,9 @@ package de.uzl.itm.ncoap.application.server.resource;
 
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
-import de.uzl.itm.ncoap.application.linkformat.EmptyLinkAttribute;
-import de.uzl.itm.ncoap.application.linkformat.LinkAttribute;
+import de.uzl.itm.ncoap.application.linkformat.LinkParam;
+import de.uzl.itm.ncoap.application.linkformat.LinkValue;
+import de.uzl.itm.ncoap.application.linkformat.LinkValueList;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
@@ -38,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static de.uzl.itm.ncoap.message.MessageCode.*;
@@ -48,7 +48,9 @@ import static de.uzl.itm.ncoap.message.MessageCode.*;
 *
 * @author Oliver Kleine
 */
-public final class WellKnownCoreResource extends ObservableWebresource<Map<String, Webresource>> {
+public final class WellKnownCoreResource extends ObservableWebresource<LinkValueList> {
+
+    public static final String URI_PATH = "/.well-known/core";
 
     private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
 
@@ -58,7 +60,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
      * Creates the well-known/core resource at path /.well-known/core as defined in the CoAP draft
      * @param initialStatus the {@link java.util.Map} containing all available path
      */
-    public WellKnownCoreResource(Map<String, Webresource> initialStatus, ScheduledExecutorService executor) {
+    public WellKnownCoreResource(LinkValueList initialStatus, ScheduledExecutorService executor) {
         super("/.well-known/core", initialStatus, 0, executor);
     }
 
@@ -99,9 +101,16 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
 
     private void processCoapGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest) {
         try{
-            LinkAttribute filterAttribute = LinkAttribute.createFromUriQuery(coapRequest.getUriQuery());
+            String query = coapRequest.getUriQuery();
+            LinkParam linkParam = "".equals(query) ? null : LinkParam.decode(query);
+
             CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
-            byte[] content = getSerializedResourceStatus(filterAttribute);
+            byte[] content;
+            if (linkParam == null ) {
+                content = getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT);
+            } else {
+                content = getSerializedResourceStatus(linkParam);
+            }
             coapResponse.setContent(content, ContentFormat.APP_LINK_FORMAT);
             coapResponse.setEtag(this.etag);
             responseFuture.set(coapResponse);
@@ -143,36 +152,40 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
 //    }
 
 
-    @SuppressWarnings("unchecked")
-    public byte[] getSerializedResourceStatus(LinkAttribute attribute) {
+    public byte[] getSerializedResourceStatus(LinkParam filter) {
         StringBuilder buffer = new StringBuilder();
-
-        for(Webresource webresource : getResourceStatus().values()) {
-
-            if (attribute != null && !webresource.hasLinkAttribute(attribute))
-                continue;
-
-            buffer.append("<").append(webresource.getUriPath()).append(">");
-
-            String previousKey = null;
-            for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webresource.getLinkAttributes()) {
-                buffer.append(linkAttribute.getKey().equals(previousKey) ? "" : ";" + linkAttribute.getKey());
-
-                if (!(linkAttribute instanceof EmptyLinkAttribute)) {
-
-                    buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : "=")
-                          .append(linkAttribute.getValue());
-                }
-
-
-                previousKey = linkAttribute.getKey();
-            }
-
-            buffer.append(",\n");
+        if (filter == null) {
+            buffer.append(this.getResourceStatus().encode());
+        } else {
+            buffer.append(this.getResourceStatus().filter(filter.getKey(), filter.getValue()).encode());
         }
-
-        if (buffer.length() > 3)
-            buffer.deleteCharAt(buffer.length() - 2);
+//        for(Webresource webresource : getResourceStatus().values()) {
+//
+//            if (filter != null && !webresource.hasLinkAttribute(filter.getKey(), filter.getValue())) {
+//                continue;
+//            }
+//
+//            buffer.append("<").append(webresource.getUriPath()).append(">");
+//            String previousKey = null;
+//
+//            for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webresource.getLinkParams()) {
+//                buffer.append(linkAttribute.getKey().equals(previousKey) ? "" : ";" + linkAttribute.getKey());
+//
+//                if (!(linkAttribute instanceof EmptyLinkAttribute)) {
+//
+//                    buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : "=")
+//                          .append(linkAttribute.getValue());
+//                }
+//
+//
+//                previousKey = linkAttribute.getKey();
+//            }
+//
+//            buffer.append(",\n");
+//        }
+//
+//        if (buffer.length() > 3)
+//            buffer.deleteCharAt(buffer.length() - 2);
 
         log.debug("Content: \n{}", buffer.toString());
 
@@ -181,25 +194,36 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
     }
 
 
+    /**
+     * <p>Returns the serialized resource status in {@link ContentFormat#APP_LINK_FORMAT}</p>
+     *
+     * <p><b>Note:</b> The contentFormat parameter is ignored!</p>
+     * @param contentFormat the number indicating the desired format of the returned content, see
+     *                      {@link de.uzl.itm.ncoap.message.options.ContentFormat} for some pre-defined
+     *                      constants.
+     *
+     * @return the serialized resource status in {@link ContentFormat#APP_LINK_FORMAT}
+     */
     @Override
     @SuppressWarnings("unchecked")
     public byte[] getSerializedResourceStatus(long contentFormat) {
         StringBuilder buffer = new StringBuilder();
+        buffer.append(this.getResourceStatus().encode());
 
-        for(Webresource webresource : getResourceStatus().values()) {
-            buffer.append("<").append(webresource.getUriPath()).append(">");
-
-            String previousKey = null;
-            for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webresource.getLinkAttributes()) {
-                buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : ";")
-                        .append(linkAttribute.getValue());
-
-                previousKey = linkAttribute.getKey();
-            }
-        }
-
-        if (buffer.length() > 3)
-            buffer.deleteCharAt(buffer.length() - 2);
+//        for(Webresource webresource : getResourceStatus().values()) {
+//            buffer.append("<").append(webresource.getUriPath()).append(">");
+//
+//            String previousKey = null;
+//            for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webresource.getLinkParams()) {
+//                buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : ";")
+//                        .append(linkAttribute.getValue());
+//
+//                previousKey = linkAttribute.getKey();
+//            }
+//        }
+//
+//        if (buffer.length() > 3)
+//            buffer.deleteCharAt(buffer.length() - 2);
 
         log.debug("Content: \n{}", buffer.toString());
 
@@ -223,7 +247,16 @@ public final class WellKnownCoreResource extends ObservableWebresource<Map<Strin
     }
 
     @Override
-    public void updateEtag(Map<String, Webresource> resourceStatus) {
+    public void updateEtag(LinkValueList resourceStatus) {
         this.etag = Ints.toByteArray(Arrays.hashCode(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT)));
     }
+
+//    public void addWebresource(Webresource webresource) {
+//        LinkValueList linkValueList = this.getResourceStatus();
+//        linkValueList.addLinkValue(new LinkValue(webresource.getUriPath(), webresource.getLinkParams()));
+//    }
+//
+//    public void removeWebresource(String path) {
+//        this.getResourceStatus().removeLinkValue(path);
+//    }
 }

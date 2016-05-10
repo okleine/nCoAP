@@ -24,12 +24,14 @@
  */
 package de.uzl.itm.ncoap.examples.server;
 
+import static de.uzl.itm.ncoap.application.linkformat.LinkParam.Key.*;
+import static de.uzl.itm.ncoap.message.options.ContentFormat.*;
+
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
+import de.uzl.itm.ncoap.application.linkformat.LinkParam;
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
-import de.uzl.itm.ncoap.application.linkformat.LongLinkAttribute;
-import de.uzl.itm.ncoap.application.linkformat.StringLinkAttribute;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -39,8 +41,6 @@ import org.apache.log4j.Logger;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +54,8 @@ import java.util.concurrent.TimeUnit;
 public class SimpleObservableTimeService extends ObservableWebresource<Long> {
 
     public static long DEFAULT_CONTENT_FORMAT = ContentFormat.TEXT_PLAIN_UTF8;
-    private static Logger log = Logger.getLogger(SimpleObservableTimeService.class.getName());
+
+    private static Logger LOG = Logger.getLogger(SimpleObservableTimeService.class.getName());
 
     private static HashMap<Long, String> payloadTemplates = new HashMap<>();
     static{
@@ -88,18 +89,23 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
         schedulePeriodicResourceUpdate();
 
         //Sets the link attributes for supported content types ('ct')
-        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.TEXT_PLAIN_UTF8));
-        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.CONTENT_TYPE, ContentFormat.APP_XML));
+        String ctValue = "\"" + TEXT_PLAIN_UTF8 + " " + APP_XML + "\"";
+        this.setLinkParam(LinkParam.createLinkParam(CT, ctValue));
+
+        //Sets the link attribute to give the resource a title
+        String title = "\"UTC time (updated every " + updateInterval + " seconds)\"";
+        this.setLinkParam(LinkParam.createLinkParam(TITLE, title));
 
         //Sets the link attribute for the resource type ('rt')
-        String attributeValue = "The actual UTC time (updated every " + updateInterval + " millis)";
-        this.setLinkAttribute(new StringLinkAttribute(StringLinkAttribute.RESOURCE_TYPE, attributeValue));
+        String rtValue = "\"time\"";
+        this.setLinkParam(LinkParam.createLinkParam(RT, rtValue));
 
         //Sets the link attribute for max-size estimation ('sz')
-        this.setLinkAttribute(new LongLinkAttribute(LongLinkAttribute.MAX_SIZE_ESTIMATE, 100L));
+        this.setLinkParam(LinkParam.createLinkParam(SZ, "" + 100L));
 
         //Sets the link attribute for interface description ('if')
-        this.setLinkAttribute(new StringLinkAttribute(StringLinkAttribute.INTERFACE, "CoAP GET"));
+        String ifValue = "\"GET only\"";
+        this.setLinkParam(LinkParam.createLinkParam(IF, ifValue));
     }
 
 
@@ -128,9 +134,9 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
             public void run() {
                 try{
                     setResourceStatus(System.currentTimeMillis(), updateInterval);
-                    log.info("New status of resource " + getUriPath() + ": " + getResourceStatus());
+                    LOG.info("New status of resource " + getUriPath() + ": " + getResourceStatus());
                 } catch(Exception ex) {
-                    log.error("Exception while updating actual time...", ex);
+                    LOG.error("Exception while updating actual time...", ex);
                 }
             }
         }, updateInterval, updateInterval, TimeUnit.SECONDS);
@@ -224,15 +230,15 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
     @Override
     public void shutdown() {
         // cancel the periodic update task
-        log.info("Shutdown service " + getUriPath() + ".");
+        LOG.info("Shutdown service " + getUriPath() + ".");
         boolean futureCanceled = this.periodicUpdateFuture.cancel(true);
-        log.info("Future canceled: " + futureCanceled);
+        LOG.info("Future canceled: " + futureCanceled);
     }
 
 
     @Override
     public byte[] getSerializedResourceStatus(long contentFormat) {
-        log.debug("Try to create payload (content format: " + contentFormat + ")");
+        LOG.debug("Try to create payload (content format: " + contentFormat + ")");
 
         String template = payloadTemplates.get(contentFormat);
         if (template == null) {

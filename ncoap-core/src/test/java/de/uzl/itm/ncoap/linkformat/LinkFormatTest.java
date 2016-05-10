@@ -67,25 +67,25 @@ public class LinkFormatTest extends AbstractCoapTest {
 
     @Test
     public void testContentType0() {
-        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT.getKeyName(), "0");
+        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT, "0");
         assertEquals("Wrong number of URI references found", 2, result.size());
     }
 
     @Test
     public void testContentType40() {
-        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT.getKeyName(), "40");
+        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT, "40");
         assertEquals("Wrong number of URI references found", 1, result.size());
     }
 
     @Test
     public void testContentType41() {
-        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT.getKeyName(), "41");
+        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT, "41");
         assertEquals("Wrong number of URI references found", 1, result.size());
     }
 
     @Test
     public void testContentType0_41() {
-        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT.getKeyName(), "0 41");
+        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT, "0 41");
         assertEquals("Wrong number of URI references found", 0, result.size());
     }
 }
