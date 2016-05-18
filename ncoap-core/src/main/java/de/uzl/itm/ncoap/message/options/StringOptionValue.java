@@ -130,12 +130,13 @@ public class StringOptionValue extends OptionValue<String> {
 
         int i;
 
-        do{
+        do {
             i = in.read();
 
             //-1 indicates end of stream
-            if (i == -1)
+            if (i == -1) {
                 break;
+            }
 
             //0x25 = '%'
             if (i == 0x25) {
@@ -151,8 +152,7 @@ public class StringOptionValue extends OptionValue<String> {
 
                 //Write decoded value to output stream (e.g. sequence [0x02, 0x00] results into byte 0x20
                 out.write((d1 << 4) | d2);
-            }
-            else{
+            } else {
                 out.write(i);
             }
 

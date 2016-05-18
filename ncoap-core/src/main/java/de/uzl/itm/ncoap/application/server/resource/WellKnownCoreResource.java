@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static de.uzl.itm.ncoap.message.MessageCode.*;
@@ -48,7 +49,7 @@ import static de.uzl.itm.ncoap.message.MessageCode.*;
 *
 * @author Oliver Kleine
 */
-public final class WellKnownCoreResource extends ObservableWebresource<LinkValueList> {
+public final class WellKnownCoreResource extends ObservableWebresource<Collection<Webresource>> {
 
     public static final String URI_PATH = "/.well-known/core";
 
@@ -60,8 +61,11 @@ public final class WellKnownCoreResource extends ObservableWebresource<LinkValue
      * Creates the well-known/core resource at path /.well-known/core as defined in the CoAP draft
      * @param initialStatus the {@link java.util.Map} containing all available path
      */
-    public WellKnownCoreResource(LinkValueList initialStatus, ScheduledExecutorService executor) {
-        super("/.well-known/core", initialStatus, 0, executor);
+    public WellKnownCoreResource(Collection<Webresource> initialStatus, ScheduledExecutorService executor) {
+        super(URI_PATH, initialStatus, 0, executor);
+
+        // set content format "40" as link param
+        this.setLinkParam(LinkParam.createLinkParam(LinkParam.Key.CT, "40"));
     }
 
     /**
@@ -109,7 +113,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<LinkValue
             if (linkParam == null ) {
                 content = getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT);
             } else {
-                content = getSerializedResourceStatus(linkParam);
+                content = getFilteredSerializedResourceStatus(linkParam);
             }
             coapResponse.setContent(content, ContentFormat.APP_LINK_FORMAT);
             coapResponse.setEtag(this.etag);
@@ -123,74 +127,23 @@ public final class WellKnownCoreResource extends ObservableWebresource<LinkValue
     }
 
 
-//    private LinkAttribute createLinkAttributeFromQuery(String queryParameter) throws IllegalArgumentException {
-//
-//        if (!queryParameter.equals("")) {
-//            String[] param = queryParameter.split("=");
-//
-//            if (param.length != 2) {
-//                throw new IllegalArgumentException("Could not parse query " + queryParameter);
-//            }
-//
-//            LinkAttribute linkAttribute;
-//            LinkAttribute.Type attributeType = LinkAttribute.getAttributeType(param[0]);
-//
-//            if (STRING.equals(attributeType)) {
-//                linkAttribute = new StringLinkAttribute(param[0], param[1]);
-//            } else if (LONG.equals(attributeType)) {
-//                linkAttribute = new LongLinkAttribute(param[0], Long.parseLong(param[1]));
-//            } else if (EMPTY.equals(attributeType)) {
-//                linkAttribute = new EmptyLinkAttribute(param[0]);
-//            } else {
-//                throw new IllegalArgumentException("This should never happen!");
-//            }
-//
-//            return linkAttribute;
-//        }
-//
-//        return null;
-//    }
+    private byte[] getFilteredSerializedResourceStatus(LinkParam filter) {
+        LinkValueList linkValueList = new LinkValueList();
+        for (Webresource webresource : this.getResourceStatus()) {
+            LinkValue linkValue = new LinkValue(webresource.getUriPath(), webresource.getLinkParams());
+            linkValueList.addLinkValue(linkValue);
+        }
 
-
-    public byte[] getSerializedResourceStatus(LinkParam filter) {
         StringBuilder buffer = new StringBuilder();
         if (filter == null) {
-            buffer.append(this.getResourceStatus().encode());
+            buffer.append(linkValueList.encode());
         } else {
-            buffer.append(this.getResourceStatus().filter(filter.getKey(), filter.getValue()).encode());
+            buffer.append(linkValueList.filter(filter.getKey(), filter.getValue()).encode());
         }
-//        for(Webresource webresource : getResourceStatus().values()) {
-//
-//            if (filter != null && !webresource.hasLinkAttribute(filter.getKey(), filter.getValue())) {
-//                continue;
-//            }
-//
-//            buffer.append("<").append(webresource.getUriPath()).append(">");
-//            String previousKey = null;
-//
-//            for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webresource.getLinkParams()) {
-//                buffer.append(linkAttribute.getKey().equals(previousKey) ? "" : ";" + linkAttribute.getKey());
-//
-//                if (!(linkAttribute instanceof EmptyLinkAttribute)) {
-//
-//                    buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : "=")
-//                          .append(linkAttribute.getValue());
-//                }
-//
-//
-//                previousKey = linkAttribute.getKey();
-//            }
-//
-//            buffer.append(",\n");
-//        }
-//
-//        if (buffer.length() > 3)
-//            buffer.deleteCharAt(buffer.length() - 2);
 
         log.debug("Content: \n{}", buffer.toString());
 
         return buffer.toString().getBytes(CoapMessage.CHARSET);
-
     }
 
 
@@ -204,30 +157,9 @@ public final class WellKnownCoreResource extends ObservableWebresource<LinkValue
      *
      * @return the serialized resource status in {@link ContentFormat#APP_LINK_FORMAT}
      */
-    @Override
     @SuppressWarnings("unchecked")
     public byte[] getSerializedResourceStatus(long contentFormat) {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append(this.getResourceStatus().encode());
-
-//        for(Webresource webresource : getResourceStatus().values()) {
-//            buffer.append("<").append(webresource.getUriPath()).append(">");
-//
-//            String previousKey = null;
-//            for (LinkAttribute linkAttribute : (Iterable<LinkAttribute>) webresource.getLinkParams()) {
-//                buffer.append(linkAttribute.getKey().equals(previousKey) ? " " : ";")
-//                        .append(linkAttribute.getValue());
-//
-//                previousKey = linkAttribute.getKey();
-//            }
-//        }
-//
-//        if (buffer.length() > 3)
-//            buffer.deleteCharAt(buffer.length() - 2);
-
-        log.debug("Content: \n{}", buffer.toString());
-
-        return buffer.toString().getBytes(CoapMessage.CHARSET);
+        return this.getFilteredSerializedResourceStatus(null);
     }
 
 
@@ -247,16 +179,8 @@ public final class WellKnownCoreResource extends ObservableWebresource<LinkValue
     }
 
     @Override
-    public void updateEtag(LinkValueList resourceStatus) {
+    public void updateEtag(Collection<Webresource> resourceStatus) {
         this.etag = Ints.toByteArray(Arrays.hashCode(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT)));
     }
 
-//    public void addWebresource(Webresource webresource) {
-//        LinkValueList linkValueList = this.getResourceStatus();
-//        linkValueList.addLinkValue(new LinkValue(webresource.getUriPath(), webresource.getLinkParams()));
-//    }
-//
-//    public void removeWebresource(String path) {
-//        this.getResourceStatus().removeLinkValue(path);
-//    }
 }

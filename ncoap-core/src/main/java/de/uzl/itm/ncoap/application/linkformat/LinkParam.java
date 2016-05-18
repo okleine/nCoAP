@@ -24,6 +24,8 @@
  */
 package de.uzl.itm.ncoap.application.linkformat;
 
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.options.StringOptionValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -324,9 +326,12 @@ public class LinkParam {
      * @return an instance of {@link LinkParam} according to the given parameter
      */
     public static LinkParam decode(String linkParam) {
+        // remove percent encoding
+        byte[] tmp = StringOptionValue.convertToByteArrayWithoutPercentEncoding(linkParam);
+        linkParam = new String(tmp, CoapMessage.CHARSET);
+
         // determine the key of this link param
-        String keyName = !linkParam.contains("=") ? linkParam
-                : linkParam.substring(linkParam.indexOf("=") + 1, linkParam.length());
+        String keyName = !linkParam.contains("=") ? linkParam : linkParam.substring(0, linkParam.indexOf("="));
         LinkParam.Key key = LinkParam.getKey(keyName);
 
         if(key == null) {
@@ -350,17 +355,24 @@ public class LinkParam {
                 return null;
             } else {
                 LOG.debug("Value: {}, Type: {}", value, valueType);
-
-                // remove double quotes if necessary
-                if (valueType.isDoubleQuoted()) {
-                    value = value.substring(1, value.length() - 1);
-                }
-
                 return new LinkParam(key, valueType, value);
             }
         }
     }
 
+    /**
+     * <p>Creates a new instance of {@link LinkParam}</p>
+     *
+     * <p><b>Note:</b>For some kinds of link params the enclosing double quotes are part of the value (e.g. value "0 41"
+     * for {@link Key#CT} or "Some title" for {@link Key#TITLE}). Thus, the latter is created using
+     * <code>createLinkParam(Key.TITLE, "\"Some title\"")</code>
+     * </p>
+     *
+     * @param key the {@link Key} of the link param to be created
+     * @param value the value of the link param to be created (see note above)
+     *
+     * @return a new instance of {@link LinkParam} according to the given parameters (key and value)
+     */
     public static LinkParam createLinkParam(Key key, String value) {
         ValueType valueType = getValueType(key, value);
         if (valueType == null) {

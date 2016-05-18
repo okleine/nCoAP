@@ -55,14 +55,14 @@ public class LinkValueList {
      */
     public static LinkValueList decode(String linkValueList) {
         LinkValueList result = new LinkValueList();
-        List<String> linkValues = getLinkValues(linkValueList);
+        Collection<String> linkValues = getLinkValues(linkValueList);
         for(String linkValue : linkValues) {
             result.addLinkValue(LinkValue.decode(linkValue));
         }
         return result;
     }
 
-    private static List<String> getLinkValues(String linkValueList) {
+    private static Collection<String> getLinkValues(String linkValueList) {
         List<String> linkValues = new ArrayList<>();
         Collections.addAll(linkValues, linkValueList.split(","));
         return linkValues;
@@ -72,10 +72,15 @@ public class LinkValueList {
     // instance related fields and methods
     //******************************************************************************************
 
-    private ArrayList<LinkValue> linkValues;
+    private Collection<LinkValue> linkValues;
 
     private LinkValueList() {
-        this.linkValues = new ArrayList<>();
+        this.linkValues = new TreeSet<>(new Comparator<LinkValue>() {
+            @Override
+            public int compare(LinkValue linkValue1, LinkValue linkValue2) {
+                return linkValue1.getUriReference().compareTo(linkValue2.getUriReference());
+            }
+        });
     }
 
     /**
@@ -94,15 +99,6 @@ public class LinkValueList {
         this.linkValues.add(linkValue);
     }
 
-
-    public void removeLinkValue(String uriReference) {
-        for(LinkValue linkValue : this.linkValues) {
-            if (linkValue.getUriReference().equals(uriReference)) {
-                this.linkValues.remove(linkValue);
-                return;
-            }
-        }
-    }
 
     /**
      * Returns all URI references contained in this {@link LinkValueList}
@@ -158,12 +154,39 @@ public class LinkValueList {
         for (LinkValue linkValue : this.linkValues) {
             if (linkValue.containsLinkParam(key, value)) {
                 result.addLinkValue(linkValue);
-                continue;
             }
         }
         return result;
     }
 
+    public LinkValueList filter(String hrefValue) {
+        if (hrefValue.endsWith("*")) {
+            return filterByUriPrefix(hrefValue.substring(0, hrefValue.length() - 1));
+        } else {
+            return filterByUriReference(hrefValue);
+        }
+    }
+
+    private LinkValueList filterByUriPrefix(String prefix) {
+        LinkValueList result = new LinkValueList();
+        for (LinkValue linkValue : this.linkValues) {
+            if (linkValue.getUriReference().startsWith(prefix)) {
+                result.addLinkValue(linkValue);
+            }
+        }
+        return result;
+    }
+
+    private LinkValueList filterByUriReference(String uriReference) {
+        LinkValueList result = new LinkValueList();
+        for (LinkValue linkValue : this.linkValues) {
+            if (linkValue.getUriReference().endsWith(uriReference)) {
+                result.addLinkValue(linkValue);
+                return result;
+            }
+        }
+        return result;
+    }
     /**
      * Returns a string representation of this {@link LinkValueList}, i.e. the reversal of {@link #decode(String)}
      * @return a string representation of this {@link LinkValueList}, i.e. the reversal of {@link #decode(String)}

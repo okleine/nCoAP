@@ -110,12 +110,12 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
     }
 
     public void registerWellKnownCoreResource() {
-        LinkValueList linkValueList = new LinkValueList();
+        //LinkValueList linkValueList = new LinkValueList();
 //        for(Webresource webresource : this.registeredServices.values()) {
 //            Collection<LinkParam> linkParams = webresource.getLinkParams();
 //            linkValueList.addLinkValue(new LinkValue(webresource.getUriPath(), linkParams));
 //        }
-        registerWebresource(new WellKnownCoreResource(linkValueList, getExecutor()));
+        registerWebresource(new WellKnownCoreResource(this.registeredServices.values(), this.getExecutor()));
     }
 
 
@@ -252,15 +252,15 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         if (webresource != null) {
             LOG.info("Resource \"{}\" removed from server.", uriPath);
             webresource.shutdown();
-            WellKnownCoreResource wkcResource =
-                    ((WellKnownCoreResource) this.registeredServices.get(WellKnownCoreResource.URI_PATH));
-            if (wkcResource != null) {
-                LinkValueList linkValueList = LinkValueList.decode(new String(
-                        wkcResource.getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT), CoapMessage.CHARSET
-                ));
-                linkValueList.removeLinkValue(uriPath);
-                wkcResource.setResourceStatus(linkValueList, 0);
-            }
+//            WellKnownCoreResource wkcResource =
+//                    ((WellKnownCoreResource) this.registeredServices.get(WellKnownCoreResource.URI_PATH));
+//            if (wkcResource != null) {
+//                LinkValueList linkValueList = LinkValueList.decode(new String(
+//                        wkcResource.getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT), CoapMessage.CHARSET
+//                ));
+//                linkValueList.removeLinkValue(uriPath);
+//                wkcResource.setResourceStatus(linkValueList, 0);
+//            }
         } else {
             LOG.error("Resource \"{}\" could not be removed. Does not exist.", uriPath);
         }
@@ -294,10 +294,10 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
             handler.registerWebresource((ObservableWebresource) webresource);
         }
 
-        WellKnownCoreResource wkcResource =
-                (WellKnownCoreResource) this.registeredServices.get(WellKnownCoreResource.URI_PATH);
-        LinkValueList linkValueList = wkcResource.getResourceStatus();
-        linkValueList.addLinkValue(new LinkValue(webresource.getUriPath(), webresource.getLinkParams()));
+//        WellKnownCoreResource wkcResource =
+//                (WellKnownCoreResource) this.registeredServices.get(WellKnownCoreResource.URI_PATH);
+//        LinkValueList linkValueList = wkcResource.getResourceStatus();
+//        linkValueList.addLinkValue(new LinkValue(webresource.getUriPath(), webresource.getLinkParams()));
     }
 
 

@@ -33,6 +33,7 @@ import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Set;
 
 import static junit.framework.Assert.assertEquals;
@@ -43,9 +44,37 @@ import static junit.framework.Assert.assertEquals;
  */
 public class LinkFormatTest extends AbstractCoapTest {
 
+    private static String expected =
+            "</obs>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\"," +
+            "</obs-pumping>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\"," +
+            "</separate>;title=\"Resource which cannot be served immediately and which cannot be acknowledged in a piggy-backed way\"," +
+            "</large-create>;rt=\"block\";title=\"Large resource that can be created using POST method\"," +
+            "</seg1>;title=\"Long path resource\"," +
+            "</seg1/seg2>;title=\"Long path resource\"," +
+            "</seg1/seg2/seg3>;title=\"Long path resource\"," +
+            "</large-separate>;rt=\"block\";sz=1280;title=\"Large resource\"," +
+            "</obs-reset>," +
+            "</.well-known/core>," +
+            "</multi-format>;ct=\"0 41\";title=\"Resource that exists in different content formats (text/plain utf8 and application/xml)\"," +
+            "</path>;ct=40;title=\"Hierarchical link description entry\"," +
+            "</path/sub1>;title=\"Hierarchical link description sub-resource\"," +
+            "</path/sub2>;title=\"Hierarchical link description sub-resource\"," +
+            "</path/sub3>;title=\"Hierarchical link description sub-resource\"," +
+            "</link1>;if=\"If1\";rt=\"Type1 Type2\";title=\"Link test resource\"," +
+            "</link3>;if=\"foo\";rt=\"Type1 Type3\";title=\"Link test resource\"," +
+            "</link2>;if=\"If2\";rt=\"Type2 Type3\";title=\"Link test resource\"," +
+            "</obs-large>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\"," +
+            "</validate>;ct=0;sz=17;title=\"Resource which varies\"," +
+            "</test>;title=\"Default test resource\"," +
+            "</large>;rt=\"block\";sz=1280;title=\"Large resource\"," +
+            "</obs-pumping-non>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\"," +
+            "</query>;title=\"Resource accepting query parameters\"," +
+            "</large-post>;rt=\"block\";title=\"Handle POST with two-way blockwise transfer\"," +
+            "</location-query>;title=\"Perform POST transaction with responses containing several Location-Query options (CON mode)\"," +
+            "</obs-non>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\"," +
+            "</large-update>;rt=\"block\";sz=1280;title=\"Large resource that can be updated using PUT method\"," +
+            "</shutdown>";
 
-    private static String expected ="</obs>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\",</obs-pumping>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\",</separate>;title=\"Resource which cannot be served immediately and which cannot be acknowledged in a piggy-backed way\",</large-create>;rt=\"block\";title=\"Large resource that can be created using POST method\",</seg1>;title=\"Long path resource\",</seg1/seg2>;title=\"Long path resource\",</seg1/seg2/seg3>;title=\"Long path resource\",</large-separate>;rt=\"block\";sz=1280;title=\"Large resource\",</obs-reset>,</.well-known/core>,</multi-format>;ct=\"0 41\";title=\"Resource that exists in different content formats (text/plain utf8 and application/xml)\",</path>;ct=40;title=\"Hierarchical link description entry\",</path/sub1>;title=\"Hierarchical link description sub-resource\",</path/sub2>;title=\"Hierarchical link description sub-resource\",</path/sub3>;title=\"Hierarchical link description sub-resource\",</link1>;if=\"If1\";rt=\"Type1 Type2\";title=\"Link test resource\",</link3>;if=\"foo\";rt=\"Type1 Type3\";title=\"Link test resource\",</link2>;if=\"If2\";rt=\"Type2 Type3\";title=\"Link test resource\",</obs-large>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\",</validate>;ct=0;sz=17;title=\"Resource which varies\",</test>;title=\"Default test resource\",</large>;rt=\"block\";sz=1280;title=\"Large resource\",</obs-pumping-non>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\",</query>;title=\"Resource accepting query parameters\",</large-post>;rt=\"block\";title=\"Handle POST with two-way blockwise transfer\",</location-query>;title=\"Perform POST transaction with responses containing several Location-Query options (CON mode)\",</obs-non>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\",</large-update>;rt=\"block\";sz=1280;title=\"Large resource that can be updated using PUT method\",</shutdown>";
-    //private static String expected ="</obs>;obs;rt=\"observe\";title=\"Observable resource which changes every 5 seconds\"";
     private static LinkValueList linkValueList;
 
     @Before
@@ -61,8 +90,28 @@ public class LinkFormatTest extends AbstractCoapTest {
     }
 
     @Test
-    public void testEquality() {
-        assertEquals("Do not equal", expected, linkValueList.encode());
+    public void testFilterByUriReference() {
+        List<String> result = linkValueList.filter("/obs").getUriReferences();
+        assertEquals("Wrong number of URI references found", 1, result.size());
+    }
+
+    @Test
+    public void testFilterByUriPrefix() {
+        List<String> result = linkValueList.filter("/obs*").getUriReferences();
+        assertEquals("Wrong number of URI references found", 6, result.size());
+    }
+
+    @Test
+    public void testLinkValueListContains29URIs() {
+        List<String> result = linkValueList.getUriReferences();
+        assertEquals("Wrong number of URI references found", 29, result.size());
+    }
+
+    @Test
+    public void testTitleParam() {
+        String title = "Observable resource which changes every 5 seconds";
+        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.TITLE, title);
+        assertEquals("Wrong number of URI references found", 5, result.size());
     }
 
     @Test
@@ -88,4 +137,11 @@ public class LinkFormatTest extends AbstractCoapTest {
         Set<String> result = linkValueList.getUriReferences(LinkParam.Key.CT, "0 41");
         assertEquals("Wrong number of URI references found", 0, result.size());
     }
+
+    @Test
+    public void testFilterByEstimatedSize() {
+        Set<String> result = linkValueList.getUriReferences(LinkParam.Key.SZ, "1280");
+        assertEquals("Wrong number of URI references found", 3, result.size());
+    }
+
 }

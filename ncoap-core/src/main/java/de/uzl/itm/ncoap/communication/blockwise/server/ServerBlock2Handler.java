@@ -94,19 +94,26 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         ServerBlock2Helper helper = this.getBlock2Helper(remoteSocket, coapRequest.getToken());
 
         if (helper == null && coapRequest.getBlock2Number() > 0) {
-             writePreconditionFailedResponse(coapRequest, remoteSocket);
+            writePreconditionFailedResponse(coapRequest, remoteSocket);
             return false;
         } else if (helper != null && coapRequest.getBlock2Number() > 0) {
+
             // determine next BLOCK 2 number according to (possibly changed) BLOCK 2 SZX
             long block2Num;
+            long block2Szx;
             if (helper.getBlock2Szx() == BlockSize.UNDEFINED || helper.getBlock2Szx() == coapRequest.getBlock2Szx()) {
-                block2Num =  coapRequest.getBlock2Number();
+                block2Num = coapRequest.getBlock2Number();
+                block2Szx = coapRequest.getBlock2Szx();
             } else {
                 BlockSize oldSize = BlockSize.getBlockSize(helper.getBlock2Szx());
                 BlockSize newSize = BlockSize.getBlockSize(coapRequest.getBlock2Szx());
+                if (newSize.getSize() > oldSize.getSize()) {
+                    // this is for "buggy" clients that try to request a larger block size than previously negotiated
+                    newSize = oldSize;
+                }
                 block2Num = oldSize.getSize() * coapRequest.getBlock2Number() / newSize.getSize();
+                block2Szx = newSize.getSzx();
             }
-            long block2Szx = coapRequest.getBlock2Szx();
 
             // send response with next representation portion
             int messageID = coapRequest.getMessageID();

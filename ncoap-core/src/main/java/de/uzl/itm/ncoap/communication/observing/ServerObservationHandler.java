@@ -25,6 +25,7 @@
 package de.uzl.itm.ncoap.communication.observing;
 
 import com.google.common.collect.HashBasedTable;
+import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
@@ -51,7 +52,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Created by olli on 04.09.15.
+ * The {@link ServerObservationHandler} is responsible to maintain the list of registered clients observing any
+ * of the {@link ObservableWebresource}s available on this {@link CoapServer} instance.
+ *
+ * @author Oliver Kleine
  */
 public class ServerObservationHandler extends AbstractCoapChannelHandler implements Observer,
         ResetReceivedEvent.Handler, ObserverAcceptedEvent.Handler, RemoteClientSocketChangedEvent.Handler,
@@ -61,19 +65,19 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
     private HashBasedTable<InetSocketAddress, Token, ObservationParams> observations1;
     private HashBasedTable<ObservableWebresource, InetSocketAddress, Token> observations2;
-    //private HashMap<ObservableWebresource, Observation> observations2;
-    //private HashBasedTable<InetSocketAddress, Token, Observation> observations3;
 
     private ReentrantReadWriteLock lock;
 
-
+    /**
+     * Creates a new instance of {@link ServerObservationHandler}
+     *
+     * @param executor the {@link ScheduledExecutorService} to handle internal tasks such as sending update
+     *                 notifications
+     */
     public ServerObservationHandler(ScheduledExecutorService executor) {
         super(executor);
         this.observations1 = HashBasedTable.create();
         this.observations2 = HashBasedTable.create();
-//        this.observations3 = HashBasedTable.create();
-
-        //this.contentFormats = HashBasedTable.create();
 
         this.lock = new ReentrantReadWriteLock();
     }
@@ -105,7 +109,10 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
     @Override
     public void handleEvent(ResetReceivedEvent event) {
-        stopObservation(event.getRemoteSocket(), event.getToken());
+        if (stopObservation(event.getRemoteSocket(), event.getToken()) != null) {
+            LOG.info("Observation stopped due to RST message from \"{}\" (Token: {})!", event.getRemoteSocket(),
+                    event.getToken());
+        }
     }
 
 
@@ -124,7 +131,11 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
     @Override
     public void handleEvent(RemoteClientSocketChangedEvent event) {
-        // TODO
+        if (this.updateObserverSocket(event.getPreviousRemoteSocket(), event.getRemoteSocket(), event.getToken())) {
+            LOG.info("Updated observer socket (Old: \"{}\", New: \"{}\", Token: {})", new Object[]{
+               event.getPreviousRemoteSocket(), event.getRemoteSocket(), event.getToken()
+            });
+        }
     }
 
 
@@ -176,6 +187,26 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
         }
     }
 
+
+    private boolean updateObserverSocket(InetSocketAddress previousRemoteSocket, InetSocketAddress newRemoteSocket,
+                                      Token token) {
+
+        try {
+            this.lock.writeLock().lock();
+            ObservationParams params = this.observations1.remove(previousRemoteSocket, token);
+            if (params == null) {
+                return false;
+            } else {
+                this.observations2.remove(params.getWebresource(), previousRemoteSocket);
+                this.startObservation(newRemoteSocket, token, params.getWebresource(), params.getContentFormat(),
+                        params.getBlock2Size());
+                return true;
+            }
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+
+    }
 
     @Override
     public void update(Observable observable, Object type) {
@@ -357,7 +388,6 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
 
                 ChannelFuture future = Channels.future(getContext().getChannel());
                 sendCoapMessage(updateNotification, remoteSocket, future);
-                //Channels.write(getContext(), future, updateNotification, remoteSocket);
 
                 future.addListener(new ChannelFutureListener() {
                     @Override

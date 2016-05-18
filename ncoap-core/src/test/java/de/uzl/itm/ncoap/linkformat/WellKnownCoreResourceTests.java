@@ -2,6 +2,7 @@ package de.uzl.itm.ncoap.linkformat;
 
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.application.client.CoapClient;
+import de.uzl.itm.ncoap.application.linkformat.LinkParam;
 import de.uzl.itm.ncoap.application.linkformat.LinkValueList;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.application.server.resource.Webresource;
@@ -40,10 +41,14 @@ public class WellKnownCoreResourceTests extends AbstractCoapCommunicationTest {
         webresources[2] = new ObservableTestWebresource("/res3", 3, 60, 0, server.getExecutor());
 
         client = new CoapClient();
-        wkcCallbacks = new WkcCallback[3];
+        wkcCallbacks = new WkcCallback[7];
         wkcCallbacks[0] = new WkcCallback();
         wkcCallbacks[1] = new WkcCallback();
         wkcCallbacks[2] = new WkcCallback();
+        wkcCallbacks[3] = new WkcCallback();
+        wkcCallbacks[4] = new WkcCallback();
+        wkcCallbacks[5] = new WkcCallback();
+        wkcCallbacks[6] = new WkcCallback();
         wkcUri = new URI("coap", "localhost", "/.well-known/core", null);
     }
 
@@ -60,12 +65,22 @@ public class WellKnownCoreResourceTests extends AbstractCoapCommunicationTest {
             Thread.sleep(500);
         }
 
+        {
+            webresources[2].setLinkParam(LinkParam.createLinkParam(LinkParam.Key.CT, "30"));
+            Thread.sleep(500);
+
+            CoapRequest coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, wkcUri);
+            client.sendCoapRequest(coapRequest, serverSocket, wkcCallbacks[3]);
+            Thread.sleep(500);
+        }
+
+
         for (int i = 0; i < 3; i++) {
             server.shutdownWebresource(webresources[i].getUriPath());
             Thread.sleep(500);
 
             CoapRequest coapRequest = new CoapRequest(MessageType.CON, MessageCode.GET, wkcUri);
-            client.sendCoapRequest(coapRequest, serverSocket, wkcCallbacks[i]);
+            client.sendCoapRequest(coapRequest, serverSocket, wkcCallbacks[i+2]);
             Thread.sleep(500);
         }
 
@@ -88,6 +103,26 @@ public class WellKnownCoreResourceTests extends AbstractCoapCommunicationTest {
 
     @Test
     public void testFirstResponseContainsTwoResources() {
+        assertEquals("Wrong number of resources", 2, wkcCallbacks[0].getNumberOfResources());
+    }
+
+    @Test
+    public void testSecondResponseContainsThreeResources() {
+        assertEquals("Wrong number of resources", 3, wkcCallbacks[1].getNumberOfResources());
+    }
+
+    @Test
+    public void testThirdResponseContainsFourResources() {
+        assertEquals("Wrong number of resources", 4, wkcCallbacks[2].getNumberOfResources());
+    }
+
+    @Test
+    public void testFourthResponseContainsThreeResources() {
+        assertEquals("Wrong number of resources", 3, wkcCallbacks[3].getNumberOfResources());
+    }
+
+    @Test
+    public void testFifthResponseContainsTwoResources() {
         assertEquals("Wrong number of resources", 2, wkcCallbacks[0].getNumberOfResources());
     }
 

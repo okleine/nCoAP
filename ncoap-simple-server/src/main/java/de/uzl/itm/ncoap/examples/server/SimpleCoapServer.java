@@ -29,16 +29,42 @@ import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.options.OptionValue;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 /**
- * This is a simple application to showcase ho to use nCoAP for servers
+ * This is a simple application to showcase how to use nCoAP for servers
  *
  * @author Oliver Kleine
  */
 public class SimpleCoapServer extends CoapServer {
 
+    private void registerSimpleNotObservableWebresource() {
+        // create initial status (one string per paragraph)
+        String[] status = new String[10];
+        for (int i = 0; i < status.length; i++) {
+            status[i] = "This is paragraph #" + (i + 1);
+        }
+
+        // register resource at server
+        this.registerWebresource(new SimpleNotObservableWebresource(
+                "/simple", status, OptionValue.MAX_AGE_MAX, this.getExecutor()
+        ));
+    }
+
+    private void registerSimpleObservableTimeResource() {
+        // register resource at server
+        this.registerWebresource(new SimpleObservableTimeService("/utc-time", 5, this.getExecutor()));
+    }
+
+    /**
+     * Creates a new instance of {@link SimpleCoapServer}
+     * @param block1Size the preferred, i.e. max. {@link BlockSize} for requests
+     * @param block2Size the preferred, i.e. max {@link BlockSize} for responses
+     */
     public SimpleCoapServer(BlockSize block1Size, BlockSize block2Size) {
         super(block1Size, block2Size);
     }
+
     /**
      * Starts a {@link CoapServer} instance with two {@link de.uzl.itm.ncoap.application.server.resource.Webresource}
      * instances where one is observable and the other one is not.
@@ -47,21 +73,12 @@ public class SimpleCoapServer extends CoapServer {
      * @throws Exception if some unexpected error occurred
      */
     public static void main(String[] args) throws Exception {
+        // configure logging
         LoggingConfiguration.configureDefaultLogging();
 
-        SimpleCoapServer server = new SimpleCoapServer(BlockSize.SIZE_16, BlockSize.SIZE_1024);
-
-        String[] status = new String[10];
-        for (int i = 0; i < status.length; i++) {
-            status[i] = "This is paragraph #" + (i + 1);
-        }
-
-        SimpleNotObservableWebresource simpleWebresource =
-                new SimpleNotObservableWebresource("/simple", status, OptionValue.MAX_AGE_MAX, server.getExecutor());
-        server.registerWebresource(simpleWebresource);
-
-        SimpleObservableTimeService timeResource = new SimpleObservableTimeService("/utc-time", 5,
-                server.getExecutor());
-        server.registerWebresource(timeResource);
+        // create server and register resources
+        SimpleCoapServer server = new SimpleCoapServer(BlockSize.SIZE_16, BlockSize.SIZE_16);
+        server.registerSimpleNotObservableWebresource();
+        server.registerSimpleObservableTimeResource();
     }
 }
