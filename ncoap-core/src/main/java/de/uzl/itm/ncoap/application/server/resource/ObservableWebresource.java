@@ -191,13 +191,10 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
                     setChanged();
                     notifyObservers(UPDATE);
-                }
-                catch(Exception ex) {
+                } catch(Exception ex) {
                     log.error("Exception while setting new resource status for \"{}\"!",
                             ObservableWebresource.this.getUriPath(), ex);
-                }
-
-                finally {
+                } finally {
                     statusLock.writeLock().unlock();
                 }
             }
@@ -226,19 +223,18 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * resource status could not be serialized to the desired content format.
      */
     public final WrappedResourceStatus getWrappedResourceStatus(long contentFormat) {
-        try{
+        try {
             this.statusLock.readLock().lock();
 
             byte[] serializedResourceStatus = getSerializedResourceStatus(contentFormat);
 
-            if (serializedResourceStatus == null)
+            if (serializedResourceStatus == null) {
                 return null;
-
-            else
-                return new WrappedResourceStatus(serializedResourceStatus, contentFormat,
-                        this.getEtag(contentFormat), this.getMaxAge());
-        }
-        finally {
+            } else {
+                byte[] etag = this.getEtag(contentFormat);
+                return new WrappedResourceStatus(serializedResourceStatus, contentFormat, etag, this.getMaxAge());
+            }
+        } finally {
             this.statusLock.readLock().unlock();
         }
     }
@@ -271,7 +267,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      */
     @Override
     public final WrappedResourceStatus getWrappedResourceStatus(Set<Long> contentFormats) {
-        try{
+        try {
             this.statusLock.readLock().lock();
 
             WrappedResourceStatus result = null;
@@ -284,8 +280,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
             }
 
             return result;
-        }
-        finally {
+        } finally {
             this.statusLock.readLock().unlock();
         }
     }

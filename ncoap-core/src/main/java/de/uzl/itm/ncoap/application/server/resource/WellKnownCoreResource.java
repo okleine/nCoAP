@@ -44,16 +44,29 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import static de.uzl.itm.ncoap.message.MessageCode.*;
 /**
-* The .well-known/core resource is a standard webresource to be provided by every CoAP webserver as defined in
-* the CoAP protocol draft. It provides a list of all available services on the server in CoRE Link Format.
+* <p>The .well-known/core resource is a standard webresource to be provided by every CoAP webserver as defined in
+* the CoAP protocol draft. It provides a list of all available services on the server in CoRE Link Format.</p>
+ *
+ * <p>Furthermore it provides the ability to filter resources based on query parameters, e.g.
+ * <ul>
+ *     <li><code>coap://example.org/.well-known/core?ct=0</code> to filter all resources that support content
+ *     format 0 (plain text) for responses</li>
+ *     <li><code>coap://example.org/.well-known/core?title="some title"</code></li>
+ * </ul>
+ * </p>
+ *
+ * <p><b>Note:</b> for string values (such as a title) the double quotes are part of the value and thus must
+ * be part of the query parameter (percent encoded). According to RFC 6690 double quotes that enclose numerical values
+ * separated by blanks refer to a list of values (e.g. for link param ct="0 40" resp.).</p>
+ *
 *
 * @author Oliver Kleine
 */
-public final class WellKnownCoreResource extends ObservableWebresource<Collection<Webresource>> {
+public final class WellKnownCoreResource extends ObservableWebresource<LinkValueList> {
 
     public static final String URI_PATH = "/.well-known/core";
 
-    private static Logger log = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(WellKnownCoreResource.class.getName());
 
     private byte[] etag;
 
@@ -61,7 +74,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Collectio
      * Creates the well-known/core resource at path /.well-known/core as defined in the CoAP draft
      * @param initialStatus the {@link java.util.Map} containing all available path
      */
-    public WellKnownCoreResource(Collection<Webresource> initialStatus, ScheduledExecutorService executor) {
+    public WellKnownCoreResource(LinkValueList initialStatus, ScheduledExecutorService executor) {
         super(URI_PATH, initialStatus, 0, executor);
 
         // set content format "40" as link param
@@ -91,7 +104,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Collectio
      */
     @Override
     public void processCoapRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
-        InetSocketAddress remoteSocket) throws Exception{
+        InetSocketAddress remoteSocket) throws Exception {
 
         if (!(coapRequest.getMessageCode() == GET)) {
             responseFuture.set(CoapResponse.createErrorResponse(
@@ -104,35 +117,38 @@ public final class WellKnownCoreResource extends ObservableWebresource<Collectio
 
 
     private void processCoapGetRequest(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest) {
-        try{
+        try {
             String query = coapRequest.getUriQuery();
             LinkParam linkParam = "".equals(query) ? null : LinkParam.decode(query);
 
-            CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
+            WrappedResourceStatus status = this.getWrappedResourceStatus(ContentFormat.APP_LINK_FORMAT);
             byte[] content;
             if (linkParam == null ) {
-                content = getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT);
+                // the /.well-known/core will for sure cause no NullPointerException
+                content = status.getContent();
             } else {
-                content = getFilteredSerializedResourceStatus(linkParam);
+                // the /.well-known/core will for sure cause no NullPointerException
+                LinkValueList linkValueList = LinkValueList.decode(new String(status.getContent(), CoapMessage.CHARSET));
+                content = getFilteredSerializedResourceStatus(linkValueList, linkParam);
             }
+
+            CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(), MessageCode.CONTENT_205);
             coapResponse.setContent(content, ContentFormat.APP_LINK_FORMAT);
             coapResponse.setEtag(this.etag);
             responseFuture.set(coapResponse);
 
-        } catch(IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ex) {
             responseFuture.set(CoapResponse.createErrorResponse(
                 coapRequest.getMessageType(), BAD_REQUEST_400, ex.getMessage()
             ));
         }
     }
 
-
-    private byte[] getFilteredSerializedResourceStatus(LinkParam filter) {
-        LinkValueList linkValueList = new LinkValueList();
-        for (Webresource webresource : this.getResourceStatus()) {
-            LinkValue linkValue = new LinkValue(webresource.getUriPath(), webresource.getLinkParams());
-            linkValueList.addLinkValue(linkValue);
-        }
+    private static byte[] getFilteredSerializedResourceStatus(LinkValueList linkValueList, LinkParam filter) {
+//        for (Webresource webresource : this.getResourceStatus()) {
+//            LinkValue linkValue = new LinkValue(webresource.getUriPath(), webresource.getLinkParams());
+//            linkValueList.addLinkValue(linkValue);
+//        }
 
         StringBuilder buffer = new StringBuilder();
         if (filter == null) {
@@ -141,7 +157,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Collectio
             buffer.append(linkValueList.filter(filter.getKey(), filter.getValue()).encode());
         }
 
-        log.debug("Content: \n{}", buffer.toString());
+        LOG.debug("Content: \n{}", buffer.toString());
 
         return buffer.toString().getBytes(CoapMessage.CHARSET);
     }
@@ -157,10 +173,11 @@ public final class WellKnownCoreResource extends ObservableWebresource<Collectio
      *
      * @return the serialized resource status in {@link ContentFormat#APP_LINK_FORMAT}
      */
-    @SuppressWarnings("unchecked")
+    @Override
     public byte[] getSerializedResourceStatus(long contentFormat) {
-        return this.getFilteredSerializedResourceStatus(null);
+        return this.getResourceStatus().encode().getBytes(CoapMessage.CHARSET);
     }
+
 
 
     @Override
@@ -179,7 +196,7 @@ public final class WellKnownCoreResource extends ObservableWebresource<Collectio
     }
 
     @Override
-    public void updateEtag(Collection<Webresource> resourceStatus) {
+    public void updateEtag(LinkValueList resourceStatus) {
         this.etag = Ints.toByteArray(Arrays.hashCode(getSerializedResourceStatus(ContentFormat.APP_LINK_FORMAT)));
     }
 

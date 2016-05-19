@@ -99,6 +99,15 @@ public class LinkValueList {
         this.linkValues.add(linkValue);
     }
 
+    public boolean removeLinkValue(String uriReference) {
+        for (LinkValue linkValue : this.linkValues) {
+            if (linkValue.getUriReference().equals(uriReference)) {
+                this.linkValues.remove(linkValue);
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Returns all URI references contained in this {@link LinkValueList}
