@@ -140,6 +140,9 @@ public class CoapEndpoint extends AbstractCoapApplication {
         // retrieve the request dispatcher (server component)
         this.requestDispatcher = getChannel().getPipeline().get(RequestDispatcher.class);
 
+        // register .well-known/core
+        this.requestDispatcher.registerWellKnownCoreResource();
+
         // retrieve the response dispatcher (client component)
         this.responseDispatcher = getChannel().getPipeline().get(ResponseDispatcher.class);
     }
