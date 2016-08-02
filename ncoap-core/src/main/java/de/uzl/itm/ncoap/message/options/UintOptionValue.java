@@ -24,7 +24,6 @@
  */
 package de.uzl.itm.ncoap.message.options;
 
-import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,16 +47,37 @@ public class UintOptionValue extends OptionValue<Long> {
 
     private static Logger log = LoggerFactory.getLogger(UintOptionValue.class.getName());
 
-
+    /**
+     * @param optionNumber the option number of the {@link StringOptionValue} to be created
+     * @param value the value of the {@link StringOptionValue} to be created
+     *
+     * @throws java.lang.IllegalArgumentException if the given option number is unknown, or if the given value is
+     * either the default value or exceeds the defined length limits for options with the given option number
+     */
     public UintOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
-        super(optionNumber, shortenValue(value));
+        this(optionNumber, shortenValue(value), false);
+    }
+
+    /**
+     * @param optionNumber the option number of the {@link StringOptionValue} to be created
+     * @param value the value of the {@link StringOptionValue} to be created
+     * @param allowDefault if set to <code>true</code> no {@link IllegalArgumentException} is thrown if the given
+     *                     value is the default value. This may be useful in very special cases, so do not use this
+     *                     feature if you are not absolutely sure that it is necessary!
+     *
+     * @throws java.lang.IllegalArgumentException if the given option number is unknown, or if the given value is
+     * either the default value or exceeds the defined length limits for options with the given option number
+     */
+    public UintOptionValue(int optionNumber, byte[] value, boolean allowDefault) throws IllegalArgumentException {
+        super(optionNumber, shortenValue(value), allowDefault);
 
         log.debug("Uint Option (#{}) created with value: {}", optionNumber, this.getDecodedValue());
     }
 
-    public UintOptionValue(int optionNumber, long value) throws IllegalArgumentException {
-        this(optionNumber, value == 0 ? new byte[0] : new BigInteger(1, Longs.toByteArray(value)).toByteArray());
-    }
+
+//    public UintOptionValue(int optionNumber, long value) throws IllegalArgumentException {
+//        this(optionNumber, value == 0 ? new byte[0] : new BigInteger(1, Longs.toByteArray(value)).toByteArray());
+//    }
 
     @Override
     public Long getDecodedValue() {

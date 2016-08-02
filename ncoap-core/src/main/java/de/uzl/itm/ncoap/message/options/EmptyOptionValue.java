@@ -46,7 +46,7 @@ public final class EmptyOptionValue extends OptionValue<Void> {
      * @throws java.lang.IllegalArgumentException if the given option number does not refer to an empty option
      */
     public EmptyOptionValue(int optionNumber) throws IllegalArgumentException {
-       super(optionNumber, new byte[0]);
+       super(optionNumber, new byte[0], false);
 
         log.debug("Empty Option (#{}) created.", optionNumber);
     }

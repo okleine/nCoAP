@@ -36,7 +36,7 @@ public class OpaqueOptionValue extends OptionValue<byte[]> {
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     public OpaqueOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
-        super(optionNumber, value);
+        super(optionNumber, value, false);
     }
 
     /**

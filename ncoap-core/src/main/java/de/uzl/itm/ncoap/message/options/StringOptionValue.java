@@ -49,8 +49,20 @@ public class StringOptionValue extends OptionValue<String> {
      * either the default value or exceeds the defined length limits for options with the given option number
      */
     public StringOptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
-        super(optionNumber, value);
+        this(optionNumber, value, false);
+    }
 
+    /**
+     * @param optionNumber the option number of the {@link StringOptionValue} to be created
+     * @param value the value of the {@link StringOptionValue} to be created
+     * @param allowDefault if set to <code>true</code> no {@link IllegalArgumentException} is thrown if the given
+     *                     value is the default value
+     *
+     * @throws java.lang.IllegalArgumentException if the given option number is unknown, or if the given value is
+     * either the default value or exceeds the defined length limits for options with the given option number
+     */
+    public StringOptionValue(int optionNumber, byte[] value, boolean allowDefault) throws IllegalArgumentException {
+        super(optionNumber, value, allowDefault);
         log.debug("String Option (#{}) created with value: '{}'.", optionNumber, this.getDecodedValue());
     }
 

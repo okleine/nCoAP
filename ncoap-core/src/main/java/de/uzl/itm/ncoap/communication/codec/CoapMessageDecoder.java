@@ -245,12 +245,12 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                         break;
                     }
                     case STRING: {
-                        StringOptionValue value = new StringOptionValue(actualOptionNumber, optionValue);
+                        StringOptionValue value = new StringOptionValue(actualOptionNumber, optionValue, true);
                         coapMessage.addOption(actualOptionNumber, value);
                         break;
                     }
                     case UINT: {
-                        UintOptionValue value = new UintOptionValue(actualOptionNumber, optionValue);
+                        UintOptionValue value = new UintOptionValue(actualOptionNumber, optionValue, true);
                         coapMessage.addOption(actualOptionNumber, value);
                         break;
                     }

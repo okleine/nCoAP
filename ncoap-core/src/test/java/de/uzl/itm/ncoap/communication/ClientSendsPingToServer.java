@@ -59,7 +59,6 @@ public class ClientSendsPingToServer extends AbstractCoapCommunicationTest{
         InetSocketAddress serverAddress = new InetSocketAddress("127.0.0.1", coapServer.getPort());
         coapClient.sendCoapPing(serverAddress, callback);
 
-
         Thread.sleep(1000);
     }
 

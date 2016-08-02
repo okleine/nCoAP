@@ -201,19 +201,19 @@ public abstract class OptionValue<T>{
      */
     public static boolean isDefaultValue(int optionNumber, byte[] value) {
 
-        if (optionNumber == URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT))
+        if (optionNumber == URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT)) {
             return true;
-
-        if (optionNumber == MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT))
+        } else if (optionNumber == MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT)) {
             return true;
-
-        if (optionNumber == URI_HOST) {
+        } else  if (optionNumber == URI_HOST) {
             String hostName = new String(value, CoapMessage.CHARSET);
-            if (hostName.startsWith("[") && hostName.endsWith("]"))
+            if (hostName.startsWith("[") && hostName.endsWith("]")) {
                 hostName = hostName.substring(1, hostName.length() - 1);
+            }
 
-            if (InetAddresses.isInetAddress(hostName))
+            if (InetAddresses.isInetAddress(hostName)) {
                 return true;
+            }
         }
 
         return false;
@@ -230,14 +230,16 @@ public abstract class OptionValue<T>{
      * either the
      * given value is the default value or the length of the given value exceeds the defined limits.
      */
-    protected OptionValue(int optionNumber, byte[] value) throws IllegalArgumentException {
+    protected OptionValue(int optionNumber, byte[] value, boolean allowDefault) throws IllegalArgumentException {
 
-        if (OptionValue.isDefaultValue(optionNumber, value))
+        if (!allowDefault && OptionValue.isDefaultValue(optionNumber, value)) {
             throw new IllegalArgumentException(String.format(VALUE_IS_DEFAULT_VALUE, optionNumber));
+        }
 
-        if (getMinLength(optionNumber) > value.length || getMaxLength(optionNumber) < value.length)
+        if (getMinLength(optionNumber) > value.length || getMaxLength(optionNumber) < value.length) {
             throw new IllegalArgumentException(String.format(OUT_OF_ALLOWED_RANGE, value.length, optionNumber,
                     getMinLength(optionNumber), getMaxLength(optionNumber)));
+        }
 
         this.value = value;
     }
