@@ -25,26 +25,28 @@
 package de.uzl.itm.ncoap.application.endpoint;
 
 
+import java.net.InetSocketAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
+import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.application.server.resource.Webresource;
-import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.communication.dispatching.client.TokenFactory;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.message.CoapRequest;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.socket.DatagramChannel;
 
 /**
  * A {@link CoapEndpoint} combines both, client and server functionality, i.e.
@@ -138,13 +140,13 @@ public class CoapEndpoint extends AbstractCoapApplication {
         startApplication(pipelineFactory, localSocket);
 
         // retrieve the request dispatcher (server component)
-        this.requestDispatcher = getChannel().getPipeline().get(RequestDispatcher.class);
+        this.requestDispatcher = getChannel().pipeline().get(RequestDispatcher.class);
 
         // register .well-known/core
         this.requestDispatcher.registerWellKnownCoreResource();
 
         // retrieve the response dispatcher (client component)
-        this.responseDispatcher = getChannel().getPipeline().get(ResponseDispatcher.class);
+        this.responseDispatcher = getChannel().pipeline().get(ResponseDispatcher.class);
     }
 
     /**
@@ -208,7 +210,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
 
 
     private RequestDispatcher getRequestDispatcher() {
-        return getChannel().getPipeline().get(RequestDispatcher.class);
+        return getChannel().pipeline().get(RequestDispatcher.class);
     }
 
 
@@ -227,7 +229,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
     /**
      * Gracefully shuts down the endpoint by sequentially shutting down all its components, i.e. the registered
      * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s and the
-     * {@link org.jboss.netty.channel.socket.DatagramChannel} to write and receive messages.
+     * {@link DatagramChannel} to write and receive messages.
      */
     public ListenableFuture<Void> shutdown() {
         LOG.warn("Shutdown server...");
@@ -242,7 +244,6 @@ public class CoapEndpoint extends AbstractCoapApplication {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
                         LOG.warn("Endpoint channel closed. Release external resources...");
-                        getChannel().getFactory().releaseExternalResources();
                     }
                 });
 

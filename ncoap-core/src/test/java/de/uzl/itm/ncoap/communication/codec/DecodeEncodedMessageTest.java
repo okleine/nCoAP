@@ -24,26 +24,27 @@
  */
 package de.uzl.itm.ncoap.communication.codec;
 
-import com.google.common.collect.Lists;
-import de.uzl.itm.ncoap.AbstractCoapTest;
-import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.codec.tools.CoapTestDecoder;
-import de.uzl.itm.ncoap.communication.codec.tools.CoapTestEncoder;
-import de.uzl.itm.ncoap.message.MessageCode;
-import de.uzl.itm.ncoap.message.options.ContentFormat;
-import de.uzl.itm.ncoap.message.CoapMessage;
-import de.uzl.itm.ncoap.message.CoapRequest;
-import de.uzl.itm.ncoap.message.MessageType;
+import java.net.URI;
+import java.util.Collection;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.net.URI;
-import java.util.Collection;
+import com.google.common.collect.Lists;
+import de.uzl.itm.ncoap.AbstractCoapTest;
+import de.uzl.itm.ncoap.communication.codec.tools.CoapTestDecoder;
+import de.uzl.itm.ncoap.communication.codec.tools.CoapTestEncoder;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
+import de.uzl.itm.ncoap.message.options.ContentFormat;
+import io.netty.buffer.ByteBuf;
 
 import static org.junit.Assert.assertEquals;
 
@@ -75,7 +76,7 @@ public class DecodeEncodedMessageTest extends AbstractCoapTest {
     }
 
     private CoapMessage coapMessage;
-    private ChannelBuffer encodedMessage;
+    private ByteBuf encodedMessage;
 
     public DecodeEncodedMessageTest(CoapMessage coapMessage) throws Exception {
         coapMessage.setMessageID(1234);

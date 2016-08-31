@@ -24,8 +24,9 @@
  */
 package de.uzl.itm.ncoap.application.endpoint;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
-//import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock1Handler;
 import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler;
@@ -45,12 +46,13 @@ import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabili
 import de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler;
 import de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory;
 import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;
+import io.netty.channel.ChannelPipeline;
 
-import java.util.concurrent.ScheduledExecutorService;
+//import de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler;
 
 /**
  * The {@link de.uzl.itm.ncoap.application.CoapChannelPipelineFactory} to create the proper
- * {@link org.jboss.netty.channel.ChannelPipeline} for {@link CoapEndpoint}s.
+ * {@link ChannelPipeline} for {@link CoapEndpoint}s.
  *
  * @author Oliver Kleine
  */
@@ -70,7 +72,7 @@ public class CoapEndpointChannelPipelineFactory extends CoapChannelPipelineFacto
     public CoapEndpointChannelPipelineFactory(ScheduledExecutorService executor, TokenFactory tokenFactory,
                              NotFoundHandler notFoundHandler, BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
 
-        super(executor);
+        super();
         MessageIDFactory factory = new MessageIDFactory(executor);
 
         // identification

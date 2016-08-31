@@ -24,6 +24,13 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise.server;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
@@ -35,17 +42,11 @@ import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
-import static de.uzl.itm.ncoap.message.MessageCode.*;
-
-import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import static de.uzl.itm.ncoap.message.MessageCode.PRECONDITION_FAILED_412;
 
 /**
  * <p>The {@link ServerBlock2Handler} handles the {@link Option#BLOCK_2} for
@@ -222,7 +223,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
 
         private long block2Szx;
         private CoapResponse coapResponse;
-        private ChannelBuffer completeRepresentation;
+        private ByteBuf completeRepresentation;
         private InetSocketAddress remoteSocket;
 
         public ServerBlock2Helper(CoapResponse coapResponse, InetSocketAddress remoteSocket) {

@@ -24,25 +24,31 @@
  */
 package de.uzl.itm.ncoap.endpoints;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
-import de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder;
-import de.uzl.itm.ncoap.message.CoapMessage;
-import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.DatagramChannel;
-import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.jboss.netty.util.ThreadNameDeterminer;
-import org.jboss.netty.util.ThreadRenamingRunnable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
+import de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapMessageEnvelope;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
 
 
 /**
@@ -51,7 +57,7 @@ import java.util.concurrent.*;
 *
 * @author Oliver Kleine, Stefan Hüske
 */
-public class DummyEndpoint extends SimpleChannelHandler {
+public class DummyEndpoint extends ChannelDuplexHandler {
 
     private DatagramChannel channel;
 
@@ -64,70 +70,55 @@ public class DummyEndpoint extends SimpleChannelHandler {
     private SortedMap<Long, CoapMessage> receivedCoapMessages =
             Collections.synchronizedSortedMap(new TreeMap<Long, CoapMessage>());
 
-    private ScheduledExecutorService executor;
+    private NioEventLoopGroup executor;
 
     public DummyEndpoint() {
         this(0);
     }
 
     public DummyEndpoint(int port) {
-        //Create thread pool factory (for thread-naming)
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("Dummy Endpoint I/O worker #%d").build();
-
-        //This is to suppress renaming of the threads by the netty framework
-        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
-            @Override
-            public String determineThreadName(String currentThreadName, String proposedThreadName) throws Exception {
-                return null;
-            }
-        });
-
         //Create the thread-pool using the previously defined factory
-        this.executor = new ScheduledThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1,
-                threadFactory, new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                log.error("Execution rejected!");
-            }
-        });
+        int threads = Runtime.getRuntime().availableProcessors() * 2 + 1;
+        this.executor = new NioEventLoopGroup(threads, new DefaultThreadFactory("Dummy Endpoint"));
 
         //Create datagram datagramChannel to receive and send messages
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor);
+        Bootstrap bootstrap = new Bootstrap()
+                .channel(NioDatagramChannel.class)
+                .group(executor)
+                .handler(new ChannelInitializer<Channel>()
+                {
+                    @Override
+                    protected void initChannel(Channel channel) throws Exception
+                    {
+                        channel.pipeline().addLast("Encoder", new CoapMessageEncoder());
+                        channel.pipeline().addLast("Decoder", new CoapMessageDecoder());
+                        channel.pipeline().addLast("CoAP Endpoint", DummyEndpoint.this );
+                    }
+                });
 
-        ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-
-            @Override
-            public ChannelPipeline getPipeline() throws Exception {
-                ChannelPipeline pipeline = Channels.pipeline();
-                pipeline.addLast("Encoder", new CoapMessageEncoder());
-                pipeline.addLast("Decoder", new CoapMessageDecoder());
-                pipeline.addLast("CoAP Endpoint", DummyEndpoint.this );
-                return pipeline;
-            }
-        });
-
-
-        this.channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(port));
-        log.info("New message receiver channel created for port " + channel.getLocalAddress().getPort());
+        this.channel = (DatagramChannel) bootstrap.bind(new InetSocketAddress(port)).awaitUninterruptibly().channel();
+        log.info("New message receiver channel created for port " + channel.localAddress().getPort());
     }
 
 
     public int getPort() {
-        return channel.getLocalAddress().getPort();
+        return channel.localAddress().getPort();
     }
 
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object object) throws Exception {
         if (!receptionEnabled) {
             return;
         }
 
-        if ((e.getMessage() instanceof CoapMessage)) {
-            receivedCoapMessages.put(System.currentTimeMillis(), (CoapMessage) e.getMessage());
+        if ((object instanceof CoapMessageEnvelope)) {
+            CoapMessageEnvelope envelope = (CoapMessageEnvelope) object;
+            CoapMessage message = envelope.content();
+            InetSocketAddress remoteAddress = envelope.sender();
+            receivedCoapMessages.put(System.currentTimeMillis(), message);
             log.info("Received #{} (from {}): {}.",
-                    new Object[]{getReceivedCoapMessages().size(), e.getRemoteAddress(), e.getMessage()});
+                    new Object[]{getReceivedCoapMessages().size(), remoteAddress, message});
         }
     }
 
@@ -180,7 +171,7 @@ public class DummyEndpoint extends SimpleChannelHandler {
         @Override
         public void run() {
             log.info("Send CoAP message: {}", coapMessage);
-            Channels.write(channel, coapMessage, remoteSocket);
+            channel.writeAndFlush(new CoapMessageEnvelope(coapMessage, remoteSocket));
         }
     }
 
@@ -196,12 +187,12 @@ public class DummyEndpoint extends SimpleChannelHandler {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                channel.getFactory().releaseExternalResources();
                 log.info("External resources released, shutdown completed");
             }
         });
 
         future.awaitUninterruptibly();
+        executor.shutdownGracefully();
     }
 }
 

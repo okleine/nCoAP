@@ -24,26 +24,27 @@
  */
 package de.uzl.itm.ncoap.communication.reliability.outbound;
 
-import com.google.common.collect.HashBasedTable;
-import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
-import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
-import de.uzl.itm.ncoap.message.CoapMessage;
-import de.uzl.itm.ncoap.message.CoapResponse;
-import de.uzl.itm.ncoap.message.MessageCode;
-import de.uzl.itm.ncoap.message.MessageType;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.Channels;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.HashBasedTable;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapMessageEnvelope;
+import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 
 /**
@@ -293,8 +294,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
                 }
 
                 // retransmit message
-                ChannelFuture future = Channels.future(getContext().getChannel());
-                Channels.write(getContext(), future, coapResponse, remoteSocket);
+                ChannelFuture future = getContext().writeAndFlush(new CoapMessageEnvelope(coapResponse, remoteSocket));
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {

@@ -24,6 +24,15 @@
  */
 package de.uzl.itm.ncoap.communication.dispatching.server;
 
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -39,20 +48,19 @@ import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
 import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapMessageEnvelope;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import org.jboss.netty.channel.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.socket.DatagramChannel;
 
 import static de.uzl.itm.ncoap.message.MessageCode.INTERNAL_SERVER_ERROR_500;
 import static de.uzl.itm.ncoap.message.MessageCode.PRECONDITION_FAILED_412;
@@ -152,7 +160,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         }
 
         Futures.addCallback(responseFuture, new ResponseCallback(
-                getContext().getChannel(), coapRequest, webresource, remoteSocket
+                getContext().channel(), coapRequest, webresource, remoteSocket
         ), getExecutor());
 
 
@@ -187,7 +195,6 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         responseFuture.set(coapResponse);
     }
 
-
     /**
      * This method is invoked by the framework if an exception occured during the reception or sending of a
      * {@link CoapMessage}.
@@ -197,14 +204,14 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
      * enabled).
      *
      * @param ctx the {@link ChannelHandlerContext} relating the {@link de.uzl.itm.ncoap.application.server.CoapServer} and the
-     * {@link org.jboss.netty.channel.socket.DatagramChannel} on which the exception occured
+     * {@link DatagramChannel} on which the exception occured
      *
-     * @param exceptionEvent the {@link ExceptionEvent} containing, e.g. the exception
+     * @param cause the {@link Throwable} containing, e.g. the exception
      */
+
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent) {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (!shutdown) {
-            Throwable cause = exceptionEvent.getCause();
             LOG.error("Unsupported exception caught! Don't know what to do...", cause);
         }
     }
@@ -288,7 +295,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
         LOG.info("Registered new service at " + webresource.getUriPath());
 
         if (webresource instanceof ObservableWebresource) {
-            ChannelPipeline pipeline = getContext().getChannel().getPipeline();
+            ChannelPipeline pipeline = getContext().channel().pipeline();
             ServerObservationHandler handler = pipeline.get(ServerObservationHandler.class);
             handler.registerWebresource((ObservableWebresource) webresource);
         }
@@ -369,7 +376,7 @@ public class RequestDispatcher extends AbstractCoapChannelHandler {
 
 
         private void sendResponse(final CoapResponse coapResponse) {
-            ChannelFuture future = Channels.write(this.channel, coapResponse, this.remoteSocket);
+            ChannelFuture future = getContext().writeAndFlush(new CoapMessageEnvelope(coapResponse, this.remoteSocket));
             if (LOG.isDebugEnabled()) {
                 future.addListener(new ChannelFutureListener() {
                     @Override

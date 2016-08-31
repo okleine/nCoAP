@@ -71,19 +71,24 @@
 
 package de.uzl.itm.ncoap.communication.codec;
 
+import java.net.InetSocketAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.primitives.Ints;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapMessageEnvelope;
 import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.OptionValue;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.socket.DatagramPacket;
 
 
 /**
@@ -93,7 +98,7 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
+public class CoapMessageEncoder extends ChannelOutboundHandlerAdapter {
 
     private static Logger LOG = LoggerFactory.getLogger(CoapMessageEncoder.class.getName());
 
@@ -109,21 +114,22 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
 
     @Override
-    public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent event) throws Exception {
+    public void write(ChannelHandlerContext ctx, Object message, ChannelPromise promise) throws Exception {
 
-        if (!(event instanceof MessageEvent) || !(((MessageEvent) event).getMessage() instanceof CoapMessage)) {
-            ctx.sendDownstream(event);
+        if (!(message instanceof CoapMessageEnvelope)){
+            ctx.write(message);
             return;
         }
 
-        InetSocketAddress remoteSocket = (InetSocketAddress) ((MessageEvent) event).getRemoteAddress();
-        CoapMessage coapMessage = (CoapMessage) ((MessageEvent) event).getMessage();
+        CoapMessageEnvelope envelope = (CoapMessageEnvelope) message;
+        InetSocketAddress remoteSocket = envelope.recipient();
+        CoapMessage coapMessage = envelope.content();
 
         try {
-            ChannelBuffer encodedMessage = encode(coapMessage);
-            Channels.write(ctx, event.getFuture(), encodedMessage, remoteSocket);
+            ByteBuf encodedMessage = encode(coapMessage);
+            DatagramPacket packet = new DatagramPacket(encodedMessage, remoteSocket);
+            ctx.write(packet);
         } catch(Exception ex) {
-            event.getFuture().setFailure(ex);
             int messageID = coapMessage.getMessageID();
             Token token = coapMessage.getToken();
             sendInternalEncodingFailedMessage(ctx, remoteSocket, messageID, token, ex);
@@ -131,18 +137,18 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected ChannelBuffer encode(CoapMessage coapMessage) throws OptionCodecException {
+    protected ByteBuf encode(CoapMessage coapMessage) throws OptionCodecException {
         LOG.info("CoapMessage to be encoded: {}", coapMessage);
 
         // start encoding
-        ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer(0);
+        ByteBuf encodedMessage = Unpooled.buffer();
 
         // encode HEADER and TOKEN
         encodeHeader(encodedMessage, coapMessage);
         LOG.debug("Encoded length of message (after HEADER + TOKEN): {}", encodedMessage.readableBytes());
 
         if (coapMessage.getMessageCode() == MessageCode.EMPTY) {
-            encodedMessage = ChannelBuffers.wrappedBuffer(Ints.toByteArray(encodedMessage.getInt(0) & 0xF0FFFFFF));
+            encodedMessage = Unpooled.wrappedBuffer(Ints.toByteArray(encodedMessage.getInt(0) & 0xF0FFFFFF));
             return encodedMessage;
         }
 
@@ -160,7 +166,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
             encodedMessage.writeByte(255);
 
             // add payload
-            encodedMessage = ChannelBuffers.wrappedBuffer(encodedMessage, coapMessage.getContent());
+            encodedMessage = Unpooled.wrappedBuffer(encodedMessage, coapMessage.getContent());
             LOG.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
         }
 
@@ -168,7 +174,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage) {
+    protected void encodeHeader(ByteBuf buffer, CoapMessage coapMessage) {
 
         byte[] token = coapMessage.getToken().getBytes();
 
@@ -195,7 +201,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected void encodeOptions(ChannelBuffer buffer, CoapMessage coapMessage) throws OptionCodecException {
+    protected void encodeOptions(ByteBuf buffer, CoapMessage coapMessage) throws OptionCodecException {
 
         //Encode options one after the other and append buf option to the buf
         int previousOptionNumber = 0;
@@ -209,7 +215,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected void encodeOption(ChannelBuffer buffer, int optionNumber, OptionValue optionValue, int prevNumber)
+    protected void encodeOption(ByteBuf buffer, int optionNumber, OptionValue optionValue, int prevNumber)
             throws OptionCodecException {
 
         //The previous option number must be smaller or equal to the actual one
@@ -294,6 +300,6 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
 
        String desc = cause.getMessage() == null ? "Encoder (" + cause.getClass().getName() + ")" : cause.getMessage();
         MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteSocket, messageID, token, desc);
-        Channels.fireMessageReceived(ctx, event);
+        ctx.fireUserEventTriggered(event);
     }
 }

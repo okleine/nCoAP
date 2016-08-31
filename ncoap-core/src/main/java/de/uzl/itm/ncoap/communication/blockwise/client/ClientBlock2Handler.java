@@ -24,6 +24,14 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise.client;
 
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.HashBasedTable;
 import com.google.common.primitives.Bytes;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
@@ -37,17 +45,10 @@ import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 /**
  * <p>The {@link ClientBlock2Handler} handles the {@link Option#BLOCK_2} for
@@ -94,7 +95,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
     private boolean handleInboundCoapResponseWithBlock2(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
 
         Token token = coapResponse.getToken();
-        ChannelBuffer responseBlock = coapResponse.getContent();
+        ByteBuf responseBlock = coapResponse.getContent();
         byte[] etag = coapResponse.getEtag();
 
         byte[] received = addResponseBlock(remoteSocket, token, etag, responseBlock);
@@ -134,7 +135,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
     }
 
     private byte[] addResponseBlock(InetSocketAddress remoteSocket, Token token, byte[] etag,
-                                           ChannelBuffer responsePayloadBlock) {
+                                    ByteBuf responsePayloadBlock) {
         try {
             this.lock.writeLock().lock();
             ClientBlock2Helper helper = this.block2HelperTable.get(remoteSocket, token);
@@ -248,7 +249,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
         }
 
 
-        private byte[] addResponseBlock(ChannelBuffer buffer, byte[] etag) {
+        private byte[] addResponseBlock(ByteBuf buffer, byte[] etag) {
             if (this.etag != null && etag == null) {
                 // previous response block had an ETAG but current block has no ETAG
                 return new byte[0];
@@ -271,7 +272,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
         private CoapRequest getCoapRequestForResponseBlock(long block2num, long block2szx) {
             if (block2num > 0) {
                 coapRequest.setMessageID(CoapMessage.UNDEFINED_MESSAGE_ID);
-                coapRequest.setContent(ChannelBuffers.EMPTY_BUFFER);
+                coapRequest.setContent(Unpooled.EMPTY_BUFFER);
                 coapRequest.removeOptions(Option.CONTENT_FORMAT);
                 coapRequest.removeOptions(Option.BLOCK_1);
                 coapRequest.setBlock2(block2num, block2szx);

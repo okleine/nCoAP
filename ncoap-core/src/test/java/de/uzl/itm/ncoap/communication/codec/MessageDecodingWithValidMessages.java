@@ -24,20 +24,21 @@
  */
 package de.uzl.itm.ncoap.communication.codec;
 
-import com.google.common.collect.Lists;
-import de.uzl.itm.ncoap.AbstractCoapTest;
-import de.uzl.itm.ncoap.communication.codec.tools.CoapTestDecoder;
-import de.uzl.itm.ncoap.message.CoapMessage;
+import java.util.Collection;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Collection;
+import com.google.common.collect.Lists;
+import de.uzl.itm.ncoap.AbstractCoapTest;
+import de.uzl.itm.ncoap.communication.codec.tools.CoapTestDecoder;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import static org.junit.Assert.assertEquals;
 
@@ -74,14 +75,14 @@ public class MessageDecodingWithValidMessages extends AbstractCoapTest {
     }
 
 
-    private ChannelBuffer encodedMessageBuffer;
+    private ByteBuf encodedMessageBuffer;
     private CoapMessage expected;
     private CoapMessage actual;
 
 
     public MessageDecodingWithValidMessages(byte[] encodedMessage, CoapMessage expected) {
         this.expected = expected;
-        this.encodedMessageBuffer = ChannelBuffers.wrappedBuffer(encodedMessage);
+        this.encodedMessageBuffer = Unpooled.wrappedBuffer(encodedMessage);
     }
 
 

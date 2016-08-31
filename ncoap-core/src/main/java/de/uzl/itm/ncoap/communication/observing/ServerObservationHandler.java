@@ -24,25 +24,6 @@
  */
 package de.uzl.itm.ncoap.communication.observing;
 
-import com.google.common.collect.HashBasedTable;
-import de.uzl.itm.ncoap.application.server.CoapServer;
-import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
-import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
-import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
-import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
-import de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent;
-import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
-import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
-import de.uzl.itm.ncoap.message.*;
-import de.uzl.itm.ncoap.message.options.ContentFormat;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.Channels;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +31,29 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.HashBasedTable;
+import de.uzl.itm.ncoap.application.server.CoapServer;
+import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
+import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
+import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
+import de.uzl.itm.ncoap.communication.events.server.ObserverAcceptedEvent;
+import de.uzl.itm.ncoap.communication.events.server.RemoteClientSocketChangedEvent;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
+import de.uzl.itm.ncoap.message.options.ContentFormat;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 /**
  * The {@link ServerObservationHandler} is responsible to maintain the list of registered clients observing any
@@ -342,14 +346,12 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
             coapResponse.setPreferredBlock2Size(block2Size);
 
             ChannelFuture future = sendCoapMessage(coapResponse, this.remoteSocket);
-//            ChannelFuture future = Channels.future(getContext().getChannel());
-//            Channels.write(getContext(), future, coapResponse, remoteSocket);
 
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
-                        LOG.error("Shutdown Notification Failure!", future.getCause());
+                        LOG.error("Shutdown Notification Failure!", future.cause());
                     } else {
                         LOG.info("Sent NOT_FOUND to \"{}\" (Token: {}).", remoteSocket, token);
                     }
@@ -386,14 +388,13 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
                 updateNotification.setObserve();
                 updateNotification.setPreferredBlock2Size(block2Size);
 
-                ChannelFuture future = Channels.future(getContext().getChannel());
-                sendCoapMessage(updateNotification, remoteSocket, future);
+                ChannelFuture future = sendCoapMessage(updateNotification, remoteSocket);
 
                 future.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
                         if (!future.isSuccess()) {
-                            LOG.error("Update Notification Failure!", future.getCause());
+                            LOG.error("Update Notification Failure!", future.cause());
                         } else {
                             LOG.info("Update Notification sent to \"{}\" (Token: {}).", remoteSocket, token);
                         }

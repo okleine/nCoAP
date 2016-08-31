@@ -24,26 +24,30 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise.server;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.message.*;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 import static de.uzl.itm.ncoap.message.MessageCode.CONTINUE_231;
-
-import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * <p>The {@link ServerBlock2Handler} handles the {@link Option#BLOCK_2} for
@@ -63,7 +67,7 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
 
     private static Logger LOG = LoggerFactory.getLogger(ServerBlock1Handler.class.getName());
 
-    private HashBasedTable<InetSocketAddress, Token, ChannelBuffer> receivedRequestBlocks;
+    private HashBasedTable<InetSocketAddress, Token, ByteBuf> receivedRequestBlocks;
     private ReentrantReadWriteLock lock;
     private BlockSize maxBlock1Size;
 
@@ -103,7 +107,7 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
             this.removeRequestBlocks(remoteSocket, coapRequest.getToken());
             return false;
         } else {
-            ChannelBuffer content = addRequestBlock(coapRequest, remoteSocket);
+            ByteBuf content = addRequestBlock(coapRequest, remoteSocket);
             if (!coapRequest.isLastBlock1()) {
                 sendContinueResponse(coapRequest, remoteSocket);
                 return false;
@@ -116,17 +120,17 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
     }
 
 
-    private ChannelBuffer addRequestBlock(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
+    private ByteBuf addRequestBlock(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
         try {
             this.lock.writeLock().lock();
 
             // lookup previously received blocks and append actual block
             Token token = coapRequest.getToken();
-            ChannelBuffer receivedBlocks = this.receivedRequestBlocks.get(remoteSocket, token);
+            ByteBuf receivedBlocks = this.receivedRequestBlocks.get(remoteSocket, token);
             if (receivedBlocks == null) {
                 receivedBlocks = coapRequest.getContent();
             } else {
-                receivedBlocks = ChannelBuffers.wrappedBuffer(receivedBlocks, coapRequest.getContent());
+                receivedBlocks = Unpooled.wrappedBuffer(receivedBlocks, coapRequest.getContent());
             }
             this.receivedRequestBlocks.put(remoteSocket, token, receivedBlocks);
 
@@ -175,7 +179,7 @@ public class ServerBlock1Handler extends AbstractCoapChannelHandler {
     private boolean containsExpectedBlock(CoapRequest coapRequest, InetSocketAddress remoteSocket) {
         try {
             this.lock.readLock().lock();
-            ChannelBuffer previousBlocks = this.receivedRequestBlocks.get(remoteSocket, coapRequest.getToken());
+            ByteBuf previousBlocks = this.receivedRequestBlocks.get(remoteSocket, coapRequest.getToken());
             if (previousBlocks == null) {
                 return true;
             } else {

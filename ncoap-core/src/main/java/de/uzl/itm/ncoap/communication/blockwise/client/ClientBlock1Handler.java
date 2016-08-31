@@ -24,12 +24,19 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise.client;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.ContinueResponseReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
 import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -37,15 +44,9 @@ import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 /**
  * The {@link ClientBlock1Handler} handles the {@link Option#BLOCK_1} for
@@ -201,7 +202,7 @@ public class ClientBlock1Handler extends AbstractCoapChannelHandler implements T
         private long block2Szx;
         private InetSocketAddress remoteSocket;
         private CoapRequest coapRequest;
-        private ChannelBuffer completePayload;
+        private ByteBuf completePayload;
 
 
         private ClientBlock1Helper(CoapRequest coapRequest, InetSocketAddress remoteSocket) {

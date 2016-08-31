@@ -24,23 +24,47 @@
  */
 package de.uzl.itm.ncoap.message;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.*;
-import com.google.common.primitives.Longs;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
-import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.message.options.*;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
-import java.util.*;
+import com.google.common.base.Supplier;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
+import com.google.common.primitives.Longs;
+import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.message.options.ContentFormat;
+import de.uzl.itm.ncoap.message.options.EmptyOptionValue;
+import de.uzl.itm.ncoap.message.options.OpaqueOptionValue;
+import de.uzl.itm.ncoap.message.options.Option;
+import de.uzl.itm.ncoap.message.options.OptionValue;
+import de.uzl.itm.ncoap.message.options.StringOptionValue;
+import de.uzl.itm.ncoap.message.options.UintOptionValue;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
-import static de.uzl.itm.ncoap.message.MessageCode.*;
-import static de.uzl.itm.ncoap.message.MessageType.*;
-import static de.uzl.itm.ncoap.message.options.Option.*;
+import static de.uzl.itm.ncoap.message.MessageCode.EMPTY;
+import static de.uzl.itm.ncoap.message.MessageType.ACK;
+import static de.uzl.itm.ncoap.message.MessageType.CON;
+import static de.uzl.itm.ncoap.message.MessageType.RST;
+import static de.uzl.itm.ncoap.message.options.Option.BLOCK_1;
+import static de.uzl.itm.ncoap.message.options.Option.BLOCK_2;
+import static de.uzl.itm.ncoap.message.options.Option.CONTENT_FORMAT;
+import static de.uzl.itm.ncoap.message.options.Option.ENDPOINT_ID_1;
+import static de.uzl.itm.ncoap.message.options.Option.ENDPOINT_ID_2;
+import static de.uzl.itm.ncoap.message.options.Option.OBSERVE;
+import static de.uzl.itm.ncoap.message.options.Option.SIZE_1;
+import static de.uzl.itm.ncoap.message.options.Option.SIZE_2;
 
 /**
  * This class is the base class for inheriting subtypes, e.g. requests and responses. This abstract class provides the
@@ -88,7 +112,7 @@ public abstract class CoapMessage {
     private Token token;
 
     protected SetMultimap<Integer, OptionValue> options;
-    private ChannelBuffer content;
+    private ByteBuf content;
 
 
     /**
@@ -121,7 +145,7 @@ public abstract class CoapMessage {
         this.options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<OptionValue>>(),
                 LinkedHashSetSupplier.getInstance());
 
-        this.content = ChannelBuffers.EMPTY_BUFFER;
+        this.content = Unpooled.EMPTY_BUFFER;
 
         log.debug("Created CoAP message: {}", this);
     }
@@ -784,9 +808,9 @@ public abstract class CoapMessage {
      * @param content ChannelBuffer containing the message content
      *
      * @throws java.lang.IllegalArgumentException if the messages code does not allow content and for the given
-     * {@link ChannelBuffer#readableBytes()} is greater then zero.
+     * {@link ByteBuf#readableBytes()} is greater then zero.
      */
-    public void setContent(ChannelBuffer content) throws IllegalArgumentException {
+    public void setContent(ByteBuf content) throws IllegalArgumentException {
 
         if (!(MessageCode.allowsContent(this.messageCode)) && content.readableBytes() > 0) {
             throw new IllegalArgumentException(String.format(DOES_NOT_ALLOW_CONTENT, this.getMessageCodeName()));
@@ -799,20 +823,20 @@ public abstract class CoapMessage {
     /**
      * Sets the content (payload) of this {@link CoapMessage}.
      *
-     * @param content {@link ChannelBuffer} containing the message content
+     * @param content {@link ByteBuf} containing the message content
      * @param contentFormat a long value representing the format of the content (see {@link ContentFormat} for some
      *                      predefined numbers (according to the CoAP specification)
      *
      * @throws java.lang.IllegalArgumentException if the messages code does not allow content and for the given
-     * {@link ChannelBuffer#readableBytes()} is greater then zero.
+     * {@link ByteBuf#readableBytes()} is greater then zero.
      */
-    public void setContent(ChannelBuffer content, long contentFormat) throws IllegalArgumentException {
+    public void setContent(ByteBuf content, long contentFormat) throws IllegalArgumentException {
 
         try {
             this.addUintOption(CONTENT_FORMAT, contentFormat);
             setContent(content);
         } catch (IllegalArgumentException e) {
-            this.content = ChannelBuffers.EMPTY_BUFFER;
+            this.content = Unpooled.EMPTY_BUFFER;
             this.removeOptions(CONTENT_FORMAT);
             throw e;
         }
@@ -829,7 +853,7 @@ public abstract class CoapMessage {
      * has a length more than zero.
      */
     public void setContent(byte[] content) throws IllegalArgumentException {
-        setContent(ChannelBuffers.wrappedBuffer(content));
+        setContent(Unpooled.wrappedBuffer(content));
     }
 
 
@@ -843,17 +867,17 @@ public abstract class CoapMessage {
      * @throws java.lang.IllegalArgumentException if the messages code does not allow content
      */
     public void setContent(byte[] content, long contentFormat) throws IllegalArgumentException {
-        setContent(ChannelBuffers.wrappedBuffer(content), contentFormat);
+        setContent(Unpooled.wrappedBuffer(content), contentFormat);
     }
 
 
     /**
      * Returns the messages content. If the message does not contain any content, this method returns an empty
-     * {@link ChannelBuffer} ({@link ChannelBuffers#EMPTY_BUFFER}).
+     * {@link ByteBuf} ({@link Unpooled#EMPTY_BUFFER}).
      *
      * @return Returns the messages content.
      */
-    public ChannelBuffer getContent() {
+    public ByteBuf getContent() {
         return this.content;
     }
 
