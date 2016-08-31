@@ -259,11 +259,14 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
             this.coapResponse.setBlock2(block2Num, block2more, block2Szx);
 
             //set the payload block
+            ByteBuf slice;
             if (block2more) {
-                this.coapResponse.setContent(this.completeRepresentation.slice(startIndex, block2Size));
+                slice = this.completeRepresentation.slice(startIndex, block2Size);
             } else {
-                this.coapResponse.setContent(this.completeRepresentation.slice(startIndex, remaining));
+                slice = this.completeRepresentation.slice(startIndex, remaining);
             }
+            this.completeRepresentation.retain();
+            this.coapResponse.setContent(slice);
 
             ChannelFuture future = sendCoapMessage(coapResponse, remoteSocket);
             future.addListener(new ChannelFutureListener() {

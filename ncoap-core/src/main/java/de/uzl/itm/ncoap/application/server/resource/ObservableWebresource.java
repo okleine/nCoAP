@@ -24,14 +24,6 @@
  */
 package de.uzl.itm.ncoap.application.server.resource;
 
-import de.uzl.itm.ncoap.application.linkformat.LinkParam;
-import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
-import de.uzl.itm.ncoap.message.CoapRequest;
-import de.uzl.itm.ncoap.message.MessageType;
-import de.uzl.itm.ncoap.message.options.OptionValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -39,6 +31,15 @@ import java.util.Observable;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import de.uzl.itm.ncoap.application.linkformat.LinkParam;
+import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.MessageType;
+import de.uzl.itm.ncoap.message.options.OptionValue;
 
 import static de.uzl.itm.ncoap.message.options.OptionValue.MAX_AGE_DEFAULT;
 
@@ -175,30 +176,38 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
 
     @Override
     public synchronized final void setResourceStatus(final T status, final long lifetime) {
-        this.executor.submit(new Runnable() {
+        try{
+            statusLock.writeLock().lock();
 
-            @Override
-            public void run() {
-                try{
-                    statusLock.writeLock().lock();
+            ObservableWebresource.this.status = status;
+            ObservableWebresource.this.statusExpiryDate = System.currentTimeMillis() + (lifetime * 1000);
+            ObservableWebresource.this.updateEtag(status);
 
-                    ObservableWebresource.this.status = status;
-                    ObservableWebresource.this.statusExpiryDate = System.currentTimeMillis() + (lifetime * 1000);
-                    ObservableWebresource.this.updateEtag(status);
+            log.debug("New status of {} successfully set (expires in {} seconds).",
+                ObservableWebresource.this.getUriPath(), lifetime);
 
-                    log.debug("New status of {} successfully set (expires in {} seconds).",
-                            ObservableWebresource.this.getUriPath(), lifetime);
+            this.executor.submit(new Runnable() {
 
-                    setChanged();
-                    notifyObservers(UPDATE);
-                } catch(Exception ex) {
-                    log.error("Exception while setting new resource status for \"{}\"!",
+                @Override
+                public void run() {
+                    try{
+
+
+                        setChanged();
+                        notifyObservers(UPDATE);
+                    } catch(Exception ex) {
+                        log.error("Exception while setting new resource status for \"{}\"!",
                             ObservableWebresource.this.getUriPath(), ex);
-                } finally {
-                    statusLock.writeLock().unlock();
+                    }
                 }
-            }
-        });
+            });
+
+        } catch(Exception ex) {
+            log.error("Exception while setting new resource status for \"{}\"!",
+                ObservableWebresource.this.getUriPath(), ex);
+        } finally {
+            statusLock.writeLock().unlock();
+        }
     }
 
 

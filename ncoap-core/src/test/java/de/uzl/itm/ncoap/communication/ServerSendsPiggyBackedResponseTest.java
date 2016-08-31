@@ -24,24 +24,27 @@
  */
 package de.uzl.itm.ncoap.communication;
 
-import de.uzl.itm.ncoap.application.client.CoapClient;
-import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
-import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
-import de.uzl.itm.ncoap.endpoints.client.TestCallback;
-import de.uzl.itm.ncoap.message.*;
-import de.uzl.itm.ncoap.message.options.ContentFormat;
-
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.SortedMap;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import java.net.URI;
-import java.util.SortedMap;
+import de.uzl.itm.ncoap.application.client.CoapClient;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.communication.reliability.inbound.ClientInboundReliabilityHandler;
+import de.uzl.itm.ncoap.endpoints.DummyEndpoint;
+import de.uzl.itm.ncoap.endpoints.client.TestCallback;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
+import de.uzl.itm.ncoap.message.options.ContentFormat;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
 
 
 /**
@@ -114,20 +117,25 @@ public class ServerSendsPiggyBackedResponseTest extends AbstractCoapCommunicatio
         Token token = endpoint.getReceivedCoapMessages().values().iterator().next().getToken();
 
         //write response #1
-        CoapResponse response = new CoapResponse(MessageType.ACK, MessageCode.CONTENT_205);
-        response.setMessageID(messageID);
-        response.setToken(token);
-        response.setContent(PAYLOAD.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
-        endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
+        endpoint.writeMessage(response(messageID, token), new InetSocketAddress("localhost", client.getPort()));
 
         //Wait some time
         Thread.sleep(1000);
 
         //write response #2 (should be ignored by the client!)
-        endpoint.writeMessage(response, new InetSocketAddress("localhost", client.getPort()));
+        endpoint.writeMessage(response(messageID, token), new InetSocketAddress("localhost", client.getPort()));
 
         //Wait some time
         Thread.sleep(500);
+    }
+
+    private CoapResponse response(int messageID, Token token)
+    {
+        CoapResponse response = new CoapResponse(MessageType.ACK, MessageCode.CONTENT_205);
+        response.setMessageID(messageID);
+        response.setToken(token);
+        response.setContent(PAYLOAD.getBytes(CoapMessage.CHARSET), ContentFormat.TEXT_PLAIN_UTF8);
+        return response;
     }
 
 
