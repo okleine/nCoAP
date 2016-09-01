@@ -24,14 +24,19 @@
  */
 package de.uzl.itm.ncoap.endpoints.client;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Ordering;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.CoapResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 
 public class TestCallback extends ClientCallback {
@@ -64,6 +69,7 @@ public class TestCallback extends ClientCallback {
 
     @Override
     public void processCoapResponse(CoapResponse coapResponse) {
+       coapResponse.getContent().retain();
        coapResponses.put(System.currentTimeMillis(), coapResponse);
        log.info("Received #{}: {}", coapResponses.size(), coapResponse);
     }

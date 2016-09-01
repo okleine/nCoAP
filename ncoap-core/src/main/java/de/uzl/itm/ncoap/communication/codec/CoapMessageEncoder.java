@@ -166,7 +166,7 @@ public class CoapMessageEncoder extends ChannelOutboundHandlerAdapter {
             encodedMessage.writeByte(255);
 
             // add payload
-            encodedMessage = Unpooled.wrappedBuffer(encodedMessage, coapMessage.getContent());
+            encodedMessage = Unpooled.wrappedBuffer(encodedMessage, coapMessage.getContent().retain());
             LOG.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
         }
 

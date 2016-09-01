@@ -43,7 +43,7 @@ import de.uzl.itm.ncoap.message.options.StringOptionValue;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 
 import static de.uzl.itm.ncoap.message.MessageCode.BAD_OPTION_402;
@@ -82,20 +82,14 @@ import static de.uzl.itm.ncoap.message.MessageType.RST;
  *
  * @author Oliver Kleine
  */
-public class CoapMessageDecoder extends ChannelInboundHandlerAdapter
+public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPacket>
 {
 
     private Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object evt) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
 
-        if (!(evt instanceof DatagramPacket)) {
-            ctx.fireChannelRead(evt);
-            return;
-        }
-
-        DatagramPacket packet = (DatagramPacket) evt;
         InetSocketAddress remoteSocket = packet.sender();
         CoapMessage coapMessage = decode(remoteSocket, packet.content());
 

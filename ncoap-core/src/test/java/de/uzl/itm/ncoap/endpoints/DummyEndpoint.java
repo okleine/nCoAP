@@ -115,6 +115,7 @@ public class DummyEndpoint extends ChannelDuplexHandler {
         if ((object instanceof CoapMessageEnvelope)) {
             CoapMessageEnvelope envelope = (CoapMessageEnvelope) object;
             CoapMessage message = envelope.content();
+            message.getContent().retain();
             InetSocketAddress remoteAddress = envelope.sender();
             receivedCoapMessages.put(System.currentTimeMillis(), message);
             log.info("Received #{} (from {}): {}.",
