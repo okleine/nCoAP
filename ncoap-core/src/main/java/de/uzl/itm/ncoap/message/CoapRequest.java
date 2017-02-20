@@ -93,6 +93,14 @@ public class CoapRequest extends CoapMessage {
         log.debug("New request created: {}.", this);
     }
 
+    public CoapRequest(CoapRequest that) {
+        this(that.getMessageType(), that.getMessageCode());
+        setMessageID(that.getMessageID());
+        setToken(that.getToken());
+        setContent(that.getContent());
+        this.options.putAll(that.options);
+    }
+
     /**
      * Creates a new instance of {@link CoapRequest}. <b>Note:</b> This constructor is only intended for internal use.
      * Please use one of the other constructors to avoid unexpected behaviour.

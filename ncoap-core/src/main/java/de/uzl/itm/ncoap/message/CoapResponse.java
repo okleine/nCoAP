@@ -84,6 +84,14 @@ public class CoapResponse extends CoapMessage {
             throw new IllegalArgumentException("Message code no." + messageCode + " is no response code.");
     }
 
+    public CoapResponse(CoapResponse that) {
+        this(that.getMessageType(), that.getMessageCode());
+        setMessageID(that.getMessageID());
+        setToken(that.getToken());
+        setContent(that.getContent());
+        this.options.putAll(that.options);
+    }
+
 
     /**
      * Creates a new instance of {@link CoapResponse} with {@link MessageCode#INTERNAL_SERVER_ERROR_500} and
