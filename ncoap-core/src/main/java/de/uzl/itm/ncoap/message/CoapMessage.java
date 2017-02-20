@@ -25,6 +25,7 @@
 package de.uzl.itm.ncoap.message;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -37,9 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Longs;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
@@ -112,7 +113,7 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
     private int messageID;
     private Token token;
 
-    protected SetMultimap<Integer, OptionValue> options;
+    protected ListMultimap<Integer, OptionValue> options;
     private ByteBuf content;
 
 
@@ -143,8 +144,9 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
         this.setMessageID(messageID);
         this.setToken(token);
 
-        this.options = Multimaps.newSetMultimap(new TreeMap<Integer, Collection<OptionValue>>(),
-                LinkedHashSetSupplier.getInstance());
+        this.options = Multimaps.newListMultimap(
+                new TreeMap<Integer, Collection<OptionValue>>(),
+                ArrayListSupplier.getInstance());
 
         this.content = Unpooled.EMPTY_BUFFER;
 
@@ -738,7 +740,7 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
      * option is present
      */
     public byte[] getEndpointID1() {
-        Set<OptionValue> values = getOptions(ENDPOINT_ID_1);
+        Collection<OptionValue> values = getOptions(ENDPOINT_ID_1);
         if (values.isEmpty()) {
             return null;
         } else {
@@ -783,7 +785,7 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
      * option is present
      */
     public byte[] getEndpointID2() {
-        Set<OptionValue> values = getOptions(ENDPOINT_ID_2);
+        Collection<OptionValue> values = getOptions(ENDPOINT_ID_2);
         if (values.isEmpty()) {
             return null;
         } else {
@@ -916,12 +918,13 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
      *
      * @return a {@link Multimap} with the option numbers as keys and {@link de.uzl.itm.ncoap.message.options.OptionValue}s as values.
      */
-    public SetMultimap<Integer, OptionValue> getAllOptions() {
+    public Multimap<Integer, OptionValue> getAllOptions() {
         return this.options;
     }
 
-    public void setAllOptions(SetMultimap<Integer, OptionValue> options) {
-        this.options = options;
+    public void setAllOptions(Multimap<Integer, OptionValue> options) {
+        this.options.clear();
+        this.options.putAll(options);
     }
 
     /**
@@ -933,7 +936,7 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
      *
      * @return a {@link Set} containing the {@link OptionValue}s that are explicitly set in this {@link CoapMessage}.
      */
-    public Set<OptionValue> getOptions(int optionNumber) {
+    public Collection<OptionValue> getOptions(int optionNumber) {
         return this.options.get(optionNumber);
     }
 
@@ -1069,20 +1072,23 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
      * is one {@link LinkedHashSet} provided per option number. The order prevention of the values contained
      * in such a set is necessary to keep the order of multiple values for one option (e.g. URI path).
      */
-    private final static class LinkedHashSetSupplier implements Supplier<LinkedHashSet<OptionValue>> {
+    private final static class ArrayListSupplier implements Supplier<ArrayList<OptionValue>>
+    {
 
-        public static LinkedHashSetSupplier instance = new LinkedHashSetSupplier();
+        public static ArrayListSupplier instance = new ArrayListSupplier();
 
-        private LinkedHashSetSupplier() {
+        private ArrayListSupplier() {
         }
 
-        public static LinkedHashSetSupplier getInstance() {
+        public static ArrayListSupplier getInstance() {
             return instance;
         }
 
         @Override
-        public LinkedHashSet<OptionValue> get() {
-            return new LinkedHashSet<>();
+        public ArrayList<OptionValue> get() {
+            // most options will have just one value, those that have more, will
+            // not have many more - so the initial size of the list is small.
+            return new ArrayList<>(1);
         }
     }
 }

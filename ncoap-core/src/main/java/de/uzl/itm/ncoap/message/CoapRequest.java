@@ -232,7 +232,7 @@ public class CoapRequest extends CoapMessage {
      */
     public Set<byte[]> getIfMatch() {
 
-        Set<OptionValue> ifMatchOptionValues = options.get(IF_MATCH);
+        Collection<OptionValue> ifMatchOptionValues = options.get(IF_MATCH);
         Set<byte[]> result = new HashSet<>(ifMatchOptionValues.size());
 
         for (OptionValue ifMatchOptionValue : ifMatchOptionValues)
