@@ -29,12 +29,14 @@ import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Charsets;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapMessageEnvelope;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
 import de.uzl.itm.ncoap.message.options.EmptyOptionValue;
 import de.uzl.itm.ncoap.message.options.OpaqueOptionValue;
 import de.uzl.itm.ncoap.message.options.Option;
@@ -82,25 +84,25 @@ import static de.uzl.itm.ncoap.message.MessageType.RST;
  *
  * @author Oliver Kleine
  */
-public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPacket>
-{
+public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPacket> {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private static final Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class);
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
-
-        InetSocketAddress remoteSocket = packet.sender();
-        CoapMessage coapMessage = decode(remoteSocket, packet.content());
-
-        if (coapMessage != null) {
-            InetSocketAddress localSocket = (InetSocketAddress) ctx.channel().localAddress();
-            ctx.fireChannelRead(new CoapMessageEnvelope(coapMessage, localSocket, remoteSocket));
+    public void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
+        try {
+            CoapMessage message = decode(msg.sender(), msg.content());
+            ctx.fireChannelRead(new CoapMessageEnvelope(message, msg.recipient(), msg.sender()));
+        } catch (OptionCodecException e) {
+            log.error("Could not decode coap request from {}: {}.", msg.sender(), e.getMessage());
+            ctx.writeAndFlush(new CoapMessageEnvelope(createCoapErrorResponse(MessageCode.BAD_OPTION_402, e.getMessage()), msg.sender()));
+        } catch (Exception e) {
+            log.error("Could not decode coap request from {}: {}.", msg.sender(), e.getMessage());
+            ctx.writeAndFlush(new CoapMessageEnvelope(createCoapErrorResponse(MessageCode.INTERNAL_SERVER_ERROR_500, e.getMessage()), msg.sender()));
         }
     }
 
-
-    protected CoapMessage decode(InetSocketAddress remoteSocket, ByteBuf buffer)
+    public static CoapMessage decode(InetSocketAddress remoteSocket, ByteBuf buffer)
             throws HeaderDecodingException, OptionCodecException {
 
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
@@ -113,11 +115,11 @@ public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPack
 
         //Decode the header values
         int encodedHeader = buffer.readInt();
-        int version =     (encodedHeader >>> 30) & 0x03;
+        int version = (encodedHeader >>> 30) & 0x03;
         int messageType = (encodedHeader >>> 28) & 0x03;
         int tokenLength = (encodedHeader >>> 24) & 0x0F;
         int messageCode = (encodedHeader >>> 16) & 0xFF;
-        int messageID =   (encodedHeader)        & 0xFFFF;
+        int messageID = (encodedHeader) & 0xFFFF;
 
 
         log.debug("Decoded Header: (T) {}, (TKL) {}, (C) {}, (ID) {}",
@@ -204,16 +206,16 @@ public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPack
     }
 
 
-    private void setOptions(CoapMessage coapMessage, ByteBuf buffer) throws OptionCodecException {
+    private static void setOptions(CoapMessage coapMessage, ByteBuf buffer) throws OptionCodecException {
 
         //Decode the options
         int previousOptionNumber = 0;
         int firstByte = buffer.readByte() & 0xFF;
 
-        while(firstByte != 0xFF && buffer.readableBytes() >= 0) {
+        while (firstByte != 0xFF && buffer.readableBytes() >= 0) {
             log.debug("First byte: {} ({})", toBinaryString(firstByte), firstByte);
-            int optionDelta =   (firstByte & 0xF0) >>> 4;
-            int optionLength =   firstByte & 0x0F;
+            int optionDelta = (firstByte & 0xF0) >>> 4;
+            int optionLength = firstByte & 0x0F;
             log.debug("temp. delta: {}, temp. length {}", optionDelta, optionLength);
 
             if (optionDelta == 13) {
@@ -233,11 +235,11 @@ public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPack
             int actualOptionNumber = previousOptionNumber + optionDelta;
             log.info("Decode option no. {} with length of {} bytes.", actualOptionNumber, optionLength);
 
-            try {
-                byte[] optionValue = new byte[optionLength];
-                buffer.readBytes(optionValue);
+            byte[] optionValue = new byte[optionLength];
+            buffer.readBytes(optionValue);
 
-                switch(OptionValue.getType(actualOptionNumber)) {
+            try {
+                switch (OptionValue.getType(actualOptionNumber)) {
                     case EMPTY: {
                         EmptyOptionValue value = new EmptyOptionValue(actualOptionNumber);
                         coapMessage.addOption(actualOptionNumber, value);
@@ -276,7 +278,7 @@ public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPack
                 } else {
                     //Not critical malformed options in requests are silently ignored...
                     log.warn("Silently ignore elective option no. {} in inbound request.", actualOptionNumber);
-                }
+            }
             }
 
             previousOptionNumber = actualOptionNumber;
@@ -332,11 +334,10 @@ public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPack
     }
 
 
-
     private static String toBinaryString(int byteValue) {
         StringBuilder buffer = new StringBuilder(8);
 
-        for(int i = 7; i >= 0; i--) {
+        for (int i = 7; i >= 0; i--) {
             if ((byteValue & (int) Math.pow(2, i)) > 0) {
                 buffer.append("1");
             } else {
@@ -345,5 +346,11 @@ public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPack
         }
 
         return buffer.toString();
+    }
+
+    private static CoapResponse createCoapErrorResponse(int messageCode, String message) {
+        CoapResponse response = new CoapResponse(MessageType.NON, messageCode);
+        response.setContent(message.getBytes(Charsets.UTF_8));
+        return response;
     }
 }

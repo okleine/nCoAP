@@ -34,10 +34,10 @@ import io.netty.buffer.ByteBuf;
 * Time: 23:54
 * To change this template use File | Settings | File Templates.
 */
-public class CoapTestDecoder extends CoapMessageDecoder{
+public class CoapTestDecoder  {
 
     public Object decode(ByteBuf buffer) throws Exception {
-        return super.decode(null, buffer);
+        return CoapMessageDecoder.decode(buffer);
     }
 
 }

@@ -61,15 +61,15 @@ import io.netty.buffer.ByteBuf;
 * Time: 21:47
 * To change this template use File | Settings | File Templates.
 */
-public class CoapTestEncoder extends CoapMessageEncoder{
+public class CoapTestEncoder {
 
     public ByteBuf encode(CoapMessage coapMessage) throws OptionCodecException {
-        return super.encode(coapMessage);
+        return CoapMessageEncoder.encode(coapMessage);
     }
 
     public void encodeOption(ByteBuf buffer, int optionNumber, OptionValue optionValue, int prevNumber)
             throws OptionCodecException {
 
-        super.encodeOption(buffer, optionNumber, optionValue, prevNumber);
+        CoapMessageEncoder.encodeOption(buffer, optionNumber, optionValue, prevNumber);
     }
 }
