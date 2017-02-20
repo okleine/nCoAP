@@ -91,14 +91,6 @@ public abstract class AbstractCoapApplication {
 
         //Create datagram channel
         this.channel = (DatagramChannel) bootstrap.bind(localSocket).awaitUninterruptibly().channel();
-
-        // set the channel handler contexts
-        for (ChannelHandler handler : pipelineFactory.getChannelHandlers()) {
-            if (handler instanceof AbstractCoapChannelHandler) {
-                ChannelHandlerContext context = this.channel.pipeline().context(handler.getClass());
-                ((AbstractCoapChannelHandler) handler).setContext(context);
-            }
-        }
     }
 
     /**

@@ -94,6 +94,11 @@ public abstract class AbstractCoapChannelHandler extends ChannelDuplexHandler{
     }
 
     @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        setContext(ctx);
+    }
+
+    @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object message) throws Exception {
         if (message instanceof TokenReleasedEvent && this instanceof TokenReleasedEvent.Handler) {
             ((TokenReleasedEvent.Handler) this).handleEvent((TokenReleasedEvent) message);
