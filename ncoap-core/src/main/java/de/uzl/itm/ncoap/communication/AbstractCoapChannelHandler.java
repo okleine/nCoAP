@@ -94,6 +94,11 @@ public abstract class AbstractCoapChannelHandler extends ChannelDuplexHandler{
     }
 
     @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
+    }
+
+    @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         setContext(ctx);
     }
@@ -163,7 +168,7 @@ public abstract class AbstractCoapChannelHandler extends ChannelDuplexHandler{
                 return;
             }
         }
-        ctx.writeAndFlush(message);
+        ctx.write(message);
     }
 
     /**
@@ -237,7 +242,7 @@ public abstract class AbstractCoapChannelHandler extends ChannelDuplexHandler{
     protected void sendEmptyACK(int messageID, final InetSocketAddress remoteSocket) {
         final CoapMessage emptyACK = CoapMessage.createEmptyAcknowledgement(messageID);
         // Need to encode CoapMessage to UDP with remote socket here.
-        ChannelFuture future = context.writeAndFlush(new CoapMessageEnvelope(emptyACK, remoteSocket));
+        ChannelFuture future = context.write(new CoapMessageEnvelope(emptyACK, remoteSocket));
         if (LOG.isDebugEnabled()) {
             future.addListener(new ChannelFutureListener() {
                 @Override
