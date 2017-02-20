@@ -24,16 +24,37 @@
  */
 package de.uzl.itm.ncoap.message.options;
 
-import com.google.common.net.InetAddresses;
-import com.google.common.primitives.Longs;
-import de.uzl.itm.ncoap.message.CoapMessage;
-
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import static de.uzl.itm.ncoap.message.options.Option.*;
-import static de.uzl.itm.ncoap.message.options.OptionValue.Type.*;
+import com.google.common.primitives.Longs;
+
+import static de.uzl.itm.ncoap.message.options.Option.ACCEPT;
+import static de.uzl.itm.ncoap.message.options.Option.BLOCK_1;
+import static de.uzl.itm.ncoap.message.options.Option.BLOCK_2;
+import static de.uzl.itm.ncoap.message.options.Option.CONTENT_FORMAT;
+import static de.uzl.itm.ncoap.message.options.Option.ENDPOINT_ID_1;
+import static de.uzl.itm.ncoap.message.options.Option.ENDPOINT_ID_2;
+import static de.uzl.itm.ncoap.message.options.Option.ETAG;
+import static de.uzl.itm.ncoap.message.options.Option.IF_MATCH;
+import static de.uzl.itm.ncoap.message.options.Option.IF_NONE_MATCH;
+import static de.uzl.itm.ncoap.message.options.Option.LOCATION_PATH;
+import static de.uzl.itm.ncoap.message.options.Option.LOCATION_QUERY;
+import static de.uzl.itm.ncoap.message.options.Option.MAX_AGE;
+import static de.uzl.itm.ncoap.message.options.Option.OBSERVE;
+import static de.uzl.itm.ncoap.message.options.Option.PROXY_SCHEME;
+import static de.uzl.itm.ncoap.message.options.Option.PROXY_URI;
+import static de.uzl.itm.ncoap.message.options.Option.SIZE_1;
+import static de.uzl.itm.ncoap.message.options.Option.SIZE_2;
+import static de.uzl.itm.ncoap.message.options.Option.URI_HOST;
+import static de.uzl.itm.ncoap.message.options.Option.URI_PATH;
+import static de.uzl.itm.ncoap.message.options.Option.URI_PORT;
+import static de.uzl.itm.ncoap.message.options.Option.URI_QUERY;
+import static de.uzl.itm.ncoap.message.options.OptionValue.Type.EMPTY;
+import static de.uzl.itm.ncoap.message.options.OptionValue.Type.OPAQUE;
+import static de.uzl.itm.ncoap.message.options.OptionValue.Type.STRING;
+import static de.uzl.itm.ncoap.message.options.OptionValue.Type.UINT;
 
 /**
  * {@link OptionValue} is the abstract base class for CoAP options. It provides a number of useful static constants and
@@ -200,23 +221,8 @@ public abstract class OptionValue<T>{
      * @return <code>true</code> if the given value is the default value for the given option number
      */
     public static boolean isDefaultValue(int optionNumber, byte[] value) {
-
-        if (optionNumber == URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT)) {
-            return true;
-        } else if (optionNumber == MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT)) {
-            return true;
-        } else  if (optionNumber == URI_HOST) {
-            String hostName = new String(value, CoapMessage.CHARSET);
-            if (hostName.startsWith("[") && hostName.endsWith("]")) {
-                hostName = hostName.substring(1, hostName.length() - 1);
-            }
-
-            if (InetAddresses.isInetAddress(hostName)) {
-                return true;
-            }
-        }
-
-        return false;
+        return optionNumber == Option.URI_PORT && Arrays.equals(value, ENCODED_URI_PORT_DEFAULT)
+            || optionNumber == Option.MAX_AGE && Arrays.equals(value, ENCODED_MAX_AGE_DEFAULT);
     }
 
 

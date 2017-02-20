@@ -24,7 +24,11 @@
  */
 package de.uzl.itm.ncoap.message;
 
-import de.uzl.itm.ncoap.AbstractCoapTest;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -33,10 +37,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collection;
+import de.uzl.itm.ncoap.AbstractCoapTest;
 
 import static org.junit.Assert.assertEquals;
 
@@ -56,8 +57,9 @@ public class CoapRequestUriOptionsTest extends AbstractCoapTest{
         return Arrays.asList(new Object[][] {
             {
                 new URI("coap", null, "[2001:db8::2:1]", -1, null, null, null),
-                null, 5683, "/", ""
-            },{
+                "[2001:db8::2:1]", 5683, "/", ""
+            },
+            {
                 new URI("coap", null, "example.net", 5683, null, null, null),
                 "example.net", 5683, "/", ""
             },{
@@ -75,9 +77,10 @@ public class CoapRequestUriOptionsTest extends AbstractCoapTest{
             },{
                 new URI("coap", null, "example.com", 5683, "/%7esensors/temp.xml", null, null),
                 "example.com", 5683, "/~sensors/temp.xml", ""
-            },{
+            }
+            ,{
                 new URI("coap", null, "198.51.100.1", 61616, "//%2F//", "%2F%2F&?%26", null),
-                null, 61616,  "//", "//&?&"
+                "198.51.100.1", 61616,  "//", "//&?&"
             }
         });
     }
