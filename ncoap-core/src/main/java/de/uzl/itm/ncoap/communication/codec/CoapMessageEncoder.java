@@ -88,7 +88,7 @@ public class CoapMessageEncoder extends MessageToMessageEncoder<CoapMessageEnvel
     }
 
     public static ByteBuf encode(CoapMessage coapMessage, ByteBufAllocator allocator) throws OptionCodecException {
-        LOG.debug("CoapMessage to be encoded: %s", coapMessage);
+        LOG.debug("CoapMessage to be encoded: {}", coapMessage);
 
 
         // start encoding

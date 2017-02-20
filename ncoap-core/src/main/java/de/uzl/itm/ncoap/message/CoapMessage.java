@@ -203,6 +203,13 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
     }
 
 
+    public static CoapMessageEnvelope reset(CoapMessageEnvelope request) {
+        return new CoapMessageEnvelope(
+            createEmptyReset(request.content().getMessageID()),
+            request.sender()
+        );
+    }
+
     /**
      * Method to create an empty confirmable message which is considered a PIMG message on application layer, i.e.
      * a message to check if a CoAP endpoints is alive (not only the host but also the CoAP application!).

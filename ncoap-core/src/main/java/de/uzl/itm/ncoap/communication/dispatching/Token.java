@@ -42,7 +42,8 @@ import java.util.Arrays;
  */
 public class Token implements Comparable<Token>{
 
-    public static int MAX_LENGTH = 8;
+    public static final int MAX_LENGTH = 8;
+    public static final Token EMPTY = new Token(new byte[0]);
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -56,7 +57,7 @@ public class Token implements Comparable<Token>{
      * @throws java.lang.IllegalArgumentException if the length of the given byte array is larger than 8
      */
     public Token(byte[] token) {
-        if (token.length > 8)
+        if (token.length > MAX_LENGTH)
             throw new IllegalArgumentException("Maximum token length is 8 (but given length was " + token.length + ")");
 
         this.token = token;
