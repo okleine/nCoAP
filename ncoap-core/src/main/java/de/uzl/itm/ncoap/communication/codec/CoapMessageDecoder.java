@@ -89,17 +89,27 @@ public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPack
     private static final Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class);
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
+    }
+
+    @Override
+    public void channelRead0(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
         try {
-            CoapMessage message = decode(msg.sender(), msg.content());
-            ctx.fireChannelRead(new CoapMessageEnvelope(message, msg.recipient(), msg.sender()));
+            CoapMessage message = decode(packet.sender(), packet.content());
+            ctx.fireChannelRead(new CoapMessageEnvelope(message, packet.recipient(), packet.sender()));
         } catch (OptionCodecException e) {
-            log.error("Could not decode coap request from {}: {}.", msg.sender(), e.getMessage());
-            ctx.writeAndFlush(new CoapMessageEnvelope(createCoapErrorResponse(MessageCode.BAD_OPTION_402, e.getMessage()), msg.sender()));
+            log.error("Could not decode coap request from {}: {}.", packet.sender(), e.getMessage());
+            ctx.writeAndFlush(new CoapMessageEnvelope(createCoapErrorResponse(MessageCode.BAD_OPTION_402, e.getMessage()), packet.sender()));
         } catch (Exception e) {
-            log.error("Could not decode coap request from {}: {}.", msg.sender(), e.getMessage());
-            ctx.writeAndFlush(new CoapMessageEnvelope(createCoapErrorResponse(MessageCode.INTERNAL_SERVER_ERROR_500, e.getMessage()), msg.sender()));
+            log.error("Could not decode coap request from {}: {}.", packet.sender(), e.getMessage());
+            ctx.writeAndFlush(new CoapMessageEnvelope(createCoapErrorResponse(MessageCode.INTERNAL_SERVER_ERROR_500, e.getMessage()), packet.sender()));
         }
+    }
+
+    public static CoapMessage decode(ByteBuf buffer)
+            throws HeaderDecodingException, OptionCodecException {
+        return decode(null, buffer);
     }
 
     public static CoapMessage decode(InetSocketAddress remoteSocket, ByteBuf buffer)

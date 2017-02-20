@@ -31,7 +31,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.primitives.Ints;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -40,7 +39,6 @@ import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.OptionValue;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
@@ -101,7 +99,10 @@ public class CoapMessageEncoder extends MessageToMessageEncoder<CoapMessageEnvel
         LOG.debug("Encoded length of message (after HEADER + TOKEN): {}", encodedMessage.readableBytes());
 
         if (coapMessage.getMessageCode() == MessageCode.EMPTY) {
-            encodedMessage = Unpooled.wrappedBuffer(Ints.toByteArray(encodedMessage.getInt(0) & 0xF0FFFFFF));
+            // mask out token length, return a new buffer with just this header
+            int header = encodedMessage.getInt(0) & 0xF0FFFFFF;
+            encodedMessage.clear();
+            encodedMessage.writeInt(header);
             return encodedMessage;
         }
 
@@ -119,7 +120,8 @@ public class CoapMessageEncoder extends MessageToMessageEncoder<CoapMessageEnvel
             encodedMessage.writeByte(255);
 
             // add payload
-            encodedMessage = Unpooled.wrappedBuffer(encodedMessage, coapMessage.getContent().retain());
+            // we used to do weird reference counting tricks here.
+            encodedMessage.writeBytes(coapMessage.getContent().slice());
             LOG.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
         }
 

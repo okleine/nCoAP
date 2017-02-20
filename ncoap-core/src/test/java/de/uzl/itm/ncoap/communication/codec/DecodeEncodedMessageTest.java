@@ -29,6 +29,7 @@ import java.util.Collection;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +37,6 @@ import org.junit.runners.Parameterized;
 
 import com.google.common.collect.Lists;
 import de.uzl.itm.ncoap.AbstractCoapTest;
-import de.uzl.itm.ncoap.communication.codec.tools.CoapTestDecoder;
 import de.uzl.itm.ncoap.communication.codec.tools.CoapTestEncoder;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.message.CoapMessage;
@@ -60,17 +60,17 @@ import static org.junit.Assert.assertEquals;
 public class DecodeEncodedMessageTest extends AbstractCoapTest {
 
     @Parameterized.Parameters(name = "Test {index}: {0}")
-    public static Collection<Object[]> data() throws Exception {
+    public static Collection<CoapRequest[]> data() throws Exception {
 
         initializeLogging();
 
         return Lists.newArrayList(
                 //[0] TKL is 1, but 0 remaining bytes after header
-                new Object[]{new CoapRequest(MessageType.CON, MessageCode.GET,
+                new CoapRequest[]{new CoapRequest(MessageType.CON, MessageCode.GET,
                         new URI("coap://coap.me:5683/test"))},
 
                 //[1] TKL is 8, but only 6 remaining bytes after header
-                new Object[]{new CoapRequest(MessageType.NON, MessageCode.POST,
+                new CoapRequest[]{new CoapRequest(MessageType.NON, MessageCode.POST,
                         new URI("coap://coap.me:5683/p1/p2/p3/p4/p5/p6/p7"))}
         );
     }
@@ -78,7 +78,7 @@ public class DecodeEncodedMessageTest extends AbstractCoapTest {
     private CoapMessage coapMessage;
     private ByteBuf encodedMessage;
 
-    public DecodeEncodedMessageTest(CoapMessage coapMessage) throws Exception {
+    public DecodeEncodedMessageTest(CoapRequest coapMessage) throws Exception {
         coapMessage.setMessageID(1234);
         coapMessage.setToken(new Token(new byte[]{1,2,3,4}));
 
@@ -101,10 +101,21 @@ public class DecodeEncodedMessageTest extends AbstractCoapTest {
         encodedMessage = new CoapTestEncoder().encode(coapMessage);
     }
 
+    @After
+    public void release() {
+        encodedMessage.release();
+    }
+
+
     @Test
     public void testDecoding() throws Exception {
-        CoapMessage decodedMessage = (CoapMessage) new CoapTestDecoder().decode(encodedMessage);
-        assertEquals(coapMessage, decodedMessage);
+        CoapMessage decodedMessage = CoapMessageDecoder.decode(encodedMessage);
+        try {
+            assertEquals(coapMessage, decodedMessage);
+        }
+        finally {
+            decodedMessage.release();
+        }
     }
 
 

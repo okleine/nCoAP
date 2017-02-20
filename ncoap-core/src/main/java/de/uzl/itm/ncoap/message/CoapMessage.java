@@ -818,6 +818,9 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
             throw new IllegalArgumentException(String.format(DOES_NOT_ALLOW_CONTENT, this.getMessageCodeName()));
         }
 
+        if (this.content != null) {
+            this.content.release();
+        }
         this.content = content.retain();
     }
 
@@ -838,14 +841,8 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
      */
     public void setContent(ByteBuf content, long contentFormat) throws IllegalArgumentException {
 
-        try {
-            this.addUintOption(CONTENT_FORMAT, contentFormat);
-            setContent(content);
-        } catch (IllegalArgumentException e) {
-            this.content = Unpooled.EMPTY_BUFFER;
-            this.removeOptions(CONTENT_FORMAT);
-            throw e;
-        }
+        setContent(content);
+        this.addUintOption(CONTENT_FORMAT, contentFormat);
     }
 
 
@@ -859,7 +856,14 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
      * has a length more than zero.
      */
     public void setContent(byte[] content) throws IllegalArgumentException {
-        setContent(Unpooled.wrappedBuffer(content));
+        if (!(MessageCode.allowsContent(this.messageCode)) && content.length > 0) {
+            throw new IllegalArgumentException(String.format(DOES_NOT_ALLOW_CONTENT, this.getMessageCodeName()));
+        }
+
+        if (this.content != null) {
+            this.content.release();
+        }
+        this.content = Unpooled.wrappedBuffer(content);
     }
 
 
@@ -873,7 +877,8 @@ public abstract class CoapMessage extends AbstractReferenceCounted {
      * @throws java.lang.IllegalArgumentException if the messages code does not allow content
      */
     public void setContent(byte[] content, long contentFormat) throws IllegalArgumentException {
-        setContent(Unpooled.wrappedBuffer(content), contentFormat);
+        setContent(content);
+        this.addUintOption(CONTENT_FORMAT, contentFormat);
     }
 
 

@@ -56,6 +56,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 
 //import de.uzl.itm.ncoap.communication.events.client.LazyObservationTerminationEvent;
 
@@ -85,6 +86,7 @@ public abstract class AbstractCoapChannelHandler extends ChannelDuplexHandler{
         if (message instanceof CoapMessageEnvelope) {
             CoapMessageEnvelope envelope = (CoapMessageEnvelope)message;
             if (!handleInboundCoapMessage(envelope.content(), envelope.sender())) {
+                ReferenceCountUtil.release(message);
                 return;
             }
         }
@@ -152,6 +154,7 @@ public abstract class AbstractCoapChannelHandler extends ChannelDuplexHandler{
         if (message instanceof CoapMessageEnvelope) {
             CoapMessageEnvelope envelope = (CoapMessageEnvelope) message;
             if (!handleOutboundCoapMessage(envelope.content(), envelope.recipient())) {
+                ReferenceCountUtil.release(message);
                 return;
             }
         }
