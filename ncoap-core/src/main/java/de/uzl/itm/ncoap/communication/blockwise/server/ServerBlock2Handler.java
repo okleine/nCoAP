@@ -24,6 +24,13 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise.server;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
@@ -35,17 +42,11 @@ import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import de.uzl.itm.ncoap.message.options.Option;
 import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
-import static de.uzl.itm.ncoap.message.MessageCode.*;
-
-import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import static de.uzl.itm.ncoap.message.MessageCode.PRECONDITION_FAILED_412;
 
 /**
  * <p>The {@link ServerBlock2Handler} handles the {@link Option#BLOCK_2} for
@@ -208,7 +209,9 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
         try {
             this.lock.writeLock().lock();
             // remove response to be sent blockwise
-            if (this.block2Helpers.remove(remoteSocket, token) != null) {
+            ServerBlock2Helper helper = this.block2Helpers.remove(remoteSocket, token);
+            if (helper != null) {
+                helper.coapResponse.release();
                 LOG.debug("Removed response blocks (remote socket: {}, token: {})", remoteSocket, token);
             } else {
                 LOG.warn("Could not remove response blocks (remote socket: {}, token: {})", remoteSocket, token);
@@ -222,13 +225,11 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
 
         private long block2Szx;
         private CoapResponse coapResponse;
-        private ChannelBuffer completeRepresentation;
         private InetSocketAddress remoteSocket;
 
         public ServerBlock2Helper(CoapResponse coapResponse, InetSocketAddress remoteSocket) {
             this.remoteSocket = remoteSocket;
-            this.coapResponse = coapResponse;
-            this.completeRepresentation = coapResponse.getContent();
+            this.coapResponse = new CoapResponse(coapResponse);
 
             // determine initial BLOCK 2 size
             long block2Szx = coapResponse.getBlock2Szx();
@@ -239,7 +240,7 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
             }
 
             // set the SIZE 2 option (length of complete representation in bytes)
-            this.coapResponse.setSize2(this.completeRepresentation.readableBytes());
+            this.coapResponse.setSize2(coapResponse.getContent().readableBytes());
         }
 
         public long getBlock2Szx() {
@@ -248,23 +249,29 @@ public class ServerBlock2Handler extends AbstractCoapChannelHandler {
 
         public void writeResponseWithPayloadBlock(int messageID, long block2Num, long block2Szx) {
 
-            this.coapResponse.setMessageID(messageID);
+            ByteBuf completeRepresentation = this.coapResponse.getContent();
 
             // set block 2 option and proper payload
             int block2Size = BlockSize.getSize(block2Szx);
             int startIndex = (int) block2Num * block2Size;
-            int remaining = this.completeRepresentation.readableBytes() - startIndex;
+            int remaining = completeRepresentation.readableBytes() - startIndex;
             boolean block2more = (remaining > block2Size);
-            this.coapResponse.setBlock2(block2Num, block2more, block2Szx);
+
 
             //set the payload block
+            ByteBuf slice;
             if (block2more) {
-                this.coapResponse.setContent(this.completeRepresentation.slice(startIndex, block2Size));
+                slice = completeRepresentation.slice(startIndex, block2Size);
             } else {
-                this.coapResponse.setContent(this.completeRepresentation.slice(startIndex, remaining));
+                slice = completeRepresentation.slice(startIndex, remaining);
             }
 
-            ChannelFuture future = sendCoapMessage(coapResponse, remoteSocket);
+            CoapResponse response = new CoapResponse(this.coapResponse);
+            this.coapResponse.setMessageID(messageID);
+            this.coapResponse.setBlock2(block2Num, block2more, block2Szx);
+            this.coapResponse.setContent(slice);
+
+            ChannelFuture future = sendCoapMessage(response, remoteSocket);
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {

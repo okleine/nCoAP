@@ -24,6 +24,11 @@
  */
 package de.uzl.itm.ncoap.application.server;
 
+import java.net.InetSocketAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -34,11 +39,9 @@ import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.server.NotFoundHandler;
 import de.uzl.itm.ncoap.communication.dispatching.server.RequestDispatcher;
 import de.uzl.itm.ncoap.message.CoapRequest;
-import org.jboss.netty.channel.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.socket.DatagramChannel;
 
 
 /**
@@ -65,6 +68,7 @@ public class CoapServer extends AbstractCoapApplication {
     private static Logger LOG = LoggerFactory.getLogger(CoapServer.class.getName());
 
     private RequestDispatcher requestDispatcher;
+    private volatile boolean shutdown = false;
 
     /**
      * Creates a new instance of {@link CoapServer} with default parameters, i.e.
@@ -182,7 +186,7 @@ public class CoapServer extends AbstractCoapApplication {
         startApplication(pipelineFactory, serverSocket);
         
         // set the request dispatcher and register .well-known/core
-        this.requestDispatcher = getChannel().getPipeline().get(RequestDispatcher.class);
+        this.requestDispatcher = getChannel().pipeline().get(RequestDispatcher.class);
         this.requestDispatcher.registerWellKnownCoreResource();
     }
 
@@ -223,7 +227,7 @@ public class CoapServer extends AbstractCoapApplication {
     }
 
     private RequestDispatcher getRequestDispatcher() {
-        return getChannel().getPipeline().get(RequestDispatcher.class);
+        return getChannel().pipeline().get(RequestDispatcher.class);
     }
 
     /**
@@ -241,9 +245,12 @@ public class CoapServer extends AbstractCoapApplication {
     /**
      * Gracefully shuts down the server by sequentially shutting down all its components, i.e. the registered
      * {@link de.uzl.itm.ncoap.application.server.resource.Webresource}s and the
-     * {@link org.jboss.netty.channel.socket.DatagramChannel} to write and receive messages.
+     * {@link DatagramChannel} to write and receive messages.
      */
     public ListenableFuture<Void> shutdown() {
+        if (shutdown)
+            return Futures.immediateFuture(null);
+
         LOG.warn("Shutdown server...");
         final SettableFuture<Void> shutdownFuture = SettableFuture.create();
         Futures.addCallback(this.requestDispatcher.shutdown(), new FutureCallback<Void>() {
@@ -256,8 +263,6 @@ public class CoapServer extends AbstractCoapApplication {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
                         LOG.warn("Server channel closed. Release external resources...");
-
-                        getChannel().getFactory().releaseExternalResources();
                     }
                 });
 
@@ -266,6 +271,8 @@ public class CoapServer extends AbstractCoapApplication {
                     public void operationComplete(ChannelFuture future) throws Exception {
                         LOG.warn("Server shutdown completed!");
                         shutdownFuture.set(null);
+                        getExecutor().shutdownGracefully();
+                        shutdown = true;
                     }
                 });
             }
@@ -275,6 +282,7 @@ public class CoapServer extends AbstractCoapApplication {
                 onSuccess(null);
             }
         });
+
         return shutdownFuture;
     }
 }

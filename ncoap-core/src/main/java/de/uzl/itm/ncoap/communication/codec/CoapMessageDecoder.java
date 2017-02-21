@@ -24,18 +24,36 @@
  */
 package de.uzl.itm.ncoap.communication.codec;
 
-import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.message.*;
-import de.uzl.itm.ncoap.message.options.*;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.*;
+import java.net.InetSocketAddress;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
+import com.google.common.base.Charsets;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapMessageEnvelope;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
+import de.uzl.itm.ncoap.message.options.EmptyOptionValue;
+import de.uzl.itm.ncoap.message.options.OpaqueOptionValue;
+import de.uzl.itm.ncoap.message.options.Option;
+import de.uzl.itm.ncoap.message.options.OptionValue;
+import de.uzl.itm.ncoap.message.options.StringOptionValue;
+import de.uzl.itm.ncoap.message.options.UintOptionValue;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.DatagramPacket;
 
-import static de.uzl.itm.ncoap.message.MessageType.*;
-import static de.uzl.itm.ncoap.message.MessageCode.*;
+import static de.uzl.itm.ncoap.message.MessageCode.BAD_OPTION_402;
+import static de.uzl.itm.ncoap.message.MessageCode.EMPTY;
+import static de.uzl.itm.ncoap.message.MessageType.ACK;
+import static de.uzl.itm.ncoap.message.MessageType.CON;
+import static de.uzl.itm.ncoap.message.MessageType.NON;
+import static de.uzl.itm.ncoap.message.MessageType.RST;
 
 /**
  * The {@link CoapMessageDecoder} deserializes inbound messages. Please note the following:
@@ -66,37 +84,35 @@ import static de.uzl.itm.ncoap.message.MessageCode.*;
  *
  * @author Oliver Kleine
  */
-public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
+public class CoapMessageDecoder extends SimpleChannelInboundHandler<DatagramPacket> {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
-
+    private static final Logger log = LoggerFactory.getLogger(CoapMessageDecoder.class);
 
     @Override
-    public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent evt) throws Exception {
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
+    }
 
-        if (evt instanceof ExceptionEvent) {
-            exceptionCaught(ctx, (ExceptionEvent) evt);
-            return;
-        }
-
-        if (!(evt instanceof MessageEvent) || !(((MessageEvent) evt).getMessage() instanceof ChannelBuffer)) {
-            ctx.sendUpstream(evt);
-            return;
-        }
-
-        final MessageEvent messageEvent = (MessageEvent) evt;
-        messageEvent.getFuture().setSuccess();
-
-        InetSocketAddress remoteSocket = (InetSocketAddress) messageEvent.getRemoteAddress();
-        CoapMessage coapMessage = decode(remoteSocket, (ChannelBuffer) messageEvent.getMessage());
-
-        if (coapMessage != null) {
-            Channels.fireMessageReceived(ctx, coapMessage, remoteSocket);
+    @Override
+    public void channelRead0(ChannelHandlerContext ctx, DatagramPacket packet) throws Exception {
+        try {
+            CoapMessage message = decode(packet.sender(), packet.content());
+            ctx.fireChannelRead(new CoapMessageEnvelope(message, packet.recipient(), packet.sender()));
+        } catch (OptionCodecException e) {
+            log.error("Could not decode coap request from {}: {}.", packet.sender(), e.getMessage());
+            ctx.writeAndFlush(new CoapMessageEnvelope(createCoapErrorResponse(MessageCode.BAD_OPTION_402, e.getMessage()), packet.sender()));
+        } catch (Exception e) {
+            log.error("Could not decode coap request from {}: {}.", packet.sender(), e.getMessage());
+            ctx.writeAndFlush(new CoapMessageEnvelope(createCoapErrorResponse(MessageCode.INTERNAL_SERVER_ERROR_500, e.getMessage()), packet.sender()));
         }
     }
 
+    public static CoapMessage decode(ByteBuf buffer)
+            throws HeaderDecodingException, OptionCodecException {
+        return decode(null, buffer);
+    }
 
-    protected CoapMessage decode(InetSocketAddress remoteSocket, ChannelBuffer buffer)
+    public static CoapMessage decode(InetSocketAddress remoteSocket, ByteBuf buffer)
             throws HeaderDecodingException, OptionCodecException {
 
         log.debug("Incoming message to be decoded (length: {})", buffer.readableBytes());
@@ -109,11 +125,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
 
         //Decode the header values
         int encodedHeader = buffer.readInt();
-        int version =     (encodedHeader >>> 30) & 0x03;
+        int version = (encodedHeader >>> 30) & 0x03;
         int messageType = (encodedHeader >>> 28) & 0x03;
         int tokenLength = (encodedHeader >>> 24) & 0x0F;
         int messageCode = (encodedHeader >>> 16) & 0xFF;
-        int messageID =   (encodedHeader)        & 0xFFFF;
+        int messageID = (encodedHeader) & 0xFFFF;
 
 
         log.debug("Decoded Header: (T) {}, (TKL) {}, (C) {}, (ID) {}",
@@ -200,16 +216,16 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
     }
 
 
-    private void setOptions(CoapMessage coapMessage, ChannelBuffer buffer) throws OptionCodecException {
+    private static void setOptions(CoapMessage coapMessage, ByteBuf buffer) throws OptionCodecException {
 
         //Decode the options
         int previousOptionNumber = 0;
         int firstByte = buffer.readByte() & 0xFF;
 
-        while(firstByte != 0xFF && buffer.readableBytes() >= 0) {
+        while (firstByte != 0xFF && buffer.readableBytes() >= 0) {
             log.debug("First byte: {} ({})", toBinaryString(firstByte), firstByte);
-            int optionDelta =   (firstByte & 0xF0) >>> 4;
-            int optionLength =   firstByte & 0x0F;
+            int optionDelta = (firstByte & 0xF0) >>> 4;
+            int optionLength = firstByte & 0x0F;
             log.debug("temp. delta: {}, temp. length {}", optionDelta, optionLength);
 
             if (optionDelta == 13) {
@@ -229,11 +245,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             int actualOptionNumber = previousOptionNumber + optionDelta;
             log.info("Decode option no. {} with length of {} bytes.", actualOptionNumber, optionLength);
 
-            try {
-                byte[] optionValue = new byte[optionLength];
-                buffer.readBytes(optionValue);
+            byte[] optionValue = new byte[optionLength];
+            buffer.readBytes(optionValue);
 
-                switch(OptionValue.getType(actualOptionNumber)) {
+            try {
+                switch (OptionValue.getType(actualOptionNumber)) {
                     case EMPTY: {
                         EmptyOptionValue value = new EmptyOptionValue(actualOptionNumber);
                         coapMessage.addOption(actualOptionNumber, value);
@@ -272,7 +288,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 } else {
                     //Not critical malformed options in requests are silently ignored...
                     log.warn("Silently ignore elective option no. {} in inbound request.", actualOptionNumber);
-                }
+            }
             }
 
             previousOptionNumber = actualOptionNumber;
@@ -288,13 +304,8 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         }
     }
 
-
-
-
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent exceptionEvent) {
-        Throwable cause = exceptionEvent.getCause();
-
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         //Invalid Header Exceptions cause a RST
         if (cause instanceof HeaderDecodingException) {
             HeaderDecodingException ex = (HeaderDecodingException) cause;
@@ -311,14 +322,14 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
             writeBadOptionResponse(ctx, messageType, ex.getMessageID(), ex.getToken(), ex.getremoteSocket(),
                     ex.getMessage());
         } else {
-            ctx.sendUpstream(exceptionEvent);
+            ctx.fireExceptionCaught(cause);
         }
 
     }
 
     private void writeReset(ChannelHandlerContext ctx, int messageID, InetSocketAddress remoteSocket) {
         CoapMessage resetMessage = CoapMessage.createEmptyReset(messageID);
-        Channels.write(ctx, Channels.future(ctx.getChannel()), resetMessage, remoteSocket);
+        ctx.writeAndFlush(new CoapMessageEnvelope(resetMessage, remoteSocket));
     }
 
 
@@ -329,15 +340,14 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         errorResponse.setMessageID(messageID);
         errorResponse.setToken(token);
 
-        Channels.write(ctx, Channels.future(ctx.getChannel()), errorResponse, remoteSocket);
+        ctx.writeAndFlush(new CoapMessageEnvelope(errorResponse, remoteSocket));
     }
-
 
 
     private static String toBinaryString(int byteValue) {
         StringBuilder buffer = new StringBuilder(8);
 
-        for(int i = 7; i >= 0; i--) {
+        for (int i = 7; i >= 0; i--) {
             if ((byteValue & (int) Math.pow(2, i)) > 0) {
                 buffer.append("1");
             } else {
@@ -346,5 +356,11 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
         }
 
         return buffer.toString();
+    }
+
+    private static CoapResponse createCoapErrorResponse(int messageCode, String message) {
+        CoapResponse response = new CoapResponse(MessageType.NON, messageCode);
+        response.setContent(message.getBytes(Charsets.UTF_8));
+        return response;
     }
 }

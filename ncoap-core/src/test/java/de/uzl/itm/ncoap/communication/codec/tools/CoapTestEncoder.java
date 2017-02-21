@@ -52,7 +52,7 @@ import de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder;
 import de.uzl.itm.ncoap.communication.codec.OptionCodecException;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.options.OptionValue;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 /**
 * Created with IntelliJ IDEA.
@@ -61,15 +61,15 @@ import org.jboss.netty.buffer.ChannelBuffer;
 * Time: 21:47
 * To change this template use File | Settings | File Templates.
 */
-public class CoapTestEncoder extends CoapMessageEncoder{
+public class CoapTestEncoder {
 
-    public ChannelBuffer encode(CoapMessage coapMessage) throws OptionCodecException {
-        return super.encode(coapMessage);
+    public ByteBuf encode(CoapMessage coapMessage) throws OptionCodecException {
+        return CoapMessageEncoder.encode(coapMessage);
     }
 
-    public void encodeOption(ChannelBuffer buffer, int optionNumber, OptionValue optionValue, int prevNumber)
+    public void encodeOption(ByteBuf buffer, int optionNumber, OptionValue optionValue, int prevNumber)
             throws OptionCodecException {
 
-        super.encodeOption(buffer, optionNumber, optionValue, prevNumber);
+        CoapMessageEncoder.encodeOption(buffer, optionNumber, optionValue, prevNumber);
     }
 }

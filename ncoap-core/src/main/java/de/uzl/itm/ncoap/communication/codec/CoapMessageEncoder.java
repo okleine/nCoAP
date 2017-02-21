@@ -22,68 +22,29 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-/**
-* Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
-* All rights reserved
-*
-* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-* following conditions are met:
-*
-*  - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
-*    disclaimer.
-*
-*  - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-*    following disclaimer in the documentation and/or other materials provided with the distribution.
-*
-*  - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
-*    products derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-* GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-/**
-* Copyright (c) 2012, Oliver Kleine, Institute of Telematics, University of Luebeck
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-* following conditions are met:
-*
-* - Redistributions of source code must retain the above copyright notice, this list of conditions and the following
-* disclaimer.
-* - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
-* following disclaimer in the documentation and/or other materials provided with the distribution.
-* - Neither the name of the University of Luebeck nor the names of its contributors may be used to endorse or promote
-* products derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-* GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
 
 package de.uzl.itm.ncoap.communication.codec;
 
-import com.google.common.primitives.Ints;
-import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
-import de.uzl.itm.ncoap.message.CoapMessage;
-import de.uzl.itm.ncoap.message.MessageCode;
-import de.uzl.itm.ncoap.message.options.OptionValue;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.*;
+import java.net.InetSocketAddress;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapMessageEnvelope;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.options.OptionValue;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.socket.DatagramPacket;
+import io.netty.handler.codec.MessageToMessageEncoder;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 
 /**
@@ -93,9 +54,9 @@ import java.net.InetSocketAddress;
  *
  * @author Oliver Kleine
  */
-public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
+public class CoapMessageEncoder extends MessageToMessageEncoder<CoapMessageEnvelope> {
 
-    private static Logger LOG = LoggerFactory.getLogger(CoapMessageEncoder.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(CoapMessageEncoder.class);
 
     /**
      * The maximum option delta (65804)
@@ -107,42 +68,41 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
      */
     public static final int MAX_OPTION_LENGTH = 65804;
 
-
     @Override
-    public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent event) throws Exception {
-
-        if (!(event instanceof MessageEvent) || !(((MessageEvent) event).getMessage() instanceof CoapMessage)) {
-            ctx.sendDownstream(event);
-            return;
-        }
-
-        InetSocketAddress remoteSocket = (InetSocketAddress) ((MessageEvent) event).getRemoteAddress();
-        CoapMessage coapMessage = (CoapMessage) ((MessageEvent) event).getMessage();
-
+    protected void encode(ChannelHandlerContext ctx, CoapMessageEnvelope msg, List<Object> out) throws Exception {
+        CoapMessage coapMessage = msg.content();
+        InetSocketAddress remoteSocket = msg.recipient();
         try {
-            ChannelBuffer encodedMessage = encode(coapMessage);
-            Channels.write(ctx, event.getFuture(), encodedMessage, remoteSocket);
-        } catch(Exception ex) {
-            event.getFuture().setFailure(ex);
+            checkArgument(msg.recipient() != null, "Message recipient must not be null!");
+            ByteBuf encoded = encode(coapMessage, ctx.alloc());
+            out.add(new DatagramPacket(encoded, remoteSocket, msg.sender()));
+        } catch (Exception ex) {
             int messageID = coapMessage.getMessageID();
             Token token = coapMessage.getToken();
             sendInternalEncodingFailedMessage(ctx, remoteSocket, messageID, token, ex);
         }
     }
 
+    public static ByteBuf encode(CoapMessage coapMessage) throws OptionCodecException {
+        return encode(coapMessage, UnpooledByteBufAllocator.DEFAULT);
+    }
 
-    protected ChannelBuffer encode(CoapMessage coapMessage) throws OptionCodecException {
-        LOG.info("CoapMessage to be encoded: {}", coapMessage);
+    public static ByteBuf encode(CoapMessage coapMessage, ByteBufAllocator allocator) throws OptionCodecException {
+        LOG.debug("CoapMessage to be encoded: {}", coapMessage);
+
 
         // start encoding
-        ChannelBuffer encodedMessage = ChannelBuffers.dynamicBuffer(0);
+        ByteBuf encodedMessage = allocator.directBuffer();
 
         // encode HEADER and TOKEN
         encodeHeader(encodedMessage, coapMessage);
         LOG.debug("Encoded length of message (after HEADER + TOKEN): {}", encodedMessage.readableBytes());
 
         if (coapMessage.getMessageCode() == MessageCode.EMPTY) {
-            encodedMessage = ChannelBuffers.wrappedBuffer(Ints.toByteArray(encodedMessage.getInt(0) & 0xF0FFFFFF));
+            // mask out token length, return a new buffer with just this header
+            int header = encodedMessage.getInt(0) & 0xF0FFFFFF;
+            encodedMessage.clear();
+            encodedMessage.writeInt(header);
             return encodedMessage;
         }
 
@@ -160,7 +120,8 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
             encodedMessage.writeByte(255);
 
             // add payload
-            encodedMessage = ChannelBuffers.wrappedBuffer(encodedMessage, coapMessage.getContent());
+            // we used to do weird reference counting tricks here.
+            encodedMessage.writeBytes(coapMessage.getContent().slice());
             LOG.debug("Encoded length of message (after CONTENT): {}", encodedMessage.readableBytes());
         }
 
@@ -168,21 +129,21 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected void encodeHeader(ChannelBuffer buffer, CoapMessage coapMessage) {
+    private static void encodeHeader(ByteBuf buffer, CoapMessage coapMessage) {
 
         byte[] token = coapMessage.getToken().getBytes();
 
-        int encodedHeader = ((coapMessage.getProtocolVersion()  & 0x03)     << 30)
-                          | ((coapMessage.getMessageType()      & 0x03)     << 28)
-                          | ((token.length                      & 0x0F)     << 24)
-                          | ((coapMessage.getMessageCode()      & 0xFF)     << 16)
-                          | ((coapMessage.getMessageID()        & 0xFFFF));
+        int encodedHeader = ((coapMessage.getProtocolVersion() & 0x03) << 30)
+                | ((coapMessage.getMessageType() & 0x03) << 28)
+                | ((token.length & 0x0F) << 24)
+                | ((coapMessage.getMessageCode() & 0xFF) << 16)
+                | ((coapMessage.getMessageID() & 0xFFFF));
 
         buffer.writeInt(encodedHeader);
 
         if (LOG.isDebugEnabled()) {
             String binary = Integer.toBinaryString(encodedHeader);
-            while(binary.length() < 32) {
+            while (binary.length() < 32) {
                 binary = "0" + binary;
             }
             LOG.debug("Encoded Header: {}", binary);
@@ -195,13 +156,13 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected void encodeOptions(ChannelBuffer buffer, CoapMessage coapMessage) throws OptionCodecException {
+    private static void encodeOptions(ByteBuf buffer, CoapMessage coapMessage) throws OptionCodecException {
 
         //Encode options one after the other and append buf option to the buf
         int previousOptionNumber = 0;
 
-        for(int optionNumber : coapMessage.getAllOptions().keySet()) {
-            for(OptionValue optionValue : coapMessage.getOptions(optionNumber)) {
+        for (int optionNumber : coapMessage.getAllOptions().keySet()) {
+            for (OptionValue optionValue : coapMessage.getOptions(optionNumber)) {
                 encodeOption(buffer, optionNumber, optionValue, previousOptionNumber);
                 previousOptionNumber = optionNumber;
             }
@@ -209,7 +170,7 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     }
 
 
-    protected void encodeOption(ChannelBuffer buffer, int optionNumber, OptionValue optionValue, int prevNumber)
+    public static void encodeOption(ByteBuf buffer, int optionNumber, OptionValue optionValue, int prevNumber)
             throws OptionCodecException {
 
         //The previous option number must be smaller or equal to the actual one
@@ -292,8 +253,8 @@ public class CoapMessageEncoder extends SimpleChannelDownstreamHandler {
     private void sendInternalEncodingFailedMessage(ChannelHandlerContext ctx, InetSocketAddress remoteSocket,
                                                    int messageID, Token token, Throwable cause) {
 
-       String desc = cause.getMessage() == null ? "Encoder (" + cause.getClass().getName() + ")" : cause.getMessage();
+        String desc = cause.getMessage() == null ? "Encoder (" + cause.getClass().getName() + ")" : cause.getMessage();
         MiscellaneousErrorEvent event = new MiscellaneousErrorEvent(remoteSocket, messageID, token, desc);
-        Channels.fireMessageReceived(ctx, event);
+        ctx.fireUserEventTriggered(event);
     }
 }

@@ -24,22 +24,19 @@
  */
 package de.uzl.itm.ncoap.application;
 
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
-import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelHandler;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
-import org.jboss.netty.channel.socket.DatagramChannel;
-import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
-import org.jboss.netty.util.ThreadNameDeterminer;
-import org.jboss.netty.util.ThreadRenamingRunnable;
-
 import java.net.InetSocketAddress;
-import java.util.concurrent.*;
+
+import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.FixedRecvByteBufAllocator;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
 
 /**
  * The abstract base class for all kinds of CoAP applications, i.e. clients, servers, and endpoints (combining client
@@ -59,7 +56,7 @@ public abstract class AbstractCoapApplication {
      */
     public static final int NOT_BOUND = -1;
 
-    private ScheduledThreadPoolExecutor executor;
+    private EventLoopGroup executor;
     private DatagramChannel channel;
     private String applicationName;
 
@@ -73,20 +70,9 @@ public abstract class AbstractCoapApplication {
 
         this.applicationName = applicationName;
 
-        ThreadFactory threadFactory =
-                new ThreadFactoryBuilder().setNameFormat(applicationName + " I/O Worker #%d").build();
-
-        ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer() {
-            @Override
-            public String determineThreadName(String currentThreadName, String proposedThreadName) throws Exception {
-                return null;
-            }
-        });
-
         // determine number of I/O threads and create thread pool executor of that size
         int ioThreads = Math.max(Runtime.getRuntime().availableProcessors() * 2, 4);
-        this.executor = new ScheduledThreadPoolExecutor(ioThreads, threadFactory);
-//        this.executor = new SynchronizedExecutor(ioThreads, threadFactory);
+        this.executor = new NioEventLoopGroup(ioThreads, new DefaultThreadFactory(applicationName + "I/O Worker"));
     }
 
     /**
@@ -97,40 +83,28 @@ public abstract class AbstractCoapApplication {
      * @param localSocket the socket address to be used for inbound and outbound messages
      */
     protected void startApplication(CoapChannelPipelineFactory pipelineFactory, InetSocketAddress localSocket) {
-        //ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, executor.getCorePoolSize() / 2 );
-        ChannelFactory channelFactory = new NioDatagramChannelFactory(executor, 1 );
-
-        //System.out.println("Threads: " + (executor.getCorePoolSize() - 1));
-        //Create and configure bootstrap
-        ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(channelFactory);
-        bootstrap.setPipelineFactory(pipelineFactory);
-        bootstrap.setOption("receiveBufferSizePredictor",
-                new FixedReceiveBufferSizePredictor(RECEIVE_BUFFER_SIZE));
+        Bootstrap bootstrap = new Bootstrap()
+                .channel(NioDatagramChannel.class)
+                .group(executor)
+                .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(RECEIVE_BUFFER_SIZE))
+                .handler(pipelineFactory);
 
         //Create datagram channel
-        this.channel = (DatagramChannel) bootstrap.bind(localSocket);
-
-        // set the channel handler contexts
-        for (ChannelHandler handler : pipelineFactory.getChannelHandlers()) {
-            if (handler instanceof AbstractCoapChannelHandler) {
-                ChannelHandlerContext context = this.channel.getPipeline().getContext(handler.getClass());
-                ((AbstractCoapChannelHandler) handler).setContext(context);
-            }
-        }
+        this.channel = (DatagramChannel) bootstrap.bind(localSocket).awaitUninterruptibly().channel();
     }
 
     /**
-     * Returns the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
+     * Returns the local port number the {@link DatagramChannel} of this
      * {@link de.uzl.itm.ncoap.application.client.CoapClient} is bound to or
      * {@link #NOT_BOUND} if the application has not yet been started.
      *
-     * @return the local port number the {@link org.jboss.netty.channel.socket.DatagramChannel} of this
+     * @return the local port number the {@link DatagramChannel} of this
      * {@link de.uzl.itm.ncoap.application.client.CoapClient} is bound to or
      * {@link #NOT_BOUND} if the application has not yet been started.
      */
     public int getPort() {
         try {
-            return this.channel.getLocalAddress().getPort();
+            return this.channel.localAddress().getPort();
         } catch(Exception ex) {
             return NOT_BOUND;
         }
@@ -147,7 +121,7 @@ public abstract class AbstractCoapApplication {
      * {@link de.uzl.itm.ncoap.application.AbstractCoapApplication} to handle tasks, e.g. write and
      * receive messages.
      */
-    public ScheduledExecutorService getExecutor() {
+    public EventLoopGroup getExecutor() {
         return this.executor;
     }
 

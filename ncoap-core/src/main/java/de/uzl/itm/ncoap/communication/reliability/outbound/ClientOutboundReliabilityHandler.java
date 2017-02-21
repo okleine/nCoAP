@@ -24,21 +24,34 @@
  */
 package de.uzl.itm.ncoap.communication.reliability.outbound;
 
-import com.google.common.collect.*;
-import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.events.*;
-import de.uzl.itm.ncoap.message.*;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
 import java.util.Observable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.communication.events.EmptyAckReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.MessageIDAssignedEvent;
+import de.uzl.itm.ncoap.communication.events.MessageIDReleasedEvent;
+import de.uzl.itm.ncoap.communication.events.MessageRetransmittedEvent;
+import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
+import de.uzl.itm.ncoap.communication.events.NoMessageIDAvailableEvent;
+import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 
 /**
@@ -259,7 +272,7 @@ public class ClientOutboundReliabilityHandler extends AbstractOutboundReliabilit
                         triggerEvent(new MessageRetransmittedEvent(remoteSocket, messageID, token), false);
                         LOG.debug("Finished transmission #{}: {}", transmissionNumber, coapMessage);
                     } else {
-                        String desc = "Transmission failed (\"" + future.getCause().getMessage() + "\"";
+                        String desc = "Transmission failed (\"" + future.cause().getMessage() + "\"";
                         triggerEvent(new MiscellaneousErrorEvent(remoteSocket, messageID, token, desc), false);
                     }
                 }

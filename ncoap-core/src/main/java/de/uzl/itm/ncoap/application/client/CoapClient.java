@@ -24,18 +24,19 @@
  */
 package de.uzl.itm.ncoap.application.client;
 
+import java.net.InetSocketAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.socket.DatagramChannel;
 
 /**
  * An instance of {@link CoapClient} is the entry point to send {@link CoapMessage}s to a (remote)
@@ -98,7 +99,7 @@ public class CoapClient extends AbstractCoapApplication {
         ClientChannelPipelineFactory factory = new ClientChannelPipelineFactory(this.getExecutor());
         startApplication(factory, clientSocket);
 
-        this.responseDispatcher = getChannel().getPipeline().get(ResponseDispatcher.class);
+        this.responseDispatcher = getChannel().pipeline().get(ResponseDispatcher.class);
     }
 
 
@@ -150,8 +151,8 @@ public class CoapClient extends AbstractCoapApplication {
 
     /**
      * Shuts this {@link CoapClient} down by closing its
-     * {@link org.jboss.netty.channel.socket.DatagramChannel} which includes to unbind
-     * this {@link org.jboss.netty.channel.socket.DatagramChannel} from the listening port and by this means free the
+     * {@link DatagramChannel} which includes to unbind
+     * this {@link DatagramChannel} from the listening port and by this means free the
      * port.
      */
     public final void shutdown() {
@@ -161,10 +162,10 @@ public class CoapClient extends AbstractCoapApplication {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 LOG.warn("Channel closed ({}).", CoapClient.this.getApplicationName());
-                getChannel().getFactory().releaseExternalResources();
                 LOG.warn("External resources released ({}).", CoapClient.this.getApplicationName());
                 LOG.warn("Shutdown of " + getApplicationName() + " completed.");
             }
         });
+        getExecutor().shutdownGracefully();
     }
 }

@@ -42,6 +42,11 @@ public class CoapMessageEqualityTest extends AbstractCoapTest {
 
     }
 
+    @Test
+    public void testAddSameOptionValue() {
+        CoapRequest request = new CoapRequest(MessageType.NON, MessageCode.GET, URI.create("coap://localhost/repeated/repeated"));
+        Assert.assertEquals(request.getUriPath(), "/repeated/repeated");
+    }
 
     @Test
     public void testSameRequests() throws Exception {

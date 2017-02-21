@@ -22,22 +22,22 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package de.uzl.itm.ncoap.communication.codec.tools;
+package de.uzl.itm.ncoap.message;
 
-import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
-import io.netty.buffer.ByteBuf;
+import java.net.InetSocketAddress;
+
+import io.netty.channel.DefaultAddressedEnvelope;
 
 /**
-* Created with IntelliJ IDEA.
-* User: olli
-* Date: 12.11.13
-* Time: 23:54
-* To change this template use File | Settings | File Templates.
-*/
-public class CoapTestDecoder  {
-
-    public Object decode(ByteBuf buffer) throws Exception {
-        return CoapMessageDecoder.decode(buffer);
+ * Purpose of this class is to carry around addressing information for a coap request (without
+ * corrupting the CoapMessage model with fields that aren't actually part of the message).
+ */
+public class CoapMessageEnvelope extends DefaultAddressedEnvelope<CoapMessage, InetSocketAddress> {
+    public CoapMessageEnvelope(CoapMessage message, InetSocketAddress recipient, InetSocketAddress sender) {
+        super(message, recipient, sender);
     }
 
+    public CoapMessageEnvelope(CoapMessage message, InetSocketAddress recipient) {
+        super(message, recipient);
+    }
 }

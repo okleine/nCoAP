@@ -24,21 +24,26 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise;
 
+import java.net.InetSocketAddress;
+import java.net.URI;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.junit.Test;
+
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
 import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.endpoints.server.NotObservableTestWebresourceForPost;
-import de.uzl.itm.ncoap.message.*;
+import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.CoapResponse;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.junit.Test;
-
-import java.net.InetSocketAddress;
-import java.net.URI;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import static org.junit.Assert.assertEquals;
 
@@ -86,7 +91,7 @@ public class ClientSendsMultiplePostRequestsWithBlock1AndBlock2 extends Abstract
             coapRequests[i].setPreferredBlock2Size(initialRequestBlock2Size);
 
             // payload length = 5 x 26 = 130
-            ChannelBuffer payload = ChannelBuffers.wrappedBuffer(capitals, capitals, capitals, capitals, capitals);
+            ByteBuf payload = Unpooled.wrappedBuffer(capitals, capitals, capitals, capitals, capitals);
             coapRequests[i].setContent(payload, ContentFormat.TEXT_PLAIN_UTF8);
 
             // setup callback

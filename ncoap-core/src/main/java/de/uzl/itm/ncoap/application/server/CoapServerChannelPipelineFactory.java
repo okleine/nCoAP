@@ -24,6 +24,8 @@
  */
 package de.uzl.itm.ncoap.application.server;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import de.uzl.itm.ncoap.application.CoapChannelPipelineFactory;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock1Handler;
@@ -35,10 +37,8 @@ import de.uzl.itm.ncoap.communication.observing.ServerObservationHandler;
 import de.uzl.itm.ncoap.communication.reliability.inbound.ServerInboundReliabilityHandler;
 import de.uzl.itm.ncoap.communication.reliability.outbound.MessageIDFactory;
 import de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.socket.DatagramChannel;
-
-import java.util.concurrent.ScheduledExecutorService;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.socket.DatagramChannel;
 
 /**
 * Factory to provide the {@link ChannelPipeline} for newly created {@link DatagramChannel}s.
@@ -58,7 +58,7 @@ public class CoapServerChannelPipelineFactory extends CoapChannelPipelineFactory
     public CoapServerChannelPipelineFactory(ScheduledExecutorService executor, NotFoundHandler notFoundHandler,
                                             BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
 
-        super(executor);
+        super();
         addChannelHandler(new ServerIdentificationHandler(executor));
         addChannelHandler(new ServerOutboundReliabilityHandler(executor, new MessageIDFactory(executor)));
         addChannelHandler(new ServerInboundReliabilityHandler(executor));

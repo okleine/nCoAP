@@ -93,6 +93,14 @@ public class CoapRequest extends CoapMessage {
         log.debug("New request created: {}.", this);
     }
 
+    public CoapRequest(CoapRequest that) {
+        this(that.getMessageType(), that.getMessageCode());
+        setMessageID(that.getMessageID());
+        setToken(that.getToken());
+        setContent(that.getContent());
+        this.options.putAll(that.options);
+    }
+
     /**
      * Creates a new instance of {@link CoapRequest}. <b>Note:</b> This constructor is only intended for internal use.
      * Please use one of the other constructors to avoid unexpected behaviour.
@@ -224,7 +232,7 @@ public class CoapRequest extends CoapMessage {
      */
     public Set<byte[]> getIfMatch() {
 
-        Set<OptionValue> ifMatchOptionValues = options.get(IF_MATCH);
+        Collection<OptionValue> ifMatchOptionValues = options.get(IF_MATCH);
         Set<byte[]> result = new HashSet<>(ifMatchOptionValues.size());
 
         for (OptionValue ifMatchOptionValue : ifMatchOptionValues)

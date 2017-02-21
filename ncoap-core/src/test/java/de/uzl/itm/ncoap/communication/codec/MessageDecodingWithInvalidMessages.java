@@ -24,20 +24,21 @@
  */
 package de.uzl.itm.ncoap.communication.codec;
 
-import com.google.common.collect.Lists;
-import de.uzl.itm.ncoap.AbstractCoapTest;
-import de.uzl.itm.ncoap.communication.codec.tools.CoapTestDecoder;
+import java.util.Collection;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Collection;
+import com.google.common.collect.Lists;
+import de.uzl.itm.ncoap.AbstractCoapTest;
+import de.uzl.itm.ncoap.communication.codec.tools.CoapTestDecoder;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 
 
@@ -74,12 +75,12 @@ public class MessageDecodingWithInvalidMessages extends AbstractCoapTest{
         Logger.getRootLogger().setLevel(Level.ERROR);
     }
 
-    private ChannelBuffer encodedMessageBuffer;
+    private ByteBuf encodedMessageBuffer;
 
 
     public MessageDecodingWithInvalidMessages(byte[] encodedMessage, Class<Exception> expectedExceptionClass,
                                               String expectedMessage) {
-        this.encodedMessageBuffer = ChannelBuffers.wrappedBuffer(encodedMessage);
+        this.encodedMessageBuffer = Unpooled.wrappedBuffer(encodedMessage);
         exception.expect(expectedExceptionClass);
         exception.expectMessage(expectedMessage);
     }

@@ -24,23 +24,24 @@
  */
 package de.uzl.itm.ncoap.communication.codec;
 
-import com.google.common.collect.Lists;
-import de.uzl.itm.ncoap.AbstractCoapTest;
-import de.uzl.itm.ncoap.communication.codec.tools.CoapTestEncoder;
-import de.uzl.itm.ncoap.message.options.Option;
-import de.uzl.itm.ncoap.message.options.OptionValue;
-import de.uzl.itm.ncoap.message.options.StringOptionValue;
+import java.util.Collection;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Collection;
+import com.google.common.collect.Lists;
+import de.uzl.itm.ncoap.AbstractCoapTest;
+import de.uzl.itm.ncoap.communication.codec.tools.CoapTestEncoder;
+import de.uzl.itm.ncoap.message.options.Option;
+import de.uzl.itm.ncoap.message.options.OptionValue;
+import de.uzl.itm.ncoap.message.options.StringOptionValue;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import static org.junit.Assert.assertEquals;
 
@@ -93,7 +94,7 @@ public class OptionEncoding extends AbstractCoapTest {
     private int optionNumber;
     private OptionValue optionValue;
 
-    private ChannelBuffer encodedOption;
+    private ByteBuf encodedOption;
 
 
     private OptionEncoding(int previousOptionNumber, int optionNumber, OptionValue optionValue) {
@@ -112,7 +113,7 @@ public class OptionEncoding extends AbstractCoapTest {
     @Before
     public void encodeOption() throws Exception {
         log.info("Start Tests with Option " + optionValue);
-        encodedOption = ChannelBuffers.dynamicBuffer();
+        encodedOption = Unpooled.buffer();
         coapTestEncoder.encodeOption(encodedOption, optionNumber, optionValue, previousOptionNumber);
     }
 
@@ -120,7 +121,7 @@ public class OptionEncoding extends AbstractCoapTest {
     public void testDeltaPartOfFirstByte() {
         int expectedDelta = this.optionNumber - this.previousOptionNumber;
 
-        ChannelBuffer buffer = ChannelBuffers.copiedBuffer(encodedOption);
+        ByteBuf buffer = Unpooled.copiedBuffer(encodedOption);
 
         int firstByte = buffer.readByte() & 0xFF;
 
@@ -150,7 +151,7 @@ public class OptionEncoding extends AbstractCoapTest {
     public void testLengthPartOfFirstByte() {
         int expectedLength = this.optionValue.getValue().length;
 
-        ChannelBuffer buffer = ChannelBuffers.copiedBuffer(encodedOption);
+        ByteBuf buffer = Unpooled.copiedBuffer(encodedOption);
 
         int firstByte = buffer.readByte() & 0xFF;
 
@@ -184,7 +185,7 @@ public class OptionEncoding extends AbstractCoapTest {
 
         int expectedDelta = this.optionNumber - this.previousOptionNumber;
 
-        ChannelBuffer buffer = ChannelBuffers.copiedBuffer(encodedOption);
+        ByteBuf buffer = Unpooled.copiedBuffer(encodedOption);
         buffer.readByte();
 
         if (expectedDelta >= 13 && expectedDelta < 269) {
@@ -208,7 +209,7 @@ public class OptionEncoding extends AbstractCoapTest {
 
         int expectedLength = optionValue.getValue().length;
 
-        ChannelBuffer buffer = ChannelBuffers.copiedBuffer(encodedOption);
+        ByteBuf buffer = Unpooled.copiedBuffer(encodedOption);
         int firstByte = buffer.readByte();
         int deltaPart = (firstByte & 0xFF) >>> 4 ;
 

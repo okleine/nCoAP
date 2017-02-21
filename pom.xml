@@ -71,6 +71,18 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <io.netty.leakDetectionLevel>paranoid</io.netty.leakDetectionLevel>
+                        <io.netty.leakDetection.maxRecords>20</io.netty.leakDetection.maxRecords>
+                        <io.netty.leakDetection.acquireAndReleaseOnly>false</io.netty.leakDetection.acquireAndReleaseOnly>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.3.2</version>
                 <configuration>

@@ -24,23 +24,38 @@
  */
 package de.uzl.itm.ncoap.communication.dispatching.client;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.HashBasedTable;
 import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import de.uzl.itm.ncoap.communication.dispatching.Token;
-import de.uzl.itm.ncoap.communication.events.client.*;
-import de.uzl.itm.ncoap.communication.events.*;
+import de.uzl.itm.ncoap.communication.events.EmptyAckReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.MessageIDAssignedEvent;
+import de.uzl.itm.ncoap.communication.events.MessageIDReleasedEvent;
+import de.uzl.itm.ncoap.communication.events.MessageRetransmittedEvent;
+import de.uzl.itm.ncoap.communication.events.MiscellaneousErrorEvent;
+import de.uzl.itm.ncoap.communication.events.NoMessageIDAvailableEvent;
+import de.uzl.itm.ncoap.communication.events.ResetReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.TransmissionTimeoutEvent;
+import de.uzl.itm.ncoap.communication.events.client.BlockwiseResponseTransferFailedEvent;
+import de.uzl.itm.ncoap.communication.events.client.ContinueResponseReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.client.RemoteServerSocketChangedEvent;
+import de.uzl.itm.ncoap.communication.events.client.ResponseBlockReceivedEvent;
+import de.uzl.itm.ncoap.communication.events.client.TokenReleasedEvent;
 import de.uzl.itm.ncoap.message.CoapMessage;
+import de.uzl.itm.ncoap.message.CoapMessageEnvelope;
 import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
-import org.jboss.netty.channel.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 
 /**
  * <p>The {@link ResponseDispatcher} is responsible for
@@ -416,8 +431,8 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
 
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ee) {
-        log.error("Exception: ", ee.getCause());
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable ee) {
+        log.error("Exception: ", ee);
     }
 
     @Override
@@ -479,17 +494,16 @@ public class ResponseDispatcher extends AbstractCoapChannelHandler implements Re
         }
 
         private void sendRequest() {
-            ChannelFuture future = Channels.future(getContext().getChannel());
-            Channels.write(getContext(), future, coapMessage, this.remoteSocket);
+            ChannelFuture future = getContext().writeAndFlush(new CoapMessageEnvelope(coapMessage, this.remoteSocket));
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (!future.isSuccess()) {
                         ClientCallback callback = removeCallback(remoteSocket, coapMessage.getToken());
-                        log.error("Could not write CoAP Request!", future.getCause());
+                        log.error("Could not write CoAP Request!", future.cause());
                         if (callback != null) {
                             callback.processMiscellaneousError("Message could not be sent (Reason: \"" +
-                                    future.getCause().getMessage() + ")\"");
+                                    future.cause().getMessage() + ")\"");
                         }
                     }
                 }

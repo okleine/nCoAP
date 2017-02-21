@@ -24,35 +24,34 @@
  */
 package de.uzl.itm.ncoap.application;
 
-import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
-import de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder;
-import org.jboss.netty.channel.ChannelHandler;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.handler.execution.ExecutionHandler;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
+import de.uzl.itm.ncoap.communication.codec.CoapMessageDecoder;
+import de.uzl.itm.ncoap.communication.codec.CoapMessageEncoder;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
 
 /**
  * Abstract base class for pipeline factories for clients, servers and peers.
  *
  * @author Oliver Kleine
  */
-public abstract class CoapChannelPipelineFactory implements ChannelPipelineFactory {
+public abstract class CoapChannelPipelineFactory extends ChannelInitializer<Channel> {
 
     private static Logger LOG = LoggerFactory.getLogger(CoapChannelPipelineFactory.class.getName());
 
     private Set<ChannelHandler> channelHandlers;
 
 
-    protected CoapChannelPipelineFactory(ScheduledExecutorService executor) {
+    protected CoapChannelPipelineFactory() {
         this.channelHandlers = new LinkedHashSet<>();
 
-        addChannelHandler(new ExecutionHandler(executor));
         addChannelHandler(new CoapMessageEncoder());
         addChannelHandler(new CoapMessageDecoder());
      }
@@ -67,16 +66,15 @@ public abstract class CoapChannelPipelineFactory implements ChannelPipelineFacto
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception {
-        ChannelPipeline pipeline = Channels.pipeline();
+    protected void initChannel(Channel channel) throws Exception
+    {
+        ChannelPipeline pipeline = channel.pipeline();
 
         for(ChannelHandler handler : this.channelHandlers) {
             String handlerName = handler.getClass().getSimpleName();
             pipeline.addLast(handler.getClass().getSimpleName(), handler);
             LOG.debug("Added Handler to Pipeline: {}.", handlerName);
         }
-
-        return pipeline;
     }
 
 //    /**
