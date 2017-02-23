@@ -29,8 +29,12 @@
         <!--<level value="info"/>-->
     <!--</logger>-->
 
+    <logger name="de.uzl.itm.ncoap.examples.server">
+    	<level value="info"/>
+    </logger>
+
     <logger name="de.uzl.itm.ncoap.application.server.resource.WellKnownCoreResource">
-    <level value="debug"/>
+    	<level value="debug"/>
     </logger>
 
     <root>

@@ -24,17 +24,20 @@
  */
 package de.uzl.itm.ncoap.examples.client;
 
-import de.uzl.itm.ncoap.application.client.ClientCallback;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+
 import de.uzl.itm.ncoap.application.client.CoapClient;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.examples.client.callback.SimpleCallback;
 import de.uzl.itm.ncoap.examples.client.callback.SimpleObservationCallback;
 import de.uzl.itm.ncoap.examples.client.config.ClientCmdLineArgumentsWrapper;
 import de.uzl.itm.ncoap.examples.client.config.LoggingConfiguration;
-import de.uzl.itm.ncoap.message.*;
-import de.uzl.itm.ncoap.message.options.ContentFormat;
-
-import java.net.*;
+import de.uzl.itm.ncoap.message.CoapRequest;
+import de.uzl.itm.ncoap.message.MessageCode;
+import de.uzl.itm.ncoap.message.MessageType;
 
 
 /**
@@ -137,7 +140,6 @@ public class SimpleCoapClient extends CoapClient {
         this.shutdown();
     }
 
-
     private boolean isShutdownCriterionSatisfied(long startTime) {
 
         //Check if maximum duration was reached
@@ -176,14 +178,15 @@ public class SimpleCoapClient extends CoapClient {
         }
 
         // Start the client
-//        SimpleCoapClient client = new SimpleCoapClient(arguments);
-//
-//        // Send the request
-//        client.sendCoapRequest();
-//
-//        // wait for shutdown criterion and shutdown...
-//        client.waitAndShutdown();
+        SimpleCoapClient client = new SimpleCoapClient(arguments);
 
+        // Send the request
+        client.sendCoapRequest();
+
+        // wait for shutdown criterion and shutdown...
+        client.waitAndShutdown();
+
+        /*
         CoapClient client = new CoapClient("Simple CoAP Client", 6000);
 
         URI uri = new URI("coap", null, "vs0.inf.ethz.ch", 5683, "/obs-large", null, null);
@@ -209,6 +212,7 @@ public class SimpleCoapClient extends CoapClient {
 //                        }
 //                    }
 //                }
+
             }
 
             @Override
@@ -229,8 +233,7 @@ public class SimpleCoapClient extends CoapClient {
 
         Thread.sleep(90000);
         client.shutdown();
-
-
+*/
 
     }
 }

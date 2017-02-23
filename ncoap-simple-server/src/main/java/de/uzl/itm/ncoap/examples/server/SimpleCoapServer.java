@@ -29,8 +29,6 @@ import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.options.OptionValue;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 /**
  * This is a simple application to showcase how to use nCoAP for servers
  *
