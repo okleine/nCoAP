@@ -224,6 +224,7 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 optionLength = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
             }
 
+
             log.info("Previous option: {}, Option delta: {}", previousOptionNumber, optionDelta);
 
             int actualOptionNumber = previousOptionNumber + optionDelta;
