@@ -241,4 +241,9 @@ public class ObservableTestWebresource extends ObservableWebresource<Integer> {
     public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteSocket) {
         return true;
     }
+
+    @Override
+    public void removeObserver(InetSocketAddress remoteSocket) {
+        // nothing to do
+    }
 }

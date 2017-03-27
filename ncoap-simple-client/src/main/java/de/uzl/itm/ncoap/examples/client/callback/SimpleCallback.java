@@ -87,6 +87,10 @@ public class SimpleCallback extends ClientCallback {
         timedOut.set(true);
     }
 
+    @Override
+    public void processResponseBlockReceived(long receivedLength, long expectedLength) {
+        log.info("Received {}/{} bytes.", receivedLength, expectedLength);
+    }
 
     public boolean isTimedOut() {
         return timedOut.get();

@@ -24,6 +24,7 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise;
 
+import com.google.common.base.Strings;
 import de.uzl.itm.ncoap.application.client.CoapClient;
 import de.uzl.itm.ncoap.application.server.CoapServer;
 import de.uzl.itm.ncoap.communication.AbstractCoapCommunicationTest;
@@ -48,7 +49,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class ClientSendsMultiplePostRequestsWithBlock1AndBlock2 extends AbstractCoapCommunicationTest {
 
-    private static final int NUMBER_OF_PARALLEL_REQUESTS = 100;
+    private static final int NUMBER_OF_PARALLEL_REQUESTS = 10;
 
     // server components
     private static CoapServer coapServer;
@@ -65,7 +66,7 @@ public class ClientSendsMultiplePostRequestsWithBlock1AndBlock2 extends Abstract
     private static BlockSize initialRequestBlock1Size = BlockSize.SIZE_64;
     private static BlockSize initialRequestBlock2Size = BlockSize.SIZE_32;
 
-    private static byte[] capitals = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(CoapMessage.CHARSET);
+    //private static byte[] capitals = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(CoapMessage.CHARSET);
 
     @Override
     public void setupComponents() throws Exception {
@@ -86,11 +87,15 @@ public class ClientSendsMultiplePostRequestsWithBlock1AndBlock2 extends Abstract
             coapRequests[i].setPreferredBlock2Size(initialRequestBlock2Size);
 
             // payload length = 5 x 26 = 130
-            ChannelBuffer payload = ChannelBuffers.wrappedBuffer(capitals, capitals, capitals, capitals, capitals);
+            String p = Strings.padStart("" + (i + 1), 4, '0');
+            for(int j = 0; j < 26; j++) {
+                p = p + '|' + Strings.padStart("" + (i + 1), 4, '0');;
+            }
+            ChannelBuffer payload = ChannelBuffers.wrappedBuffer(p.getBytes(CoapMessage.CHARSET));
             coapRequests[i].setContent(payload, ContentFormat.TEXT_PLAIN_UTF8);
 
             // setup callback
-            clientCallbacks[i] = new TestCallback();
+            clientCallbacks[i] = new TestCallback(i + 1);
         }
     }
 

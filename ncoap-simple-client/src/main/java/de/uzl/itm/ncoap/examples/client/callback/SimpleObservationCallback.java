@@ -25,6 +25,7 @@
 package de.uzl.itm.ncoap.examples.client.callback;
 
 import de.uzl.itm.ncoap.examples.client.SimpleCoapClient;
+import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,7 @@ public class SimpleObservationCallback extends SimpleCallback {
     public void processCoapResponse(CoapResponse coapResponse) {
         int value = responseCounter.incrementAndGet();
         log.info("Received #{}: {}", value, coapResponse);
+        log.info("Full Payload:\n{}", coapResponse.getContent().toString(CoapMessage.CHARSET));
     }
 
 

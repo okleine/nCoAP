@@ -84,6 +84,9 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
 
     @Override
     public boolean handleInboundCoapMessage(CoapMessage coapMessage, InetSocketAddress remoteSocket) {
+
+        LOG.debug("HANDLE INBOUND MESSAGE: {}", coapMessage);
+
         if (coapMessage instanceof CoapResponse && coapMessage.getBlock2Szx() != UintOptionValue.UNDEFINED) {
             return handleInboundCoapResponseWithBlock2((CoapResponse) coapMessage, remoteSocket);
         } else {
@@ -129,6 +132,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
             return false;
         } else {
             coapResponse.setContent(received);
+            resetHelper(remoteSocket, token);
             return true;
         }
     }
@@ -140,7 +144,7 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
             ClientBlock2Helper helper = this.block2HelperTable.get(remoteSocket, token);
             if (helper != null) {
                 byte[] result =  helper.addResponseBlock(responsePayloadBlock, etag);
-                LOG.debug("Payload: {}", new String(result, CoapMessage.CHARSET));
+                LOG.debug("Payload (Concatenation of blocks received so far):\n{}", new String(result, CoapMessage.CHARSET));
                 return result;
             } else {
 //                return ChannelBuffers.EMPTY_BUFFER;
@@ -192,6 +196,20 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
         }
     }
 
+    private void resetHelper(InetSocketAddress remoteSocket, Token token) {
+        try {
+            this.lock.writeLock().lock();
+            ClientBlock2Helper clientBlock2Helper = this.block2HelperTable.get(remoteSocket, token);
+            if (clientBlock2Helper != null) {
+                clientBlock2Helper.reset();
+                LOG.debug("BLOCK2 helper reseted (Remote Socket: {}, Token: {})", remoteSocket, token);
+            } else {
+                LOG.debug("No BLOCK2 helper found to be reseted (Remote Socket: {}, Token: {})", remoteSocket, token);
+            }
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+    }
 
     private void removeHelper(InetSocketAddress remoteSocket, Token token) {
         try {
@@ -247,16 +265,18 @@ public class ClientBlock2Handler extends AbstractCoapChannelHandler implements T
             this.responseBlocks = new byte[0];
         }
 
+        private void reset() {
+            this.etag = null;
+            this.responseBlocks = new byte[0];
+        }
 
         private byte[] addResponseBlock(ChannelBuffer buffer, byte[] etag) {
             if (this.etag != null && etag == null) {
                 // previous response block had an ETAG but current block has no ETAG
                 return new byte[0];
-                //return ChannelBuffers.EMPTY_BUFFER;
             } else if (this.etag == null || Arrays.equals(this.etag, etag)) {
                 // current block has same ETAG as previous blocks or previous blocks did not provide an ETAG
                 this.etag = etag;
-                //this.responseBlocks = Array.ChannelBuffers.wrappedBuffer(responseBlocks, buffer);
                 byte[] block = new byte[buffer.readableBytes()];
                 buffer.getBytes(0, block, 0, block.length);
                 this.responseBlocks = Bytes.concat(this.responseBlocks, block);

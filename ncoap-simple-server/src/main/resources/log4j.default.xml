@@ -13,25 +13,26 @@
         <appender-ref ref="console"/>
     </appender>
 
-    <!--<logger name="de.uzl.itm.ncoap.communication.observing.ServerObservationHandler">-->
-        <!--<level value="debug"/>-->
-    <!--</logger>-->
-
-    <!--<logger name="de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock2Handler">-->
-        <!--<level value="debug"/>-->
-    <!--</logger>-->
-
-    <!--<logger name="de.uzl.itm.ncoap.application.server.resource.ObservableWebresource">-->
-        <!--<level value="debug"/>-->
-    <!--</logger>-->
-
-    <!--<logger name="de.uzl.itm.ncoap.examples">-->
-        <!--<level value="info"/>-->
-    <!--</logger>-->
-
-    <logger name="de.uzl.itm.ncoap.application.server.resource.WellKnownCoreResource">
-    <level value="debug"/>
+    <logger name="de.uzl.itm.ncoap.communication.observing.ServerObservationHandler">
+        <level value="debug"/>
     </logger>
+
+    <logger name="de.uzl.itm.ncoap.communication.blockwise.server.ServerBlock2Handler">
+        <level value="debug"/>
+    </logger>
+
+    <logger name="de.uzl.itm.ncoap.communication.reliability.outbound.ServerOutboundReliabilityHandler">
+        <level value="info"/>
+    </logger>
+
+    <logger name="de.uzl.itm.ncoap.examples.server.SimpleObservableTimeService">
+        <level value="debug"/>
+    </logger>
+
+ <!---->
+    <!--<logger name="de.uzl.itm.ncoap.application.server.resource.WellKnownCoreResource">-->
+       <!--<level value="debug"/>-->
+    <!--</logger>-->
 
     <root>
         <priority value="warn"/>

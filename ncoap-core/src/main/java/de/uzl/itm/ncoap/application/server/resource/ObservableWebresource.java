@@ -33,10 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Observable;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -130,6 +127,7 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
         }
     }
 
+    @Override
     public Collection<LinkParam> getLinkParams() {
         return this.linkParams.values();
     }
@@ -299,6 +297,8 @@ public abstract class ObservableWebresource<T> extends Observable implements Web
      * @return the message type for the next update notification for the observer identified by the given parameters
      */
     public abstract boolean isUpdateNotificationConfirmable(InetSocketAddress remoteSocket);
+
+    public abstract void removeObserver(InetSocketAddress remoteAddress);
 
 
     /**

@@ -77,7 +77,7 @@ public class SimpleCoapServer extends CoapServer {
         LoggingConfiguration.configureDefaultLogging();
 
         // create server and register resources
-        SimpleCoapServer server = new SimpleCoapServer(BlockSize.SIZE_16, BlockSize.SIZE_16);
+        SimpleCoapServer server = new SimpleCoapServer(BlockSize.SIZE_64, BlockSize.SIZE_64);
         server.registerSimpleNotObservableWebresource();
         server.registerSimpleObservableTimeResource();
     }

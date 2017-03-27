@@ -176,59 +176,59 @@ public class SimpleCoapClient extends CoapClient {
         }
 
         // Start the client
-//        SimpleCoapClient client = new SimpleCoapClient(arguments);
+        SimpleCoapClient client = new SimpleCoapClient(arguments);
+
+        // Send the request
+        client.sendCoapRequest();
+
+        // wait for shutdown criterion and shutdown...
+        client.waitAndShutdown();
+
+        //CoapClient client = new CoapClient("Simple CoAP Client", 6000);
+
+//        URI uri = new URI("coap", null, "vs0.inf.ethz.ch", 5683, "/obs-large", null, null);
+//        CoapRequest request = new CoapRequest(MessageType.CON, MessageCode.GET, uri);
+//        request.setPreferredBlock2Size(BlockSize.SIZE_16);
+//        request.setObserve(0);
+////        request.setEndpointID1();
 //
-//        // Send the request
-//        client.sendCoapRequest();
+//        client.sendCoapRequest(request, new InetSocketAddress("vs0.inf.ethz.ch", 5683), new ClientCallback() {
+//            @Override
+//            public void processCoapResponse(CoapResponse coapResponse) {
+//                System.out.println("BLOCK NO.:" + coapResponse.getBlock2Number());
+//                String content = coapResponse.getContent().toString(CoapMessage.CHARSET);
+//                System.out.println("RECEIVED: " + content);
 //
-//        // wait for shutdown criterion and shutdown...
-//        client.waitAndShutdown();
-
-        CoapClient client = new CoapClient("Simple CoAP Client", 6000);
-
-        URI uri = new URI("coap", null, "vs0.inf.ethz.ch", 5683, "/obs-large", null, null);
-        CoapRequest request = new CoapRequest(MessageType.CON, MessageCode.GET, uri);
-        request.setPreferredBlock2Size(BlockSize.SIZE_16);
-        request.setObserve(0);
-//        request.setEndpointID1();
-
-        client.sendCoapRequest(request, new InetSocketAddress("vs0.inf.ethz.ch", 5683), new ClientCallback() {
-            @Override
-            public void processCoapResponse(CoapResponse coapResponse) {
-                System.out.println("BLOCK NO.:" + coapResponse.getBlock2Number());
-                String content = coapResponse.getContent().toString(CoapMessage.CHARSET);
-                System.out.println("RECEIVED: " + content);
-
-//                if (coapResponse.getContentFormat() == ContentFormat.APP_LINK_FORMAT) {
-//                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(content);
+////                if (coapResponse.getContentFormat() == ContentFormat.APP_LINK_FORMAT) {
+////                    Map<String, Set<LinkAttribute>> attributes = LinkFormatDecoder.decode(content);
+////
+////                    for (String service : attributes.keySet()) {
+////                        System.out.println(service);
+////                        for (LinkAttribute attribute : attributes.get(service)) {
+////                            System.out.println("   " + attribute);
+////                        }
+////                    }
+////                }
+//            }
 //
-//                    for (String service : attributes.keySet()) {
-//                        System.out.println(service);
-//                        for (LinkAttribute attribute : attributes.get(service)) {
-//                            System.out.println("   " + attribute);
-//                        }
-//                    }
-//                }
-            }
-
-            @Override
-            public boolean continueObservation() {
-                return true;
-            }
-
-            @Override
-            public void processMiscellaneousError(final String description) {
-                System.out.println("ERROR: " + description);
-            }
-
-            @Override
-            public void processResponseBlockReceived(long receivedLength, long expectedLength) {
-                System.out.println("Received " + receivedLength + "/" + expectedLength + " bytes.");
-            }
-        });
-
-        Thread.sleep(90000);
-        client.shutdown();
+//            @Override
+//            public boolean continueObservation() {
+//                return true;
+//            }
+//
+//            @Override
+//            public void processMiscellaneousError(final String description) {
+//                System.out.println("ERROR: " + description);
+//            }
+//
+//            @Override
+//            public void processResponseBlockReceived(long receivedLength, long expectedLength) {
+//                System.out.println("Received " + receivedLength + "/" + expectedLength + " bytes.");
+//            }
+//        });
+//
+//        Thread.sleep(90000);
+//        client.shutdown();
 
 
 

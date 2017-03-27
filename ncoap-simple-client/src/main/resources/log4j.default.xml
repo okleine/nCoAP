@@ -14,11 +14,15 @@
     <!--</appender>-->
 
     <logger name="de.uzl.itm.ncoap.communication.reliability.outbound.ClientOutboundReliabilityHandler">
-        <level value="debug"/>
+        <level value="info"/>
     </logger>
 
     <logger name="de.uzl.itm.ncoap.communication.blockwise.client.ClientBlock2Handler">
-        <level value="debug"/>
+        <level value="info"/>
+    </logger>
+
+    <logger name="de.uzl.itm.ncoap.examples.client.callback.SimpleObservationCallback">
+        <level value="info"/>
     </logger>
 
     <root>

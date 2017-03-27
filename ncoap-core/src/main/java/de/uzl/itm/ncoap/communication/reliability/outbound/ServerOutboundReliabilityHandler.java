@@ -163,6 +163,9 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         if (messageType == MessageType.CON) {
             addTransfer(remoteSocket, coapResponse);
             scheduleRetransmission(remoteSocket, coapResponse.getToken(), 1);
+        } else if (messageType == MessageType.NON && coapResponse.isUpdateNotification()) {
+            addTransfer(remoteSocket, coapResponse);
+            scheduleTransferRemoval(remoteSocket, coapResponse.getMessageID());
         }
         return true;
     }
@@ -178,6 +181,19 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         }
     }
 
+    private void scheduleTransferRemoval(final InetSocketAddress remoteSocket, final int messageID) {
+        getExecutor().schedule(new Runnable() {
+
+            @Override
+            public void run() {
+                if (removeTransfer(remoteSocket, messageID) != null) {
+                    LOG.debug("Removed non-confirmable transfer for update notification (Remote Socket: {}). "
+                            + "Cancellation with RST is not possible anymore.", remoteSocket);
+            }
+        }
+
+        }, 3, TimeUnit.SECONDS);
+    }
 
     private void scheduleRetransmission(InetSocketAddress remoteSocket, Token token, int retransmissionNo) {
         long delay = provideRetransmissionDelay(retransmissionNo);
@@ -246,7 +262,7 @@ public class ServerOutboundReliabilityHandler extends AbstractOutboundReliabilit
         try{
             lock.writeLock().lock();
             CoapResponse previousResponse = this.transfers2.remove(remoteSocket, token);
-            if (previousResponse == null) {
+            if (previousResponse == null || previousResponse.getMessageType() == MessageType.NON) {
                 return false;
             } else {
                 int messageID = previousResponse.getMessageID();

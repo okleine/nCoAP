@@ -49,6 +49,8 @@ public class TestCallback extends ClientCallback {
     private Set<Long> responseBlockReceptions;
     private Set<Long> continueResponseReceptions;
 
+    private int number = 0;
+
     public TestCallback() {
         this.coapResponses = Collections.synchronizedSortedMap(
                 new TreeMap<Long, CoapResponse>(Ordering.natural())
@@ -61,11 +63,16 @@ public class TestCallback extends ClientCallback {
         this.continueResponseReceptions = Collections.synchronizedSet(new TreeSet<Long>((Ordering.natural())));
     }
 
+    public TestCallback(int number) {
+        this();
+        this.number = number;
+    }
+
 
     @Override
     public void processCoapResponse(CoapResponse coapResponse) {
        coapResponses.put(System.currentTimeMillis(), coapResponse);
-       log.info("Received #{}: {}", coapResponses.size(), coapResponse);
+       log.info("[{}] Received #{}: {}", new Object[]{this.number, coapResponses.size(), coapResponse});
     }
 
 
@@ -73,7 +80,7 @@ public class TestCallback extends ClientCallback {
     public void processRetransmission() {
         long actualTime = System.currentTimeMillis();
         transmissions.add(actualTime);
-        log.info("Finished Retransmission #{}.", transmissions.size());
+        log.info("[{}] Finished Retransmission #{}.", this.number, transmissions.size());
     }
 
 
@@ -81,7 +88,7 @@ public class TestCallback extends ClientCallback {
     public void processTransmissionTimeout() {
         long actualTime = System.currentTimeMillis();
         transmissionTimeouts.add(actualTime);
-        log.info("Transmission Timeout!");
+        log.info("[{}] Transmission Timeout!", this.number);
     }
 
 
@@ -89,22 +96,22 @@ public class TestCallback extends ClientCallback {
     public void processEmptyAcknowledgement() {
         long actualTime = System.currentTimeMillis();
         emptyACKs.add(actualTime);
-        log.info("Received empty ACK!");
+        log.info("[{}] Received empty ACK!", this.number);
     }
 
     @Override
     public void processReset() {
         long actualTime = System.currentTimeMillis();
         emptyRSTs.add(actualTime);
-        log.info("Received RST!");
+        log.info("[{}] Received RST!", this.number);
     }
 
     @Override
     public void processResponseBlockReceived(long receivedLength, long expectedLength) {
         long actualTime = System.currentTimeMillis();
         this.responseBlockReceptions.add(actualTime);
-        log.info("Received response block #{} (now: {}/{} bytes received.)", new Object[]{
-                this.responseBlockReceptions.size(), receivedLength, expectedLength
+        log.info("[{}] Received response block #{} (now: {}/{} bytes received.)", new Object[]{
+                this.number, this.responseBlockReceptions.size(), receivedLength, expectedLength
         });
     }
 
@@ -112,7 +119,7 @@ public class TestCallback extends ClientCallback {
     public void processContinueResponseReceived(BlockSize block1Size) {
         long actualTime = System.currentTimeMillis();
         this.continueResponseReceptions.add(actualTime);
-        log.info("Received request block delivery confirmation (Size: {} bytes).", block1Size.getSize());
+        log.info("[{}] Received request block delivery confirmation (Size: {} bytes).", this.number, block1Size.getSize());
     }
 
     /**

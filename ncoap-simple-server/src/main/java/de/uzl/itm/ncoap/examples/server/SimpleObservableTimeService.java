@@ -27,16 +27,15 @@ package de.uzl.itm.ncoap.examples.server;
 import static de.uzl.itm.ncoap.application.linkformat.LinkParam.Key.*;
 import static de.uzl.itm.ncoap.message.options.ContentFormat.*;
 
+import com.google.common.collect.HashBasedTable;
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.linkformat.LinkParam;
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
+import de.uzl.itm.ncoap.communication.dispatching.Token;
+import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
-import de.uzl.itm.ncoap.message.CoapMessage;
-import de.uzl.itm.ncoap.message.CoapRequest;
-import de.uzl.itm.ncoap.message.CoapResponse;
-import de.uzl.itm.ncoap.message.MessageCode;
 import org.apache.log4j.Logger;
 
 import java.net.InetSocketAddress;
@@ -44,6 +43,8 @@ import java.util.HashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This {@link de.uzl.itm.ncoap.application.server.resource.Webresource} updates on a regular basis and provides
@@ -74,6 +75,10 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
 
     private ScheduledFuture periodicUpdateFuture;
     private int updateInterval;
+
+    // This is to handle whether update requests are confirmable or not (remoteSocket -> MessageType)
+    private HashMap<InetSocketAddress, Integer> observations = new HashMap<>();
+    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     /**
      * Creates a new instance of {@link SimpleObservableTimeService}.
@@ -110,8 +115,32 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
 
 
     @Override
-    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteSocket) {
-        return false;
+    public boolean isUpdateNotificationConfirmable(InetSocketAddress remoteAddress) {
+        try {
+            this.lock.readLock().lock();
+            if (!this.observations.containsKey(remoteAddress)) {
+                LOG.error("This should never happen (no observation found for \"" + remoteAddress + "\")!");
+                return false;
+            } else {
+                return this.observations.get(remoteAddress) == MessageType.CON;
+            }
+        } finally {
+            this.lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public void removeObserver(InetSocketAddress remoteAddress) {
+        try {
+            this.lock.writeLock().lock();
+            if (this.observations.remove(remoteAddress) != null) {
+                LOG.info("Observation canceled for remote socket \"" + remoteAddress + "\".");
+            } else {
+                LOG.warn("No observation found to be canceled for remote socket \"remoteAddress\".");
+            }
+        } finally {
+            this.lock.writeLock().unlock();
+        }
     }
 
 
@@ -148,7 +177,7 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
                                    InetSocketAddress remoteAddress) {
         try{
             if (coapRequest.getMessageCode() == MessageCode.GET) {
-                processGet(responseFuture, coapRequest);
+                processGet(responseFuture, coapRequest, remoteAddress);
             } else {
                 CoapResponse coapResponse = new CoapResponse(coapRequest.getMessageType(),
                         MessageCode.METHOD_NOT_ALLOWED_405);
@@ -163,8 +192,8 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
     }
 
 
-    private void processGet(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest)
-            throws Exception {
+    private void processGet(SettableFuture<CoapResponse> responseFuture, CoapRequest coapRequest,
+                            InetSocketAddress remoteAddress) throws Exception {
 
         //create resource status
         WrappedResourceStatus resourceStatus;
@@ -207,6 +236,14 @@ public class SimpleObservableTimeService extends ObservableWebresource<Long> {
             // this is to accept the client as an observer
             if (coapRequest.getObserve() == 0) {
                 coapResponse.setObserve();
+                try {
+                    this.lock.writeLock().lock();
+                    this.observations.put(remoteAddress, coapRequest.getMessageType());
+                } catch(Exception ex) {
+                    LOG.error("This should never happen!");
+                } finally {
+                    this.lock.writeLock().unlock();
+                }
             }
         } else {
             //if no payload could be generated, i.e. none of the accepted content formats (according to the

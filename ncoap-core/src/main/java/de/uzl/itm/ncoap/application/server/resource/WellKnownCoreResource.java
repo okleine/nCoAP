@@ -186,6 +186,11 @@ public final class WellKnownCoreResource extends ObservableWebresource<LinkValue
     }
 
     @Override
+    public void removeObserver(InetSocketAddress remoteSocket) {
+        // nothing to do
+    }
+
+    @Override
     public void shutdown() {
         //nothing to do here...
     }

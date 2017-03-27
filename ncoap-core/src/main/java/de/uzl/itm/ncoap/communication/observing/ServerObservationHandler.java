@@ -44,10 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Observable;
-import java.util.Observer;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -178,8 +175,12 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
                 return null;
             }
             this.observations2.remove(params.getWebresource(), remoteSocket);
+
+            params.getWebresource().removeObserver(remoteSocket);
+
             LOG.info("Client \"{}\" is no longer observing \"{}\" (token was: \"{}\").",
                     new Object[]{remoteSocket, params.getWebresource().getUriPath(), token});
+
             return params;
 
         } finally {
@@ -211,7 +212,6 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
     @Override
     public void update(Observable observable, Object type) {
         ObservableWebresource webresource = (ObservableWebresource) observable;
-        LOG.info("Webresource {} was updated. Starting to send update notifications to observers.");
         if (type.equals(ObservableWebresource.UPDATE)) {
             sendUpdateNotifications(webresource);
         } else if (type.equals(ObservableWebresource.SHUTDOWN)) {
@@ -246,7 +246,10 @@ public class ServerObservationHandler extends AbstractCoapChannelHandler impleme
         try {
             this.lock.readLock().lock();
             Map<Long, WrappedResourceStatus> representations = new HashMap<>();
-            for(Map.Entry<InetSocketAddress, Token> observation : this.observations2.row(webresource).entrySet()) {
+            Set<Map.Entry<InetSocketAddress, Token>> observations = this.observations2.row(webresource).entrySet();
+            LOG.info("Webresource \"{}\" was updated. Starting to send update notifications to {} observers.",
+                    webresource.getUriPath(), observations.size());
+            for(Map.Entry<InetSocketAddress, Token> observation : observations) {
                 // determine observation specific data
                 InetSocketAddress remoteSocket = observation.getKey();
                 Token token = observation.getValue();
