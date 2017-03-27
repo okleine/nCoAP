@@ -70,7 +70,10 @@ public class DecodeEncodedMessageTest extends AbstractCoapTest {
 
                 //[1] TKL is 8, but only 6 remaining bytes after header
                 new Object[]{new CoapRequest(MessageType.NON, MessageCode.POST,
-                        new URI("coap://coap.me:5683/p1/p2/p3/p4/p5/p6/p7"))}
+                        new URI("coap://coap.me:5683/p1/p2/p3/p4/p5/p6/p7"))},
+
+                new Object[]{new CoapRequest(MessageType.NON, MessageCode.GET,
+                        new URI("coap://example.org/"), true)}
         );
     }
 

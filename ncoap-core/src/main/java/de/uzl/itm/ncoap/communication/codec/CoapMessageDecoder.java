@@ -216,12 +216,12 @@ public class CoapMessageDecoder extends SimpleChannelUpstreamHandler {
                 optionDelta += buffer.readByte() & 0xFF;
             } else if (optionDelta == 14) {
                 optionDelta = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
-            } else {
-                if (optionLength == 13) {
-                    optionLength += buffer.readByte() & 0xFF;
-                } else if (optionLength == 14) {
-                    optionLength = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
-                }
+            }
+
+            if (optionLength == 13) {
+                optionLength += buffer.readByte() & 0xFF;
+            } else if (optionLength == 14) {
+                optionLength = 269 + ((buffer.readByte() & 0xFF) << 8) + (buffer.readByte() & 0xFF);
             }
 
             log.info("Previous option: {}, Option delta: {}", previousOptionNumber, optionDelta);
