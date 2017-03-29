@@ -27,7 +27,6 @@ package de.uzl.itm.ncoap.application.server.resource;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.linkformat.LinkParam;
-import de.uzl.itm.ncoap.application.linkformat.LinkValue;
 import de.uzl.itm.ncoap.application.linkformat.LinkValueList;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static de.uzl.itm.ncoap.message.MessageCode.*;

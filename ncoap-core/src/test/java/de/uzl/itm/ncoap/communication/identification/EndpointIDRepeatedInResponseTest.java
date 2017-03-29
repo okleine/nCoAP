@@ -40,7 +40,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 /**
  * Created by olli on 01.09.15.

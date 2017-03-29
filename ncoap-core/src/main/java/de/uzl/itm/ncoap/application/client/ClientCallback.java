@@ -26,8 +26,6 @@ package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.message.CoapResponse;
-import org.jboss.netty.buffer.ChannelBuffer;
-import de.uzl.itm.ncoap.message.options.Option;
 
 import java.net.InetSocketAddress;
 

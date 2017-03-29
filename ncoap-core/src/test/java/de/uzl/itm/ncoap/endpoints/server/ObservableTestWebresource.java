@@ -41,8 +41,6 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.fail;
-
 /**
 * This observable resource changes its status periodically with a delay given as argument for the constructor.
 * There are 5 possible states. The internal state representation, i.e. the returned value v of

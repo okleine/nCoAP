@@ -34,7 +34,6 @@ import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.MessageType;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;

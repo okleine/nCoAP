@@ -25,7 +25,6 @@
 package de.uzl.itm.ncoap.application.client;
 
 import de.uzl.itm.ncoap.application.AbstractCoapApplication;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.communication.dispatching.client.ResponseDispatcher;
 import de.uzl.itm.ncoap.message.CoapMessage;
 import de.uzl.itm.ncoap.message.CoapRequest;

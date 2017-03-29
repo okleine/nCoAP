@@ -32,7 +32,6 @@ import de.uzl.itm.ncoap.endpoints.client.TestCallback;
 import de.uzl.itm.ncoap.message.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;

@@ -24,15 +24,12 @@
  */
 package de.uzl.itm.ncoap.examples.client;
 
-import de.uzl.itm.ncoap.application.client.ClientCallback;
 import de.uzl.itm.ncoap.application.client.CoapClient;
-import de.uzl.itm.ncoap.communication.blockwise.BlockSize;
 import de.uzl.itm.ncoap.examples.client.callback.SimpleCallback;
 import de.uzl.itm.ncoap.examples.client.callback.SimpleObservationCallback;
 import de.uzl.itm.ncoap.examples.client.config.ClientCmdLineArgumentsWrapper;
 import de.uzl.itm.ncoap.examples.client.config.LoggingConfiguration;
 import de.uzl.itm.ncoap.message.*;
-import de.uzl.itm.ncoap.message.options.ContentFormat;
 
 import java.net.*;
 

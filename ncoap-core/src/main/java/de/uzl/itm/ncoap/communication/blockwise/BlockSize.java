@@ -24,9 +24,6 @@
  */
 package de.uzl.itm.ncoap.communication.blockwise;
 
-import de.uzl.itm.ncoap.message.options.UintOptionValue;
-import jdk.nashorn.internal.ir.Block;
-
 /**
  * Created by olli on 09.02.16.
  */
