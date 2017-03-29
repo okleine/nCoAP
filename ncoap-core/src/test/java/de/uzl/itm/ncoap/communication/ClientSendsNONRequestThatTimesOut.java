@@ -37,7 +37,7 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.net.URI;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
 * Tests to verify the server functionality related to piggy-backed responses.

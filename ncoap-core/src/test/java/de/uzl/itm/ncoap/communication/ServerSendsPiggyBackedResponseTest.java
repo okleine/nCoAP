@@ -41,7 +41,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.util.SortedMap;
 
-import static junit.framework.Assert.*;
+import static org.junit.Assert.*;
 
 
 /**

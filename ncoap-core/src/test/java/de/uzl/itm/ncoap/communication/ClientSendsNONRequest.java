@@ -41,8 +41,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.SortedMap;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
 * Tests to verify the server functionality related to piggy-backed responses.
