@@ -50,6 +50,7 @@ import java.net.*;
  * <br>
  * This will cause a non-confirmable {@link de.uzl.itm.ncoap.message.CoapRequest} to be sent to the Webservice and either await a single
  * response or 20 seconds to pass (whatever happens first). Then the application is shut down.
+ * <b>Note:</b> The default value for parameter <code>--duration</code> is 60!
  * <br><br>
  * 2. To start the observation of <code>coap://example.org:5683/obs</code> one can start the {@link SimpleCoapClient}
  * using e.g. the following command line parameters:

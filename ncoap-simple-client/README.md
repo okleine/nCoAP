@@ -17,6 +17,9 @@ program parameters (command line or IDE) parameters:
 This will cause a non-confirmable CoAP request sent to the resource.  Afterwards the client awaits either a single
 response or 20 seconds to pass (whatever happens first). Then the application is shut down.
 
+**Note:** The parameter `--duration` has a default value of 60, i.e. the client shuts down at the latest after 60
+seconds (and another small delay) if no other value was explicitly set.
+
 ### Example 2
 
 To start the observation of `coap://example.org:5683/obs` one can start the client using the following
