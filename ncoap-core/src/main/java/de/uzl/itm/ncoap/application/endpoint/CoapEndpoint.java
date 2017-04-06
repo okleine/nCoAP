@@ -84,6 +84,17 @@ public class CoapEndpoint extends AbstractCoapApplication {
     }
 
     /**
+     * <p>Creates a new instance of {@link CoapEndpoint}. See {@link #CoapEndpoint()} for default values of
+     * unspecified parameters).</p>
+     *
+     * @param maxBlock1Size the maximum blocksize for inbound requests
+     * @param maxBlock2Size the maximum blocksize for outbound responses
+     */
+    public CoapEndpoint(BlockSize maxBlock1Size, BlockSize maxBlock2Size) {
+        this(DEFAULT_NAME, NotFoundHandler.getDefault(), CoapServer.getDefaultSocket(), maxBlock1Size, maxBlock2Size);
+    }
+
+    /**
      * <p>Creates a new instance of {@link de.uzl.itm.ncoap.application.endpoint.CoapEndpoint}</p>
      *
      * @param notFoundHandler the {@link NotFoundHandler} to handle inbound requests for unknown resources
@@ -162,7 +173,7 @@ public class CoapEndpoint extends AbstractCoapApplication {
      *
      * @param remoteSocket the desired recipient of the given {@link de.uzl.itm.ncoap.message.CoapRequest}
      */
-    public void sendCoapRequest(CoapRequest coapRequest, ClientCallback callback, InetSocketAddress remoteSocket) {
+    public void sendCoapRequest(CoapRequest coapRequest, InetSocketAddress remoteSocket, ClientCallback callback) {
         this.responseDispatcher.sendCoapRequest(coapRequest, remoteSocket, callback);
     }
 
