@@ -33,7 +33,7 @@ stable version (1.8.2). To use the latest bleeding edge version add the followin
     <repository>
         <id>itm-maven-repository-snapshots</id>
         <name>ITM Maven Snapshots Repository</name>
-        <url>https://maven.itm.uni-luebeck.de/content/repositories/snapshots</url>
+        <url>https://maven.itm.uni-luebeck.de/repositories/snapshots</url>
     </repository>
 ...
 </repositories>
