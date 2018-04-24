@@ -27,13 +27,11 @@ package de.uzl.itm.ncoap.examples.server;
 import static de.uzl.itm.ncoap.application.linkformat.LinkParam.Key.*;
 import static de.uzl.itm.ncoap.message.options.ContentFormat.*;
 
-import com.google.common.collect.HashBasedTable;
 import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.SettableFuture;
 import de.uzl.itm.ncoap.application.linkformat.LinkParam;
 import de.uzl.itm.ncoap.application.server.resource.ObservableWebresource;
 import de.uzl.itm.ncoap.application.server.resource.WrappedResourceStatus;
-import de.uzl.itm.ncoap.communication.dispatching.Token;
 import de.uzl.itm.ncoap.message.*;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
 import org.apache.log4j.Logger;
@@ -43,7 +41,6 @@ import java.util.HashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**

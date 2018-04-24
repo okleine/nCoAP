@@ -104,7 +104,7 @@ public class TestParallelRequestsEndpointToEndpoint extends AbstractCoapCommunic
     public void createTestScenario() throws Exception {
 
         for(int i = 0; i < NUMBER_OF_PARALLEL_REQUESTS; i++) {
-            client.sendCoapRequest(requests[i], clientCallbacks[i], serverSocket);
+            client.sendCoapRequest(requests[i], serverSocket, clientCallbacks[i]);
         }
 
         //await responses (10 seconds should more than enough for 100 requests!)

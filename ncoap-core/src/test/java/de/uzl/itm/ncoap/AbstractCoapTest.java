@@ -25,7 +25,6 @@
 package de.uzl.itm.ncoap;
 
 import org.apache.log4j.*;
-import org.junit.BeforeClass;
 
 /**
  * Abstract class to be extended by all nCoAP tests to get proper logging

@@ -45,7 +45,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
 * Tests if a client receives notifications.

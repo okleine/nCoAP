@@ -33,7 +33,6 @@ import de.uzl.itm.ncoap.message.CoapRequest;
 import de.uzl.itm.ncoap.message.CoapResponse;
 import de.uzl.itm.ncoap.message.MessageCode;
 import de.uzl.itm.ncoap.message.options.ContentFormat;
-import de.uzl.itm.ncoap.message.options.OptionValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

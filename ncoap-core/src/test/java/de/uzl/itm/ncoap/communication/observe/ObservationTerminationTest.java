@@ -40,7 +40,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.Charset;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
 * Tests for the removal of observers.

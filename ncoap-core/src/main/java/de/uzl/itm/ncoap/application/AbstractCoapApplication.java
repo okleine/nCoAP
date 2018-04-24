@@ -24,7 +24,6 @@
  */
 package de.uzl.itm.ncoap.application;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.uzl.itm.ncoap.communication.AbstractCoapChannelHandler;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
@@ -34,7 +33,6 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
-import org.jboss.netty.channel.socket.oio.OioDatagramChannelFactory;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
